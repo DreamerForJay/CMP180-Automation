@@ -199,5 +199,13 @@ hardware. Every query returned `0,"No error"` afterward.
 - Returned `*IDN?`: `Rohde&Schwarz,CMP,1201.0002k18/102502,6.0.50.23`
 - Finding: CMP180 uses the model field `CMP`, not `CMP180`; identity validation
   was corrected to parse the model field instead of searching the whole IDN.
-- `*OPT?` and the final error-queue result must be captured by rerunning the
-  query-only connection command after this correction.
+- Returned `*OPT?`:
+  `CMP-B40H,CMP-B805I,CMP-K105,CMP-K108,CMP-K168,CMP-K185,CMP-KB805,`
+  `CMP-KH40,CMP-KH805,CMP-KM310,CMP-KM350,CMP-KM351,CMP-KM352,CMP-KV310,`
+  `CMP-KV350,CMP-KV351,CMP-KV352,CMP-PB18I`
+- Final error queue: empty
+- Result: the Python connection framework can identify the real CMP180, read
+  its installed option identifiers, drain the error queue, and disconnect
+  without resetting the workspace or changing RF/measurement settings.
+- Scope limit: this proves the control connection only. It is not WLAN TX EVM
+  measurement evidence and does not validate any CMP180-specific command.

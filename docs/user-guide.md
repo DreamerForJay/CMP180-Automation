@@ -105,7 +105,7 @@ New-Item -ItemType Directory -Force output | Out-Null
 .\.venv\Scripts\python.exe -m pytest -q --basetemp=output\pytest-tmp
 ```
 
-目前基準為 `43 passed`。
+目前基準為 `47 passed`。
 
 ## 8. 第一次連接 CMP180
 
