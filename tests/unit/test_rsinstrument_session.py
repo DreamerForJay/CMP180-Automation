@@ -53,7 +53,7 @@ def test_rsinstrument_socket_adapter(monkeypatch):
     assert fake.id_query is False
     assert fake.reset is False
     assert fake.visa_timeout == 12345
-    assert fake.writes == ["*CLS"]
+    assert fake.writes == []
     assert session.verify_identity("CMP") == "Rohde&Schwarz,CMP,serial,6.0.50.23"
     assert session.drain_error_queue() == []
 

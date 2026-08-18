@@ -33,7 +33,7 @@ class IdentityConfig(BaseModel):
 
 class SessionConfig(BaseModel):
     reset_on_connect: bool = False
-    clear_status_on_connect: bool = True
+    clear_status_on_connect: bool = False
     check_error_after_write: bool = True
     close_on_finish: bool = True
 

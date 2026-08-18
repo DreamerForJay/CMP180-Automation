@@ -26,7 +26,7 @@ class Cmp180Session:
         timeout_ms: int = 10000,
         opc_timeout_ms: int = 30000,
         query_delay_ms: int = 0,
-        clear_status_on_connect: bool = True,
+        clear_status_on_connect: bool = False,
         check_error_after_write: bool = True,
         mask_sensitive_data: bool = True,
     ) -> None:

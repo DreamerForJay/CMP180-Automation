@@ -22,7 +22,7 @@ instrument:
 
   session:
     reset_on_connect: false # never auto-reset; may wipe the existing CMsquares workspace
-    clear_status_on_connect: true
+    clear_status_on_connect: false # keep the first hardware verification query-only
     check_error_after_write: true
     close_on_finish: true
 
