@@ -138,3 +138,30 @@ New-Item -ItemType Directory -Force output | Out-Null
 - Pass/Fail 判定
 
 上述功能必須先完成 CMP180 SCPI Discovery、命令審核、Mock 測試與安全檢查。
+
+## 10. Git 顯示 dubious ownership
+
+若此專案曾由 Codex 建立或提交 `.git`，Windows Git 可能因 Codex 沙箱帳號與
+目前登入帳號不同而顯示：
+
+```text
+fatal: detected dubious ownership in repository
+```
+
+這不代表儲存庫損壞。只對這個確定的專案路徑加入 Git 安全清單：
+
+```powershell
+git config --global --add safe.directory `
+  C:/Users/TMYA0006/Desktop/PROJECT/CMP180v0
+```
+
+確認設定：
+
+```powershell
+git config --global --get-all safe.directory
+git branch --show-current
+git status
+```
+
+不要將 `*`、整個磁碟或不認識的路徑加入 `safe.directory`。若相同路徑被重複
+加入通常不影響 Git；可用 `--get-all` 查看目前清單。
