@@ -1,0 +1,44 @@
+# CMP180 SCPI command map (SPEC.MD section 10.2).
+#
+# `common` is fixed to standard IEEE-488.2 commands and is safe to trust as-is.
+# Everything under generator / wlan_tx / results MUST stay `null` until it has
+# been captured from the CMP180 SCPI Recorder (or the official Remote Manual /
+# built-in Command Help) and verified against real hardware — see the
+# Discovery procedure in SPEC.MD section 11. Do not fill these in by guessing
+# from other Rohde & Schwarz instruments (e.g. FSW85/K70); their SCPI trees
+# are not guaranteed to match the CMP180.
+
+common:
+  identify: "*IDN?"
+  options: "*OPT?"
+  clear_status: "*CLS"
+  operation_complete: "*OPC?"
+  system_error: "SYST:ERR?"
+
+generator:
+  set_frequency: null
+  set_power: null
+  rf_on: null
+  rf_off: null
+
+wlan_tx:
+  set_frequency: null
+  set_band: null
+  set_expected_power: null
+  set_external_attenuation: null
+  adjust_level: null
+  clear_statistics: null
+  initiate: null
+  abort: null
+
+results:
+  burst_power_current: null
+  burst_power_average: null
+  evm_all_current: null
+  evm_all_average: null
+  evm_all_max: null
+  evm_all_std_dev: null
+  evm_data_average: null
+  evm_pilot_average: null
+  frequency_error_average: null
+  symbol_clock_error_average: null
