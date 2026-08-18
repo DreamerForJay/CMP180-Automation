@@ -191,3 +191,13 @@ hardware. Every query returned `0,"No error"` afterward.
 | Trigger timeout | `1.0` s |
 | Measurement state | `OFF` |
 | Detailed state | `OFF,ADJ,INV` |
+# 2026-08-18 query-only connection verification
+
+- PC Ethernet: `192.168.200.12/24`
+- CMP180: `192.168.200.50:5025`
+- TCP connection: passed through the Ethernet interface
+- Returned `*IDN?`: `Rohde&Schwarz,CMP,1201.0002k18/102502,6.0.50.23`
+- Finding: CMP180 uses the model field `CMP`, not `CMP180`; identity validation
+  was corrected to parse the model field instead of searching the whole IDN.
+- `*OPT?` and the final error-queue result must be captured by rerunning the
+  query-only connection command after this correction.

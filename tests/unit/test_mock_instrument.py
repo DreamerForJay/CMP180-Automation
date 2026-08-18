@@ -13,7 +13,7 @@ def test_query_before_connect_raises():
 def test_common_commands():
     mock = MockCmp180()
     mock.connect()
-    assert "CMP180" in mock.query("*IDN?")
+    assert ",CMP-MOCK," in mock.query("*IDN?")
     assert mock.query("*OPC?") == "1"
     assert mock.query("SYST:ERR?").startswith("+0")
     mock.disconnect()
@@ -22,8 +22,8 @@ def test_common_commands():
 def test_verify_identity_matches():
     mock = MockCmp180()
     mock.connect()
-    idn = mock.verify_identity("CMP180")
-    assert "CMP180" in idn
+    idn = mock.verify_identity("CMP")
+    assert ",CMP-MOCK," in idn
 
 
 def test_verify_identity_mismatch_raises():

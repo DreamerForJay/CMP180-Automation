@@ -18,7 +18,8 @@ instrument:
 
   identity:
     expected_manufacturer: "Rohde&Schwarz"
-    expected_model_contains: "CMP180"
+    # CMP180 reports the official model token "CMP" in *IDN?.
+    expected_model_contains: "CMP"
 
   session:
     reset_on_connect: false # never auto-reset; may wipe the existing CMsquares workspace

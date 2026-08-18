@@ -12,8 +12,9 @@ is displayed or saved (rule: "Mock results must be clearly labeled simulated").
 """
 
 from cmp180_evm.scpi import common
+from cmp180_evm.instrument.base import validate_idn_model
 
-SIMULATED_IDN = "Rohde&Schwarz,CMP180-MOCK,1234567,1.0.0.0"
+SIMULATED_IDN = "Rohde&Schwarz,CMP-MOCK,1234567,1.0.0.0"
 SIMULATED_OPTIONS = "MOCK-OPT-1,MOCK-OPT-2"
 
 
@@ -37,11 +38,7 @@ class MockCmp180:
 
     def verify_identity(self, expected_model_contains: str) -> str:
         idn = self.query(common.IDENTIFY)
-        if expected_model_contains not in idn:
-            from cmp180_evm.utils.exceptions import InstrumentIdentityError
-
-            raise InstrumentIdentityError(expected_model_contains, idn)
-        return idn
+        return validate_idn_model(idn, expected_model_contains)
 
     def write(self, command: str) -> None:
         self._require_connected()

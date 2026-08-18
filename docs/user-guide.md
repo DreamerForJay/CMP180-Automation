@@ -77,7 +77,7 @@ Dry Run 只列出預計步驟，不建立儀器連線，也不送出 SCPI：
 成功時應顯示：
 
 - `Connected successfully (mock)`
-- Mock IDN
+- Mock IDN（使用與實機相同的 `CMP` model token，顯示為 `CMP-MOCK`）
 - Mock options
 - `Error queue: empty`
 

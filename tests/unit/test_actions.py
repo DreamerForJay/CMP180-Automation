@@ -37,5 +37,5 @@ def test_dry_run_steps_never_touches_instrument():
 def test_connection_with_mock_succeeds():
     result = actions.test_connection(CONFIGS_DIR / "instrument.example.yaml", use_mock=True)
     assert result.ok
-    assert result.idn is not None and "CMP180" in result.idn
+    assert result.idn is not None and ",CMP-MOCK," in result.idn
     assert result.errors == []

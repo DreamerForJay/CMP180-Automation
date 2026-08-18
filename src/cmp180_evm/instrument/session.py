@@ -13,7 +13,7 @@ it only implements the generic read/write/query primitives from
 import time
 
 from cmp180_evm.scpi import common
-from cmp180_evm.utils.exceptions import InstrumentIdentityError
+from cmp180_evm.instrument.base import validate_idn_model
 from cmp180_evm.utils.logging import get_scpi_logger
 
 
@@ -73,9 +73,7 @@ class Cmp180Session:
 
     def verify_identity(self, expected_model_contains: str) -> str:
         idn = self.query(common.IDENTIFY)
-        if expected_model_contains not in idn:
-            raise InstrumentIdentityError(expected_model_contains, idn)
-        return idn
+        return validate_idn_model(idn, expected_model_contains)
 
     def write(self, command: str) -> None:
         self._require_connected()

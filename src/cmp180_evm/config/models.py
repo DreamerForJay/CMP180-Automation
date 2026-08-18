@@ -28,7 +28,7 @@ class ConnectionConfig(BaseModel):
 
 class IdentityConfig(BaseModel):
     expected_manufacturer: str = "Rohde&Schwarz"
-    expected_model_contains: str = "CMP180"
+    expected_model_contains: str = "CMP"
 
 
 class SessionConfig(BaseModel):

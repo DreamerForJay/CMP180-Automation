@@ -568,7 +568,7 @@ instrument:
 
   identity:
     expected_manufacturer: "Rohde&Schwarz"
-    expected_model_contains: "CMP180"
+    expected_model_contains: "CMP"  # CMP180 reports model token CMP in *IDN?
 
   session:
     reset_on_connect: false

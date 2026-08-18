@@ -20,7 +20,7 @@ class InstrumentIdentityError(Cmp180Error):
         self.expected_model_contains = expected_model_contains
         self.actual_idn = actual_idn
         super().__init__(
-            f"Expected instrument model containing '{expected_model_contains}' but received:\n"
+            f"Expected instrument model '{expected_model_contains}' but received:\n"
             f"{actual_idn}"
         )
 
