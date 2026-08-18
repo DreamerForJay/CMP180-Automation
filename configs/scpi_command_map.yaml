@@ -31,6 +31,28 @@ wlan_tx:
   initiate: null
   abort: null
 
+# Query-only commands verified against CMP180 serial 102502 on 2026-08-18.
+wlan_tx_query:
+  standard: "CONF:WLAN:MEAS:ISIG:STAN?"
+  bandwidth: "CONF:WLAN:MEAS:ISIG:BWID?"
+  rf_path_catalog: "CAT:WLAN:MEAS:SPAT?"
+  rf_path: "ROUT:WLAN:MEAS:SPAT?"
+  rf_path_count: "ROUT:WLAN:MEAS:SPAT:COUN?"
+  external_attenuation: "CONF:WLAN:MEAS:RFSettings:EATT?"
+  expected_nominal_power: "CONF:WLAN:MEAS:RFSettings:ENP?"
+  band: "CONF:WLAN:MEAS:RFSettings:FREQ:BAND?"
+  center_frequency: "CONF:WLAN:MEAS:RFSettings:FREQ?"
+  channels: "CONF:WLAN:MEAS:RFSettings:FREQ:CHAN?"
+  trigger_source_catalog: "TRIG:WLAN:MEAS:MEV:CAT:SOUR?"
+  trigger_source: "TRIG:WLAN:MEAS:MEV:SOUR?"
+  trigger_threshold: "TRIG:WLAN:MEAS:MEV:THR?"
+  trigger_offset: "TRIG:WLAN:MEAS:MEV:OFFS?"
+  trigger_min_gap: "TRIG:WLAN:MEAS:MEV:MGAP?"
+  trigger_slope: "TRIG:WLAN:MEAS:MEV:SLOP?"
+  trigger_timeout: "TRIG:WLAN:MEAS:MEV:TOUT?"
+  measurement_state: "FETC:WLAN:MEAS:MEV:STAT?"
+  measurement_states: "FETC:WLAN:MEAS:MEV:STAT:ALL?"
+
 results:
   burst_power_current: null
   burst_power_average: null

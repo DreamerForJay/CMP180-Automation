@@ -209,3 +209,35 @@ hardware. Every query returned `0,"No error"` afterward.
   without resetting the workspace or changing RF/measurement settings.
 - Scope limit: this proves the control connection only. It is not WLAN TX EVM
   measurement evidence and does not validate any CMP180-specific command.
+
+## 2026-08-18 WLAN MEAS1 query-only discovery
+
+All 19 queries completed successfully and every immediate `SYST:ERR?` returned
+`0,"No error"`.
+
+| Field | Real response | Interpreted value |
+|---|---|---|
+| Standard | `EHT` | IEEE 802.11be |
+| Bandwidth | `BW20` | 20 MHz |
+| RF path | `"RF1.5"` | Analyzer input RF1.5 |
+| RF path count | `1` | SISO path count |
+| External attenuation | `0.000000E+00` | 0 dB |
+| Expected nominal power | `0.000000E+00` | 0 dBm |
+| Band | `B5GH` | 5 GHz |
+| Center frequency | `5.180000E+09` | 5180 MHz |
+| Channel | `36` | Channel 36 |
+| Trigger source | `"IF Power"` | IF Power trigger |
+| Trigger threshold | `-3.000000E+01` | -30 dB |
+| Trigger offset | `0.000000E+00` | 0 s |
+| Trigger minimum gap | `5.000000E-06` | 5 us |
+| Trigger slope | `REDG` | Rising edge |
+| Trigger timeout | `1.000000E+00` | 1 s |
+| Measurement state | `OFF` | Measurement is off |
+| All measurement states | `OFF,ADJ,INV` | Off, adjust/invalid result state |
+
+The RF path catalog returned RF1.1 through RF1.8 and RF2.1 through RF2.8. The
+trigger catalog returned 11 available sources. The exact raw output is stored
+locally under `output/` and is intentionally excluded from Git.
+
+This discovery validates query-only configuration/state commands. It does not
+validate setters, measurement initiation, RF control, or EVM result queries.

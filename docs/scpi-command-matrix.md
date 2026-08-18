@@ -1,6 +1,6 @@
 # CMP180 WLAN SCPI Command Matrix
 
-Status: discovery in progress  
+Status: 19 WLAN configuration/state queries verified; result/write discovery in progress
 Instrument software: BASE `6.0.50.23`, WLAN `6.0.50.14`  
 Source: CMP180 built-in WLAN and base-software help
 

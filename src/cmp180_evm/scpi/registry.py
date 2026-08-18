@@ -46,6 +46,28 @@ class WlanTxCommands(BaseModel):
     abort: str | None = None
 
 
+class WlanTxQueryCommands(BaseModel):
+    standard: str
+    bandwidth: str
+    rf_path_catalog: str
+    rf_path: str
+    rf_path_count: str
+    external_attenuation: str
+    expected_nominal_power: str
+    band: str
+    center_frequency: str
+    channels: str
+    trigger_source_catalog: str
+    trigger_source: str
+    trigger_threshold: str
+    trigger_offset: str
+    trigger_min_gap: str
+    trigger_slope: str
+    trigger_timeout: str
+    measurement_state: str
+    measurement_states: str
+
+
 class ResultCommands(BaseModel):
     burst_power_current: str | None = None
     burst_power_average: str | None = None
@@ -63,6 +85,7 @@ class ScpiCommandRegistry(BaseModel):
     common: CommonCommands = CommonCommands()
     generator: GeneratorCommands = GeneratorCommands()
     wlan_tx: WlanTxCommands = WlanTxCommands()
+    wlan_tx_query: WlanTxQueryCommands
     results: ResultCommands = ResultCommands()
 
     def require(self, dotted_name: str) -> str:

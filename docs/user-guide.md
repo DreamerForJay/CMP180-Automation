@@ -107,6 +107,16 @@ New-Item -ItemType Directory -Force output | Out-Null
 
 目前基準為 `47 passed`。
 
+已驗證 WLAN query-only discovery 時，可執行：
+
+```powershell
+python scripts\cmp180_wlan_discover.py |
+  Tee-Object output\wlan-discovery-YYYY-MM-DD.txt
+```
+
+此工具只從集中式 `configs/scpi_command_map.yaml` 讀取已驗證 query，
+不包含任何 WLAN setter、measurement initiate 或 RF control command。
+
 ## 8. 第一次連接 CMP180
 
 只有在以下條件都滿足後才需要接實機：
