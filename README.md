@@ -33,6 +33,12 @@
 - `scripts/cmp180_doctor.py`
 - `scripts/cmp180_wlan_discover.py`
 
+## 操作與開發文件
+
+- [使用者操作指南](docs/user-guide.md)：安裝、設定、CLI、GUI、Mock 與實機驗證步驟。
+- [功能開發與文件同步規則](docs/development-workflow.md)：每次功能修改必須更新的文件與測試清單。
+- [第一次實機唯讀驗證](docs/hardware-readonly-validation.md)：接上 CMP180 前後的安全檢查。
+
 ## 安裝
 
 需要 Python 3.11+。

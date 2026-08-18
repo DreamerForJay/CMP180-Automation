@@ -304,7 +304,7 @@
     <pre><code>python -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"</code></pre>
-    <p>若要用真實儀器連線（需要 pyVISA + VISA runtime），額外安裝：</p>
+    <p>若要用真實儀器連線（使用已驗證的 RsInstrument Raw Socket），額外安裝：</p>
     <pre><code>pip install -e ".[hardware]"</code></pre>
   </div>
 
@@ -364,7 +364,7 @@ python -m cmp180_evm test-connection --instrument-config configs/instrument.exam
 ├─ actions.py         <span class="comment"># CLI 與 GUI 共用的高階操作（validate/dry-run/test-connection）</span>
 ├─ gui/                <span class="comment"># Tkinter GUI</span>
 ├─ config/             <span class="comment"># YAML 載入、pydantic typed models、跨欄位驗證（band/frequency 等）</span>
-├─ instrument/         <span class="comment"># InstrumentSession protocol、真實 CMP180 session（pyvisa）、MockCmp180</span>
+├─ instrument/         <span class="comment"># InstrumentSession protocol、真實 CMP180 session（RsInstrument）、MockCmp180</span>
 ├─ scpi/               <span class="comment"># SCPI 指令唯一集中管理處：common 常數 + ScpiCommandRegistry</span>
 └─ utils/              <span class="comment"># exceptions、logging</span>
 
