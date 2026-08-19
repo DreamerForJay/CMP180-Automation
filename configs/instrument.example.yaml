@@ -1,0 +1,52 @@
+# Copy to instrument.yaml and adjust once Discovery has confirmed these values.
+# See SPEC.MD section 8.1/8.2 and section 4.2 (unconfirmed items) before relying on this.
+
+instrument:
+  name: cmp180-main
+
+  resource:
+    type: rsinstrument
+    address: "TCPIP::192.168.200.50::5025::SOCKET"
+    options: "SelectVisa='socketio'"
+
+  connection:
+    timeout_ms: 10000
+    opc_timeout_ms: 30000
+    query_delay_ms: 0
+    retry_count: 3
+    retry_interval_ms: 1000
+
+  identity:
+    expected_manufacturer: "Rohde&Schwarz"
+    # CMP180 reports the official model token "CMP" in *IDN?.
+    expected_model_contains: "CMP"
+
+  session:
+    reset_on_connect: false # never auto-reset; may wipe the existing CMsquares workspace
+    clear_status_on_connect: false # keep the first hardware verification query-only
+    check_error_after_write: true
+    close_on_finish: true
+
+  logging:
+    scpi_enabled: true
+    scpi_log_file: "logs/scpi.log"
+    mask_sensitive_data: true
+
+routing:
+  generator_port: "RF1.1"
+  analyzer_port: "RF1.5"
+
+  # 2026-07-28: confirmed via CMsquares GUI - GPRF Gen 1 Configuration > Generator
+  # (and ARB Sequencer) tab, Common > Routing shows only the RF1.1 checkbox
+  # checked (RF1.2-RF1.8 unchecked). This is direct visual confirmation from
+  # the instrument's own routing control, not a guess - but it has NOT yet been
+  # cross-checked against an actual SCPI command via the Recorder. Treat RF ON
+  # as still gated on real hardware caution until that SCPI-level check is done.
+  generator_port_confirmed: true
+  # RF1.5 is confirmed as the WLAN TX Measurement analyzer routing in the GUI.
+  analyzer_port_confirmed: true
+
+  path_description: "CMP180 internal/external loopback path (unconfirmed)"
+  external_attenuation_db: 0.0 # matches GUI: GPRF Gen 1 > RF Settings > External Attenuation = 0.00 dB
+
+  require_manual_confirmation_before_rf_on: true

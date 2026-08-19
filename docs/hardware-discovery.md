@@ -1,6 +1,7 @@
-# CMP180 Hardware and CMsquares Discovery
+﻿# CMP180 Hardware and CMsquares Discovery
 
-Discovery date: 2026-08-13  
+Initial discovery date: 2026-08-13
+Latest read-only verification: 2026-08-18
 Source: CMP180 local Device UI and read-only SCPI queries  
 Device address: `192.168.200.50`
 
@@ -10,7 +11,7 @@ Device address: `192.168.200.50`
 |---|---|
 | Product | Rohde & Schwarz CMP180 |
 | `*IDN?` model field | `CMP` |
-| Device identifier | `1201.0002K18-102502` |
+| Device identifier | Redacted; not required for automation |
 | Base firmware | `6.0.50.23` |
 | Device UI | `http://192.168.200.50/deviceui/testenvironment` |
 | Raw Socket | TCP 5025, verified |
@@ -23,51 +24,14 @@ Device address: `192.168.200.50`
 Do not store or publish license keys, activation data, or unrestricted device
 footprints in this repository.
 
-## 2. Hardware
+## 2. Hardware, software, and options
 
-| Type | Part name | Part number/version | State |
-|---|---|---|---|
-| CMP-B40H | CMPSINGLE INTERFACE | `1212.3372.09` | Present |
-| CMP-B805I | CMP RF UNIT 500 | `1212.3414.10` | Present |
-| CMP-PB18I | CMP180 BASIC ASSEMBLY | `1212.1986.10` | Present |
+The required WLAN SISO capability was confirmed on the lab instrument. Detailed
+part numbers, license inventories, activation data, and license-server details
+are intentionally excluded from this repository because they are not required
+to operate or test the automation code.
 
-## 3. Relevant software
-
-| Component | Version |
-|---|---|
-| COMPLETE_SETUP | `2025.31.0.10` |
-| BASE | `6.0.50.23` |
-| CMDSET1 | `6.0.50.48` |
-| MEASSCPI | `6.0.0.167` |
-| GPRF_GEN | `6.0.50.11` |
-| GPRF_MEAS | `6.0.50.11` |
-| WLAN | `6.0.50.14` |
-| WEBGUI | `6.0.32.18` |
-| LICENSE_SERVER | `2.18.1.1833` |
-
-Package state is `approved`, configuration is `Release`, status is `active`, and
-target type is 64-bit.
-
-## 4. Relevant permanent licenses
-
-| Option | Designation | Count |
-|---|---|---:|
-| CMP-K105 | ENABLE TRX2 RFU 500 | 1 |
-| CMP-K108 | CMP SMART CHANNEL | 1 |
-| CMP-K168 | 8 GHZ EXTENSION | 1 |
-| CMP-K185 | BANDWIDTH 500MHZ | 1 |
-| CMP-KB805 | CMP RF UNIT 500 PERF | 1 |
-| CMP-KM350 | WLAN SISO MEAS | 1 |
-| CMP-KM351 | WLAN AX SISO MEAS | 1 |
-| CMP-KM352 | WLAN BE SISO MEAS | 1 |
-| CMP-KV350 | WLAN WAVELIB FSET0 | 1 |
-| CMP-KV351 | WLAN WAVELIB FSET1 | 1 |
-| CMP-KV352 | WLAN WAVELIB FSET2 | 1 |
-
-Discovery conclusion: the device has a valid license basis for WLAN SISO,
-802.11ax SISO, 802.11be SISO, and WLAN waveform libraries.
-
-## 5. Current CMsquares WLAN TX workspace
+## 3. Current CMsquares WLAN TX workspace
 
 The following values were read without starting a measurement or changing settings.
 
@@ -191,3 +155,151 @@ hardware. Every query returned `0,"No error"` afterward.
 | Trigger timeout | `1.0` s |
 | Measurement state | `OFF` |
 | Detailed state | `OFF,ADJ,INV` |
+# 2026-08-18 query-only connection verification
+
+- PC Ethernet: `192.168.200.12/24`
+- CMP180: `192.168.200.50:5025`
+- TCP connection: passed through the Ethernet interface
+- Returned `*IDN?`: `Rohde&Schwarz,CMP,1201.0002k18/REDACTED,6.0.50.23`
+- Finding: CMP180 uses the model field `CMP`, not `CMP180`; identity validation
+  was corrected to parse the model field instead of searching the whole IDN.
+- Returned `*OPT?`:
+  `CMP-B40H,CMP-B805I,CMP-K105,CMP-K108,CMP-K168,CMP-K185,CMP-KB805,`
+  `CMP-KH40,CMP-KH805,CMP-KM310,CMP-KM350,CMP-KM351,CMP-KM352,CMP-KV310,`
+  `CMP-KV350,CMP-KV351,CMP-KV352,CMP-PB18I`
+- Final error queue: empty
+- Result: the Python connection framework can identify the real CMP180, read
+  its installed option identifiers, drain the error queue, and disconnect
+  without resetting the workspace or changing RF/measurement settings.
+- Scope limit: this proves the control connection only. It is not WLAN TX EVM
+  measurement evidence and does not validate any CMP180-specific command.
+
+## 2026-08-18 WLAN MEAS1 query-only discovery
+
+All 19 queries completed successfully and every immediate `SYST:ERR?` returned
+`0,"No error"`.
+
+| Field | Real response | Interpreted value |
+|---|---|---|
+| Standard | `EHT` | IEEE 802.11be |
+| Bandwidth | `BW20` | 20 MHz |
+| RF path | `"RF1.5"` | Analyzer input RF1.5 |
+| RF path count | `1` | SISO path count |
+| External attenuation | `0.000000E+00` | 0 dB |
+| Expected nominal power | `0.000000E+00` | 0 dBm |
+| Band | `B5GH` | 5 GHz |
+| Center frequency | `5.180000E+09` | 5180 MHz |
+| Channel | `36` | Channel 36 |
+| Trigger source | `"IF Power"` | IF Power trigger |
+| Trigger threshold | `-3.000000E+01` | -30 dB |
+| Trigger offset | `0.000000E+00` | 0 s |
+| Trigger minimum gap | `5.000000E-06` | 5 us |
+| Trigger slope | `REDG` | Rising edge |
+| Trigger timeout | `1.000000E+00` | 1 s |
+| Measurement state | `OFF` | Measurement is off |
+| All measurement states | `OFF,ADJ,INV` | Off, adjust/invalid result state |
+
+The RF path catalog returned RF1.1 through RF1.8 and RF2.1 through RF2.8. The
+trigger catalog returned 11 available sources. The exact raw output is stored
+locally under `output/` and is intentionally excluded from Git.
+
+This discovery validates query-only configuration/state commands. It does not
+validate setters, measurement initiation, RF control, or EVM result queries.
+
+## 2026-08-18 controlled RF loopback verification
+
+A direct 50-ohm coaxial cable connected generator port RF1.1 to WLAN analyzer
+port RF1.5. No external attenuator was present. The test was performed through
+CMsquares with both resources initially Off.
+
+| Parameter | Verified setting |
+|---|---|
+| Generator routing | RF1.1 only |
+| Analyzer routing | RF1.5 |
+| Generator waveform | `KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv` |
+| Standard / bandwidth | IEEE 802.11be / 320 MHz |
+| Center frequency | 6105 MHz (6 GHz, center channel 31) |
+| Generator level | -40 dBm RMS/indicated peak output power |
+| External attenuation | 0 dB |
+| Measurement repetition | SingleShot |
+
+The first attempt used an expected nominal power of -40 dBm and returned
+`Input Overdriven`. RF output and measurement were stopped immediately. The
+generator routing was then rechecked: RF1.1 was enabled and RF1.2 through
+RF1.8, including RF1.5, were disabled.
+
+The generator level remained at -40 dBm. Only the analyzer expected nominal
+power was changed to -20 dBm to provide additional measurement range. The
+second SingleShot completed and returned `Ready` without the overdrive error.
+The generator was then returned to Off.
+
+This confirms that the physical RF1.1-to-RF1.5 loopback can generate and
+capture the configured 802.11be waveform. It does not yet provide recorded EVM
+or power values in the CMsquares workspace because no numeric WLAN result view
+was configured there.
+
+The subsequent query-only Python result discovery successfully fetched the
+stored SingleShot result. All five aggregate modulation queries returned
+`0,"No error"` and exactly 28 OFDM SISO fields.
+
+| Statistic | EVM all carriers | Burst power | Frequency error |
+|---|---:|---:|---:|
+| Current | -36.12723 dB | -40.56531 dBm | -23.80315 Hz |
+| Average | -36.14424 dB | -40.56650 dBm | -6.496213 Hz |
+| Minimum | -36.25381 dB | -40.56822 dBm | -3.635299 Hz |
+| Maximum | -36.02105 dB | -40.56469 dBm | -35.87564 Hz |
+| Standard deviation | 0.08628786 dB | 0.001082599 dB | 17.81418 Hz |
+
+The measurement state was `RDY`. The discovery used only `FETCh` commands and
+did not start a measurement or enable RF. Run it with:
+
+```powershell
+python scripts\cmp180_wlan_result_discover.py
+```
+
+This is the first quantitative WLAN loopback reference result for the project.
+It verifies result retrieval and parsing, but Python-controlled configuration,
+RF enable/disable and measurement initiation are still pending.
+## 中文：2026-08-19 Generator setter 驗證
+
+在 CMP180 序號 REDACTED 上執行 `scripts/cmp180_generator_setter_validate.py --confirm-same-value-write`。工具先確認 RF 為 `OFF`，再將目前的 6105 MHz 與 -40 dBm 原值寫回。兩個 setter 的 read-back 均與原值一致，`SYST:ERR?` 均回傳 `0,"No error"`，最後 RF state 為 `OFF`。本次沒有 RF On，也沒有啟動 WLAN 量測。
+
+## 中文：2026-08-19 WLAN Analyzer setter 驗證
+
+第一次執行時 measurement state 為 `RDY`，舊安全閘門要求 `OFF`，因此工具在任何寫入前正確拒絕。唯讀 discovery 隨後確認 `RDY,ADJ,INV`，且 19 項查詢均無錯誤。將 `RDY` 明確列為 idle/ready 狀態並補測試後，完成 RF1.5、`BW32`、6105 MHz、0 dB external attenuation 與 -20 dBm expected power 的同值寫回。所有 read-back 一致且錯誤佇列為空，最終狀態為 Generator `OFF`、measurement `RDY`。
+
+## English: 2026-08-19 Generator setter validation
+
+`scripts/cmp180_generator_setter_validate.py --confirm-same-value-write` was run against CMP180 serial REDACTED. The tool first required RF `OFF`, then wrote the existing 6105 MHz and -40 dBm values back. Both read-backs matched, every `SYST:ERR?` returned `0,"No error"`, and final RF state remained `OFF`. This validation did not enable RF or initiate a WLAN measurement.
+
+## English: 2026-08-19 WLAN Analyzer setter validation
+
+The first attempt found measurement state `RDY`; the original safety gate required `OFF`, so the tool correctly refused before sending any write. Read-only discovery then confirmed `RDY,ADJ,INV`, with all 19 queries error-free. After explicitly treating `RDY` as idle/ready and adding tests, same-value writes passed for RF1.5, `BW32`, 6105 MHz, 0 dB external attenuation, and -20 dBm expected power. Every read-back matched, the error queue remained empty, and final states were Generator `OFF` and measurement `RDY`.
+
+## 中文：2026-08-19 Measurement lifecycle 驗證
+
+在 Generator `OFF` 下完成兩個 Analyzer lifecycle：`INITiate → RUN → STOP → RDY` 與 `INITiate → RUN → ABORt → OFF`。每一步均回傳 `0,"No error"`；最終 Generator 與 measurement 都為 `OFF`。由於沒有 RF 訊號，本次只驗證控制流程，不是有效 EVM 量測。
+
+## English: 2026-08-19 measurement lifecycle validation
+
+Two Analyzer lifecycles were completed with Generator `OFF`: `INITiate → RUN → STOP → RDY` and `INITiate → RUN → ABORt → OFF`. Every step returned `0,"No error"`; final Generator and measurement states were both `OFF`. With no RF signal, this validates control flow only and is not a valid EVM measurement.
+
+## 中文：2026-08-19 RF On/Off pulse 驗證
+
+操作員當次確認 RF1.1 → RF1.5 單條 cable 且人在儀器旁後，於 6105 MHz、-40 dBm 執行極短 RF pulse。狀態 read-back 為 `ON → OFF`，RF On 與 RF Off 後的 `SYST:ERR?` 都回傳 `0,"No error"`。本次未啟動 Analyzer measurement，最後 RF 為 `OFF`。
+
+## English: 2026-08-19 RF On/Off pulse validation
+
+After current operator confirmation of the RF1.1-to-RF1.5 direct cable and physical presence, a brief RF pulse ran at 6105 MHz and -40 dBm. State read-back was `ON → OFF`, and `SYST:ERR?` returned `0,"No error"` after both RF On and RF Off. No Analyzer measurement was initiated, and final RF state was `OFF`.
+
+## 中文：2026-08-19 完整 Python SingleShot
+
+第一筆完整 Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、Generator -40 dBm、Analyzer expected power -20 dBm。平均 EVM All 為 -36.23029 dB、Burst Power -40.47938 dBm、Frequency Error -16.30075 Hz；instrument errors 與 cleanup errors 都為空。獨立收尾查詢確認 RF `OFF`、measurement `RDY`。
+
+最新 stored result 已保存為 run `872e0c12bf`，包含 CSV、JSON、metadata 與原始 modulation-average response。metadata 明確標記為完整 SingleShot 後的 stored `FETCh`，不是這次唯讀擷取工具所啟動的新量測。
+
+## English: 2026-08-19 complete Python SingleShot
+
+The first complete Python hardware SingleShot passed using RF1.1 to RF1.5, 6105 MHz, 320 MHz, -40 dBm Generator power, and -20 dBm Analyzer expected power. Average EVM All was -36.23029 dB, Burst Power -40.47938 dBm, and Frequency Error -16.30075 Hz; instrument and cleanup error lists were empty. Independent final queries confirmed RF `OFF` and measurement `RDY`.
+
+The latest stored result was saved as run `872e0c12bf`, including CSV, JSON, metadata, and the raw modulation-average response. Metadata explicitly identifies it as a stored `FETCh` after the complete SingleShot, not a new measurement initiated by the read-only capture tool.

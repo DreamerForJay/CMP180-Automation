@@ -1,87 +1,84 @@
-# ROHDE & SCHWARZ CMP180 · AUTOMATION PROJECT
+# CMP180 WLAN TX EVM Automation
 
-## CMP180 WLAN EVM 自動化量測系統
+## 中文版本
 
-**CMP180 WLAN TX EVM 自動化量測與分析系統 — 取代手動 CMsquares GUI 操作**
+Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重現、可稽核的流程取代重複的 CMsquares 手動操作，長期產品為中英雙語、響應式公司內網 Web 工具。
 
-| 項目 | 狀態 |
-|---|---|
-| SPEC Version | `0.1.0` |
-| Status | Draft / Hardware Connected |
-| Current Phase | Phase 2 — Connection Framework |
-| Runtime | Python 3.11+ |
+### 目前能力
 
-本專案用於自動化 Rohde & Schwarz CMP180 Radio Communication Tester 的 WLAN TX EVM
-量測流程，取代目前透過 CMsquares GUI 手動操作、容易出錯且難以重現的測試方式。
+- YAML 驗證、Mock／實機連線、Generator／Analyzer setter、measurement lifecycle 與 RF On／Off。
+- 已完成 RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm 的 Python 實機 SingleShot。
+- 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
+- 雙語響應式 Web GUI、Mock 單點／掃頻、受保護實機 SingleShot、artifact links 與 EVM／Power／Frequency Error 圖表。
+- 安全短掃頻核心：最大 11 點／200 MHz span、-40 dBm 上限與逐點 cleanup；實機 sweep HIL 尚未完成，因此 Web 實機 sweep 鎖定。
+- GitHub Actions 執行 Windows／Python 3.11 unit、Mock 與設定驗證；不執行實機 RF。
 
-目前先以 CMP180 為唯一目標儀器。已於 2026-08-13 完成首次 Raw Socket
-連線驗證。完整需求、架構、里程碑與驗收方式請參閱
-[CMP180 開發規格與計畫](CMP180_DEVELOPMENT_SPEC_AND_PLAN.md)。
+Mock、dry-run、CMsquares 手動量測或單獨 stored `FETCh` 不得描述成新的完整 Python 實機量測。
 
-## 已確認的實機資訊
-
-| 項目 | 結果 |
-|---|---|
-| IP | `192.168.200.50` |
-| Raw Socket | TCP `5025`，已驗證 |
-| HiSLIP | TCP `4880` 可達；尚未安裝 R&S VISA |
-| RsInstrument resource | `TCPIP::192.168.200.50::5025::SOCKET` |
-| RsInstrument backend | `SelectVisa='socketio'` |
-| `*IDN?` | `Rohde&Schwarz,CMP,1201.0002k18/102502,6.0.50.23` |
-| Firmware | `6.0.50.23` |
-| CMsquares Complete Setup | `2025.31.0.10` |
-| WLAN software | `6.0.50.14` |
-| `*OPC?` | `1` |
-| SCPI error | `0,"No error"` |
-
-Detailed hardware, license and current WLAN workspace discovery is recorded in
-[docs/hardware-discovery.md](docs/hardware-discovery.md). The planned user interface
-is described in [docs/gui-spec.md](docs/gui-spec.md).
-
-## 目前階段目標
-
-Phase 2 只建立安全、可診斷、可測試的連線框架：
-
-- 從外部設定載入 CMP180 位址與通訊參數。
-- 建立及關閉 RsInstrument/VISA session。
-- 執行 `*IDN?`，保存型號與韌體識別資訊。
-- 執行 `*CLS`、`*OPC?` 與 SCPI error queue 檢查。
-- 提供 `doctor` 診斷命令。
-- 在沒有實機時以 fake transport 完成單元與 contract tests。
-- 進行 hardware discovery，確認 CMP180 實際 VISA resource、WLAN 選件、韌體與遠端命令來源。
-
-此階段尚不宣稱已完成 WLAN EVM 自動量測。儀器專屬 SCPI 命令必須先由 CMP180
-官方手冊、CMsquares command log/recorder 或實機 query 驗證。
-
-## 規劃中的 CLI
-
-```text
-cmp180-auto doctor --config configs/lab.local.yaml
-cmp180-auto discover --config configs/lab.local.yaml
-cmp180-auto single --config configs/wlan_tx.yaml
-cmp180-auto sweep-power --config configs/wlan_tx.yaml
-cmp180-auto report --run output/<run_id>
-```
-
-目前可直接執行的連線診斷：
+### 快速開始
 
 ```powershell
-.\.venv\Scripts\python.exe .\scripts\cmp180_doctor.py
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev,hardware]"
+python -m pytest -m "not hardware"
+python -m cmp180_evm validate-config configs\instrument.example.yaml
+python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
 ```
-
-唯讀 WLAN 設定與狀態 discovery：
 
 ```powershell
-.\.venv\Scripts\python.exe .\scripts\cmp180_wlan_discover.py
+# Mock Web
+python -m cmp180_evm.web
+
+# 本機受保護實機 SingleShot；硬體模式禁止綁定非 loopback 位址
+python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 ```
 
-已驗證的 WLAN commands 與 28 欄 OFDM SISO 結果 schema 位於
-[docs/scpi-command-matrix.md](docs/scpi-command-matrix.md)。
+實機前必須閱讀 [硬體 SOP](docs/hardware-test-sop.md)，並確認操作員在場、routing、頻率、頻寬、功率與線路損耗。
 
-## 安全原則
+### 文件導覽
 
-- 不在程式碼內寫死儀器 IP、內網資訊或敏感路徑。
-- 所有設定先驗證，通過後才操作儀器。
-- timeout、SCPI error、無效結果不得靜默忽略。
-- 每次執行保存設定、儀器身分、結果、事件與日誌。
-- 未完成 hardware discovery 前，不臆造 CMP180 專屬 WLAN SCPI 命令。
+| 文件 | 用途 |
+|---|---|
+| [使用者指南](docs/user-guide.md) | 安裝、CLI、GUI、Mock 與實機操作 |
+| [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
+| [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
+| [量測欄位](docs/measurement-example-and-fields.md) | 正確輸出與 EVM／Power／Frequency Error |
+| [SCPI matrix](docs/scpi-command-matrix.md) | 指令來源、驗證與 schema |
+| [硬體探索](docs/hardware-discovery.md) | 已驗證事實與量測證據 |
+| [SingleShot 狀態機](docs/single-measurement-state-machine.md) | RF workflow 與 cleanup |
+| [安全短掃頻](docs/frequency-sweep-safety.md) | sweep 限制與 HIL gate |
+| [視覺化規格](docs/result-visualization-spec.md) | artifacts 與圖表要求 |
+| [開發流程](docs/development-workflow.md) | 測試與文件規則 |
+| [交接](HANDOFF.md) | 最新狀態與下一步 |
+
+### 安全原則
+
+不自動 Reset；SCPI 集中管理；RF On 前完成安全驗證；所有 RF workflow 在成功、錯誤、逾時與取消時 STOP／ABORT 並 RF Off；invalid token 不轉成 0；沒有正式 limit 時不得宣稱 RF compliance PASS；不提交 output、憑證、license／activation data、測試 cache 或私人裝置 dump。
+
+## English Version
+
+This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measurements with reproducible, auditable workflows. The long-term product is a bilingual responsive intranet Web tool.
+
+### Current capabilities
+
+- YAML validation, mock/real connection, hardware-verified setters, measurement lifecycle, and RF On/Off.
+- Complete Python hardware SingleShot at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
+- 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
+- Bilingual responsive Web GUI, mock single/sweep, guarded hardware SingleShot, artifact links, and EVM/Power/Frequency Error plots.
+- Safety-bounded short-sweep core with 11-point/200 MHz-span, -40 dBm, and per-point cleanup limits. Hardware sweep HIL is pending, so the Web hardware sweep remains locked.
+- Windows/Python 3.11 GitHub Actions for unit, mock, and configuration checks; CI never runs live RF.
+
+Do not describe mock, dry-run, manual CMsquares operation, or a standalone stored `FETCh` as a new complete Python hardware measurement.
+
+### Quick start
+
+Use the commands in the Chinese section above. Start mock Web with `python -m cmp180_evm.web`; guarded hardware SingleShot uses `python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware`. Hardware mode is loopback-only until authentication and RBAC exist.
+
+### Documentation
+
+The documentation table above is authoritative for operator, SCPI, state-machine, sweep, GUI, visualization, and handoff material. Read the [hardware SOP](docs/hardware-test-sop.md) before any live operation.
+
+### Safety principles
+
+Never reset automatically; centralize SCPI; validate every RF input before RF On; STOP/ABORT and RF Off on every exit path; preserve invalid values; separate workflow success from compliance; never commit outputs, credentials, license/activation data, caches, or private device dumps.

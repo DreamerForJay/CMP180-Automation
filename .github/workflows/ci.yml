@@ -1,0 +1,26 @@
+name: Python CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install project
+        run: python -m pip install -e ".[dev]"
+      - name: Run unit and mock tests
+        run: python -m pytest -m "not hardware"
+      - name: Validate example configurations
+        shell: pwsh
+        run: |
+          python -m cmp180_evm validate-config configs/instrument.example.yaml
+          python -m cmp180_evm validate-config configs/wlan_baseline.example.yaml
+
+      # GitHub runner 無法連入公司 CMP180 網段；實機 RF 測試只在實驗室執行。

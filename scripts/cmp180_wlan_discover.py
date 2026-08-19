@@ -6,8 +6,10 @@ import argparse
 import json
 import sys
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
 from RsInstrument import RsInstrument
+from cmp180_evm.scpi.registry import load_scpi_command_map
 
 
 @dataclass(frozen=True)
@@ -19,26 +21,13 @@ class QueryResult:
     exception: str | None
 
 
-QUERIES: tuple[tuple[str, str], ...] = (
-    ("standard", "CONF:WLAN:MEAS:ISIG:STAN?"),
-    ("bandwidth", "CONF:WLAN:MEAS:ISIG:BWID?"),
-    ("rf_path_catalog", "CAT:WLAN:MEAS:SPAT?"),
-    ("rf_path", "ROUT:WLAN:MEAS:SPAT?"),
-    ("rf_path_count", "ROUT:WLAN:MEAS:SPAT:COUN?"),
-    ("external_attenuation", "CONF:WLAN:MEAS:RFSettings:EATT?"),
-    ("expected_nominal_power", "CONF:WLAN:MEAS:RFSettings:ENP?"),
-    ("band", "CONF:WLAN:MEAS:RFSettings:FREQ:BAND?"),
-    ("center_frequency", "CONF:WLAN:MEAS:RFSettings:FREQ?"),
-    ("channels", "CONF:WLAN:MEAS:RFSettings:FREQ:CHAN?"),
-    ("trigger_source_catalog", "TRIG:WLAN:MEAS:MEV:CAT:SOUR?"),
-    ("trigger_source", "TRIG:WLAN:MEAS:MEV:SOUR?"),
-    ("trigger_threshold", "TRIG:WLAN:MEAS:MEV:THR?"),
-    ("trigger_offset", "TRIG:WLAN:MEAS:MEV:OFFS?"),
-    ("trigger_min_gap", "TRIG:WLAN:MEAS:MEV:MGAP?"),
-    ("trigger_slope", "TRIG:WLAN:MEAS:MEV:SLOP?"),
-    ("trigger_timeout", "TRIG:WLAN:MEAS:MEV:TOUT?"),
-    ("measurement_state", "FETC:WLAN:MEAS:MEV:STAT?"),
-    ("measurement_states", "FETC:WLAN:MEAS:MEV:STAT:ALL?"),
+QUERY_NAMES: tuple[str, ...] = (
+    "standard", "bandwidth", "rf_path_catalog", "rf_path", "rf_path_count",
+    "external_attenuation", "expected_nominal_power", "band",
+    "center_frequency", "channels", "trigger_source_catalog",
+    "trigger_source", "trigger_threshold", "trigger_offset",
+    "trigger_min_gap", "trigger_slope", "trigger_timeout",
+    "measurement_state", "measurement_states",
 )
 
 
@@ -63,12 +52,22 @@ def parse_args() -> argparse.Namespace:
         default="TCPIP::192.168.200.50::5025::SOCKET",
     )
     parser.add_argument("--timeout-ms", type=int, default=10_000)
+    parser.add_argument(
+        "--command-map",
+        type=Path,
+        default=Path("configs/scpi_command_map.yaml"),
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    registry = load_scpi_command_map(args.command_map)
+    queries = [
+        (name, registry.require(f"wlan_tx_query.{name}"))
+        for name in QUERY_NAMES
+    ]
     instrument: RsInstrument | None = None
     try:
         instrument = RsInstrument(
@@ -79,7 +78,7 @@ def main() -> int:
         )
         instrument.visa_timeout = args.timeout_ms
         idn = instrument.query_str("*IDN?").strip()
-        results = [query_one(instrument, name, command) for name, command in QUERIES]
+        results = [query_one(instrument, name, command) for name, command in queries]
     except Exception as exc:
         print(f"Connection failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 3
