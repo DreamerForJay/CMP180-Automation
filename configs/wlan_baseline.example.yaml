@@ -21,9 +21,14 @@
 # Required option for ARB playback (from the GUI): (KW350 and KW352) or
 # (KV350 and KV352) - cross-check against *OPT? during Discovery.
 #
-# generator.output_power_dbm and measurement.burst_count reflect the values
-# currently set on the instrument (Peak Output Power / Statistic Count), not
-# a guess - but they are today's snapshot, not a fixed requirement.
+# generator.output_power_dbm describes the separate ARB generator example
+# above. It is not the current WLAN TX analyzer input level.
+#
+# 2026-08-19 完整 Python loopback SingleShot 已驗證安全基準：Generator -40 dBm、
+# Analyzer Expected Nominal Power -20 dBm、External Attenuation 0 dB。
+# The complete Python loopback SingleShot verified the safe baseline:
+# Generator -40 dBm, Analyzer Expected Nominal Power -20 dBm, and 0 dB
+# External Attenuation.
 
 test:
   id: wlan-baseline-001
@@ -53,12 +58,12 @@ signal:
 
 generator:
   enabled: true
-  output_power_dbm: -15.0
+  output_power_dbm: -40.0
   rf_on_at_start: false
   arb_waveform_file: "KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv"
 
 analyzer:
-  expected_nominal_power_dbm: -30.0 # not directly observed yet - confirm against the real Analyzer Level setting
+  expected_nominal_power_dbm: -20.0 # verified by the complete Python SingleShot
   external_attenuation_db: 0.0
   user_margin_db: 3.0
   modulation_filter: "ALL"

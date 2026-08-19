@@ -35,14 +35,26 @@ class GeneratorCommands(BaseModel):
     rf_off: str | None = None
 
 
+class GeneratorQueryCommands(BaseModel):
+    frequency: str
+    level: str
+    peak_power: str
+    state: str
+    states: str
+    rf_path: str
+
+
 class WlanTxCommands(BaseModel):
+    set_rf_path: str | None = None
     set_frequency: str | None = None
+    set_bandwidth: str | None = None
     set_band: str | None = None
     set_expected_power: str | None = None
     set_external_attenuation: str | None = None
     adjust_level: str | None = None
     clear_statistics: str | None = None
     initiate: str | None = None
+    stop: str | None = None
     abort: str | None = None
 
 
@@ -69,6 +81,11 @@ class WlanTxQueryCommands(BaseModel):
 
 
 class ResultCommands(BaseModel):
+    modulation_current: str | None = None
+    modulation_average: str | None = None
+    modulation_minimum: str | None = None
+    modulation_maximum: str | None = None
+    modulation_std_dev: str | None = None
     burst_power_current: str | None = None
     burst_power_average: str | None = None
     evm_all_current: str | None = None
@@ -84,6 +101,7 @@ class ResultCommands(BaseModel):
 class ScpiCommandRegistry(BaseModel):
     common: CommonCommands = CommonCommands()
     generator: GeneratorCommands = GeneratorCommands()
+    generator_query: GeneratorQueryCommands
     wlan_tx: WlanTxCommands = WlanTxCommands()
     wlan_tx_query: WlanTxQueryCommands
     results: ResultCommands = ResultCommands()
@@ -103,6 +121,10 @@ class ScpiCommandRegistry(BaseModel):
         except ScpiCommandNotConfiguredError:
             return False
         return True
+
+    def render(self, dotted_name: str, **values: float | int | str) -> str:
+        """Render a verified command template with explicit named values."""
+        return self.require(dotted_name).format(**values)
 
 
 def load_scpi_command_map(path: Path) -> ScpiCommandRegistry:

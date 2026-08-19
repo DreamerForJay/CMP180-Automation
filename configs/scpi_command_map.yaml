@@ -1,4 +1,4 @@
-# CMP180 SCPI command map (SPEC.MD section 10.2).
+﻿# CMP180 SCPI command map (SPEC.MD section 10.2).
 #
 # `common` is fixed to standard IEEE-488.2 commands and is safe to trust as-is.
 # Everything under generator / wlan_tx / results MUST stay `null` until it has
@@ -16,22 +16,41 @@ common:
   system_error: "SYST:ERR?"
 
 generator:
-  set_frequency: null
-  set_power: null
-  rf_on: null
-  rf_off: null
+  # Setter trees confirmed by CMP180 built-in Help. The controlled validation
+  # script writes the already-read value back while RF is OFF.
+  set_frequency: "SOURce:GPRF:GEN:RFSettings:FREQuency {frequency_hz}"
+  set_power: "SOURce:GPRF:GEN:RFSettings:LEVel {power_dbm}"
+  # RF state tree 已由內建 Help 確認；實機 pulse 驗證前仍須人工確認線材。
+  rf_on: "SOURce:GPRF:GEN:STATe ON"
+  rf_off: "SOURce:GPRF:GEN:STATe OFF"
+
+# Query forms confirmed in CMP180 built-in Help. The discovery script checks
+# each command against real hardware and reads SYST:ERR? after every query.
+generator_query:
+  frequency: "SOURce:GPRF:GEN:RFSettings:FREQuency?"
+  level: "SOURce:GPRF:GEN:RFSettings:LEVel?"
+  peak_power: "SOURce:GPRF:GEN:RFSettings:PEPower?"
+  state: "SOURce:GPRF:GEN:STATe?"
+  states: "SOURce:GPRF:GEN:STATe:ALL?"
+  rf_path: "ROUTe:GPRF:GEN:SPATh?"
 
 wlan_tx:
-  set_frequency: null
+  # 內建 Help 已確認以下 setter tree；實機驗證工具只在 Generator 與
+  # WLAN measurement 都為 OFF 時寫回目前值。
+  set_rf_path: "ROUTe:WLAN:MEAS:SPATh {rf_path}"
+  set_frequency: "CONFigure:WLAN:MEAS:RFSettings:FREQuency {frequency_hz}"
+  set_bandwidth: "CONFigure:WLAN:MEAS:ISIGnal:BWIDth {bandwidth}"
+  set_expected_power: "CONFigure:WLAN:MEAS:RFSettings:ENPower {expected_power_dbm}"
+  set_external_attenuation: "CONFigure:WLAN:MEAS:RFSettings:EATTenuation {external_attenuation_db}"
   set_band: null
-  set_expected_power: null
-  set_external_attenuation: null
   adjust_level: null
   clear_statistics: null
-  initiate: null
-  abort: null
+  # 量測 lifecycle 命令由 CMP180 內建 Help 確認；驗證時 Generator 必須 OFF。
+  initiate: "INITiate:WLAN:MEAS:MEValuation"
+  stop: "STOP:WLAN:MEAS:MEValuation"
+  abort: "ABORt:WLAN:MEAS:MEValuation"
 
-# Query-only commands verified against CMP180 serial 102502 on 2026-08-18.
+# Query-only commands verified against CMP180 serial REDACTED on 2026-08-18.
 wlan_tx_query:
   standard: "CONF:WLAN:MEAS:ISIG:STAN?"
   bandwidth: "CONF:WLAN:MEAS:ISIG:BWID?"
@@ -54,6 +73,13 @@ wlan_tx_query:
   measurement_states: "FETC:WLAN:MEAS:MEV:STAT:ALL?"
 
 results:
+  # Aggregate 28-field OFDM SISO result queries from CMP180 built-in WLAN help.
+  # Hardware verification is performed by scripts/cmp180_wlan_result_discover.py.
+  modulation_current: "FETC:WLAN:MEAS:MEV:MOD:CURR?"
+  modulation_average: "FETC:WLAN:MEAS:MEV:MOD:AVER?"
+  modulation_minimum: "FETC:WLAN:MEAS:MEV:MOD:MIN?"
+  modulation_maximum: "FETC:WLAN:MEAS:MEV:MOD:MAX?"
+  modulation_std_dev: "FETC:WLAN:MEAS:MEV:MOD:SDEV?"
   burst_power_current: null
   burst_power_average: null
   evm_all_current: null
