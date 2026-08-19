@@ -3,6 +3,11 @@
 Status: ready after offline tests pass
 Scope: connection verification only; no RF output and no WLAN measurement writes
 
+Note: this document covers only the very first read-only connection check.
+For the full current hardware SOP (loopback measurement, setter validation,
+lifecycle validation, and the RF on/off pulse check), see
+`docs/hardware-test-sop.md`.
+
 ## When the instrument is needed
 
 Do not connect the CMP180 while implementing configuration, Mock workflows,

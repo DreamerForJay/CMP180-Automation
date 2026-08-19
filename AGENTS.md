@@ -69,19 +69,10 @@ Read `docs/hardware-test-sop.md` before real-hardware operation.
 
 ## Change workflow
 
-1. Inspect `git status` and preserve unrelated user changes.
-2. Make the smallest safe change and add/update tests.
-3. Update every affected document in the same change. Consider `README.md`, `docs/user-guide.md`, `docs/hardware-test-sop.md`, `docs/scpi-command-matrix.md`, and `docs/hardware-discovery.md`.
-4. Run:
-
-   ```powershell
-   .\.venv\Scripts\python.exe -m pytest --basetemp .pytest-tmp
-   .\.venv\Scripts\python.exe -m cmp180_evm validate-config configs\instrument.example.yaml
-   .\.venv\Scripts\python.exe -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
-   git diff --check
-   ```
-
-5. State clearly which checks used mock data, stored hardware results, or a new live RF measurement.
+The full change procedure, doc-sync table, and pre-commit checklist live in
+`docs/development-workflow.md` — follow that document. In addition to it,
+every agent-run change must state clearly which checks used mock data,
+stored hardware results, or a new live RF measurement.
 
 ## Architecture direction
 
