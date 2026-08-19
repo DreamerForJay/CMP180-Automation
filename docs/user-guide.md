@@ -1,15 +1,19 @@
-# CMP180 EVM Automation 使用者操作指南
+﻿# CMP180 EVM Automation 使用者操作指南
 
-本文件說明目前 Phase 2 已完成的功能。現階段可以驗證設定、預覽流程、
-使用 Mock 測試連線、啟動 GUI，以及對 CMP180 執行 query-only 連線測試；
-尚未支援真正的 WLAN TX EVM 量測、功率掃描或頻率掃描。
+本文件說明目前工具。除了設定、Mock、連線與唯讀探索外，固定安全 profile 的 Python 實機 SingleShot 與本機 Web GUI 已完成。實機 frequency sweep 尚未通過 HIL，因此保持鎖定。完成一次量測後，仍可使用下列唯讀工具擷取上一筆 28 欄 OFDM SISO 結果：
+
+```powershell
+python scripts\cmp180_wlan_result_discover.py
+```
+
+此工具只使用 `FETCh`，不會開啟 RF 或啟動新量測。
 
 ## 1. 開啟專案
 
 在 PowerShell 進入專案：
 
 ```powershell
-cd C:\Users\TMYA0006\Desktop\PROJECT\CMP180v0
+cd <project-root>
 ```
 
 確認目前分支：
@@ -105,7 +109,7 @@ New-Item -ItemType Directory -Force output | Out-Null
 .\.venv\Scripts\python.exe -m pytest -q --basetemp=output\pytest-tmp
 ```
 
-目前基準為 `47 passed`。
+目前基準為 `95 passed`。
 
 已驗證 WLAN query-only discovery 時，可執行：
 
@@ -139,15 +143,14 @@ python scripts\cmp180_wlan_discover.py |
 
 ## 9. 目前不能做的操作
 
-- RF ON
-- Generator power/frequency 設定
-- WLAN TX Measurement 設定
-- Initiate/Abort measurement
-- EVM、Burst Power、Frequency Error 正式讀值
-- Power sweep 或 frequency sweep
-- Pass/Fail 判定
+固定安全 profile（RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm）的 RF ON、Generator／Analyzer setter、Initiate/Stop/Abort 與 EVM／Burst Power／Frequency Error 讀值已完成實機驗證，可透過 CLI SingleShot 或 `--enable-hardware` Web GUI 使用。以下項目仍未完成：
 
-上述功能必須先完成 CMP180 SCPI Discovery、命令審核、Mock 測試與安全檢查。
+- 實機 frequency／power sweep（安全短掃頻核心與 Mock 已完成，3 點 HIL 尚未執行，Web 實機 sweep 鎖定）。
+- 正式 WLAN Pass/Fail 判定（尚無正式 limit、path-loss／calibration table，目前只能顯示 workflow health 或示範 threshold）。
+- 任意頻率／功率／DUT 輸入（Web 實機模式鎖定單一已驗證 profile）。
+- 內網 deployment 所需 authentication、RBAC 與 audit log。
+
+上述功能必須先完成對應的 CMP180 HIL 驗證、命令審核與安全檢查。
 
 ## 10. Git 顯示 dubious ownership
 
@@ -162,7 +165,7 @@ fatal: detected dubious ownership in repository
 
 ```powershell
 git config --global --add safe.directory `
-  C:/Users/TMYA0006/Desktop/PROJECT/CMP180v0
+  <project-root>
 ```
 
 確認設定：
