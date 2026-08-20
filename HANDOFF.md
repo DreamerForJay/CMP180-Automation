@@ -16,9 +16,9 @@
 - 新增 ruff／mypy（CI 中非阻斷）與 `scripts/precommit_check.ps1`。
 - PR #7 接手審查已將 Frequency／Power Sweep 的頻率、頻寬、功率、span 與點數改為
   不可由呼叫端放寬的硬性安全包絡，並補上繞過測試；尚未執行新的實機 RF。
-- 最新本機驗證：87 tests、兩份 YAML validation、JavaScript syntax 與
-  `git diff --check` 通過；全部使用 unit／Mock，未執行新實機 RF。PR #7 原 head 的
-  GitHub Actions 已通過，安全修正 push 後需等待新一輪 CI。
+- PR #7 程式驗證：87 tests、兩份 YAML validation、JavaScript syntax 與
+  `git diff --check` 通過；該批自動檢查只使用 unit／Mock。其後已另行完成上述
+  2026-08-20 五統計實機 RF HIL，兩者不可混稱為同一次驗證。
 
 ### 安全基線與完成項目
 
@@ -56,10 +56,10 @@
 - The PR #7 takeover review changed Frequency/Power Sweep frequency, bandwidth, power,
   span, and point limits into hard safety ceilings that callers cannot relax, with
   bypass tests added. No new live RF run was performed.
-- Latest local validation: 87 tests, both YAML validations, JavaScript syntax, and
-  `git diff --check` passed. All checks used unit/mock paths; no new live RF run was
-  performed. GitHub Actions passed on the original PR #7 head; wait for a new CI run
-  after pushing the safety fixes.
+- PR #7 software validation: 87 tests, both YAML validations, JavaScript syntax, and
+  `git diff --check` passed; that automated batch used unit/mock paths only. The separate
+  five-statistic live-RF HIL described above was performed afterward on 2026-08-20 and
+  must not be represented as part of the automated validation batch.
 
 ### Safety baseline and completed work
 
