@@ -11,12 +11,16 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="mark">RF</span><div><strong>CMP180 Automation</strong><small data-i18n="subtitle">WLAN TX EVM 自動化量測</small></div></div>
-    <div class="top-actions"><span class="status mock" data-i18n="mockBadge">模擬模式</span><button id="themeButton" class="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle light/dark theme"></button><button id="languageButton" class="ghost">EN</button></div>
+    <div class="top-actions"><span id="modeStatus" class="status mock"><i></i><span id="modeStatusLabel" data-i18n="mockBadge">DEMO</span></span><button id="themeButton" class="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle light/dark theme"></button><button id="languageButton" class="ghost">EN</button></div>
   </header>
   <main>
-    <section class="hero">
-      <div><p class="eyebrow" data-i18n="eyebrow">實驗室量測控制台</p><h1 data-i18n="title">從單點驗證到頻率掃描</h1><p data-i18n="intro">目前可安全測試 Mock GUI、結果輸出與圖表；實機 RF 控制仍保持鎖定。</p></div>
-      <div class="safety"><span>●</span><div><strong data-i18n="safeTitle">硬體安全鎖定</strong><small data-i18n="safeText">此頁目前不會向 CMP180 發送 RF 指令</small></div></div>
+    <section class="workspace-head">
+      <div><p class="workspace-kicker">WLAN TX MEASUREMENT</p><h1 data-i18n="workspaceTitle">量測工作區</h1><p class="profile-line">RF1.1 → RF1.5 <span>·</span> 6105 MHz <span>·</span> 320 MHz <span>·</span> -40 dBm</p></div>
+      <div class="workspace-state" aria-label="Current control state">
+        <small data-i18n="controlState">控制狀態</small>
+        <strong id="controlStateText" data-i18n="demoControlState">Demo data only</strong>
+        <span id="controlStateHint" data-i18n="demoControlHint">CMP180 RF control disabled</span>
+      </div>
     </section>
 
     <nav class="tabs" aria-label="Workspace">
@@ -28,18 +32,18 @@
     </nav>
 
     <section id="single" class="panel active">
-      <div class="panel-head"><div><h2 data-i18n="singleTitle">Mock 單點量測</h2><p data-i18n="singleHelp">輸入一個測試點，驗證完整 GUI、資料保存與圖表流程。</p></div><span class="pill">SIMULATED</span></div>
+      <div class="panel-head"><div><h2 data-i18n="singleTitle">Mock 單點量測</h2><p data-i18n="singleHelp">輸入一個測試點，驗證完整 GUI、資料保存與圖表流程。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="singleForm" class="form-grid">
         <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
-        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-30" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="singlePowerHelp">上限 -30 dBm。</small></label>
+        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-40" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="singlePowerHelp">與實機安全 profile 一致，上限 -40 dBm。</small></label>
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-single"></label>
         <button class="primary submit" type="submit" data-i18n="runSingle">執行 Mock 單點</button>
       </form>
     </section>
 
     <section id="sweep" class="panel">
-      <div class="panel-head"><div><h2 data-i18n="sweepTitle">Mock 頻率掃描</h2><p data-i18n="sweepHelp">依起點、終點與步進建立頻點，最多 1001 點。</p></div><span class="pill">SIMULATED</span></div>
+      <div class="panel-head"><div><h2 data-i18n="sweepTitle">Mock 頻率掃描</h2><p data-i18n="sweepHelp">依起點、終點與步進建立頻點，最多 11 點。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="sweepForm" class="form-grid">
         <label><span data-i18n="start">起始頻率</span><div class="input-unit"><input name="start_mhz" type="number" value="5925" required><b>MHz</b></div></label>
         <label><span data-i18n="stop">結束頻率</span><div class="input-unit"><input name="stop_mhz" type="number" value="6125" required><b>MHz</b></div></label>
@@ -53,7 +57,7 @@
     </section>
 
     <section id="powerSweep" class="panel">
-      <div class="panel-head"><div><h2 data-i18n="powerSweepTitle">Mock 功率掃描</h2><p data-i18n="powerSweepHelp">固定頻率，依起點、終點與步進建立功率點，最多 1001 點。</p></div><span class="pill">SIMULATED</span></div>
+      <div class="panel-head"><div><h2 data-i18n="powerSweepTitle">Mock 功率掃描</h2><p data-i18n="powerSweepHelp">固定頻率，依起點、終點與步進建立功率點，最多 11 點。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="powerSweepForm" class="form-grid">
         <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
@@ -93,7 +97,6 @@
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <div id="modeBar" class="mode-bar" data-i18n="modeBarMock">SIMULATED — 目前為 Mock 模式，不會控制真實 CMP180</div>
   <script src="/app.js"></script>
   <script src="/hardware.js"></script>
 </body>

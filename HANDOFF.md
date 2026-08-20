@@ -14,6 +14,8 @@
 - 新增 ruff／mypy（CI 中非阻斷）與 `scripts/precommit_check.ps1`。
 - PR #7 接手審查已將 Frequency／Power Sweep 的頻率、頻寬、功率、span 與點數改為
   不可由呼叫端放寬的硬性安全包絡，並補上繞過測試；尚未執行新的實機 RF。
+- UI-1 已移除底部模式列與宣傳式 Hero，改成緊湊量測工作區、單一模式狀態與較
+  清楚的深色控制台層級；Demo 掃描同步限制為最多 11 點，單點功率上限 -40 dBm。
 - 最新本機驗證：87 tests、兩份 YAML validation、JavaScript syntax 與
   `git diff --check` 通過；全部使用 unit／Mock，未執行新實機 RF。PR #7 原 head 的
   GitHub Actions 已通過，安全修正 push 後需等待新一輪 CI。
@@ -51,6 +53,9 @@
 - The PR #7 takeover review changed Frequency/Power Sweep frequency, bandwidth, power,
   span, and point limits into hard safety ceilings that callers cannot relax, with
   bypass tests added. No new live RF run was performed.
+- UI-1 removed the persistent bottom mode bar and marketing-style hero, replacing them
+  with a compact measurement workspace, one mode status, and a cleaner dark-console
+  hierarchy. Demo sweeps now share the 11-point ceiling and demo single uses -40 dBm.
 - Latest local validation: 87 tests, both YAML validations, JavaScript syntax, and
   `git diff --check` passed. All checks used unit/mock paths; no new live RF run was
   performed. GitHub Actions passed on the original PR #7 head; wait for a new CI run

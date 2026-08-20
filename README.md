@@ -43,6 +43,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [使用者指南](docs/user-guide.md) | 安裝、CLI、GUI、Mock 與實機操作 |
 | [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
 | [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
+| [UI/UX roadmap](docs/ui-ux-roadmap.md) | 公司內部控制台資訊架構與改版階段 |
 | [量測欄位](docs/measurement-example-and-fields.md) | 正確輸出與 EVM／Power／Frequency Error |
 | [SCPI matrix](docs/scpi-command-matrix.md) | 指令來源、驗證與 schema |
 | [硬體探索](docs/hardware-discovery.md) | 已驗證事實與量測證據 |

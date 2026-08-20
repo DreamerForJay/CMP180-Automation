@@ -18,14 +18,14 @@ from cmp180_evm.web.server import (
 
 def test_frequency_points_are_inclusive_and_bounded():
     assert build_frequency_points(5_925e6, 5_965e6, 20e6) == [5_925e6, 5_945e6, 5_965e6]
-    with pytest.raises(ValueError, match="1001"):
-        build_frequency_points(1, 2001, 1)
+    with pytest.raises(ValueError, match="11-point"):
+        build_frequency_points(1, 12, 1)
 
 
 def test_power_points_are_inclusive_and_bounded():
     assert build_power_points(-50, -40, 5) == [-50, -45, -40]
-    with pytest.raises(ValueError, match="1001"):
-        build_power_points(-2001, -1, 1)
+    with pytest.raises(ValueError, match="11-point"):
+        build_power_points(-12, -1, 1)
 
 
 def test_simulation_is_deterministic_and_labeled():

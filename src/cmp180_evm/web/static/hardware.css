@@ -136,23 +136,3 @@
 .locked-notice p {
   margin: 5px 0 0;
 }
-
-.mode-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 4;
-  padding: 10px 20px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: .02em;
-  background: var(--navy);
-  color: #fff2b8;
-}
-
-.mode-bar.hardware {
-  background: #421a20;
-  color: #ffb7bd;
-}

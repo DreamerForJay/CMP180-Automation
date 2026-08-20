@@ -23,11 +23,11 @@
 [data-theme="dark"] .topbar { background: #090c12ed; border-bottom: 1px solid #262c36; backdrop-filter: blur(12px); }
 [data-theme="dark"] .mark { border: 1px solid #18d7e566; background: #18d7e51c; color: var(--cyan); }
 [data-theme="dark"] .ghost { border-color: #49515f; background: #1b2028; }
-[data-theme="dark"] .hero h1 { letter-spacing: -.025em; }
-[data-theme="dark"] .safety { background: #10291f; border-color: #255d43; color: #65d597; }
+[data-theme="dark"] .workspace-state { background: #11161d; border-color: #2b3440; }
+[data-theme="dark"] .workspace-state.hardware { background: #291319; border-color: #71313c; }
 [data-theme="dark"] .tabs { padding: 6px; background: #11151b; border: 1px solid #272d37; border-radius: 12px; }
 [data-theme="dark"] .tab.active { background: #242a33; color: var(--cyan); box-shadow: none; }
-[data-theme="dark"] .panel { background: linear-gradient(145deg, #23272f, #1b1f26); border-color: #343a45; border-radius: 12px; }
+[data-theme="dark"] .panel { background: #1b1f26; border-color: #343a45; border-radius: 10px; }
 [data-theme="dark"] .pill { background: #12343a; color: #5de8f0; }
 [data-theme="dark"] .pill.neutral { background: #303640; color: #bdc5d0; }
 [data-theme="dark"] .form-grid input, [data-theme="dark"] .form-grid select { background: #15181e; border-color: #434a56; color: var(--ink); }
