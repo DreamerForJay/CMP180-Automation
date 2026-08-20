@@ -4,7 +4,7 @@
 
 ### 目前狀態
 
-安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。固定三點頻率掃描已於 2026-08-20 完成實機 HIL；固定五點功率掃描 CLI 與 partial artifacts 已備妥，但尚未執行實機 HIL。現在的 Web「頻率掃描」與「功率掃描」都仍是 Mock；可驗證輸入、CSV／JSON、表格與 EVM／Power／Frequency Error 圖表，不會產生 RF。
+安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。固定三點頻率掃描已於 2026-08-20 完成實機 HIL。固定五點功率掃描首次 HIL 發現 -60 dBm 回傳 `INV`，且舊核心錯標 complete；有限數值閘門已補上，仍需重測。現在的 Web「頻率掃描」與「功率掃描」都仍是 Mock。
 
 ### 三點頻率掃描 HIL 入口
 
@@ -59,6 +59,7 @@ python scripts\cmp180_power_sweep_validate.py `
 
 - 每一點都執行完整 SingleShot，並在換頻／換功率前 STOP measurement 與 RF Off。
 - 任一點失敗即停止後續點，保存先前成功點與失敗的頻率／功率。
+- EVM、Burst Power、Frequency Error 必須為有限數值；`INV` 即使 error queue 空也視為失敗。
 - 所有設定必須在第一個 SCPI 指令前完成驗證。
 - 頻率／功率上下限、span 與最大點數是程式內硬性上限；呼叫端只能縮小，不能放寬。
 
@@ -73,7 +74,7 @@ python scripts\cmp180_power_sweep_validate.py `
 
 ### Current status
 
-The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. The fixed three-point frequency sweep passed hardware HIL on 2026-08-20. The fixed five-point power-sweep CLI and partial artifacts are ready, but its hardware HIL has not run. The current Web Frequency Sweep and Power Sweep screens remain mock-only; they validate inputs, CSV/JSON, tables, and EVM/Power/Frequency Error charts without producing RF.
+The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. The fixed three-point frequency sweep passed hardware HIL on 2026-08-20. The first fixed five-point power HIL returned `INV` at -60 dBm and exposed an incorrect complete label in the old core. A finite-value gate is now implemented and requires a rerun. The Web Frequency Sweep and Power Sweep screens remain mock-only.
 
 ### Three-point frequency-sweep HIL entry point
 
@@ -128,6 +129,7 @@ Without all three flags, the program refuses before connecting or sending SCPI. 
 
 - Every point runs a complete SingleShot and performs measurement STOP plus RF Off before changing frequency/power.
 - The sweep stops on the first failed point and preserves earlier successful points plus the failed frequency/power.
+- EVM, Burst Power, and Frequency Error must be finite numeric values. `INV` fails even when the error queue is empty.
 - Every setting is validated before the first SCPI command.
 - Frequency/power bounds, span, and point count are hard-coded ceilings. Callers may
   narrow them but cannot relax them.

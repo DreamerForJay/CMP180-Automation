@@ -11,6 +11,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from math import isfinite
 
 from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.workflow.single_measurement import (
@@ -26,6 +27,20 @@ VERIFIED_POWER_SWEEP_BANDWIDTH_HZ = 320_000_000.0
 VERIFIED_MINIMUM_POWER_DBM = -60.0
 VERIFIED_MAXIMUM_POWER_DBM = -40.0
 VERIFIED_MAXIMUM_POINTS = 11
+CRITICAL_RESULT_FIELDS = ("evm_all_carriers_db", "burst_power_dbm", "frequency_error_hz")
+
+
+def _invalid_critical_fields(values: dict[str, object]) -> tuple[str, ...]:
+    invalid: list[str] = []
+    for field in CRITICAL_RESULT_FIELDS:
+        try:
+            numeric_value = float(values[field])
+        except (KeyError, TypeError, ValueError):
+            invalid.append(field)
+        else:
+            if not isfinite(numeric_value):
+                invalid.append(field)
+    return tuple(invalid)
 
 
 @dataclass(frozen=True)
@@ -116,6 +131,16 @@ def run_power_sweep(
                     f"Point safety errors: instrument={point_result.instrument_errors}, "
                     f"cleanup={point_result.cleanup_errors}"
                 ),
+            )
+        invalid_fields = _invalid_critical_fields(point_result.values)
+        if invalid_fields:
+            # CMP180 可能以 INV 表示未觸發；即使 error queue 為空也不得視為有效量測。
+            return PowerSweepResult(
+                requested_powers_dbm=powers,
+                points=tuple(results),
+                completed=False,
+                failed_power_dbm=power_dbm,
+                error=f"Invalid critical result fields: {', '.join(invalid_fields)}",
             )
         if index < len(powers) - 1:
             sleeper(plan.dwell_time_s)

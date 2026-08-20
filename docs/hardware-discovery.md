@@ -378,3 +378,33 @@ deviation. CSV, JSON, metadata, raw, and HTML artifacts were created successfull
 Outer cleanup confirmed RF `OFF`, measurement `RDY`, and an empty error queue. This
 completes hardware HIL for the fixed three-point frequency sweep. Power-sweep HIL and
 the Web hardware sweep remain unverified/locked.
+
+## 中文：2026-08-20 五點功率掃描首次 HIL 發現
+
+操作員確認 RF1.1 → RF1.5 直連、無衰減器且人在儀器旁後，於固定 6105 MHz、320 MHz、
+expected power -20 dBm 執行 -60／-55／-50／-45／-40 dBm。Run `56ab9c982e`
+的 -60 dBm 回傳 reliability `6`，其餘 27 個 average 欄位均為 `INV`；-55 至
+-40 dBm 則取得數值。最終 RF `OFF`、measurement `RDY`、error queue empty，所有點的
+instrument／cleanup errors 也為空。
+
+這揭露原核心只依 error queue 與 cleanup 判斷成功，會把 `INV` 批次錯標成
+`status=complete`。因此此 run 是 HIL finding，不是通過證據；其 artifacts 保留原貌，不
+回寫竄改。程式已新增 EVM、Burst Power、Frequency Error 必須為有限數值的閘門，任一
+為 `INV`／缺少／非有限值時即停止後續較高功率並保存 partial result。修正後仍需新的
+現場確認與重測，才能判定功率掃描 HIL 是否通過。
+
+## English: 2026-08-20 first five-point power-sweep HIL finding
+
+After operator confirmation of the direct RF1.1-to-RF1.5 cable, no attenuator, and
+on-site presence, the -60/-55/-50/-45/-40 dBm sweep ran at fixed 6105 MHz, 320 MHz,
+and -20 dBm expected power. At -60 dBm, run `56ab9c982e` returned reliability `6`
+and `INV` for the other 27 average fields; -55 through -40 dBm returned numeric data.
+Final RF was `OFF`, measurement was `RDY`, the error queue was empty, and all point
+instrument/cleanup error lists were empty.
+
+This exposed that the original core relied only on the error queue and cleanup status,
+so it incorrectly labeled the batch `status=complete`. This run is an HIL finding, not
+passing evidence; its artifacts remain immutable and are not rewritten. A new gate now
+requires finite EVM, Burst Power, and Frequency Error values. `INV`, missing, or non-finite
+critical values stop all higher-power points and produce a partial result. A new on-site
+confirmation and rerun are required before power-sweep HIL can pass.
