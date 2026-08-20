@@ -122,11 +122,26 @@ class Cmp180SingleMeasurementBackend:
             time.sleep(self.poll_interval_s)
         raise TimeoutError(f"Measurement did not reach RDY; observed={observed}")
 
+    # 5 組已個別驗證過的聚合統計查詢；average 沿用無前綴欄位名稱以維持既有
+    # CSV/GUI/real_service.py 相容性，其餘統計加前綴避免欄位衝突。
+    RESULT_STATS: tuple[tuple[str, str, str], ...] = (
+        ("", "raw", "results.modulation_average"),
+        ("current_", "raw_current", "results.modulation_current"),
+        ("min_", "raw_minimum", "results.modulation_minimum"),
+        ("max_", "raw_maximum", "results.modulation_maximum"),
+        ("stddev_", "raw_std_dev", "results.modulation_std_dev"),
+    )
+
     def fetch_result(self) -> dict[str, object]:
         # INITiate 已完成後才使用 FETCh，避免讀到前一次 stale result。
-        self.raw_result = self._query("results.modulation_average")
-        values = parse_result(self.raw_result)
-        return {"raw": self.raw_result, **values}
+        merged: dict[str, object] = {}
+        for field_prefix, raw_key, registry_name in self.RESULT_STATS:
+            raw_response = self._query(registry_name)
+            parsed = parse_result(raw_response)
+            merged[raw_key] = raw_response
+            merged.update({f"{field_prefix}{field}": value for field, value in parsed.items()})
+        self.raw_result = str(merged["raw"])
+        return merged
 
     def stop_measurement(self) -> None:
         self._write_checked("wlan_tx.stop")
