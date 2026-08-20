@@ -11,6 +11,7 @@
 - 安全短掃描核心（頻率與功率）與 Mock tests 已完成；固定三點頻率 HIL 已通過，功率 HIL 未完成，Web 實機 sweep 仍鎖定。
 - Run `bb3e8db580` 完成 6085／6105／6125 MHz 三點實機掃頻；三點 errors 均空，最終 RF `OFF`、measurement `RDY`、error queue empty，完整 artifacts 已保存。
 - 功率掃描 run `56ab9c982e` 在 -60 dBm 回傳 `INV`，舊核心錯標 complete；安全收尾正常。已補有限關鍵指標閘門，需重新 HIL，原 artifacts 保持不變作為 finding 證據。
+- 修正版 run `b8db34c0f4` 在 -60 dBm 正確立即停止、標示 partial，未執行較高功率；最終 RF OFF／RDY／error queue empty。下一個候選有效批次為 -55 至 -40 dBm。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -53,6 +54,7 @@
 - The safe short-sweep cores (frequency and power) and mock tests are complete. Fixed three-point frequency HIL passed, power HIL is pending, and the Web hardware sweep buttons remain locked.
 - Run `bb3e8db580` completed the 6085/6105/6125 MHz hardware sweep with empty per-point errors, final RF `OFF`, measurement `RDY`, an empty error queue, and complete artifacts.
 - Power-sweep run `56ab9c982e` returned `INV` at -60 dBm and the old core mislabeled it complete; cleanup was safe. A finite critical-metric gate is now implemented and requires new HIL. Original artifacts remain unchanged as finding evidence.
+- Corrected run `b8db34c0f4` stopped immediately at -60 dBm, recorded partial status, and did not run higher powers; final RF OFF/RDY/error queue empty. The next candidate numeric batch is -55 through -40 dBm.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had

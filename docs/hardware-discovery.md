@@ -408,3 +408,31 @@ passing evidence; its artifacts remain immutable and are not rewritten. A new ga
 requires finite EVM, Burst Power, and Frequency Error values. `INV`, missing, or non-finite
 critical values stop all higher-power points and produce a partial result. A new on-site
 confirmation and rerun are required before power-sweep HIL can pass.
+
+## 中文：2026-08-20 `INV` 立即停止 HIL
+
+修正版以相同接線與 -60／-55／-50／-45／-40 dBm 計畫重跑。Run `b8db34c0f4`
+在第一點 -60 dBm 再次取得 `INV`，隨即標記 `status=partial`、
+`failed_power_dbm=-60.0`，且錯誤明確列出 EVM、Burst Power、Frequency Error 三個
+無效關鍵欄位。-55 至 -40 dBm 均未執行。該點 instrument／cleanup errors 為空，最終
+RF `OFF`、measurement `RDY`、error queue empty；五組 raw response 均已保存。
+
+這完成「遇到 `INV` 不得提高功率、立即停止並保存 partial result」的實機 HIL。它同時
+確認 -60 dBm 在目前 expected power -20 dBm／trigger 設定下不是有效量測點。下一個
+量測批次應以已取得有效數值的 -55 至 -40 dBm 為候選範圍，且不得為了取得 -60 dBm
+數值而未經驗證自行改 expected power 或 trigger。
+
+## English: 2026-08-20 immediate-stop-on-`INV` HIL
+
+The corrected version reran the same cabling and -60/-55/-50/-45/-40 dBm plan. Run
+`b8db34c0f4` again received `INV` at the first -60 dBm point, immediately recorded
+`status=partial` and `failed_power_dbm=-60.0`, and named EVM, Burst Power, and Frequency
+Error as invalid critical fields. No -55 through -40 dBm point ran. The point had empty
+instrument/cleanup error lists, final RF `OFF`, measurement `RDY`, an empty error queue,
+and all five raw responses were saved.
+
+This completes hardware HIL for stopping before higher power and preserving a partial
+result on `INV`. It also shows that -60 dBm is not a valid measurement point with the
+current -20 dBm expected-power and trigger configuration. The next candidate batch is
+-55 through -40 dBm, where numeric data was previously observed. Do not change expected
+power or trigger merely to recover -60 dBm without a separately validated plan.
