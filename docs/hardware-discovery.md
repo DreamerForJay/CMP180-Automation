@@ -303,3 +303,40 @@ After current operator confirmation of the RF1.1-to-RF1.5 direct cable and physi
 The first complete Python hardware SingleShot passed using RF1.1 to RF1.5, 6105 MHz, 320 MHz, -40 dBm Generator power, and -20 dBm Analyzer expected power. Average EVM All was -36.23029 dB, Burst Power -40.47938 dBm, and Frequency Error -16.30075 Hz; instrument and cleanup error lists were empty. Independent final queries confirmed RF `OFF` and measurement `RDY`.
 
 The latest stored result was saved as run `872e0c12bf`, including CSV, JSON, metadata, and the raw modulation-average response. Metadata explicitly identifies it as a stored `FETCh` after the complete SingleShot, not a new measurement initiated by the read-only capture tool.
+
+## 中文：2026-08-20 五統計完整 SingleShot HIL
+
+操作員當次確認 RF1.1 → RF1.5 50 Ω 直連、無衰減器且人在 CMP180 旁後，執行固定
+6105 MHz、320 MHz、Generator -40 dBm、Analyzer expected -20 dBm 的完整 Python
+SingleShot。流程完整走過 validating、configuring、rf_on、measuring、fetching、
+cleaning_up 與 complete；instrument／cleanup errors 均為空。
+
+Run `e854e20fd8` 的 average EVM All 為 -36.14103 dB、Burst Power -40.49398 dBm、
+Frequency Error -15.33705 Hz。`CURRent`、`AVERage`、`MINimum`、`MAXimum` 與
+`SDEViation` 五個 raw responses 各含完整 28 欄，JSON 明確標記 `simulated=false`。
+EVM All 五組值依序為 current -36.07222 dB、average -36.14103 dB、minimum
+-36.33857 dB、maximum -35.79554 dB、standard deviation 0.1727547 dB。
+
+獨立 query-only 收尾確認 Generator 6105 MHz／-40 dBm 且 RF `OFF`，Analyzer
+RF1.5／BW32／6105 MHz／expected -20 dBm，measurement `RDY`；所有查詢的 error
+queue 均為 `0,"No error"`。本次正式完成「同一 SingleShot 連續擷取並保存五統計」
+的實機 HIL，但尚未驗證 Frequency／Power Sweep。
+
+## English: 2026-08-20 complete five-statistic SingleShot HIL
+
+After the operator reconfirmed a direct 50-ohm RF1.1-to-RF1.5 cable with no attenuator
+and physical presence beside the CMP180, a complete Python SingleShot ran at 6105 MHz,
+320 MHz, -40 dBm Generator power, and -20 dBm Analyzer expected power. It completed the
+validating, configuring, rf_on, measuring, fetching, cleaning_up, and complete phases
+with empty instrument and cleanup error lists.
+
+Run `e854e20fd8` produced average EVM All -36.14103 dB, Burst Power -40.49398 dBm,
+and Frequency Error -15.33705 Hz. The `CURRent`, `AVERage`, `MINimum`, `MAXimum`, and
+`SDEViation` raw responses each contained all 28 fields, and JSON recorded
+`simulated=false`. EVM All was current -36.07222 dB, average -36.14103 dB, minimum
+-36.33857 dB, maximum -35.79554 dB, and standard deviation 0.1727547 dB.
+
+Independent query-only auditing confirmed Generator 6105 MHz/-40 dBm with RF `OFF`,
+Analyzer RF1.5/BW32/6105 MHz/expected -20 dBm, and measurement `RDY`; every error-queue
+query returned `0,"No error"`. This completes hardware HIL for fetching and saving all
+five statistics in one SingleShot. Frequency and Power Sweep remain unverified on hardware.

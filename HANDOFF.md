@@ -4,13 +4,15 @@
 
 ### 狀態（2026-08-20）
 
-- 分支：`feature/phase2-integration`。
+- 分支：`validation/five-stat-singleshot-hil`（實機證據文件；UI-1 在 PR #8）。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
 - Web GUI 已有雙語響應式版面（亮／暗主題切換，預設暗色）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifacts 與圖表。
 - 實機 Web 只允許 loopback bind；尚無 authentication／RBAC，不得對內網公開 RF endpoint。
 - 安全短掃描核心（頻率與功率）與 Mock tests 已完成；實機 HIL 未完成，Web 實機 sweep 鎖定。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
+- 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
+  instrument／cleanup errors 空，最終 RF `OFF`、measurement `RDY`、error queue empty。
 - 新增 ruff／mypy（CI 中非阻斷）與 `scripts/precommit_check.ps1`。
 - PR #7 接手審查已將 Frequency／Power Sweep 的頻率、頻寬、功率、span 與點數改為
   不可由呼叫端放寬的硬性安全包絡，並補上繞過測試；尚未執行新的實機 RF。
@@ -40,13 +42,16 @@
 
 ### Status (2026-08-20)
 
-- Branch: `feature/phase2-integration`.
+- Branch: `validation/five-stat-singleshot-hil` (hardware evidence docs; UI-1 is PR #8).
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - The Web GUI provides a bilingual responsive layout (light/dark theme toggle, dark by default), mock single/frequency-sweep/power-sweep, guarded hardware SingleShot, artifacts, and plots.
 - Hardware Web mode is loopback-only. Authentication/RBAC are absent, so never expose the RF endpoint to the network.
 - The safe short-sweep cores (frequency and power) and mock tests are complete. Hardware HIL is pending for both and the Web hardware sweep buttons remain locked.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
+- On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had
+  28 fields, `simulated=false`, no instrument/cleanup errors, final RF `OFF`, measurement
+  `RDY`, and an empty error queue.
 - Added ruff/mypy (non-blocking in CI) and `scripts/precommit_check.ps1`.
 - The PR #7 takeover review changed Frequency/Power Sweep frequency, bandwidth, power,
   span, and point limits into hard safety ceilings that callers cannot relax, with
