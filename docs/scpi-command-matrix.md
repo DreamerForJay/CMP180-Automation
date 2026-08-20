@@ -220,10 +220,19 @@ These are P1 visualization/reporting queries. The first MVP uses scalar results.
 
 2026-08-19 完成第一筆完整 Python 實機 SingleShot。流程依序設定已驗證參數、RF On、`INITiate`、等待 `RDY`、`FETCh` 28 欄 average result、`STOP` 與 RF Off。EVM All 為 -36.23029 dB、Burst Power -40.47938 dBm、Frequency Error -16.30075 Hz；instrument／cleanup errors 均為空。獨立查詢確認最終 RF `OFF`、measurement `RDY`。
 
-**2026-08-20 更新**：`workflow/cmp180_single_backend.py` 的 `fetch_result()` 改為依序查詢全部 5 組已驗證統計（`CURRent`／`AVERage`／`MINimum`／`MAXimum`／`SDEViation`），而不只是 average。5 個查詢個別都已如上驗證過，不需要新的 SCPI 驗證；但「一次 SingleShot 內連續查詢並保存全部 5 組」這個組合行為，**尚未在真實硬體上重新確認**，目前只有 mock/unit test 覆蓋。下一次實機 HIL 時應一併確認這 5 組查詢都能在同一次 SingleShot 內正常回應且不影響既有 average 結果與 cleanup 行為。
+**2026-08-20 更新**：`workflow/cmp180_single_backend.py` 已在同一次真實 SingleShot
+依序查詢並保存 `CURRent`／`AVERage`／`MINimum`／`MAXimum`／`SDEViation`。五個
+responses 各有完整 28 欄，instrument／cleanup errors 為空；獨立收尾確認 RF
+`OFF`、measurement `RDY`、error queue empty。證據為 run `e854e20fd8`，詳見
+`docs/hardware-discovery.md`。這只驗證固定 profile SingleShot，不代表 Sweep HIL。
 
 ## English: complete SingleShot verification
 
 The first complete Python hardware SingleShot passed on 2026-08-19. It configured the verified profile, enabled RF, sent `INITiate`, waited for `RDY`, fetched the 28-field average result, sent `STOP`, and disabled RF. EVM All was -36.23029 dB, Burst Power -40.47938 dBm, and Frequency Error -16.30075 Hz; instrument and cleanup error lists were empty. Independent queries confirmed final RF `OFF` and measurement `RDY`.
 
-**2026-08-20 update**: `workflow/cmp180_single_backend.py`'s `fetch_result()` now queries all 5 verified statistics (`CURRent`/`AVERage`/`MINimum`/`MAXimum`/`SDEViation`) instead of only average. Each query was already individually verified above, so no new SCPI verification is required; however, fetching and saving all 5 in a row within one SingleShot has **not yet been reconfirmed on real hardware** — it is currently covered only by mock/unit tests. The next hardware HIL session should confirm all 5 queries respond correctly within one SingleShot without disturbing the existing average result or cleanup behavior.
+**2026-08-20 update**: `workflow/cmp180_single_backend.py` has now queried and saved
+`CURRent`/`AVERage`/`MINimum`/`MAXimum`/`SDEViation` sequentially in one real
+SingleShot. All five responses contained 28 fields, instrument/cleanup errors were empty,
+and independent final auditing confirmed RF `OFF`, measurement `RDY`, and an empty error
+queue. Evidence is run `e854e20fd8` in `docs/hardware-discovery.md`. This validates only
+the fixed-profile SingleShot and does not qualify as Sweep HIL.
