@@ -81,6 +81,7 @@
       <div class="warning-card"><strong data-i18n="rfWarning">此動作會產生真實 RF</strong><p data-i18n="rfWarningText">只有在線材已確認且操作員位於儀器旁時才能執行。錯誤或取消時會 STOP/ABORT 並 RF Off。</p></div>
       <div id="hardwareAlert" class="inline-alert" role="alert" aria-live="assertive" hidden></div>
       <form id="hardwareForm" class="form-grid">
+        <label><span>量測模式 / Measurement</span><select name="hardware_action"><option value="single">SingleShot · 6105 MHz · -40 dBm</option><option value="frequency">Frequency Sweep · 6085/6105/6125 MHz</option><option value="power">Power Sweep · -55/-50/-45/-40 dBm</option></select></label>
         <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" data-i18n-placeholder="cablePlaceholder" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5" data-i18n="cableVerifiedOption">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
         <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="operatorPresent">我人在 CMP180 旁並能觀察儀器</span></label>
         <div class="preflight-card">
@@ -89,7 +90,7 @@
           <div><span id="operatorCheck" class="check-dot"></span><span data-i18n="operatorCheck">操作員在儀器旁</span></div>
           <div><span class="check-dot ok"></span><span>6105 MHz · 320 MHz · -40 dBm</span></div>
         </div>
-        <button id="hardwareButton" class="danger-button submit" type="submit" disabled data-i18n="runHardware">執行實機 SingleShot</button>
+        <button id="hardwareButton" class="danger-button submit" type="submit" disabled data-i18n="runHardware">執行實機量測</button>
       </form>
     </section>
 
@@ -103,6 +104,6 @@
   </main>
   <div id="toast" role="status"></div>
   <script src="/app.js?v=jobs2"></script>
-  <script src="/hardware.js"></script>
+  <script src="/hardware.js?v=jobs2"></script>
 </body>
 </html>

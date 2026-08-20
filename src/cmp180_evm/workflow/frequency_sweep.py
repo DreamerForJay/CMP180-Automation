@@ -88,16 +88,22 @@ def run_frequency_sweep(
     plan: FrequencySweepPlan,
     *,
     sleeper: Callable[[float], None] = time.sleep,
+    should_cancel: Callable[[], bool] = lambda: False,
+    on_point_complete: Callable[[int, SingleMeasurementResult], None] = lambda _i, _r: None,
 ) -> FrequencySweepResult:
     """Run one cleanup-protected SingleShot per frequency and stop on first failure."""
     frequencies = plan.frequencies()
     results: list[SingleMeasurementResult] = []
     for index, frequency_hz in enumerate(frequencies):
+        if should_cancel():
+            # 僅在點與點之間接受取消；上一點已完成 STOP/RF Off，故不會留下 RF On。
+            return FrequencySweepResult(frequencies, tuple(results), False, error="Cancelled")
         point_plan = replace(plan.single, center_frequency_hz=frequency_hz)
         try:
             # 每一點都走完整 SingleShot，確保點與點之間 STOP 且 RF Off。
             point_result = run_single_measurement(backend, point_plan)
             results.append(point_result)
+            on_point_complete(index + 1, point_result)
         except Exception as exc:
             # 保留先前成功點，讓 CSV/JSON 可標示 partial run，而非遺失整批資料。
             return FrequencySweepResult(

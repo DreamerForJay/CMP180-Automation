@@ -9,7 +9,7 @@ Object.assign(translations.zh, {
   cableVerifiedOption: '已驗證：RF1.1 → RF1.5',
   cableHelp: '可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。',
   operatorPresent: '我人在 CMP180 旁並能觀察儀器',
-  runHardware: '執行實機 SingleShot',
+  runHardware: '執行實機量測',
   preflightTitle: '執行前安全檢查',
   routeCheck: '接線符合已驗證路徑',
   operatorCheck: '操作員在儀器旁'
@@ -31,7 +31,7 @@ Object.assign(translations.en, {
   cableVerifiedOption: 'Verified: RF1.1 → RF1.5',
   cableHelp: 'Custom routes are accepted as input, but unverified routes trigger a warning and cannot enable RF.',
   operatorPresent: 'I am beside the CMP180 and can observe it',
-  runHardware: 'Run hardware SingleShot',
+  runHardware: 'Run hardware measurement',
   preflightTitle: 'Preflight safety checks',
   routeCheck: 'Route matches a verified cable path',
   operatorCheck: 'Operator is beside the instrument'
@@ -115,6 +115,19 @@ $('#hardwareForm').onsubmit = event => {
   showHardwareAlert('');
   hardwareRequestRunning = true;
   updatePreflight();
+  const action = form.get('hardware_action');
+  if (action === 'frequency' || action === 'power') {
+    const profile = action === 'frequency' ? '6085-6125MHz' : '-55--40dBm';
+    startJob(`/api/jobs/hardware/${action}-sweep`, {
+      cable_confirmation: route,
+      operator_present: true,
+      sweep_confirmation: profile
+    }, event.submitter, action).finally(() => {
+      hardwareRequestRunning = false;
+      updatePreflight();
+    });
+    return;
+  }
   send('/api/hardware/single', {
     cable_confirmation: route,
     operator_present: form.get('operator_present') === 'on'

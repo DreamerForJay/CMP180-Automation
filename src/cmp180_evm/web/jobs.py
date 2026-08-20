@@ -40,6 +40,13 @@ class SweepJob:
         )
         return payload
 
+    def is_cancel_requested(self) -> bool:
+        return self._cancel_event.is_set()
+
+    def point_completed(self, count: int) -> None:
+        self.completed_points = count
+        self.message = f"Point {count}/{self.total_points}"
+
 
 class JobManager:
     """Allow only one active sweep and expose cooperative cancellation."""

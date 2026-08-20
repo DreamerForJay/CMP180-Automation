@@ -101,16 +101,22 @@ def run_power_sweep(
     plan: PowerSweepPlan,
     *,
     sleeper: Callable[[float], None] = time.sleep,
+    should_cancel: Callable[[], bool] = lambda: False,
+    on_point_complete: Callable[[int, SingleMeasurementResult], None] = lambda _i, _r: None,
 ) -> PowerSweepResult:
     """Run one cleanup-protected SingleShot per power level and stop on first failure."""
     powers = plan.powers()
     results: list[SingleMeasurementResult] = []
     for index, power_dbm in enumerate(powers):
+        if should_cancel():
+            # 取消只在 RF Off 的點邊界生效，避免換到下一個較高功率。
+            return PowerSweepResult(powers, tuple(results), False, error="Cancelled")
         point_plan = replace(plan.single, generator_power_dbm=power_dbm)
         try:
             # 每一點都走完整 SingleShot，確保點與點之間 STOP 且 RF Off。
             point_result = run_single_measurement(backend, point_plan)
             results.append(point_result)
+            on_point_complete(index + 1, point_result)
         except Exception as exc:
             # 保留先前成功點，讓 CSV/JSON 可標示 partial run，而非遺失整批資料。
             return PowerSweepResult(

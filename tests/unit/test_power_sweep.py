@@ -112,6 +112,21 @@ def test_invalid_metrics_stop_before_higher_power_even_with_empty_error_queue():
     assert ("configure", -45.0) not in backend.calls
 
 
+def test_cancel_stops_at_rf_off_point_boundary():
+    backend = SweepBackend()
+    completed = []
+    result = run_power_sweep(
+        backend,
+        sweep_plan(),
+        sleeper=lambda _: None,
+        should_cancel=lambda: len(completed) == 1,
+        on_point_complete=lambda count, _point: completed.append(count),
+    )
+    assert result.completed is False and result.error == "Cancelled"
+    assert len(result.points) == 1
+    assert backend.calls[-1] == ("rf_off", -50.0)
+
+
 @pytest.mark.parametrize(
     "overrides",
     [

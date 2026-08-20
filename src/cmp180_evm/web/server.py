@@ -136,6 +136,29 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 self._json_response(JOB_MANAGER.cancel(job_id).public())
                 return
             data = self._read_json()
+            if path in {"/api/jobs/hardware/frequency-sweep", "/api/jobs/hardware/power-sweep"}:
+                if not self.hardware_enabled:
+                    self._json_response({"error": "Hardware mode is locked"}, HTTPStatus.FORBIDDEN)
+                    return
+                validate_cable_route(data.get("cable_confirmation"))
+                if data.get("operator_present") is not True:
+                    raise ValueError("Operator presence confirmation is required")
+                axis = "frequency" if "frequency" in path else "power"
+                expected_confirmation = "6085-6125MHz" if axis == "frequency" else "-55--40dBm"
+                if data.get("sweep_confirmation") != expected_confirmation:
+                    raise ValueError("Fixed hardware sweep profile confirmation is required")
+                from cmp180_evm.web.real_service import run_verified_real_sweep
+
+                total_points = 3 if axis == "frequency" else 4
+                job = JOB_MANAGER.start(
+                    f"hardware-{axis}-sweep",
+                    total_points,
+                    lambda active_job: run_verified_real_sweep(
+                        active_job, axis=axis, output_root=PROJECT_ROOT / "output"
+                    ),
+                )
+                self._json_response(job.public(), HTTPStatus.ACCEPTED)
+                return
             # 決定結果圖表 X 軸：頻率或功率掃描才不是 "frequency"（單點沿用預設）。
             sweep_axis = "frequency"
             if path == "/api/mock/single":

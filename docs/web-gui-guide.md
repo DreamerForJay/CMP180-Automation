@@ -21,6 +21,8 @@ Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 lo
 
 Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／running／stopping／complete／cancelled／failed 狀態、逐點進度、單一 active-job 鎖與 cooperative cancel。2026-08-20 瀏覽器驗收確認 11 點頻率掃描可在第 3 點取消並只保存 3 點 partial result；四點功率掃描顯示 4/4 complete，CSV／JSON／HTML 為可點連結，窄版 viewport 無水平溢出。這只驗證 Mock Job 與 UI；尚未授權實機 Web sweep。
 
+實機 Web Sweep 程式入口現已接上 CLI-HIL 核准的固定 profile：頻率 6085／6105／6125 MHz，以及功率 -55／-50／-45／-40 dBm。取消只在每點完成 STOP／RF Off 的邊界生效，並由最外層再次 STOP／ABORt、RF Off 與 read-back。97 項 unit／Mock 測試通過；此段尚待現場 Web HIL，因此仍不得視為實機 Web 驗收完成。
+
 目前 GUI 是功能 MVP。第二輪 UI/UX 將加入即時 workflow step、執行動畫、取消與 cleanup 狀態、欄位連動驗證、圖表 tooltip／縮放、artifact 下載按鈕、run history，以及更完整的空白／錯誤／手機版狀態。
 
 ### 啟動方式
@@ -110,6 +112,8 @@ The Web GUI currently provides a complete mock workflow. It does not control the
 Real hardware SingleShot has completed HIL and can be enabled locally with `--enable-hardware`. The fixed three-point frequency and four-point numeric power sweeps have completed CLI HIL, but Web progress, cancellation, and emergency cleanup remain unverified, so Web hardware Sweep stays locked. Mode is shown in the top-right status and workspace control-state card without a content-obscuring persistent bottom bar.
 
 Mock frequency and power sweeps now use an asynchronous Job API with queued/running/stopping/complete/cancelled/failed states, per-point progress, a single-active-job lock, and cooperative cancellation. Browser acceptance on 2026-08-20 cancelled an 11-point frequency sweep at point 3 and preserved only three partial points. A four-point power sweep displayed 4/4 complete, CSV/JSON/HTML were clickable, and a narrow viewport had no horizontal overflow. This validates only the Mock Job/UI path; it does not authorize Web hardware sweeps.
+
+The Web hardware Sweep code path is now connected only to the CLI-HIL-approved fixed profiles: 6085/6105/6125 MHz frequency and -55/-50/-45/-40 dBm power. Cancellation takes effect only at a point boundary after STOP/RF Off, followed by an outer STOP/ABORt, RF Off, and read-back. All 97 unit/mock tests pass. On-site Web HIL remains pending, so this is not yet completed Web hardware acceptance.
 
 The current GUI is a functional MVP. The second UI/UX pass adds live workflow steps, running animation, cancellation and cleanup state, cross-field validation, plot tooltips/zoom, artifact download buttons, run history, and stronger empty/error/mobile states.
 
