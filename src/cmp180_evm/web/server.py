@@ -13,6 +13,7 @@ from urllib.parse import unquote, urlparse
 
 from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
+    DEMO_LIMIT_PROFILE,
     build_frequency_points,
     build_power_points,
     save_mock_run,
@@ -135,6 +136,9 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 if isinstance(result, dict) and isinstance(result.get("artifacts"), dict):
                     # 只回傳 output/ 下的受控 URL，不把本機絕對路徑當成瀏覽器連結。
                     result["artifact_urls"] = self._artifact_urls(result["artifacts"])
+                    if result.get("simulated") is True:
+                        result["limit_profile"] = DEMO_LIMIT_PROFILE.snapshot()
+                        result["compliance_claim"] = False
                 self._json_response(payload)
             except KeyError as exc:
                 self._json_response({"error": str(exc)}, HTTPStatus.NOT_FOUND)
@@ -340,6 +344,8 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
         self._json_response(
             {
                 "simulated": True,
+                "limit_profile": DEMO_LIMIT_PROFILE.snapshot(),
+                "compliance_claim": False,
                 "sweep_axis": sweep_axis,
                 "points": [point.__dict__ for point in points],
                 "artifacts": artifacts,

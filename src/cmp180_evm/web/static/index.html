@@ -98,6 +98,7 @@
     <section id="results" class="panel">
       <div class="panel-head"><div><h2 data-i18n="resultTitle">量測結果</h2><p id="runMeta" data-i18n="empty">尚未執行 Mock 量測。</p></div><span id="resultBadge" class="pill neutral">NO DATA</span></div>
       <div id="metrics" class="metrics"></div>
+      <div id="limitProfileCard" class="limit-profile-card" hidden></div>
       <div class="chart-card"><div class="chart-title"><strong data-i18n="resultChart">結果趨勢圖</strong><select id="chartMetric"><option value="evm_all_db">EVM (dB)</option><option value="burst_power_dbm">Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option></select></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
       <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>

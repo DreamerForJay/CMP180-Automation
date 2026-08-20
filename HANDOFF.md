@@ -16,6 +16,7 @@
 - Web Mock Sweep 已改為非同步 Job API，支援進度、單一 active job、取消與 partial artifacts；瀏覽器驗收通過取消 3/11、完成 4/4、檔案連結與窄版無溢出；該批驗收未控制實機。
 - 實機 Web Frequency／Power Sweep 已接固定 HIL profile；run `afb64617df` 完成頻率 3/3，run `7463d55002` 的功率取消於安全邊界停止為 2/4 並保存 partial artifacts。最終 RF OFF／measurement RDY／error queue empty，現場 Web HIL 已通過。
 - Web GUI 新增唯讀「量測紀錄」，由新到舊顯示 `output/` runs，提供 HTML／CSV／JSON／Metadata 受控連結；不暴露本機絕對路徑或 raw SCPI，也不接觸 RF。
+- 新增 Draft Limit Profile 架構；Mock 結果只標示 `DRAFT_PASS`／`DRAFT_FAIL`，metadata 保存 profile snapshot 與 `compliance_claim=false`。正式數值仍待 RF／測試負責人核准。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -61,6 +62,7 @@
 - Web Mock Sweep now uses an asynchronous Job API with progress, one active job, cancellation, and partial artifacts. Browser acceptance passed cancel at 3/11, complete at 4/4, clickable artifact links, and narrow-layout overflow checks; that batch did not control hardware.
 - Web hardware Frequency/Power Sweep uses fixed HIL profiles. Run `afb64617df` completed frequency 3/3; power run `7463d55002` cancelled safely at a point boundary with 2/4 partial artifacts. Final RF was OFF, measurement RDY, and the error queue empty; on-site Web HIL passed.
 - The Web GUI now has read-only Run History, newest first, with controlled HTML/CSV/JSON/Metadata links. It exposes neither absolute local paths nor raw SCPI and never touches RF.
+- Added the Draft Limit Profile framework. Mock results use only `DRAFT_PASS`/`DRAFT_FAIL`; metadata saves the profile snapshot and `compliance_claim=false`. Formal values still require RF/test-owner approval.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had
