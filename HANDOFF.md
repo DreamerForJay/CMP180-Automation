@@ -12,7 +12,11 @@
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 新增 ruff／mypy（CI 中非阻斷）與 `scripts/precommit_check.ps1`。
-- 最新驗證：82 tests、兩份 YAML validation、JavaScript syntax 與 `git diff --check` 通過。
+- PR #7 接手審查已將 Frequency／Power Sweep 的頻率、頻寬、功率、span 與點數改為
+  不可由呼叫端放寬的硬性安全包絡，並補上繞過測試；尚未執行新的實機 RF。
+- 最新本機驗證：87 tests、兩份 YAML validation、JavaScript syntax 與
+  `git diff --check` 通過；全部使用 unit／Mock，未執行新實機 RF。PR #7 原 head 的
+  GitHub Actions 已通過，安全修正 push 後需等待新一輪 CI。
 
 ### 安全基線與完成項目
 
@@ -44,7 +48,13 @@
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - Added ruff/mypy (non-blocking in CI) and `scripts/precommit_check.ps1`.
-- Latest validation: 82 tests, both YAML validations, JavaScript syntax, and `git diff --check` passed.
+- The PR #7 takeover review changed Frequency/Power Sweep frequency, bandwidth, power,
+  span, and point limits into hard safety ceilings that callers cannot relax, with
+  bypass tests added. No new live RF run was performed.
+- Latest local validation: 87 tests, both YAML validations, JavaScript syntax, and
+  `git diff --check` passed. All checks used unit/mock paths; no new live RF run was
+  performed. GitHub Actions passed on the original PR #7 head; wait for a new CI run
+  after pushing the safety fixes.
 
 ### Safety baseline and completed work
 
@@ -63,4 +73,3 @@
 5. A standalone CSV/JSON redraw CLI.
 
 Before live work, run connection and query-only Generator discovery, confirm RF OFF, measurement RDY, and an empty error queue, then follow the [hardware SOP](docs/hardware-test-sop.md).
-

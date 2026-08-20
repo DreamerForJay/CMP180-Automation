@@ -9,8 +9,8 @@ path yet, matching frequency sweep's own HIL-pending status.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, replace
-from typing import Callable
 
 from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.workflow.single_measurement import (
@@ -19,6 +19,13 @@ from cmp180_evm.workflow.single_measurement import (
     SingleMeasurementResult,
     run_single_measurement,
 )
+
+# 這些常數是目前唯一允許進入 HIL 的實機安全包絡；呼叫端參數只能縮小範圍，不能放寬。
+VERIFIED_POWER_SWEEP_FREQUENCY_HZ = 6_105_000_000.0
+VERIFIED_POWER_SWEEP_BANDWIDTH_HZ = 320_000_000.0
+VERIFIED_MINIMUM_POWER_DBM = -60.0
+VERIFIED_MAXIMUM_POWER_DBM = -40.0
+VERIFIED_MAXIMUM_POINTS = 11
 
 
 @dataclass(frozen=True)
@@ -37,20 +44,31 @@ class PowerSweepPlan:
         self.single.validate_safety()
         if self.single.generator_port != "RF1.1" or self.single.analyzer_port != "RF1.5":
             raise SafetyGuardError("Power sweep currently permits only RF1.1 to RF1.5.")
+        if self.single.center_frequency_hz != VERIFIED_POWER_SWEEP_FREQUENCY_HZ:
+            raise SafetyGuardError(
+                "Power sweep currently permits only the verified 6105 MHz profile."
+            )
+        if self.single.bandwidth_hz != VERIFIED_POWER_SWEEP_BANDWIDTH_HZ:
+            raise SafetyGuardError(
+                "Power sweep currently permits only the verified 320 MHz bandwidth."
+            )
         if not 0.1 <= self.dwell_time_s <= 2.0:
             raise SafetyGuardError("Dwell time must be between 0.1 and 2.0 seconds.")
         if self.step_power_dbm <= 0 or self.stop_power_dbm < self.start_power_dbm:
             raise SafetyGuardError("Sweep stop must follow start and step must be positive.")
+        # 同時套用硬性包絡與呼叫端較嚴格的限制，避免以自訂欄位繞過 -60 至 -40 dBm。
+        effective_minimum = max(self.minimum_power_dbm, VERIFIED_MINIMUM_POWER_DBM)
+        effective_maximum = min(self.maximum_power_dbm, VERIFIED_MAXIMUM_POWER_DBM)
         if not (
-            self.minimum_power_dbm <= self.start_power_dbm
-            and self.stop_power_dbm <= self.maximum_power_dbm
+            effective_minimum <= self.start_power_dbm <= self.stop_power_dbm <= effective_maximum
         ):
             raise SafetyGuardError(
-                f"Sweep power must stay within {self.minimum_power_dbm}..{self.maximum_power_dbm} dBm."
+                f"Sweep power must stay within {effective_minimum}..{effective_maximum} dBm."
             )
         count = int((self.stop_power_dbm - self.start_power_dbm) // self.step_power_dbm) + 1
-        if count > self.maximum_points:
-            raise SafetyGuardError(f"Power sweep exceeds {self.maximum_points} points.")
+        effective_maximum_points = min(self.maximum_points, VERIFIED_MAXIMUM_POINTS)
+        if count > effective_maximum_points:
+            raise SafetyGuardError(f"Power sweep exceeds {effective_maximum_points} points.")
         return tuple(self.start_power_dbm + index * self.step_power_dbm for index in range(count))
 
 

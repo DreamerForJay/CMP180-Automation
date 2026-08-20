@@ -13,6 +13,7 @@
 - 最大 span：200 MHz。
 - 最大點數：11 點。
 - Generator power：不得高於 -40 dBm。
+- Bandwidth：固定為已驗證的 320 MHz。
 - Dwell：100–2000 ms。
 
 ### 功率掃描安全範圍
@@ -22,12 +23,14 @@
 - 最大點數：11 點。
 - Dwell：100–2000 ms。
 - 頻率固定於單一已驗證值（目前對應 6105 MHz）。
+- Bandwidth 固定為已驗證的 320 MHz。
 
 ### 兩者共通規則
 
 - 每一點都執行完整 SingleShot，並在換頻／換功率前 STOP measurement 與 RF Off。
 - 任一點失敗即停止後續點，保存先前成功點與失敗的頻率／功率。
 - 所有設定必須在第一個 SCPI 指令前完成驗證。
+- 頻率／功率上下限、span 與最大點數是程式內硬性上限；呼叫端只能縮小，不能放寬。
 
 ### 尚待完成
 
@@ -50,6 +53,7 @@ The Python core and mock tests for both safe short sweeps (frequency and power) 
 - Maximum span: 200 MHz.
 - Maximum point count: 11.
 - Generator power: no higher than -40 dBm.
+- Bandwidth: fixed at the verified 320 MHz.
 - Dwell: 100–2000 ms.
 
 ### Power sweep safety envelope
@@ -59,12 +63,15 @@ The Python core and mock tests for both safe short sweeps (frequency and power) 
 - Maximum point count: 11.
 - Dwell: 100–2000 ms.
 - Frequency fixed at a single verified value (currently 6105 MHz).
+- Bandwidth fixed at the verified 320 MHz.
 
 ### Rules shared by both
 
 - Every point runs a complete SingleShot and performs measurement STOP plus RF Off before changing frequency/power.
 - The sweep stops on the first failed point and preserves earlier successful points plus the failed frequency/power.
 - Every setting is validated before the first SCPI command.
+- Frequency/power bounds, span, and point count are hard-coded ceilings. Callers may
+  narrow them but cannot relax them.
 
 ### Remaining work
 

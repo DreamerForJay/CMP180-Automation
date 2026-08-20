@@ -77,3 +77,74 @@ ruff／mypy 目前是新加入的，既有程式碼還沒清完全部既有問�
 - 實機功能有證據且沒有未審核的 SCPI。
 - RF safety 與 `finally` 關閉策略經測試。
 - 不包含 `.venv`、logs、outputs、憑證或內部敏感資料。
+
+## English Version
+
+This project uses a Definition of Done in which code, tests, and documentation are
+completed together. A feature is not complete when implementation exists but operator
+instructions, configuration examples, or validation evidence remain stale.
+
+### Required for every functional change
+
+1. Update or add the implementation.
+2. Update unit, mock, or hardware tests.
+3. Update affected YAML examples and field descriptions.
+4. Update the operating steps in `docs/user-guide.md`.
+5. Update capability status or quick commands in `README.md`.
+6. Update `SPEC.MD` when requirements, architecture, or safety constraints change.
+7. For SCPI changes, update `docs/scpi-command-matrix.md` and
+   `configs/scpi_command_map.yaml`.
+8. For hardware changes, update `docs/hardware-discovery.md` or add dated validation
+   evidence.
+9. Run the complete test suite and record the passing count.
+10. Run `git diff --check` to detect whitespace and conflict-marker problems.
+
+### Documentation mapping
+
+| Change type | Required synchronized updates |
+|---|---|
+| CLI command/argument | `README.md`, `docs/user-guide.md`, CLI tests |
+| GUI control, screen, or flow | `README.md`, `docs/user-guide.md`, GUI tests |
+| YAML field or default | YAML example, config models, loader tests, `SPEC.MD` |
+| Connection method | `README.md`, instrument example, hardware validation, session tests |
+| SCPI command | command map, SCPI matrix, source evidence, registry tests |
+| EVM workflow | `SPEC.MD`, user guide, Mock tests, result-schema documentation |
+| Safety constraint | `SPEC.MD`, hardware validation, validator tests |
+| Packaging | `README.md`, PyInstaller spec, release checks |
+
+### Minimum SCPI documentation
+
+Before adding any CMP180-specific command to the command map, record its function,
+complete command/query string, parameters and units, returned fields and units, source
+(CMP180 Remote Manual, Command Help, or SCPI Recorder), firmware/WLAN software version,
+real-hardware validation date, successful response and error-queue result, and whether it
+changes RF, routing, workspace, or measurement state. Never infer CMP180 syntax from a
+different R&S instrument.
+
+### Pre-commit checks
+
+```powershell
+New-Item -ItemType Directory -Force output | Out-Null
+.\.venv\Scripts\python.exe -m pytest -q --basetemp=output\pytest-tmp
+git diff --check
+git status --short
+```
+
+Alternatively, run `scripts\precommit_check.ps1`. It executes pytest, both configuration
+validations, and `git diff --check`, then reports ruff and mypy results. Ruff and mypy are
+currently non-blocking because the existing codebase still contains known findings; CI
+also uses `continue-on-error` until the baseline is cleaned up and the team decides to
+make them blocking.
+
+Commit messages must describe the feature rather than using vague text such as `update`
+or `fix stuff`. Keep code, tests, and their documentation in the same commit or in
+adjacent, clearly traceable commits.
+
+### Pull request acceptance
+
+- All required tests pass.
+- Documentation links work.
+- README capability status is accurate.
+- Hardware features have evidence and no unreviewed SCPI.
+- RF safety and `finally` cleanup behavior are tested.
+- The change contains no `.venv`, logs, outputs, credentials, or internal sensitive data.
