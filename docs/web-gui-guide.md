@@ -10,8 +10,9 @@ Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 lo
 - 亮／暗主題切換（右上角按鈕，預設為暗色，選擇會存在瀏覽器 `localStorage`，下次開啟延續）。
 - 手機、平板與桌面響應式版面。
 - 單一頻點 Mock 量測。
-- 起始頻率、結束頻率與步進的 Mock frequency sweep。
-- EVM、Burst Power、Frequency Error 結果表格與 EVM 圖表。
+- 起始頻率、結束頻率與步進的 Mock 頻率掃描。
+- 固定頻率、起始功率、結束功率與步進的 Mock 功率掃描（Power vs EVM）。
+- EVM、Burst Power、Frequency Error 結果表格與圖表（X 軸依掃描類型自動切換頻率或功率）。
 - 每次 run 輸出 CSV、JSON、metadata 與離線 HTML report。
 - Mock 結果一律顯示 `SIMULATED`，不得視為 CMP180 實機量測。
 
@@ -43,9 +44,10 @@ Mode: MOCK only; real-hardware controls are locked.
 2. 確認頁面切到「結果與圖表」，並顯示 `SIMULATED`。
 3. 到「頻率掃描」輸入 5925、6125、20 MHz，執行 Mock Sweep。
 4. 確認產生 11 個資料點、圖表與 PASS/FAIL 表格。
-5. 按右上角 `EN`，確認所有主要文字切換英文。
-6. 縮小瀏覽器寬度，確認欄位由雙欄改成單欄，表格可水平捲動。
-7. 到畫面底部確認 CSV、JSON 與 HTML report 的輸出位置。
+5. 到「功率掃描」保留預設 -60 至 -40 dBm、5 dBm 步進，執行 Mock 功率掃描，確認圖表 X 軸改成 dBm、EVM 隨功率變化。
+6. 按右上角 `EN`，確認所有主要文字切換英文。
+7. 縮小瀏覽器寬度，確認欄位由雙欄改成單欄，表格可水平捲動。
+8. 到畫面底部確認 CSV、JSON 與 HTML report 的輸出位置。
 
 ### 輸出位置
 
@@ -95,7 +97,8 @@ The Web GUI currently provides a complete mock workflow. It does not control the
 - Responsive phone, tablet, and desktop layouts.
 - A mock single-frequency measurement.
 - A mock frequency sweep using start, stop, and step.
-- EVM, Burst Power, and Frequency Error result tables plus an EVM plot.
+- A mock power sweep at a fixed frequency using start power, stop power, and step (Power vs EVM).
+- EVM, Burst Power, and Frequency Error result tables and plots (the chart X axis switches between frequency and power automatically depending on the sweep type).
 - CSV, JSON, metadata, and offline HTML output for every run.
 - Every mock result is labeled `SIMULATED` and must not be treated as a real CMP180 measurement.
 
@@ -127,9 +130,10 @@ Press `Ctrl+C` in PowerShell to stop the server.
 2. Confirm the page switches to Results & Plots and displays `SIMULATED`.
 3. On Frequency Sweep, enter 5925, 6125, and 20 MHz, then run the mock sweep.
 4. Confirm that 11 points, a plot, and a PASS/FAIL table appear.
-5. Select `EN`/`中文` at the top right and confirm that primary UI text changes language.
-6. Narrow the browser and confirm fields collapse from two columns to one while the table scrolls horizontally.
-7. Confirm the CSV, JSON, and HTML report paths at the bottom of the results page.
+5. On Power Sweep, keep the default -60 to -40 dBm range with a 5 dBm step, run the mock power sweep, and confirm the chart X axis switches to dBm with EVM varying by power.
+6. Select `EN`/`中文` at the top right and confirm that primary UI text changes language.
+7. Narrow the browser and confirm fields collapse from two columns to one while the table scrolls horizontally.
+8. Confirm the CSV, JSON, and HTML report paths at the bottom of the results page.
 
 ### Output location
 
