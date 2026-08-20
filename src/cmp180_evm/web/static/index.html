@@ -29,6 +29,7 @@
       <button class="tab" data-tab="powerSweep" data-i18n="powerSweepTab">功率掃描</button>
       <button class="tab" data-tab="hardware" data-i18n="hardwareTab">實機單點</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
+      <button class="tab" data-tab="history" data-i18n="historyTab">量測紀錄</button>
     </nav>
     <section id="jobPanel" class="job-panel" hidden aria-live="polite">
       <div class="panel-head"><div><h2 id="jobTitle">Sweep job</h2><p id="jobMessage">Preparing</p></div><span id="jobState" class="pill neutral">QUEUED</span></div>
@@ -101,9 +102,15 @@
       <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
     </section>
+
+    <section id="history" class="panel">
+      <div class="panel-head"><div><h2 data-i18n="historyTitle">量測紀錄</h2><p data-i18n="historyHelp">瀏覽本機保存的實機與示範結果；不會啟動量測或 RF。</p></div><button id="refreshHistoryButton" class="ghost" type="button" data-i18n="refreshHistory">重新整理</button></div>
+      <div id="historyEmpty" class="history-empty" data-i18n="historyEmpty">尚無可用紀錄。</div>
+      <div class="table-wrap"><table><thead><tr><th data-i18n="historyTime">時間</th><th data-i18n="historyName">名稱</th><th>Run ID</th><th data-i18n="historySource">來源</th><th data-i18n="historyStatus">狀態</th><th data-i18n="historyPoints">點數</th><th data-i18n="historyFiles">檔案</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+    </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=jobs2"></script>
+  <script src="/app.js?v=history1"></script>
   <script src="/hardware.js?v=jobs2"></script>
 </body>
 </html>

@@ -25,6 +25,11 @@ Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／runnin
 
 目前 GUI 是功能 MVP。第二輪 UI/UX 將加入即時 workflow step、執行動畫、取消與 cleanup 狀態、欄位連動驗證、圖表 tooltip／縮放、artifact 下載按鈕、run history，以及更完整的空白／錯誤／手機版狀態。
 
+「量測紀錄」頁會唯讀掃描本機 `output/` 中有效的 metadata，依時間由新到舊顯示
+實機／示範來源、狀態、完成點數與 Run ID。使用者可直接開啟 HTML、CSV、JSON 與
+Metadata；API 不回傳本機絕對路徑或 raw SCPI。按「重新整理」即可看到剛完成的 run，
+此功能本身不會連線儀器、啟動量測或開啟 RF。
+
 ### 啟動方式
 
 在專案根目錄執行：
@@ -116,6 +121,12 @@ Mock frequency and power sweeps now use an asynchronous Job API with queued/runn
 The Web hardware Sweep path is limited to CLI-HIL-approved fixed profiles: 6085/6105/6125 MHz frequency and -55/-50/-45/-40 dBm power. Cancellation takes effect only at a point boundary after STOP/RF Off, followed by outer STOP/ABORt, RF Off, and read-back. On-site Web HIL passed on 2026-08-20: frequency completed 3/3; power cancellation was requested after the first point and safely stopped at the next boundary with 2/4 partial artifacts. Independent queries confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
 
 The current GUI is a functional MVP. The second UI/UX pass adds live workflow steps, running animation, cancellation and cleanup state, cross-field validation, plot tooltips/zoom, artifact download buttons, run history, and stronger empty/error/mobile states.
+
+The Run History page read-only scans valid metadata under local `output/` and lists runs
+newest first with hardware/demo source, status, completed-point count, and Run ID. Users
+can open HTML, CSV, JSON, and Metadata directly. The API does not expose absolute local
+paths or raw SCPI. Refresh shows newly completed runs; this feature never connects to the
+instrument, starts a measurement, or enables RF.
 
 ### Start the GUI
 

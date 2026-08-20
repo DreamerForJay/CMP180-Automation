@@ -11,9 +11,50 @@ from cmp180_evm.web.mock_service import (
 )
 from cmp180_evm.web.server import (
     Cmp180WebHandler,
+    list_run_history,
     validate_cable_route,
     validate_hardware_bind,
 )
+
+
+def test_run_history_is_newest_first_and_exposes_only_safe_artifact_urls(tmp_path):
+    older = tmp_path / "older_run"
+    newer = tmp_path / "newer_run"
+    older.mkdir()
+    newer.mkdir()
+    (older / "metadata.json").write_text(
+        json.dumps({"run_id": "old", "created_at": "2026-08-20T01:00:00+00:00", "simulated": True}),
+        encoding="utf-8",
+    )
+    (newer / "metadata.json").write_text(
+        json.dumps(
+            {
+                "run_id": "new",
+                "created_at": "2026-08-20T02:00:00+00:00",
+                "simulated": False,
+                "status": "partial",
+                "completed_points": 2,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (newer / "report.html").write_text("ok", encoding="utf-8")
+
+    runs = list_run_history(tmp_path)
+
+    assert [run["run_id"] for run in runs] == ["new", "old"]
+    assert runs[0]["artifact_urls"] == {
+        "metadata": "/artifacts/newer_run/metadata.json",
+        "report": "/artifacts/newer_run/report.html",
+    }
+    assert "run_dir" not in runs[0]
+
+
+def test_run_history_skips_corrupt_metadata(tmp_path):
+    broken = tmp_path / "broken"
+    broken.mkdir()
+    (broken / "metadata.json").write_text("not-json", encoding="utf-8")
+    assert list_run_history(tmp_path) == []
 
 
 def test_frequency_points_are_inclusive_and_bounded():
