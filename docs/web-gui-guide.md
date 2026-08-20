@@ -16,7 +16,7 @@ Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 lo
 - 每次 run 輸出 CSV、JSON、metadata 與離線 HTML report。
 - Mock 結果一律顯示 `SIMULATED`，不得視為 CMP180 實機量測。
 
-實機 SingleShot 已完成 HIL，可用 `--enable-hardware` 在本機啟用；實機 Sweep 尚未完成 HIL，因此保持鎖定。硬體模式沒有登入／RBAC，目前禁止綁定非 loopback 位址。
+實機 SingleShot 已完成 HIL，可用 `--enable-hardware` 在本機啟用；實機 Sweep 尚未完成 HIL，因此保持鎖定。硬體模式沒有登入／RBAC，目前禁止綁定非 loopback 位址。伺服器未以 `--enable-hardware` 啟動時，「實機單點」頁會顯示黃色說明卡片，直接寫明原因與啟用方式，不是只顯示 LOCKED 徽章。畫面底部另有常駐提示 bar，標示目前是 Mock 還是 Hardware 模式。
 
 目前 GUI 是功能 MVP。第二輪 UI/UX 將加入即時 workflow step、執行動畫、取消與 cleanup 狀態、欄位連動驗證、圖表 tooltip／縮放、artifact 下載按鈕、run history，以及更完整的空白／錯誤／手機版狀態。
 
@@ -102,7 +102,7 @@ The Web GUI currently provides a complete mock workflow. It does not control the
 - CSV, JSON, metadata, and offline HTML output for every run.
 - Every mock result is labeled `SIMULATED` and must not be treated as a real CMP180 measurement.
 
-Real hardware SingleShot has completed HIL and can be enabled locally with `--enable-hardware`; real hardware Sweep has not completed HIL and remains locked.
+Real hardware SingleShot has completed HIL and can be enabled locally with `--enable-hardware`; real hardware Sweep has not completed HIL and remains locked. When the server was not started with `--enable-hardware`, the Hardware Single screen shows an amber notice card explaining exactly why and how to enable it, instead of only a LOCKED badge. A persistent bottom bar also shows whether the page is in Mock or Hardware mode.
 
 The current GUI is a functional MVP. The second UI/UX pass adds live workflow steps, running animation, cancellation and cleanup state, cross-field validation, plot tooltips/zoom, artifact download buttons, run history, and stronger empty/error/mobile states.
 

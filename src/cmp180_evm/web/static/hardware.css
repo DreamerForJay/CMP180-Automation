@@ -122,3 +122,37 @@
   background: #43c47a;
   box-shadow: 0 0 0 3px #43c47a22;
 }
+
+.locked-notice {
+  margin: 0 0 20px;
+  padding: 14px 18px;
+  border: 1px solid #f0dba0;
+  border-left: 5px solid var(--amber);
+  border-radius: 12px;
+  background: #fff9e8;
+  color: #6b5200;
+}
+
+.locked-notice p {
+  margin: 5px 0 0;
+}
+
+.mode-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  padding: 10px 20px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  background: var(--navy);
+  color: #fff2b8;
+}
+
+.mode-bar.hardware {
+  background: #421a20;
+  color: #ffb7bd;
+}
