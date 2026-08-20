@@ -4,7 +4,7 @@
 
 ### 目前狀態
 
-安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。固定三點頻率掃描已完成實機 HIL。功率掃描已完成 `INV` 立即停止 HIL：-60 dBm 被正確標成 partial 且未執行更高功率；完整有效數值批次仍待以 -55 至 -40 dBm 驗證。Web 掃描仍是 Mock。
+安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。固定三點頻率掃描、功率掃描 `INV` 立即停止，以及 -55 至 -40 dBm 四點有效功率批次皆已完成 CLI 實機 HIL。Web 掃描仍是 Mock，需獨立驗收後才可解鎖。
 
 ### 三點頻率掃描 HIL 入口
 
@@ -74,7 +74,7 @@ python scripts\cmp180_power_sweep_validate.py `
 
 ### Current status
 
-The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. The fixed three-point frequency sweep passed hardware HIL. Power sweep passed immediate-stop-on-`INV` HIL: -60 dBm was correctly marked partial and no higher-power point ran. A complete numeric batch still requires validation at -55 through -40 dBm. Web sweeps remain mock-only.
+The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. The fixed three-point frequency sweep, immediate-stop-on-`INV` power behavior, and the -55 through -40 dBm four-point numeric power batch have all passed CLI hardware HIL. Web sweeps remain mock-only and require separate acceptance before unlock.
 
 ### Three-point frequency-sweep HIL entry point
 

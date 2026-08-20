@@ -436,3 +436,41 @@ result on `INV`. It also shows that -60 dBm is not a valid measurement point wit
 current -20 dBm expected-power and trigger configuration. The next candidate batch is
 -55 through -40 dBm, where numeric data was previously observed. Do not change expected
 power or trigger merely to recover -60 dBm without a separately validated plan.
+
+## 中文：2026-08-20 四點有效功率掃描 HIL
+
+在相同 RF1.1 → RF1.5 直連、6105 MHz、320 MHz、expected power -20 dBm 下，
+run `e6e86fe3d7` 完成 -55／-50／-45／-40 dBm 四點批次：
+
+| Generator 設定 | EVM All（平均） | Burst Power（平均） | Frequency Error（平均） |
+|---:|---:|---:|---:|
+| -55 dBm | -30.09611 dB | -55.46333 dBm | -62.52845 Hz |
+| -50 dBm | -32.13561 dB | -50.47972 dBm | -62.10172 Hz |
+| -45 dBm | -33.13222 dB | -45.80714 dBm | -29.48505 Hz |
+| -40 dBm | -35.85040 dB | -40.83130 dBm | -37.78031 Hz |
+
+Metadata 為 `simulated=false`、`status=complete`、四點完成且無失敗功率；每點
+instrument／cleanup errors 均空。共保存 20 份 raw response（4 點 × 5 統計），以及
+CSV、JSON、metadata、HTML。最終 RF `OFF`、measurement `RDY`、error queue empty。
+這完成 -55 至 -40 dBm 固定功率掃描 CLI HIL；-60 dBm 維持已知無效點，不納入候選
+有效範圍。Web 實機功率掃描仍需獨立的 progress／cancel／cleanup 驗收。
+
+## English: 2026-08-20 four-point numeric power-sweep HIL
+
+With the same direct RF1.1-to-RF1.5 path, 6105 MHz, 320 MHz, and -20 dBm expected
+power, run `e6e86fe3d7` completed the -55/-50/-45/-40 dBm batch:
+
+| Generator setting | Average EVM All | Average Burst Power | Average Frequency Error |
+|---:|---:|---:|---:|
+| -55 dBm | -30.09611 dB | -55.46333 dBm | -62.52845 Hz |
+| -50 dBm | -32.13561 dB | -50.47972 dBm | -62.10172 Hz |
+| -45 dBm | -33.13222 dB | -45.80714 dBm | -29.48505 Hz |
+| -40 dBm | -35.85040 dB | -40.83130 dBm | -37.78031 Hz |
+
+Metadata records `simulated=false`, `status=complete`, four completed points, and no
+failed power. Every point had empty instrument/cleanup error lists. Twenty raw responses
+(four points times five statistics), CSV, JSON, metadata, and HTML were saved. Final RF
+was `OFF`, measurement was `RDY`, and the error queue was empty. This completes CLI HIL
+for the fixed -55 through -40 dBm power sweep. -60 dBm remains a known invalid point and
+is excluded from the candidate numeric range. Web hardware power sweep still requires
+separate progress/cancel/cleanup acceptance.
