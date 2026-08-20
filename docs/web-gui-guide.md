@@ -14,7 +14,8 @@ Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 lo
 - 固定頻率、起始功率、結束功率與步進的 Mock 功率掃描（Power vs EVM）。
 - EVM、Burst Power、Frequency Error 結果表格與圖表（X 軸依掃描類型自動切換頻率或功率）。
 - 每次 run 輸出 CSV、JSON、metadata 與離線 HTML report。
-- Mock 結果一律顯示 `SIMULATED`，不得視為 CMP180 實機量測。
+- Demo 結果在畫面顯示 `示範資料`／`DEMO DATA`，artifact 仍保存
+  `simulated=true`，不得視為 CMP180 實機量測。
 
 實機 SingleShot 已完成 HIL，可用 `--enable-hardware` 在本機啟用；實機 Sweep 尚未完成 HIL，因此保持鎖定。硬體模式沒有登入／RBAC，目前禁止綁定非 loopback 位址。模式集中顯示於右上角與量測工作區狀態，不使用遮擋內容的底部常駐列。伺服器未以 `--enable-hardware` 啟動時，「實機單點」頁會說明解鎖條件；真正會產生 RF 的警示只出現在實機操作區。
 
@@ -41,7 +42,7 @@ Mode: MOCK only; real-hardware controls are locked.
 ### 建議驗收流程
 
 1. 在「單點量測」保留 6105 MHz、320 MHz、-40 dBm，按「執行 Mock 單點」。
-2. 確認頁面切到「結果與圖表」，並顯示 `SIMULATED`。
+2. 確認頁面切到「結果與圖表」，並顯示 `示範資料`。
 3. 到「頻率掃描」輸入 5925、6125、20 MHz，執行 Mock Sweep。
 4. 確認產生 11 個資料點、圖表與 PASS/FAIL 表格。
 5. 到「功率掃描」保留預設 -60 至 -40 dBm、5 dBm 步進，執行 Mock 功率掃描，確認圖表 X 軸改成 dBm、EVM 隨功率變化。
@@ -71,7 +72,8 @@ output/<timestamp>_<test-name>_<run-id>/
 python -m cmp180_evm.web --enable-hardware
 ```
 
-GUI 會顯示 `HARDWARE ENABLED` 與 `ARMED`。執行前必須：
+GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控制」，實機頁顯示
+`ARMED`。執行前必須：
 
 1. 確認 RF1.1 → RF1.5 cable。
 2. 確認操作員位於 CMP180 旁。
@@ -100,7 +102,8 @@ The Web GUI currently provides a complete mock workflow. It does not control the
 - A mock power sweep at a fixed frequency using start power, stop power, and step (Power vs EVM).
 - EVM, Burst Power, and Frequency Error result tables and plots (the chart X axis switches between frequency and power automatically depending on the sweep type).
 - CSV, JSON, metadata, and offline HTML output for every run.
-- Every mock result is labeled `SIMULATED` and must not be treated as a real CMP180 measurement.
+- Demo results display `DEMO DATA`; artifacts retain `simulated=true` and must not be
+  treated as real CMP180 measurements.
 
 Real hardware SingleShot has completed HIL and can be enabled locally with `--enable-hardware`; real hardware Sweep has not completed HIL and remains locked. Mode is shown in the top-right status and workspace control-state card without a content-obscuring persistent bottom bar. When the server was not started with `--enable-hardware`, the Hardware Single screen explains its unlock conditions; RF-producing warnings appear only in the hardware operation area.
 
@@ -127,7 +130,7 @@ Press `Ctrl+C` in PowerShell to stop the server.
 ### Recommended acceptance flow
 
 1. Keep 6105 MHz, 320 MHz, and -40 dBm on the Single screen, then select Run Mock Single.
-2. Confirm the page switches to Results & Plots and displays `SIMULATED`.
+2. Confirm the page switches to Results & Plots and displays `DEMO DATA`.
 3. On Frequency Sweep, enter 5925, 6125, and 20 MHz, then run the mock sweep.
 4. Confirm that 11 points, a plot, and a PASS/FAIL table appear.
 5. On Power Sweep, keep the default -60 to -40 dBm range with a 5 dBm step, run the mock power sweep, and confirm the chart X axis switches to dBm with EVM varying by power.
@@ -157,7 +160,8 @@ After the complete Python SingleShot passed, the Web GUI gained a fixed-profile 
 python -m cmp180_evm.web --enable-hardware
 ```
 
-The GUI displays `HARDWARE ENABLED` and `ARMED`. Before a run:
+The top-right status displays `Hardware Mode`, the workspace displays
+`Hardware control enabled`, and the hardware panel displays `ARMED`. Before a run:
 
 1. Confirm the RF1.1-to-RF1.5 cable.
 2. Confirm that an operator is beside the CMP180.

@@ -78,7 +78,11 @@ Use the commands in the Chinese section above. Start mock Web with `python -m cm
 
 ### Documentation
 
-The documentation table above is authoritative for operator, SCPI, state-machine, sweep, GUI, visualization, and handoff material. Read the [hardware SOP](docs/hardware-test-sop.md) before any live operation.
+The documentation table above is authoritative for operator, SCPI, state-machine, sweep,
+GUI, visualization, and handoff material. The [UI/UX roadmap](docs/ui-ux-roadmap.md)
+defines the internal-console information architecture, design principles, delivery phases,
+and responsive acceptance criteria. Read the [hardware SOP](docs/hardware-test-sop.md)
+before any live operation.
 
 ### Safety principles
 
