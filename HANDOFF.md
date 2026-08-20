@@ -4,7 +4,7 @@
 
 ### 狀態（2026-08-20）
 
-- 分支：`feature/power-sweep-hil-entry`（頻率掃描 PR #10 已合併至 `main`）。
+- 分支：`feature/web-sweep-jobs`（Web Sweep PR #12）。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
 - Web GUI 已有雙語響應式版面（亮／暗主題切換，預設暗色）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifacts 與圖表。
 - 實機 Web 只允許 loopback bind；尚無 authentication／RBAC，不得對內網公開 RF endpoint。
@@ -14,7 +14,7 @@
 - 修正版 run `b8db34c0f4` 在 -60 dBm 正確立即停止、標示 partial，未執行較高功率；最終 RF OFF／RDY／error queue empty。下一個候選有效批次為 -55 至 -40 dBm。
 - Run `e6e86fe3d7` 完成 -55／-50／-45／-40 dBm 四點有效功率掃描；四點 errors 均空，最終 RF OFF／RDY／error queue empty，20 份 raw 與完整 artifacts 已保存。
 - Web Mock Sweep 已改為非同步 Job API，支援進度、單一 active job、取消與 partial artifacts；瀏覽器驗收通過取消 3/11、完成 4/4、檔案連結與窄版無溢出；該批驗收未控制實機。
-- 實機 Web Frequency／Power Sweep 已接固定 HIL profile，取消只在 RF Off 點邊界生效且有外層 emergency cleanup；97 tests 通過，尚待現場 Web HIL。
+- 實機 Web Frequency／Power Sweep 已接固定 HIL profile；run `afb64617df` 完成頻率 3/3，run `7463d55002` 的功率取消於安全邊界停止為 2/4 並保存 partial artifacts。最終 RF OFF／measurement RDY／error queue empty，現場 Web HIL 已通過。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -38,11 +38,9 @@
 
 ### 下一步
 
-1. 設計並驗證 Web Sweep progress、cancel、emergency cleanup；通過前保持實機按鈕鎖定。
-2. Sweep partial-result metadata、Web progress 與 cancel（頻率與功率掃描都需要）。
-3. DUT 控制、正式 WLAN limits、path-loss／calibration tables。
-4. 內網 deployment 所需 authentication、RBAC 與 audit log。
-5. 獨立 CSV／JSON redraw CLI。
+1. 加入 DUT 控制、正式 WLAN limits、path-loss／calibration tables。
+2. 完成內網 deployment 所需 authentication、RBAC 與 audit log；完成前不得綁定非 loopback。
+3. 增加 run history、取消／cleanup 細節與獨立 CSV／JSON redraw CLI。
 
 實機前先跑連線與 query-only Generator discovery，確認 RF OFF、measurement RDY、error queue empty，再依 [hardware SOP](docs/hardware-test-sop.md) 操作。
 
@@ -50,7 +48,7 @@
 
 ### Status (2026-08-20)
 
-- Branch: `feature/power-sweep-hil-entry` (frequency-sweep PR #10 is merged into `main`).
+- Branch: `feature/web-sweep-jobs` (Web Sweep PR #12).
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - The Web GUI provides a bilingual responsive layout (light/dark theme toggle, dark by default), mock single/frequency-sweep/power-sweep, guarded hardware SingleShot, artifacts, and plots.
 - Hardware Web mode is loopback-only. Authentication/RBAC are absent, so never expose the RF endpoint to the network.
@@ -60,7 +58,7 @@
 - Corrected run `b8db34c0f4` stopped immediately at -60 dBm, recorded partial status, and did not run higher powers; final RF OFF/RDY/error queue empty. The next candidate numeric batch is -55 through -40 dBm.
 - Run `e6e86fe3d7` completed the -55/-50/-45/-40 dBm numeric power sweep with empty per-point errors, final RF OFF/RDY/error queue empty, 20 raw responses, and complete artifacts.
 - Web Mock Sweep now uses an asynchronous Job API with progress, one active job, cancellation, and partial artifacts. Browser acceptance passed cancel at 3/11, complete at 4/4, clickable artifact links, and narrow-layout overflow checks; that batch did not control hardware.
-- Web hardware Frequency/Power Sweep is connected to fixed HIL profiles. Cancellation occurs only at an RF-Off point boundary with outer emergency cleanup. All 97 tests pass; on-site Web HIL is pending.
+- Web hardware Frequency/Power Sweep uses fixed HIL profiles. Run `afb64617df` completed frequency 3/3; power run `7463d55002` cancelled safely at a point boundary with 2/4 partial artifacts. Final RF was OFF, measurement RDY, and the error queue empty; on-site Web HIL passed.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had
@@ -88,10 +86,8 @@
 
 ### Next steps
 
-1. Design and validate Web Sweep progress, cancellation, and emergency cleanup; keep hardware controls locked until acceptance passes.
-2. Sweep partial-result metadata plus Web progress/cancel (for both sweep types).
-3. DUT control, formal WLAN limits, and path-loss/calibration tables.
-4. Authentication, RBAC, and audit logging for intranet deployment.
-5. A standalone CSV/JSON redraw CLI.
+1. Add DUT control, formal WLAN limits, and path-loss/calibration tables.
+2. Complete authentication, RBAC, and audit logging for intranet deployment; do not bind beyond loopback before then.
+3. Add run history, richer cancellation/cleanup detail, and a standalone CSV/JSON redraw CLI.
 
 Before live work, run connection and query-only Generator discovery, confirm RF OFF, measurement RDY, and an empty error queue, then follow the [hardware SOP](docs/hardware-test-sop.md).
