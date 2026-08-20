@@ -71,7 +71,7 @@
       <div class="warning-card"><strong data-i18n="rfWarning">此動作會產生真實 RF</strong><p data-i18n="rfWarningText">只有在線材已確認且操作員位於儀器旁時才能執行。錯誤或取消時會 STOP/ABORT 並 RF Off。</p></div>
       <div id="hardwareAlert" class="inline-alert" role="alert" aria-live="assertive" hidden></div>
       <form id="hardwareForm" class="form-grid">
-        <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
+        <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" data-i18n-placeholder="cablePlaceholder" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5" data-i18n="cableVerifiedOption">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
         <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="operatorPresent">我人在 CMP180 旁並能觀察儀器</span></label>
         <div class="preflight-card">
           <strong data-i18n="preflightTitle">執行前安全檢查</strong>
