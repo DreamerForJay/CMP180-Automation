@@ -6,9 +6,10 @@ from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
 
 
 class SweepBackend:
-    def __init__(self, fail_frequency_hz=None):
+    def __init__(self, fail_frequency_hz=None, instrument_error_frequency_hz=None):
         self.frequency = 0.0
         self.fail_frequency_hz = fail_frequency_hz
+        self.instrument_error_frequency_hz = instrument_error_frequency_hz
         self.calls = []
 
     def configure(self, plan):
@@ -36,6 +37,8 @@ class SweepBackend:
         self.calls.append(("rf_off", self.frequency))
 
     def drain_error_queue(self):
+        if self.frequency == self.instrument_error_frequency_hz:
+            return ['-200,"Execution error"']
         return []
 
 
@@ -69,6 +72,16 @@ def test_failure_stops_sweep_and_preserves_completed_points():
     assert len(result.points) == 1
     assert result.failed_frequency_hz == 6_105e6
     assert backend.calls[-1] == ("rf_off", 6_105e6)
+
+
+def test_error_queue_stops_before_next_frequency():
+    backend = SweepBackend(instrument_error_frequency_hz=6_105e6)
+    result = run_frequency_sweep(backend, sweep_plan(), sleeper=lambda _: None)
+    assert result.completed is False
+    assert len(result.points) == 2
+    assert result.failed_frequency_hz == 6_105e6
+    assert result.error is not None and "Execution error" in result.error
+    assert ("configure", 6_125e6) not in backend.calls
 
 
 @pytest.mark.parametrize(

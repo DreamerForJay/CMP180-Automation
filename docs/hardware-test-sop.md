@@ -112,6 +112,19 @@ python scripts\cmp180_rf_state_validate.py `
 
 工具先讀取並驗證安全條件，才送出 RF On；不啟動 WLAN measurement。RF Off 放在 `finally`，因此 RF On 後任何錯誤都會嘗試關閉。實機首次執行前仍須由操作員在當次對話重新確認接線與人在現場。
 
+## 12. 固定三點頻率掃描 HIL（需逐次現場確認）
+
+此入口固定為 RF1.1 → RF1.5、6085／6105／6125 MHz、320 MHz、-40 dBm、expected power -20 dBm。執行前先重跑連線與 query-only discovery，確認 Generator `OFF`、measurement `OFF` 或 `RDY`、error queue empty；再確認單一 cable 直連且操作員仍在現場。
+
+```powershell
+python scripts\cmp180_frequency_sweep_validate.py `
+  --confirm-direct-cable `
+  --confirm-operator-present `
+  --confirm-three-point-sweep
+```
+
+每點應輸出 EVM、burst power 與 frequency error。最後必須顯示 RF `OFF`、measurement `OFF` 或 `RDY`、error queue `[]`。只要任一條件不符就停止，不得接著執行 Web 實機掃頻。完整／部分結果皆保存在 `output`；完整限制與 artifacts 說明見 [安全短掃描規格](sweep-safety.md)。
+
 ## English Version
 
 This SOP records the verified RF1.1-to-RF1.5 WLAN loopback workflow. It separates CMsquares actions from operations already supported by Python.
@@ -287,3 +300,15 @@ python scripts\cmp180_rf_state_validate.py `
 
 The tool reads and validates every safety condition before RF On and does not initiate a WLAN measurement. RF Off is in `finally`, so any failure after the RF-On attempt still triggers an Off attempt. The operator must reconfirm cabling and physical presence in the current session before the first hardware execution.
 
+## 13. Fixed three-point frequency-sweep HIL (per-run on-site confirmation required)
+
+This entry point is fixed to RF1.1 to RF1.5, 6085/6105/6125 MHz, 320 MHz, -40 dBm, and -20 dBm expected power. Before execution, rerun the connection and query-only discovery checks. Confirm Generator `OFF`, measurement `OFF` or `RDY`, an empty error queue, the single direct cable, and that the operator remains on site.
+
+```powershell
+python scripts\cmp180_frequency_sweep_validate.py `
+  --confirm-direct-cable `
+  --confirm-operator-present `
+  --confirm-three-point-sweep
+```
+
+Every point should print EVM, burst power, and frequency error. The final line must show RF `OFF`, measurement `OFF` or `RDY`, and error queue `[]`. Stop if any condition differs; do not proceed to a Web hardware sweep. Complete and partial results are saved under `output`. See the [safe short-sweep specification](sweep-safety.md) for the full limits and artifact behavior.
