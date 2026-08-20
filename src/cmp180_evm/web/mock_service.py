@@ -10,6 +10,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+MAXIMUM_DEMO_SWEEP_POINTS = 11
+
 
 @dataclass(frozen=True)
 class MockPoint:
@@ -36,8 +38,9 @@ def build_frequency_points(
     if start_hz <= 0 or stop_hz < start_hz or step_hz <= 0:
         raise ValueError("Invalid frequency range or step")
     count = int(math.floor((stop_hz - start_hz) / step_hz)) + 1
-    if count > 1001:
-        raise ValueError("Sweep exceeds the 1001-point GUI safety limit")
+    # Demo 與未來實機介面共用 11 點上限，避免使用者在模式切換後誤判可用範圍。
+    if count > MAXIMUM_DEMO_SWEEP_POINTS:
+        raise ValueError(f"Sweep exceeds the {MAXIMUM_DEMO_SWEEP_POINTS}-point GUI limit")
     return [start_hz + index * step_hz for index in range(count)]
 
 
@@ -50,8 +53,9 @@ def build_power_points(
     if step_dbm <= 0 or stop_dbm < start_dbm:
         raise ValueError("Invalid power range or step")
     count = int(math.floor((stop_dbm - start_dbm) / step_dbm)) + 1
-    if count > 1001:
-        raise ValueError("Sweep exceeds the 1001-point GUI safety limit")
+    # 功率 Demo 也維持相同上限，讓預估時間與正式安全流程一致。
+    if count > MAXIMUM_DEMO_SWEEP_POINTS:
+        raise ValueError(f"Sweep exceeds the {MAXIMUM_DEMO_SWEEP_POINTS}-point GUI limit")
     return [start_dbm + index * step_dbm for index in range(count)]
 
 

@@ -4,7 +4,7 @@
 
 ### 狀態（2026-08-20）
 
-- 分支：`validation/five-stat-singleshot-hil`（實機證據文件；UI-1 在 PR #8）。
+- 分支：`feature/ui-console-refresh`（PR #8；五統計 HIL 已由 PR #9 合併）。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
 - Web GUI 已有雙語響應式版面（亮／暗主題切換，預設暗色）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifacts 與圖表。
 - 實機 Web 只允許 loopback bind；尚無 authentication／RBAC，不得對內網公開 RF endpoint。
@@ -16,6 +16,8 @@
 - 新增 ruff／mypy（CI 中非阻斷）與 `scripts/precommit_check.ps1`。
 - PR #7 接手審查已將 Frequency／Power Sweep 的頻率、頻寬、功率、span 與點數改為
   不可由呼叫端放寬的硬性安全包絡，並補上繞過測試；尚未執行新的實機 RF。
+- UI-1 已移除底部模式列與宣傳式 Hero，改成緊湊量測工作區、單一模式狀態與較
+  清楚的深色控制台層級；Demo 掃描同步限制為最多 11 點，單點功率上限 -40 dBm。
 - PR #7 程式驗證：87 tests、兩份 YAML validation、JavaScript syntax 與
   `git diff --check` 通過；該批自動檢查只使用 unit／Mock。其後已另行完成上述
   2026-08-20 五統計實機 RF HIL，兩者不可混稱為同一次驗證。
@@ -42,7 +44,7 @@
 
 ### Status (2026-08-20)
 
-- Branch: `validation/five-stat-singleshot-hil` (hardware evidence docs; UI-1 is PR #8).
+- Branch: `feature/ui-console-refresh` (PR #8; five-statistic HIL merged in PR #9).
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - The Web GUI provides a bilingual responsive layout (light/dark theme toggle, dark by default), mock single/frequency-sweep/power-sweep, guarded hardware SingleShot, artifacts, and plots.
 - Hardware Web mode is loopback-only. Authentication/RBAC are absent, so never expose the RF endpoint to the network.
@@ -56,6 +58,9 @@
 - The PR #7 takeover review changed Frequency/Power Sweep frequency, bandwidth, power,
   span, and point limits into hard safety ceilings that callers cannot relax, with
   bypass tests added. No new live RF run was performed.
+- UI-1 removed the persistent bottom mode bar and marketing-style hero, replacing them
+  with a compact measurement workspace, one mode status, and a cleaner dark-console
+  hierarchy. Demo sweeps now share the 11-point ceiling and demo single uses -40 dBm.
 - PR #7 software validation: 87 tests, both YAML validations, JavaScript syntax, and
   `git diff --check` passed; that automated batch used unit/mock paths only. The separate
   five-statistic live-RF HIL described above was performed afterward on 2026-08-20 and

@@ -13,13 +13,11 @@ Object.assign(translations.zh, {
   preflightTitle: '執行前安全檢查',
   routeCheck: '接線符合已驗證路徑',
   operatorCheck: '操作員在儀器旁'
-  ,hardwareSafeTitle: '實機控制已解鎖'
-  ,hardwareSafeText: '只有完成執行前檢查後才會向 CMP180 發送 RF 指令'
-  ,hardwareIntro: 'Mock 流程、實機 SingleShot、結果輸出與圖表皆可使用；實機操作受安全檢查保護。'
   ,hardwareBadge: '實機模式'
+  ,hardwareControlState: '已啟用實機控制'
+  ,hardwareControlHint: '僅允許已驗證的固定 profile'
   ,serverLockedTitle: '此頁面目前無法使用'
   ,serverLockedText: '伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。'
-  ,modeBarHardware: 'HARDWARE ENABLED — 實機模式已解鎖，僅限已驗證的固定 profile'
 });
 
 Object.assign(translations.en, {
@@ -37,13 +35,11 @@ Object.assign(translations.en, {
   preflightTitle: 'Preflight safety checks',
   routeCheck: 'Route matches a verified cable path',
   operatorCheck: 'Operator is beside the instrument'
-  ,hardwareSafeTitle: 'Hardware controls armed'
-  ,hardwareSafeText: 'RF commands are sent only after all preflight checks pass'
-  ,hardwareIntro: 'Mock workflows, hardware SingleShot, artifacts, and plots are available with guarded RF controls.'
   ,hardwareBadge: 'Hardware Mode'
+  ,hardwareControlState: 'Hardware control enabled'
+  ,hardwareControlHint: 'Verified fixed profile only'
   ,serverLockedTitle: 'This page is currently unavailable'
   ,serverLockedText: 'The server was not started with --enable-hardware and is running in read-only mock mode. To use this page, restart the server locally with `python -m cmp180_evm.web --enable-hardware`; it may only bind to a loopback address.'
-  ,modeBarHardware: 'HARDWARE ENABLED — armed for the verified fixed profile only'
 });
 
 let hardwareEnabled = false;
@@ -76,18 +72,14 @@ async function loadHardwareStatus() {
     hardwareEnabled = status.hardware_enabled === true;
     $('#hardwareBadge').textContent = hardwareEnabled ? 'ARMED' : 'LOCKED';
     $('#serverLockedNotice').hidden = hardwareEnabled;
-    const modeBar = $('#modeBar');
-    modeBar.dataset.i18n = hardwareEnabled ? 'modeBarHardware' : 'modeBarMock';
-    modeBar.classList.toggle('hardware', hardwareEnabled);
     if (hardwareEnabled) {
       // 啟用實機 server 時改用紅色狀態，避免操作員誤認為 Mock。
-      const badge = document.querySelector('.status.mock');
-      badge.dataset.i18n = 'hardwareBadge';
-      badge.style.background = '#421a20';
-      badge.style.color = '#ffb7bd';
-      $('[data-i18n="safeTitle"]').dataset.i18n = 'hardwareSafeTitle';
-      $('[data-i18n="safeText"]').dataset.i18n = 'hardwareSafeText';
-      $('[data-i18n="intro"]').dataset.i18n = 'hardwareIntro';
+      const badge = $('#modeStatus');
+      $('#modeStatusLabel').dataset.i18n = 'hardwareBadge';
+      badge.classList.add('hardware');
+      $('#controlStateText').dataset.i18n = 'hardwareControlState';
+      $('#controlStateHint').dataset.i18n = 'hardwareControlHint';
+      $('.workspace-state').classList.add('hardware');
       applyLanguage();
     }
     updatePreflight();
@@ -156,8 +148,9 @@ render = function(data) {
   const links = Object.entries(urls).map(([key, url]) =>
     `<a href="${url}" target="_blank" rel="noopener">${labels[key] || key}</a>`
   ).join('');
+  const sourceLabel = data.simulated ? (language === 'zh' ? '示範資料' : 'DEMO DATA') : 'HARDWARE';
   $('#artifacts').innerHTML = links
-    ? `<div><strong>${data.simulated ? 'SIMULATED' : 'HARDWARE'} artifacts</strong></div><div class="artifact-links">${links}</div>`
+    ? `<div><strong>${sourceLabel} artifacts</strong></div><div class="artifact-links">${links}</div>`
     : '';
 };
 
