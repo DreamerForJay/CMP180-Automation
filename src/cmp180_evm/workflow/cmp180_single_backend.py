@@ -43,11 +43,16 @@ class Cmp180SingleMeasurementBackend:
         return self.io.query_str(self.registry.require(name)).strip()
 
     def _write_checked(self, name: str, **values: float | str) -> None:
-        command = self.registry.render(name, **values) if values else self.registry.require(name)
+        """Write a registered SCPI command and validate its completion and error status."""
+        command = (
+            self.registry.render(name, **values)
+            if values
+            else self.registry.require(name)
+        )
         self.io.write_str(command)
         self._query("common.operation_complete")
         error = self._query("common.system_error")
-        if not error.startswith("0,"):
+        if not (error.startswith("0,") or error.startswith("+0,")):
             raise RuntimeError(f"{name}: CMP180 returned {error}")
 
     def _require_readback(self, name: str, expected: float | str) -> None:
