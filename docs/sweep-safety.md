@@ -4,7 +4,7 @@
 
 ### 目前狀態
 
-安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。頻率掃描已有固定三點的 CLI HIL 入口與 partial-result artifacts；尚未完成實機執行。實機啟用前必須在操作員與 CMP180 旁完成受控 HIL 驗證。現在的 Web「頻率掃描」與「功率掃描」都仍是 Mock；可驗證輸入、CSV／JSON、表格與 EVM／Power／Frequency Error 圖表，不會產生 RF。
+安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。固定三點頻率掃描已於 2026-08-20 完成實機 HIL；功率掃描實機 HIL 尚未完成。現在的 Web「頻率掃描」與「功率掃描」都仍是 Mock；可驗證輸入、CSV／JSON、表格與 EVM／Power／Frequency Error 圖表，不會產生 RF。
 
 ### 三點頻率掃描 HIL 入口
 
@@ -49,17 +49,16 @@ python scripts\cmp180_frequency_sweep_validate.py `
 
 ### 尚待完成
 
-1. 頻率掃描：用 3 點低功率範例完成實機 HIL（6085、6105、6125 MHz）。
-2. 功率掃描：用固定頻率、多組低功率點完成實機 HIL。
-3. 兩者都要驗證各點 Generator／Analyzer read-back、error queue 與最終 RF OFF。
-4. 以實機失敗案例驗證 partial-result CSV／JSON metadata；程式與 unit test 已完成。
-5. 通過 HIL 後才在 Web GUI 加入對應的實機短掃描執行按鈕、進度與取消。
+1. 功率掃描：用固定頻率、多組低功率點完成實機 HIL。
+2. 以實機失敗案例驗證 partial-result CSV／JSON metadata；程式與 unit test 已完成。
+3. 設計 Web 掃頻的 progress、cancel 與獨立 emergency cleanup，再做安全審查。
+4. Web 實機掃頻必須另行驗證，不因 CLI 三點 HIL 通過而自動解鎖。
 
 ## English Version
 
 ### Current status
 
-The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. Frequency sweep now has a fixed three-point CLI HIL entry point and partial-result artifacts; the live run has not yet been performed. Controlled HIL validation beside the CMP180 and an operator is required before enabling either one. The current Web Frequency Sweep and Power Sweep screens remain mock-only; they validate inputs, CSV/JSON, tables, and EVM/Power/Frequency Error charts without producing RF.
+The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. The fixed three-point frequency sweep passed hardware HIL on 2026-08-20; power-sweep hardware HIL remains pending. The current Web Frequency Sweep and Power Sweep screens remain mock-only; they validate inputs, CSV/JSON, tables, and EVM/Power/Frequency Error charts without producing RF.
 
 ### Three-point frequency-sweep HIL entry point
 
@@ -105,8 +104,7 @@ Without all three flags, the program refuses before connecting or sending SCPI. 
 
 ### Remaining work
 
-1. Frequency sweep: perform a controlled three-point low-power HIL run at 6085, 6105, and 6125 MHz.
-2. Power sweep: perform a controlled HIL run across several low-power levels at a fixed frequency.
-3. Both: verify Generator/Analyzer read-back, error queue, and final RF OFF at every point.
-4. Validate partial-result CSV/JSON metadata with a live failure case; implementation and unit tests are complete.
-5. Enable each Web hardware sweep button, progress, and cancellation only after its own HIL passes.
+1. Power sweep: perform a controlled HIL run across several low-power levels at a fixed frequency.
+2. Validate partial-result CSV/JSON metadata with a live failure case; implementation and unit tests are complete.
+3. Design Web sweep progress, cancellation, and independent emergency cleanup, then perform a safety review.
+4. Validate the Web hardware sweep separately; the CLI three-point HIL does not automatically unlock it.
