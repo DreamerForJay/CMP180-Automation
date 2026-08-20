@@ -4,10 +4,147 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from cmp180_evm.results.artifacts import save_single_result
+from cmp180_evm.results.artifacts import (
+    save_frequency_sweep_result,
+    save_power_sweep_result,
+    save_single_result,
+)
 from cmp180_evm.scpi.registry import load_scpi_command_map
+from cmp180_evm.web.jobs import SweepJob
 from cmp180_evm.workflow.cmp180_single_backend import Cmp180SingleMeasurementBackend
+from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan, run_frequency_sweep
+from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
+
+
+def _web_point(
+    index: int, axis_value: float, values: dict[str, object], axis: str
+) -> dict[str, object]:
+    return {
+        "point_index": index,
+        "frequency_hz": axis_value if axis == "frequency" else 6_105_000_000.0,
+        "generator_power_dbm": axis_value if axis == "power" else -40.0,
+        "bandwidth_hz": 320_000_000.0,
+        "evm_all_db": float(values["evm_all_carriers_db"]),
+        "evm_data_db": float(values["evm_data_carriers_db"]),
+        "evm_pilot_db": float(values["evm_pilot_carriers_db"]),
+        "burst_power_dbm": float(values["burst_power_dbm"]),
+        "frequency_error_hz": float(values["frequency_error_hz"]),
+        "clock_error_ppm": float(values["clock_error_ppm"]),
+        "valid": True,
+        "limit_status": "MEASURED",
+    }
+
+
+def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> dict[str, object]:
+    """Run only the two CLI-HIL-approved fixed sweep profiles."""
+    from RsInstrument import RsInstrument
+
+    registry = load_scpi_command_map(Path("configs/scpi_command_map.yaml"))
+    instrument = RsInstrument(
+        "TCPIP::192.168.200.50::5025::SOCKET",
+        id_query=False,
+        reset=False,
+        options="SelectVisa='socketio'",
+    )
+    instrument.visa_timeout = 15_000
+    try:
+        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=15.0)
+        single = SingleMeasurementPlan(
+            "RF1.1", "RF1.5", 6_105_000_000, 320_000_000, -40, -20, 0, True, -40
+        )
+        def callback(count, _point):
+            job.point_completed(count)
+
+        if axis == "frequency":
+            plan = FrequencySweepPlan(
+                single, 6_085_000_000, 6_125_000_000, 20_000_000, maximum_points=3
+            )
+            result = run_frequency_sweep(
+                backend,
+                plan,
+                should_cancel=job.is_cancel_requested,
+                on_point_complete=callback,
+            )
+            raw_points = [
+                {"frequency_hz": value, **point.values}
+                for value, point in zip(result.requested_frequencies_hz, result.points)
+            ]
+            artifacts = save_frequency_sweep_result(
+                raw_points,
+                output_root,
+                requested_frequencies_hz=result.requested_frequencies_hz,
+                completed=result.completed,
+                failed_frequency_hz=result.failed_frequency_hz,
+                error=result.error,
+                metadata={"source": "web_verified_frequency_sweep"},
+            )
+            web_points = [
+                _web_point(index, value, point.values, axis)
+                for index, (value, point) in enumerate(
+                    zip(result.requested_frequencies_hz, result.points)
+                )
+            ]
+        elif axis == "power":
+            plan = PowerSweepPlan(single, -55, -40, 5, maximum_points=4, minimum_power_dbm=-55)
+            result = run_power_sweep(
+                backend,
+                plan,
+                should_cancel=job.is_cancel_requested,
+                on_point_complete=callback,
+            )
+            raw_points = [
+                {"generator_power_dbm": value, **point.values}
+                for value, point in zip(result.requested_powers_dbm, result.points)
+            ]
+            artifacts = save_power_sweep_result(
+                raw_points,
+                output_root,
+                requested_powers_dbm=result.requested_powers_dbm,
+                completed=result.completed,
+                failed_power_dbm=result.failed_power_dbm,
+                error=result.error,
+                metadata={"source": "web_verified_power_sweep"},
+            )
+            web_points = [
+                _web_point(index, value, point.values, axis)
+                for index, (value, point) in enumerate(
+                    zip(result.requested_powers_dbm, result.points)
+                )
+            ]
+        else:
+            raise ValueError("Unsupported hardware sweep axis")
+        if not result.completed and not job.is_cancel_requested():
+            raise RuntimeError(result.error or "Hardware sweep failed")
+        return {
+            "simulated": False,
+            "sweep_axis": axis,
+            "points": web_points,
+            "artifacts": artifacts,
+        }
+    finally:
+        # Web job 最外層永遠再送 STOP／RF Off，避免 worker 或取消留下 RF。
+        try:
+            instrument.write_str(registry.require("wlan_tx.stop"))
+            instrument.query_str(registry.require("common.operation_complete"))
+        except Exception:
+            try:
+                instrument.write_str(registry.require("wlan_tx.abort"))
+            except Exception:
+                pass
+        try:
+            instrument.write_str(registry.require("generator.rf_off"))
+            instrument.query_str(registry.require("common.operation_complete"))
+            rf_state = instrument.query_str(registry.require("generator_query.state")).strip()
+            measurement_state = instrument.query_str(
+                registry.require("wlan_tx_query.measurement_state")
+            ).strip()
+            if rf_state != "OFF" or measurement_state not in {"OFF", "RDY"}:
+                raise RuntimeError(
+                    f"Unsafe final state RF={rf_state}, measurement={measurement_state}"
+                )
+        finally:
+            instrument.close()
 
 
 def run_verified_real_single(

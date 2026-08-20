@@ -84,6 +84,21 @@ def test_error_queue_stops_before_next_frequency():
     assert ("configure", 6_125e6) not in backend.calls
 
 
+def test_cancel_stops_at_rf_off_point_boundary():
+    backend = SweepBackend()
+    completed = []
+    result = run_frequency_sweep(
+        backend,
+        sweep_plan(),
+        sleeper=lambda _: None,
+        should_cancel=lambda: len(completed) == 1,
+        on_point_complete=lambda count, _point: completed.append(count),
+    )
+    assert result.completed is False and result.error == "Cancelled"
+    assert len(result.points) == 1
+    assert backend.calls[-1] == ("rf_off", 6_085e6)
+
+
 @pytest.mark.parametrize(
     "overrides",
     [

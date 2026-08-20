@@ -474,3 +474,42 @@ was `OFF`, measurement was `RDY`, and the error queue was empty. This completes 
 for the fixed -55 through -40 dBm power sweep. -60 dBm remains a known invalid point and
 is excluded from the candidate numeric range. Web hardware power sweep still requires
 separate progress/cancel/cleanup acceptance.
+
+## 中文：2026-08-20 Web 實機掃描與取消 HIL
+
+在硬體模式只綁定 `127.0.0.1`、RF1.1 → RF1.5 直連且操作員在場的條件下，Web run
+`afb64617df` 完成 6085／6105／6125 MHz 三點頻率掃描：
+
+| 頻率 | EVM All（平均） | Burst Power（平均） | Frequency Error（平均） |
+|---:|---:|---:|---:|
+| 6085 MHz | -36.33 dB | -40.34 dBm | -9.64 Hz |
+| 6105 MHz | -36.41 dB | -40.30 dBm | -40.52 Hz |
+| 6125 MHz | -36.40 dB | -40.29 dBm | -9.96 Hz |
+
+頻率工作狀態為 `COMPLETE`、進度 3/3，並產生 CSV、JSON、metadata 與 HTML。接著 Web
+run `7463d55002` 執行 -55／-50／-45／-40 dBm 功率掃描；第一點完成後送出取消，取消在
+下一個 RF Off 安全邊界生效，狀態為 `CANCELLED`、進度 2/4，保存 -55 dBm（EVM
+-30.32 dB）與 -50 dBm（EVM -32.24 dB）兩筆 partial results 及完整 artifacts。
+獨立唯讀收尾確認 Generator `OFF`、measurement `RDY`，所有狀態查詢後的 error queue
+均為 `0,"No error"`。因此 Web 實機進度、正常完成、cooperative cancellation、partial
+artifact 與 emergency cleanup 驗收通過。
+
+## English: 2026-08-20 Web hardware sweep and cancellation HIL
+
+With hardware mode bound only to `127.0.0.1`, a direct RF1.1-to-RF1.5 cable, and the
+operator present, Web run `afb64617df` completed the 6085/6105/6125 MHz frequency sweep:
+
+| Frequency | Average EVM All | Average Burst Power | Average Frequency Error |
+|---:|---:|---:|---:|
+| 6085 MHz | -36.33 dB | -40.34 dBm | -9.64 Hz |
+| 6105 MHz | -36.41 dB | -40.30 dBm | -40.52 Hz |
+| 6125 MHz | -36.40 dB | -40.29 dBm | -9.96 Hz |
+
+The frequency job reached `COMPLETE` at 3/3 and produced CSV, JSON, metadata, and HTML.
+Web run `7463d55002` then started the -55/-50/-45/-40 dBm power sweep. Cancellation was
+requested after the first point and took effect at the next RF-Off safe boundary. The job
+ended `CANCELLED` at 2/4, preserving -55 dBm (EVM -30.32 dB) and -50 dBm (EVM -32.24 dB)
+partial results and complete artifacts. Independent read-only cleanup checks confirmed
+Generator `OFF`, measurement `RDY`, and `0,"No error"` after every status query. This
+passes Web hardware progress, normal completion, cooperative cancellation, partial
+artifact, and emergency-cleanup acceptance.
