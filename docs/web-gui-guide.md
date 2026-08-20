@@ -23,6 +23,16 @@ Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／runnin
 
 實機 Web Sweep 只接上 CLI-HIL 核准的固定 profile：頻率 6085／6105／6125 MHz，以及功率 -55／-50／-45／-40 dBm。取消只在每點完成 STOP／RF Off 的邊界生效，並由最外層再次 STOP／ABORt、RF Off 與 read-back。2026-08-20 現場 Web HIL 已完成：頻率掃描 3/3 正常完成；功率掃描於第一點後送出取消，安全邊界於 2/4 停止並保存 partial artifacts。獨立查詢確認 RF `OFF`、measurement `RDY`、error queue empty。
 
+前三個量測頁籤刻意保留為「示範單點／示範頻掃／示範功掃」：它們供教學、UI
+驗證、CI 與沒有儀器時開發，永遠不送出 SCPI 或 RF。真正的 SingleShot、三點頻掃與
+四點功掃集中在「實機量測」頁。若顯示 `LOCKED`，代表本次 server 未以
+`--enable-hardware` 啟動，不代表實機功能尚未完成；只有本機 loopback 模式可顯示
+`ARMED`。狀態 badge、安全檢查燈與模式選單都有雙語滑鼠提示。
+
+每次結果在 artifact 按鈕上方顯示相對輸出位置，例如
+`output/20260820T110057Z_real-frequency-sweep_afb64617df/`。GUI 不顯示絕對路徑，避免
+洩漏使用者名稱或公司目錄；使用者可直接點 HTML／CSV／JSON／Metadata。
+
 目前 GUI 是功能 MVP。第二輪 UI/UX 將加入即時 workflow step、執行動畫、取消與 cleanup 狀態、欄位連動驗證、圖表 tooltip／縮放、artifact 下載按鈕、run history，以及更完整的空白／錯誤／手機版狀態。
 
 「量測紀錄」頁會唯讀掃描本機 `output/` 中有效的 metadata，依時間由新到舊顯示
@@ -119,6 +129,19 @@ Real hardware SingleShot has completed HIL and can be enabled locally with `--en
 Mock frequency and power sweeps now use an asynchronous Job API with queued/running/stopping/complete/cancelled/failed states, per-point progress, a single-active-job lock, and cooperative cancellation. Browser acceptance on 2026-08-20 cancelled an 11-point frequency sweep at point 3 and preserved only three partial points. A four-point power sweep displayed 4/4 complete, CSV/JSON/HTML were clickable, and a narrow viewport had no horizontal overflow. This validates only the Mock Job/UI path; it does not authorize Web hardware sweeps.
 
 The Web hardware Sweep path is limited to CLI-HIL-approved fixed profiles: 6085/6105/6125 MHz frequency and -55/-50/-45/-40 dBm power. Cancellation takes effect only at a point boundary after STOP/RF Off, followed by outer STOP/ABORt, RF Off, and read-back. On-site Web HIL passed on 2026-08-20: frequency completed 3/3; power cancellation was requested after the first point and safely stopped at the next boundary with 2/4 partial artifacts. Independent queries confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
+
+The first three measurement tabs intentionally remain Demo Single, Demo Frequency
+Sweep, and Demo Power Sweep. They support training, UI validation, CI, and development
+without an instrument; they never send SCPI or RF. Real SingleShot, three-point
+frequency sweep, and four-point power sweep are grouped under Hardware Measurement.
+`LOCKED` means the current server was not started with `--enable-hardware`; it does not
+mean hardware scanning is unfinished. Only local loopback mode may show `ARMED`. Status
+badges, preflight lights, and the mode selector provide bilingual hover explanations.
+
+Every result shows a relative output location above its artifact buttons, for example
+`output/20260820T110057Z_real-frequency-sweep_afb64617df/`. The GUI hides absolute paths
+to avoid exposing user names or company directory details. Users can open HTML, CSV,
+JSON, and Metadata directly.
 
 The current GUI is a functional MVP. The second UI/UX pass adds live workflow steps, running animation, cancellation and cleanup state, cross-field validation, plot tooltips/zoom, artifact download buttons, run history, and stronger empty/error/mobile states.
 

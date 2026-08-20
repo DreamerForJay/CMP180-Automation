@@ -24,10 +24,10 @@
     </section>
 
     <nav class="tabs" aria-label="Workspace">
-      <button class="tab active" data-tab="single" data-i18n="singleTab">單點量測</button>
-      <button class="tab" data-tab="sweep" data-i18n="sweepTab">頻率掃描</button>
-      <button class="tab" data-tab="powerSweep" data-i18n="powerSweepTab">功率掃描</button>
-      <button class="tab" data-tab="hardware" data-i18n="hardwareTab">實機單點</button>
+      <button class="tab active" data-tab="single" data-i18n="singleTab" title="不連接儀器，用可重現資料練習單點流程 / No instrument; deterministic demo data">示範單點</button>
+      <button class="tab" data-tab="sweep" data-i18n="sweepTab" title="不開 RF 的頻率掃描介面測試 / Frequency-sweep UI test without RF">示範頻掃</button>
+      <button class="tab" data-tab="powerSweep" data-i18n="powerSweepTab" title="不開 RF 的功率掃描介面測試 / Power-sweep UI test without RF">示範功掃</button>
+      <button class="tab" data-tab="hardware" data-i18n="hardwareTab" title="控制已連接 CMP180；需本機明確啟用 / Controls CMP180 when locally enabled">實機量測</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
       <button class="tab" data-tab="history" data-i18n="historyTab">量測紀錄</button>
     </nav>
@@ -77,19 +77,19 @@
     </section>
 
     <section id="hardware" class="panel">
-      <div class="panel-head"><div><h2 data-i18n="hardwareTitle">CMP180 實機 SingleShot</h2><p data-i18n="hardwareHelp">固定使用已驗證的 RF1.1→RF1.5、6105 MHz、320 MHz、-40 dBm profile。</p></div><span id="hardwareBadge" class="pill danger">LOCKED</span></div>
+      <div class="panel-head"><div><h2 data-i18n="hardwareTitle">CMP180 實機量測</h2><p data-i18n="hardwareHelp">提供已驗證的 SingleShot、頻率掃描與功率掃描固定 profile。</p></div><span id="hardwareBadge" class="pill danger" tabindex="0" title="LOCKED：伺服器未開放實機控制；ARMED：完成安全確認後可送出 RF / LOCKED: control disabled; ARMED: RF available after preflight">LOCKED</span></div>
       <div id="serverLockedNotice" class="locked-notice" hidden><strong data-i18n="serverLockedTitle">此頁面目前無法使用</strong><p data-i18n="serverLockedText">伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。</p></div>
       <div class="warning-card"><strong data-i18n="rfWarning">此動作會產生真實 RF</strong><p data-i18n="rfWarningText">只有在線材已確認且操作員位於儀器旁時才能執行。錯誤或取消時會 STOP/ABORT 並 RF Off。</p></div>
       <div id="hardwareAlert" class="inline-alert" role="alert" aria-live="assertive" hidden></div>
       <form id="hardwareForm" class="form-grid">
-        <label><span>量測模式 / Measurement</span><select name="hardware_action"><option value="single">SingleShot · 6105 MHz · -40 dBm</option><option value="frequency">Frequency Sweep · 6085/6105/6125 MHz</option><option value="power">Power Sweep · -55/-50/-45/-40 dBm</option></select></label>
+        <label><span>量測模式 / Measurement</span><select name="hardware_action" title="僅列出已通過實機 HIL 的固定安全 profile / Only fixed profiles that passed hardware HIL"><option value="single">SingleShot · 6105 MHz · -40 dBm</option><option value="frequency">Frequency Sweep · 6085/6105/6125 MHz</option><option value="power">Power Sweep · -55/-50/-45/-40 dBm</option></select></label>
         <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" data-i18n-placeholder="cablePlaceholder" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5" data-i18n="cableVerifiedOption">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
         <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="operatorPresent">我人在 CMP180 旁並能觀察儀器</span></label>
         <div class="preflight-card">
           <strong data-i18n="preflightTitle">執行前安全檢查</strong>
-          <div><span id="routeCheck" class="check-dot"></span><span data-i18n="routeCheck">接線符合已驗證路徑</span></div>
-          <div><span id="operatorCheck" class="check-dot"></span><span data-i18n="operatorCheck">操作員在儀器旁</span></div>
-          <div><span class="check-dot ok"></span><span>6105 MHz · 320 MHz · -40 dBm</span></div>
+          <div tabindex="0" title="綠燈：符合已驗證 RF1.1-RF1.5 路徑 / Green: verified RF1.1-RF1.5 route"><span id="routeCheck" class="check-dot"></span><span data-i18n="routeCheck">接線符合已驗證路徑</span></div>
+          <div tabindex="0" title="綠燈：操作員已確認在場，可處理異常 / Green: operator confirmed on site"><span id="operatorCheck" class="check-dot"></span><span data-i18n="operatorCheck">操作員在儀器旁</span></div>
+          <div tabindex="0" title="綠燈：頻率、頻寬與功率符合安全 profile / Green: verified safe frequency, bandwidth, and power"><span class="check-dot ok"></span><span>6105 MHz · 320 MHz · -40 dBm</span></div>
         </div>
         <button id="hardwareButton" class="danger-button submit" type="submit" disabled data-i18n="runHardware">執行實機量測</button>
       </form>

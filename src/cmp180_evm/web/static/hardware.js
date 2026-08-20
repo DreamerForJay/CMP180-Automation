@@ -1,7 +1,7 @@
 Object.assign(translations.zh, {
-  hardwareTab: '實機單點',
-  hardwareTitle: 'CMP180 實機 SingleShot',
-  hardwareHelp: '固定使用已驗證的 RF1.1→RF1.5、6105 MHz、320 MHz、-40 dBm profile。',
+  hardwareTab: '實機量測',
+  hardwareTitle: 'CMP180 實機量測',
+  hardwareHelp: '提供已驗證的 SingleShot、頻率掃描與功率掃描固定 profile。',
   rfWarning: '此動作會產生真實 RF',
   rfWarningText: '只有在線材已確認且操作員位於儀器旁時才能執行。錯誤時會 STOP/ABORT 並 RF Off。',
   cableText: '接線路徑（可選擇或輸入）',
@@ -21,9 +21,9 @@ Object.assign(translations.zh, {
 });
 
 Object.assign(translations.en, {
-  hardwareTab: 'Hardware Single',
-  hardwareTitle: 'CMP180 Hardware SingleShot',
-  hardwareHelp: 'Uses only the verified RF1.1→RF1.5, 6105 MHz, 320 MHz, -40 dBm profile.',
+  hardwareTab: 'Hardware Measurement',
+  hardwareTitle: 'CMP180 Hardware Measurement',
+  hardwareHelp: 'Provides fixed HIL-verified SingleShot, frequency-sweep, and power-sweep profiles.',
   rfWarning: 'This action produces real RF',
   rfWarningText: 'Run only with confirmed cabling and an operator beside the instrument. Errors trigger STOP/ABORT and RF Off.',
   cableText: 'Cable route (select or type)',
@@ -162,8 +162,10 @@ render = function(data) {
     `<a href="${url}" target="_blank" rel="noopener">${labels[key] || key}</a>`
   ).join('');
   const sourceLabel = data.simulated ? (language === 'zh' ? '示範資料' : 'DEMO DATA') : 'HARDWARE';
+  const outputLabel = language === 'zh' ? '輸出位置' : 'Output location';
+  const outputLocation = data.output_location ? escapeHtml(data.output_location) : '';
   $('#artifacts').innerHTML = links
-    ? `<div><strong>${sourceLabel} artifacts</strong></div><div class="artifact-links">${links}</div>`
+    ? `<div><strong>${sourceLabel} artifacts</strong></div><div class="output-location"><span>${outputLabel}</span><code>${outputLocation}</code></div><div class="artifact-links">${links}</div>`
     : '';
 };
 
