@@ -17,7 +17,7 @@ Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 lo
 - Demo 結果在畫面顯示 `示範資料`／`DEMO DATA`，artifact 仍保存
   `simulated=true`，不得視為 CMP180 實機量測。
 
-實機 SingleShot 已完成 HIL，可用 `--enable-hardware` 在本機啟用；固定三點頻率掃描只完成 CLI HIL，Web progress／cancel／emergency cleanup 尚未驗證，因此 Web 實機 Sweep 仍保持鎖定。硬體模式沒有登入／RBAC，目前禁止綁定非 loopback 位址。模式集中顯示於右上角與量測工作區狀態，不使用遮擋內容的底部常駐列。伺服器未以 `--enable-hardware` 啟動時，「實機單點」頁會說明解鎖條件；真正會產生 RF 的警示只出現在實機操作區。
+實機 SingleShot 已完成 HIL，可用 `--enable-hardware` 在本機啟用；固定三點頻率與四點有效功率掃描已完成 CLI HIL，但 Web progress／cancel／emergency cleanup 尚未驗證，因此 Web 實機 Sweep 仍保持鎖定。硬體模式沒有登入／RBAC，目前禁止綁定非 loopback 位址。模式集中顯示於右上角與量測工作區狀態，不使用遮擋內容的底部常駐列。
 
 目前 GUI 是功能 MVP。第二輪 UI/UX 將加入即時 workflow step、執行動畫、取消與 cleanup 狀態、欄位連動驗證、圖表 tooltip／縮放、artifact 下載按鈕、run history，以及更完整的空白／錯誤／手機版狀態。
 
@@ -105,7 +105,7 @@ The Web GUI currently provides a complete mock workflow. It does not control the
 - Demo results display `DEMO DATA`; artifacts retain `simulated=true` and must not be
   treated as real CMP180 measurements.
 
-Real hardware SingleShot has completed HIL and can be enabled locally with `--enable-hardware`. The fixed three-point frequency sweep has completed CLI HIL only; Web progress, cancellation, and emergency cleanup remain unverified, so Web hardware Sweep stays locked. Mode is shown in the top-right status and workspace control-state card without a content-obscuring persistent bottom bar. When the server was not started with `--enable-hardware`, the Hardware Single screen explains its unlock conditions; RF-producing warnings appear only in the hardware operation area.
+Real hardware SingleShot has completed HIL and can be enabled locally with `--enable-hardware`. The fixed three-point frequency and four-point numeric power sweeps have completed CLI HIL, but Web progress, cancellation, and emergency cleanup remain unverified, so Web hardware Sweep stays locked. Mode is shown in the top-right status and workspace control-state card without a content-obscuring persistent bottom bar.
 
 The current GUI is a functional MVP. The second UI/UX pass adds live workflow steps, running animation, cancellation and cleanup state, cross-field validation, plot tooltips/zoom, artifact download buttons, run history, and stronger empty/error/mobile states.
 

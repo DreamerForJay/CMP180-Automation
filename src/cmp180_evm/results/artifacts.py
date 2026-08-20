@@ -197,3 +197,99 @@ def save_frequency_sweep_result(
         "metadata": str(metadata_path.resolve()),
         "report": str(report_path.resolve()),
     }
+
+
+def save_power_sweep_result(
+    points: list[dict[str, object]],
+    output_root: Path,
+    *,
+    requested_powers_dbm: tuple[float, ...],
+    completed: bool,
+    failed_power_dbm: float | None,
+    error: str | None,
+    metadata: dict[str, object] | None = None,
+) -> dict[str, str]:
+    """Persist completed or partial power-sweep results without instrument access."""
+    now = datetime.now(UTC)
+    run_id = uuid.uuid4().hex[:10]
+    run_dir = output_root / f"{now.strftime('%Y%m%dT%H%M%SZ')}_real-power-sweep_{run_id}"
+    raw_dir = run_dir / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=False)
+
+    rows: list[dict[str, object]] = []
+    for point_index, point in enumerate(points):
+        normalized: dict[str, object] = {}
+        for key, value in point.items():
+            if key == "raw" or key.startswith("raw_"):
+                # 原始 SCPI 回應逐功率點保存，避免混入主要 CSV。
+                suffix = "average" if key == "raw" else key.removeprefix("raw_")
+                (raw_dir / f"point_{point_index:02d}_modulation_{suffix}.txt").write_text(
+                    str(value), encoding="utf-8"
+                )
+            else:
+                normalized[key] = value
+        rows.append(
+            {
+                "run_id": run_id,
+                "timestamp": now.isoformat(),
+                "simulated": False,
+                "point_index": point_index,
+                **normalized,
+            }
+        )
+
+    csv_path = run_dir / "results.csv"
+    fieldnames = (
+        list(rows[0])
+        if rows
+        else ["run_id", "timestamp", "simulated", "point_index", "generator_power_dbm"]
+    )
+    with csv_path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    json_path = run_dir / "results.json"
+    json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    metadata_path = run_dir / "metadata.json"
+    metadata_payload = {
+        "run_id": run_id,
+        "test_name": "real-power-sweep",
+        "created_at": now.isoformat(),
+        "simulated": False,
+        "status": "complete" if completed else "partial",
+        "requested_powers_dbm": requested_powers_dbm,
+        "completed_points": len(rows),
+        "failed_power_dbm": failed_power_dbm,
+        "error": error,
+        **(metadata or {}),
+    }
+    metadata_path.write_text(json.dumps(metadata_payload, indent=2), encoding="utf-8")
+
+    # HTML 僅呈現已保存的正規化資料，且 escape 所有儀器控制值。
+    headers = "".join(f"<th>{html.escape(str(name))}</th>" for name in fieldnames)
+    body = "".join(
+        "<tr>"
+        + "".join(f"<td>{html.escape(str(row.get(name, '')))}</td>" for name in fieldnames)
+        + "</tr>"
+        for row in rows
+    )
+    report_path = run_dir / "report.html"
+    report_path.write_text(
+        "<!doctype html><html lang='zh-Hant'><meta charset='utf-8'>"
+        "<title>CMP180 Power Sweep Report</title>"
+        "<style>body{font:14px system-ui;margin:32px;color:#172033}"
+        "table{border-collapse:collapse;width:100%;overflow:auto}"
+        "th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left;white-space:nowrap}"
+        "th{background:#f4f7fb}</style>"
+        f"<h1>CMP180 Power Sweep Report</h1><p>Status: {metadata_payload['status']}</p>"
+        f"<table><thead><tr>{headers}</tr></thead><tbody>{body}</tbody></table>",
+        encoding="utf-8",
+    )
+    return {
+        "run_id": run_id,
+        "run_dir": str(run_dir.resolve()),
+        "csv": str(csv_path.resolve()),
+        "json": str(json_path.resolve()),
+        "metadata": str(metadata_path.resolve()),
+        "report": str(report_path.resolve()),
+    }

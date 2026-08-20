@@ -4,12 +4,15 @@
 
 ### 狀態（2026-08-20）
 
-- 分支：`feature/frequency-sweep-hil-entry`（PR #8、#9 已合併至 `main`）。
+- 分支：`feature/power-sweep-hil-entry`（頻率掃描 PR #10 已合併至 `main`）。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
 - Web GUI 已有雙語響應式版面（亮／暗主題切換，預設暗色）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifacts 與圖表。
 - 實機 Web 只允許 loopback bind；尚無 authentication／RBAC，不得對內網公開 RF endpoint。
 - 安全短掃描核心（頻率與功率）與 Mock tests 已完成；固定三點頻率 HIL 已通過，功率 HIL 未完成，Web 實機 sweep 仍鎖定。
 - Run `bb3e8db580` 完成 6085／6105／6125 MHz 三點實機掃頻；三點 errors 均空，最終 RF `OFF`、measurement `RDY`、error queue empty，完整 artifacts 已保存。
+- 功率掃描 run `56ab9c982e` 在 -60 dBm 回傳 `INV`，舊核心錯標 complete；安全收尾正常。已補有限關鍵指標閘門，需重新 HIL，原 artifacts 保持不變作為 finding 證據。
+- 修正版 run `b8db34c0f4` 在 -60 dBm 正確立即停止、標示 partial，未執行較高功率；最終 RF OFF／RDY／error queue empty。下一個候選有效批次為 -55 至 -40 dBm。
+- Run `e6e86fe3d7` 完成 -55／-50／-45／-40 dBm 四點有效功率掃描；四點 errors 均空，最終 RF OFF／RDY／error queue empty，20 份 raw 與完整 artifacts 已保存。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -33,7 +36,7 @@
 
 ### 下一步
 
-1. 進行固定頻率、多組低功率點的功率 sweep HIL。
+1. 設計並驗證 Web Sweep progress、cancel、emergency cleanup；通過前保持實機按鈕鎖定。
 2. Sweep partial-result metadata、Web progress 與 cancel（頻率與功率掃描都需要）。
 3. DUT 控制、正式 WLAN limits、path-loss／calibration tables。
 4. 內網 deployment 所需 authentication、RBAC 與 audit log。
@@ -45,12 +48,15 @@
 
 ### Status (2026-08-20)
 
-- Branch: `feature/frequency-sweep-hil-entry` (PR #8 and PR #9 are merged into `main`).
+- Branch: `feature/power-sweep-hil-entry` (frequency-sweep PR #10 is merged into `main`).
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - The Web GUI provides a bilingual responsive layout (light/dark theme toggle, dark by default), mock single/frequency-sweep/power-sweep, guarded hardware SingleShot, artifacts, and plots.
 - Hardware Web mode is loopback-only. Authentication/RBAC are absent, so never expose the RF endpoint to the network.
 - The safe short-sweep cores (frequency and power) and mock tests are complete. Fixed three-point frequency HIL passed, power HIL is pending, and the Web hardware sweep buttons remain locked.
 - Run `bb3e8db580` completed the 6085/6105/6125 MHz hardware sweep with empty per-point errors, final RF `OFF`, measurement `RDY`, an empty error queue, and complete artifacts.
+- Power-sweep run `56ab9c982e` returned `INV` at -60 dBm and the old core mislabeled it complete; cleanup was safe. A finite critical-metric gate is now implemented and requires new HIL. Original artifacts remain unchanged as finding evidence.
+- Corrected run `b8db34c0f4` stopped immediately at -60 dBm, recorded partial status, and did not run higher powers; final RF OFF/RDY/error queue empty. The next candidate numeric batch is -55 through -40 dBm.
+- Run `e6e86fe3d7` completed the -55/-50/-45/-40 dBm numeric power sweep with empty per-point errors, final RF OFF/RDY/error queue empty, 20 raw responses, and complete artifacts.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had
@@ -78,7 +84,7 @@
 
 ### Next steps
 
-1. Run a power sweep HIL at a fixed frequency across several low power levels.
+1. Design and validate Web Sweep progress, cancellation, and emergency cleanup; keep hardware controls locked until acceptance passes.
 2. Sweep partial-result metadata plus Web progress/cancel (for both sweep types).
 3. DUT control, formal WLAN limits, and path-loss/calibration tables.
 4. Authentication, RBAC, and audit logging for intranet deployment.

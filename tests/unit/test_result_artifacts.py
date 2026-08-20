@@ -2,7 +2,11 @@ import csv
 import json
 from pathlib import Path
 
-from cmp180_evm.results.artifacts import save_frequency_sweep_result, save_single_result
+from cmp180_evm.results.artifacts import (
+    save_frequency_sweep_result,
+    save_power_sweep_result,
+    save_single_result,
+)
 
 
 def test_real_single_artifacts_preserve_raw_and_simulation_label(tmp_path: Path):
@@ -95,3 +99,22 @@ def test_frequency_sweep_artifacts_preserve_partial_points_and_raw(tmp_path: Pat
     raw_dir = Path(artifacts["run_dir"]) / "raw"
     assert (raw_dir / "point_00_modulation_average.txt").read_text() == "average-raw"
     assert (raw_dir / "point_00_modulation_current.txt").read_text() == "current-raw"
+
+
+def test_power_sweep_artifacts_preserve_partial_points_and_raw(tmp_path: Path):
+    artifacts = save_power_sweep_result(
+        [{"generator_power_dbm": -60.0, "evm_all_carriers_db": -34.0, "raw": "raw"}],
+        tmp_path,
+        requested_powers_dbm=(-60.0, -55.0, -50.0, -45.0, -40.0),
+        completed=False,
+        failed_power_dbm=-55.0,
+        error="TimeoutError: point timeout",
+    )
+    metadata = json.loads(Path(artifacts["metadata"]).read_text(encoding="utf-8"))
+    with open(artifacts["csv"], encoding="utf-8-sig", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert metadata["status"] == "partial"
+    assert metadata["failed_power_dbm"] == -55.0
+    assert row["simulated"] == "False"
+    assert "raw" not in row
+    assert (Path(artifacts["run_dir"]) / "raw/point_00_modulation_average.txt").read_text() == "raw"
