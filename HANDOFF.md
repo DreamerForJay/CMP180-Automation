@@ -18,6 +18,7 @@
 - Web GUI 新增唯讀「量測紀錄」，由新到舊顯示 `output/` runs，提供 HTML／CSV／JSON／Metadata 受控連結；不暴露本機絕對路徑或 raw SCPI，也不接觸 RF。
 - 新增 Draft Limit Profile 架構；Mock 結果只標示 `DRAFT_PASS`／`DRAFT_FAIL`，metadata 保存 profile snapshot 與 `compliance_claim=false`。正式數值仍待 RF／測試負責人核准。
 - UX 將三個 Mock 頁明確改為示範模式，實機 SingleShot／Frequency／Power 集中於「實機量測」；badge、檢查燈與模式有 hover 說明，結果顯示不含敏感資訊的相對輸出位置。
+- Web server 改用 exclusive port bind，防止多個新舊 process 同時佔用相同 port 而造成新版頁面呼叫舊 API 的 `Not found`。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -65,6 +66,7 @@
 - The Web GUI now has read-only Run History, newest first, with controlled HTML/CSV/JSON/Metadata links. It exposes neither absolute local paths nor raw SCPI and never touches RF.
 - Added the Draft Limit Profile framework. Mock results use only `DRAFT_PASS`/`DRAFT_FAIL`; metadata saves the profile snapshot and `compliance_claim=false`. Formal values still require RF/test-owner approval.
 - UX now labels all three Mock pages as demos and groups real SingleShot/Frequency/Power under Hardware Measurement. Badges, preflight lights, and mode selectors have hover help; results show a non-sensitive relative output location.
+- The Web server now uses an exclusive port bind, preventing stale and current processes from sharing a port and causing new pages to call old APIs with `Not found`.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had
