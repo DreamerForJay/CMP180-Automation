@@ -10,6 +10,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
     build_frequency_points,
     build_power_points,
@@ -21,6 +22,7 @@ STATIC_DIR = Path(__file__).with_name("static")
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 VERIFIED_CABLE_ROUTE = "RF1.1-RF1.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+JOB_MANAGER = JobManager()
 
 
 def validate_cable_route(value: object) -> str:
@@ -72,6 +74,18 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         parsed_path = urlparse(self.path).path
+        if parsed_path.startswith("/api/jobs/"):
+            job_id = parsed_path.removeprefix("/api/jobs/")
+            try:
+                payload = JOB_MANAGER.get(job_id).public()
+                result = payload.get("result")
+                if isinstance(result, dict) and isinstance(result.get("artifacts"), dict):
+                    # 只回傳 output/ 下的受控 URL，不把本機絕對路徑當成瀏覽器連結。
+                    result["artifact_urls"] = self._artifact_urls(result["artifacts"])
+                self._json_response(payload)
+            except KeyError as exc:
+                self._json_response({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            return
         if parsed_path == "/api/status":
             self._json_response(
                 {
@@ -92,8 +106,10 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 return
             body = candidate.read_bytes()
             self.send_response(HTTPStatus.OK)
+            content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
             self.send_header(
-                "Content-Type", mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+                "Content-Type",
+                content_type,
             )
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Content-Disposition", f'inline; filename="{candidate.name}"')
@@ -105,8 +121,9 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
     @staticmethod
     def _artifact_urls(artifacts: dict[str, str]) -> dict[str, str]:
         run_name = Path(artifacts["run_dir"]).name
+        run_dir = Path(artifacts["run_dir"])
         return {
-            key: f"/artifacts/{run_name}/{Path(path).relative_to(Path(artifacts['run_dir'])).as_posix()}"
+            key: f"/artifacts/{run_name}/{Path(path).relative_to(run_dir).as_posix()}"
             for key, path in artifacts.items()
             if key not in {"run_id", "run_dir"} and Path(path).is_file()
         }
@@ -114,6 +131,10 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         try:
+            if path.startswith("/api/jobs/") and path.endswith("/cancel"):
+                job_id = path.removeprefix("/api/jobs/").removesuffix("/cancel")
+                self._json_response(JOB_MANAGER.cancel(job_id).public())
+                return
             data = self._read_json()
             # 決定結果圖表 X 軸：頻率或功率掃描才不是 "frequency"（單點沿用預設）。
             sweep_axis = "frequency"
@@ -128,7 +149,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 artifacts = save_mock_run(
                     points, PROJECT_ROOT / "output", str(data.get("test_name", "mock-single"))
                 )
-            elif path == "/api/mock/sweep":
+            elif path in {"/api/mock/sweep", "/api/jobs/mock/frequency-sweep"}:
                 frequencies = build_frequency_points(
                     float(data["start_hz"]),
                     float(data["stop_hz"]),
@@ -143,10 +164,29 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     )
                     for index, frequency in enumerate(frequencies)
                 ]
+                if path.startswith("/api/jobs/"):
+                    job = JOB_MANAGER.start(
+                        "mock-frequency-sweep",
+                        len(points),
+                        lambda active_job: JobManager.run_mock_points(
+                            active_job,
+                            points,
+                            lambda captured: save_mock_run(
+                                captured,
+                                PROJECT_ROOT / "output",
+                                str(data.get("test_name", "mock-sweep")),
+                            ),
+                            float(data.get("dwell_ms", 100)) / 1000,
+                        ),
+                    )
+                    self._json_response(job.public(), HTTPStatus.ACCEPTED)
+                    return
                 artifacts = save_mock_run(
-                    points, PROJECT_ROOT / "output", str(data.get("test_name", "mock-sweep"))
+                    points,
+                    PROJECT_ROOT / "output",
+                    str(data.get("test_name", "mock-sweep")),
                 )
-            elif path == "/api/mock/power-sweep":
+            elif path in {"/api/mock/power-sweep", "/api/jobs/mock/power-sweep"}:
                 sweep_axis = "power"
                 powers = build_power_points(
                     float(data["start_dbm"]),
@@ -162,8 +202,27 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     )
                     for index, power_dbm in enumerate(powers)
                 ]
+                if path.startswith("/api/jobs/"):
+                    job = JOB_MANAGER.start(
+                        "mock-power-sweep",
+                        len(points),
+                        lambda active_job: JobManager.run_mock_points(
+                            active_job,
+                            points,
+                            lambda captured: save_mock_run(
+                                captured,
+                                PROJECT_ROOT / "output",
+                                str(data.get("test_name", "mock-power-sweep")),
+                            ),
+                            float(data.get("dwell_ms", 100)) / 1000,
+                        ),
+                    )
+                    self._json_response(job.public(), HTTPStatus.ACCEPTED)
+                    return
                 artifacts = save_mock_run(
-                    points, PROJECT_ROOT / "output", str(data.get("test_name", "mock-power-sweep"))
+                    points,
+                    PROJECT_ROOT / "output",
+                    str(data.get("test_name", "mock-power-sweep")),
                 )
             elif path == "/api/hardware/single":
                 if not self.hardware_enabled:

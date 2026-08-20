@@ -13,6 +13,7 @@
 - 功率掃描 run `56ab9c982e` 在 -60 dBm 回傳 `INV`，舊核心錯標 complete；安全收尾正常。已補有限關鍵指標閘門，需重新 HIL，原 artifacts 保持不變作為 finding 證據。
 - 修正版 run `b8db34c0f4` 在 -60 dBm 正確立即停止、標示 partial，未執行較高功率；最終 RF OFF／RDY／error queue empty。下一個候選有效批次為 -55 至 -40 dBm。
 - Run `e6e86fe3d7` 完成 -55／-50／-45／-40 dBm 四點有效功率掃描；四點 errors 均空，最終 RF OFF／RDY／error queue empty，20 份 raw 與完整 artifacts 已保存。
+- Web Mock Sweep 已改為非同步 Job API，支援進度、單一 active job、取消與 partial artifacts；瀏覽器驗收通過取消 3/11、完成 4/4、檔案連結與窄版無溢出。實機 Web Sweep 尚未接入。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -57,6 +58,7 @@
 - Power-sweep run `56ab9c982e` returned `INV` at -60 dBm and the old core mislabeled it complete; cleanup was safe. A finite critical-metric gate is now implemented and requires new HIL. Original artifacts remain unchanged as finding evidence.
 - Corrected run `b8db34c0f4` stopped immediately at -60 dBm, recorded partial status, and did not run higher powers; final RF OFF/RDY/error queue empty. The next candidate numeric batch is -55 through -40 dBm.
 - Run `e6e86fe3d7` completed the -55/-50/-45/-40 dBm numeric power sweep with empty per-point errors, final RF OFF/RDY/error queue empty, 20 raw responses, and complete artifacts.
+- Web Mock Sweep now uses an asynchronous Job API with progress, one active job, cancellation, and partial artifacts. Browser acceptance passed cancel at 3/11, complete at 4/4, clickable artifact links, and narrow-layout overflow checks. Web hardware Sweep is not connected yet.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had
