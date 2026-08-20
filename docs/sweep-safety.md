@@ -40,9 +40,9 @@ python scripts\cmp180_frequency_sweep_validate.py `
 - 頻率固定於單一已驗證值（目前對應 6105 MHz）。
 - Bandwidth 固定為已驗證的 320 MHz。
 
-### 五點功率掃描 HIL 入口
+### 四點功率掃描 HIL 入口
 
-第一版入口固定 6105 MHz、320 MHz、expected power -20 dBm，依序量測 -60、-55、-50、-45、-40 dBm。從最低功率往上執行，且不接受任意 RF 參數。每點完整 SingleShot 後 STOP／RF Off；error queue 或 cleanup 異常立即停止，不會繼續提高功率。
+探索已確認 -60 dBm 回傳 `INV`；候選入口固定 6105 MHz、320 MHz、expected power -20 dBm，依序量測 -55、-50、-45、-40 dBm。從最低有效功率往上執行，且不接受任意 RF 參數。每點完整 SingleShot 後 STOP／RF Off；無效結果、error queue 或 cleanup 異常立即停止。
 
 只有當次重新確認 RF1.1 → RF1.5 單一 cable 直連、無衰減器且操作員在儀器旁，才可執行：
 
@@ -50,7 +50,7 @@ python scripts\cmp180_frequency_sweep_validate.py `
 python scripts\cmp180_power_sweep_validate.py `
   --confirm-direct-cable `
   --confirm-operator-present `
-  --confirm-five-point-power-sweep
+  --confirm-four-point-power-sweep
 ```
 
 未帶齊三個確認旗標時，程式會在連線與送出 SCPI 前拒絕。完整與部分結果都保存 CSV、JSON、metadata、raw responses 與 HTML。
@@ -110,9 +110,9 @@ Without all three flags, the program refuses before connecting or sending SCPI. 
 - Frequency fixed at a single verified value (currently 6105 MHz).
 - Bandwidth fixed at the verified 320 MHz.
 
-### Five-point power-sweep HIL entry point
+### Four-point power-sweep HIL entry point
 
-The first entry point is fixed to 6105 MHz, 320 MHz, -20 dBm expected power, and the sequence -60, -55, -50, -45, and -40 dBm. It starts at the lowest power and accepts no arbitrary RF parameters. Every point performs a complete SingleShot followed by STOP/RF Off. Any error-queue or cleanup error stops the run before power can increase.
+Exploration confirmed that -60 dBm returns `INV`. The candidate entry point is fixed to 6105 MHz, 320 MHz, -20 dBm expected power, and the sequence -55, -50, -45, and -40 dBm. It starts at the lowest valid power and accepts no arbitrary RF parameters. Every point performs a complete SingleShot followed by STOP/RF Off. Any invalid result, error-queue error, or cleanup error stops the run before power can increase.
 
 Run only after reconfirming, for the current session, the single direct RF1.1-to-RF1.5 cable, no attenuator, and operator presence beside the instrument:
 
@@ -120,7 +120,7 @@ Run only after reconfirming, for the current session, the single direct RF1.1-to
 python scripts\cmp180_power_sweep_validate.py `
   --confirm-direct-cable `
   --confirm-operator-present `
-  --confirm-five-point-power-sweep
+  --confirm-four-point-power-sweep
 ```
 
 Without all three flags, the program refuses before connecting or sending SCPI. Complete and partial runs save CSV, JSON, metadata, raw responses, and HTML.

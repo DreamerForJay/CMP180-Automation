@@ -1,4 +1,4 @@
-"""Run the first controlled five-point CMP180 WLAN power-sweep HIL."""
+"""Run the controlled four-point CMP180 WLAN power-sweep HIL."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from cmp180_evm.workflow.cmp180_single_backend import Cmp180SingleMeasurementBac
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
 
-POWERS_DBM = (-60.0, -55.0, -50.0, -45.0, -40.0)
+POWERS_DBM = (-55.0, -50.0, -45.0, -40.0)
 
 
 def parse_args() -> argparse.Namespace:
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-root", type=Path, default=Path("output"))
     parser.add_argument("--confirm-direct-cable", action="store_true")
     parser.add_argument("--confirm-operator-present", action="store_true")
-    parser.add_argument("--confirm-five-point-power-sweep", action="store_true")
+    parser.add_argument("--confirm-four-point-power-sweep", action="store_true")
     return parser.parse_args()
 
 
@@ -60,7 +60,7 @@ def main() -> int:
     if not (
         args.confirm_direct_cable
         and args.confirm_operator_present
-        and args.confirm_five_point_power_sweep
+        and args.confirm_four_point_power_sweep
     ):
         print("Refusing live power sweep without all three confirmations.", file=sys.stderr)
         return 2
@@ -86,14 +86,14 @@ def main() -> int:
             operator_confirmed=True,
             maximum_generator_power_dbm=-40.0,
         )
-        # 第一版 HIL 固定五點並由最低功率往上，禁止任意改成更高輸出。
+        # -60 dBm 已確認為 INV，正式候選批次固定四點並由最低有效功率往上。
         plan = PowerSweepPlan(
             single=single,
             start_power_dbm=POWERS_DBM[0],
             stop_power_dbm=POWERS_DBM[-1],
             step_power_dbm=5.0,
             dwell_time_s=0.1,
-            maximum_points=5,
+            maximum_points=4,
             minimum_power_dbm=POWERS_DBM[0],
             maximum_power_dbm=POWERS_DBM[-1],
         )
@@ -125,7 +125,7 @@ def main() -> int:
             zip(result.requested_powers_dbm, result.points), start=1
         ):
             print(
-                f"POINT {index}/5 {power_dbm:.0f} dBm: "
+                f"POINT {index}/{len(POWERS_DBM)} {power_dbm:.0f} dBm: "
                 f"EVM={point.values['evm_all_carriers_db']} dB, "
                 f"Power={point.values['burst_power_dbm']} dBm, "
                 f"FreqError={point.values['frequency_error_hz']} Hz"
