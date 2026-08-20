@@ -6,9 +6,10 @@ from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
 
 
 class SweepBackend:
-    def __init__(self, fail_power_dbm=None):
+    def __init__(self, fail_power_dbm=None, instrument_error_power_dbm=None):
         self.power = 0.0
         self.fail_power_dbm = fail_power_dbm
+        self.instrument_error_power_dbm = instrument_error_power_dbm
         self.calls = []
 
     def configure(self, plan):
@@ -36,6 +37,8 @@ class SweepBackend:
         self.calls.append(("rf_off", self.power))
 
     def drain_error_queue(self):
+        if self.power == self.instrument_error_power_dbm:
+            return ['-200,"Execution error"']
         return []
 
 
@@ -69,6 +72,16 @@ def test_failure_stops_sweep_and_preserves_completed_points():
     assert len(result.points) == 1
     assert result.failed_power_dbm == -45.0
     assert backend.calls[-1] == ("rf_off", -45.0)
+
+
+def test_error_queue_stops_before_higher_power():
+    backend = SweepBackend(instrument_error_power_dbm=-45.0)
+    result = run_power_sweep(backend, sweep_plan(), sleeper=lambda _: None)
+    assert result.completed is False
+    assert len(result.points) == 2
+    assert result.failed_power_dbm == -45.0
+    assert result.error is not None and "Execution error" in result.error
+    assert ("configure", -40.0) not in backend.calls
 
 
 @pytest.mark.parametrize(

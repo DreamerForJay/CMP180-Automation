@@ -4,7 +4,7 @@
 
 ### 目前狀態
 
-安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。固定三點頻率掃描已於 2026-08-20 完成實機 HIL；功率掃描實機 HIL 尚未完成。現在的 Web「頻率掃描」與「功率掃描」都仍是 Mock；可驗證輸入、CSV／JSON、表格與 EVM／Power／Frequency Error 圖表，不會產生 RF。
+安全短掃描（頻率掃描與功率掃描）的 Python 核心與 Mock 測試都已完成，但都尚未開放 Web 實機按鈕。固定三點頻率掃描已於 2026-08-20 完成實機 HIL；固定五點功率掃描 CLI 與 partial artifacts 已備妥，但尚未執行實機 HIL。現在的 Web「頻率掃描」與「功率掃描」都仍是 Mock；可驗證輸入、CSV／JSON、表格與 EVM／Power／Frequency Error 圖表，不會產生 RF。
 
 ### 三點頻率掃描 HIL 入口
 
@@ -40,6 +40,21 @@ python scripts\cmp180_frequency_sweep_validate.py `
 - 頻率固定於單一已驗證值（目前對應 6105 MHz）。
 - Bandwidth 固定為已驗證的 320 MHz。
 
+### 五點功率掃描 HIL 入口
+
+第一版入口固定 6105 MHz、320 MHz、expected power -20 dBm，依序量測 -60、-55、-50、-45、-40 dBm。從最低功率往上執行，且不接受任意 RF 參數。每點完整 SingleShot 後 STOP／RF Off；error queue 或 cleanup 異常立即停止，不會繼續提高功率。
+
+只有當次重新確認 RF1.1 → RF1.5 單一 cable 直連、無衰減器且操作員在儀器旁，才可執行：
+
+```powershell
+python scripts\cmp180_power_sweep_validate.py `
+  --confirm-direct-cable `
+  --confirm-operator-present `
+  --confirm-five-point-power-sweep
+```
+
+未帶齊三個確認旗標時，程式會在連線與送出 SCPI 前拒絕。完整與部分結果都保存 CSV、JSON、metadata、raw responses 與 HTML。
+
 ### 兩者共通規則
 
 - 每一點都執行完整 SingleShot，並在換頻／換功率前 STOP measurement 與 RF Off。
@@ -58,7 +73,7 @@ python scripts\cmp180_frequency_sweep_validate.py `
 
 ### Current status
 
-The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. The fixed three-point frequency sweep passed hardware HIL on 2026-08-20; power-sweep hardware HIL remains pending. The current Web Frequency Sweep and Power Sweep screens remain mock-only; they validate inputs, CSV/JSON, tables, and EVM/Power/Frequency Error charts without producing RF.
+The Python core and mock tests for both safe short sweeps (frequency and power) are implemented, but neither has a Web hardware button yet. The fixed three-point frequency sweep passed hardware HIL on 2026-08-20. The fixed five-point power-sweep CLI and partial artifacts are ready, but its hardware HIL has not run. The current Web Frequency Sweep and Power Sweep screens remain mock-only; they validate inputs, CSV/JSON, tables, and EVM/Power/Frequency Error charts without producing RF.
 
 ### Three-point frequency-sweep HIL entry point
 
@@ -93,6 +108,21 @@ Without all three flags, the program refuses before connecting or sending SCPI. 
 - Dwell: 100–2000 ms.
 - Frequency fixed at a single verified value (currently 6105 MHz).
 - Bandwidth fixed at the verified 320 MHz.
+
+### Five-point power-sweep HIL entry point
+
+The first entry point is fixed to 6105 MHz, 320 MHz, -20 dBm expected power, and the sequence -60, -55, -50, -45, and -40 dBm. It starts at the lowest power and accepts no arbitrary RF parameters. Every point performs a complete SingleShot followed by STOP/RF Off. Any error-queue or cleanup error stops the run before power can increase.
+
+Run only after reconfirming, for the current session, the single direct RF1.1-to-RF1.5 cable, no attenuator, and operator presence beside the instrument:
+
+```powershell
+python scripts\cmp180_power_sweep_validate.py `
+  --confirm-direct-cable `
+  --confirm-operator-present `
+  --confirm-five-point-power-sweep
+```
+
+Without all three flags, the program refuses before connecting or sending SCPI. Complete and partial runs save CSV, JSON, metadata, raw responses, and HTML.
 
 ### Rules shared by both
 

@@ -10,7 +10,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 已完成 RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm 的 Python 實機 SingleShot。
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
 - 雙語響應式 Web GUI（含亮／暗主題切換）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifact links 與 EVM／Power／Frequency Error 圖表。
-- 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；固定三點頻率 CLI HIL 已通過，功率與 Web 實機 sweep 尚未通過 HIL，Web 按鈕保持鎖定。
+- 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；固定三點頻率 CLI HIL 已通過，固定五點功率 CLI 已備妥但 HIL 尚未執行，Web 按鈕保持鎖定。
 - GitHub Actions 執行 Windows／Python 3.11 unit、Mock 與設定驗證；不執行實機 RF。
 
 Mock、dry-run、CMsquares 手動量測或單獨 stored `FETCh` 不得描述成新的完整 Python 實機量測。
@@ -67,7 +67,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - Complete Python hardware SingleShot at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
 - Bilingual responsive Web GUI (with a light/dark theme toggle), mock single/frequency-sweep/power-sweep, guarded hardware SingleShot, artifact links, and EVM/Power/Frequency Error plots.
-- Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. The fixed three-point frequency CLI passed HIL; power and Web hardware sweeps have not, so Web hardware sweep controls remain locked.
+- Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. The fixed three-point frequency CLI passed HIL; the fixed five-point power CLI is ready but its HIL has not run, and Web hardware sweep controls remain locked.
 - Windows/Python 3.11 GitHub Actions for unit, mock, and configuration checks; CI never runs live RF.
 
 Do not describe mock, dry-run, manual CMsquares operation, or a standalone stored `FETCh` as a new complete Python hardware measurement.

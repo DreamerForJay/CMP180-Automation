@@ -125,6 +125,19 @@ python scripts\cmp180_frequency_sweep_validate.py `
 
 每點應輸出 EVM、burst power 與 frequency error。最後必須顯示 RF `OFF`、measurement `OFF` 或 `RDY`、error queue `[]`。只要任一條件不符就停止，不得接著執行 Web 實機掃頻。完整／部分結果皆保存在 `output`；完整限制與 artifacts 說明見 [安全短掃描規格](sweep-safety.md)。
 
+## 13. 固定五點功率掃描 HIL（需逐次現場確認）
+
+此入口固定 6105 MHz、320 MHz、expected power -20 dBm，依序從 -60 dBm 提高至 -40 dBm。執行前重新確認 Generator `OFF`、measurement `OFF` 或 `RDY`、error queue empty，以及 RF1.1 → RF1.5 單一 cable 直連、無衰減器、操作員在現場。
+
+```powershell
+python scripts\cmp180_power_sweep_validate.py `
+  --confirm-direct-cable `
+  --confirm-operator-present `
+  --confirm-five-point-power-sweep
+```
+
+若低功率點無法觸發或任何 cleanup／error queue 異常，工具會停止後續點並保存 partial artifacts，不會自行提高功率或變更 expected power。結束時必須顯示 RF `OFF`、measurement `OFF` 或 `RDY`、error queue `[]`。
+
 ## English Version
 
 This SOP records the verified RF1.1-to-RF1.5 WLAN loopback workflow. It separates CMsquares actions from operations already supported by Python.
@@ -312,3 +325,16 @@ python scripts\cmp180_frequency_sweep_validate.py `
 ```
 
 Every point should print EVM, burst power, and frequency error. The final line must show RF `OFF`, measurement `OFF` or `RDY`, and error queue `[]`. Stop if any condition differs; do not proceed to a Web hardware sweep. Complete and partial results are saved under `output`. See the [safe short-sweep specification](sweep-safety.md) for the full limits and artifact behavior.
+
+## 14. Fixed five-point power-sweep HIL (per-run on-site confirmation required)
+
+This entry point is fixed to 6105 MHz, 320 MHz, -20 dBm expected power, and increases from -60 dBm to -40 dBm. Before execution, reconfirm Generator `OFF`, measurement `OFF` or `RDY`, an empty error queue, the single direct RF1.1-to-RF1.5 cable, no attenuator, and operator presence.
+
+```powershell
+python scripts\cmp180_power_sweep_validate.py `
+  --confirm-direct-cable `
+  --confirm-operator-present `
+  --confirm-five-point-power-sweep
+```
+
+If a low-power point cannot trigger, or any cleanup/error-queue error occurs, the tool stops and preserves partial artifacts. It never raises power or changes expected power automatically. The final line must show RF `OFF`, measurement `OFF` or `RDY`, and error queue `[]`.

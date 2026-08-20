@@ -94,7 +94,8 @@ def run_power_sweep(
         point_plan = replace(plan.single, generator_power_dbm=power_dbm)
         try:
             # 每一點都走完整 SingleShot，確保點與點之間 STOP 且 RF Off。
-            results.append(run_single_measurement(backend, point_plan))
+            point_result = run_single_measurement(backend, point_plan)
+            results.append(point_result)
         except Exception as exc:
             # 保留先前成功點，讓 CSV/JSON 可標示 partial run，而非遺失整批資料。
             return PowerSweepResult(
@@ -103,6 +104,18 @@ def run_power_sweep(
                 completed=False,
                 failed_power_dbm=power_dbm,
                 error=f"{type(exc).__name__}: {exc}",
+            )
+        if point_result.cleanup_errors or point_result.instrument_errors:
+            # 清理或 error queue 異常代表儀器狀態不可信，禁止提高到下一個功率點。
+            return PowerSweepResult(
+                requested_powers_dbm=powers,
+                points=tuple(results),
+                completed=False,
+                failed_power_dbm=power_dbm,
+                error=(
+                    f"Point safety errors: instrument={point_result.instrument_errors}, "
+                    f"cleanup={point_result.cleanup_errors}"
+                ),
             )
         if index < len(powers) - 1:
             sleeper(plan.dwell_time_s)
