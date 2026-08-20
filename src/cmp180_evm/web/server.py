@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlparse
 
 from cmp180_evm.web.mock_service import (
     build_frequency_points,
+    build_power_points,
     save_mock_run,
     simulate_point,
 )
@@ -77,7 +78,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     "app": "CMP180 WLAN EVM Automation",
                     "mode": "mock",
                     "hardware_enabled": self.hardware_enabled,
-                    "capability": "mock-single-and-frequency-sweep",
+                    "capability": "mock-single-frequency-sweep-and-power-sweep",
                 }
             )
             return
@@ -114,6 +115,8 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             data = self._read_json()
+            # 決定結果圖表 X 軸：頻率或功率掃描才不是 "frequency"（單點沿用預設）。
+            sweep_axis = "frequency"
             if path == "/api/mock/single":
                 points = [
                     simulate_point(
@@ -142,6 +145,25 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 ]
                 artifacts = save_mock_run(
                     points, PROJECT_ROOT / "output", str(data.get("test_name", "mock-sweep"))
+                )
+            elif path == "/api/mock/power-sweep":
+                sweep_axis = "power"
+                powers = build_power_points(
+                    float(data["start_dbm"]),
+                    float(data["stop_dbm"]),
+                    float(data["step_dbm"]),
+                )
+                points = [
+                    simulate_point(
+                        float(data["frequency_hz"]),
+                        float(data["bandwidth_hz"]),
+                        power_dbm,
+                        index,
+                    )
+                    for index, power_dbm in enumerate(powers)
+                ]
+                artifacts = save_mock_run(
+                    points, PROJECT_ROOT / "output", str(data.get("test_name", "mock-power-sweep"))
                 )
             elif path == "/api/hardware/single":
                 if not self.hardware_enabled:
@@ -183,6 +205,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
         self._json_response(
             {
                 "simulated": True,
+                "sweep_axis": sweep_axis,
                 "points": [point.__dict__ for point in points],
                 "artifacts": artifacts,
                 "artifact_urls": self._artifact_urls(artifacts),

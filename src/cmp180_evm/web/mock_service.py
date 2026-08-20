@@ -41,6 +41,20 @@ def build_frequency_points(
     return [start_hz + index * step_hz for index in range(count)]
 
 
+def build_power_points(
+    start_dbm: float,
+    stop_dbm: float,
+    step_dbm: float,
+) -> list[float]:
+    """Build an inclusive power-level list without floating-point accumulation."""
+    if step_dbm <= 0 or stop_dbm < start_dbm:
+        raise ValueError("Invalid power range or step")
+    count = int(math.floor((stop_dbm - start_dbm) / step_dbm)) + 1
+    if count > 1001:
+        raise ValueError("Sweep exceeds the 1001-point GUI safety limit")
+    return [start_dbm + index * step_dbm for index in range(count)]
+
+
 def simulate_point(
     frequency_hz: float,
     bandwidth_hz: float,
@@ -50,7 +64,10 @@ def simulate_point(
     """Return stable simulated values; never represent them as hardware data."""
     # 使用固定公式而非亂數，讓測試、CSV 與圖表每次都能重現。
     phase = frequency_hz / 100_000_000.0
-    evm_all = -36.0 + 1.8 * math.sin(phase)
+    # 功率越接近安全上限（-40 dBm），示範用 EVM 越差；純粹讓 Power vs EVM
+    # 圖表有意義，不代表任何實機量測特性。
+    power_headroom_db = -40.0 - generator_power_dbm
+    evm_all = -36.0 + 1.8 * math.sin(phase) - 0.06 * power_headroom_db
     evm_data = evm_all + 0.35
     evm_pilot = evm_all - 0.55
     burst_power = generator_power_dbm - 0.45 + 0.12 * math.cos(phase)

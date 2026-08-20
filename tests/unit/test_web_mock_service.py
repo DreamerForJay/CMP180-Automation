@@ -5,6 +5,7 @@ import pytest
 
 from cmp180_evm.web.mock_service import (
     build_frequency_points,
+    build_power_points,
     save_mock_run,
     simulate_point,
 )
@@ -21,12 +22,25 @@ def test_frequency_points_are_inclusive_and_bounded():
         build_frequency_points(1, 2001, 1)
 
 
+def test_power_points_are_inclusive_and_bounded():
+    assert build_power_points(-50, -40, 5) == [-50, -45, -40]
+    with pytest.raises(ValueError, match="1001"):
+        build_power_points(-2001, -1, 1)
+
+
 def test_simulation_is_deterministic_and_labeled():
     first = simulate_point(6_105e6, 320e6, -40)
     second = simulate_point(6_105e6, 320e6, -40)
     assert first == second
     assert first.valid is True
     assert first.generator_power_dbm == -40
+
+
+def test_simulated_evm_varies_with_power_at_fixed_frequency():
+    # Power vs EVM 圖表要有意義，功率越高（越接近 -40 dBm 上限）EVM 應該越差。
+    lower_power = simulate_point(6_105e6, 320e6, -60)
+    higher_power = simulate_point(6_105e6, 320e6, -40)
+    assert higher_power.evm_all_db > lower_power.evm_all_db
 
 
 def test_mock_artifacts_include_csv_json_and_html(tmp_path):
