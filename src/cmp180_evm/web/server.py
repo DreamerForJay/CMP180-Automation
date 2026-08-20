@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import socket
 from datetime import datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -25,6 +26,20 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 VERIFIED_CABLE_ROUTE = "RF1.1-RF1.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 JOB_MANAGER = JobManager()
+
+
+class ExclusiveThreadingHTTPServer(ThreadingHTTPServer):
+    """Reject a second local server instead of splitting requests across stale versions."""
+
+    allow_reuse_address = False
+
+    def server_bind(self) -> None:
+        # Windows 的 SO_REUSEADDR 可能讓多個開發 server 同時監聽同一 port；使用 exclusive
+        # bind，啟動第二份時立即失敗，避免新版靜態頁打到舊版 API。
+        exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+        if exclusive is not None:
+            self.socket.setsockopt(socket.SOL_SOCKET, exclusive, 1)
+        super().server_bind()
 
 
 def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, object]]:
@@ -382,7 +397,7 @@ def main() -> None:
     args = parse_args()
     validate_hardware_bind(args.host, args.enable_hardware)
     Cmp180WebHandler.hardware_enabled = args.enable_hardware
-    server = ThreadingHTTPServer((args.host, args.port), Cmp180WebHandler)
+    server = ExclusiveThreadingHTTPServer((args.host, args.port), Cmp180WebHandler)
     print(f"CMP180 Web GUI: http://{args.host}:{args.port}")
     print(
         "Mode: hardware endpoint enabled (guarded)."

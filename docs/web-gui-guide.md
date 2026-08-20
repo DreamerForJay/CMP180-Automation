@@ -33,6 +33,11 @@ Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／runnin
 `output/20260820T110057Z_real-frequency-sweep_afb64617df/`。GUI 不顯示絕對路徑，避免
 洩漏使用者名稱或公司目錄；使用者可直接點 HTML／CSV／JSON／Metadata。
 
+若按鈕出現 `Not found`，通常是更新程式後仍有舊 Python Web process 佔用相同 port。
+新版 server 使用 exclusive bind，第二個相同 host／port 的 instance 會在啟動時直接失敗，
+不再讓請求隨機落到不同版本。正常關閉請在啟動 Web 的 PowerShell 按 `Ctrl+C`，更新後再
+啟動一次；不要同時開多個 `python -m cmp180_evm.web`。
+
 目前 GUI 是功能 MVP。第二輪 UI/UX 將加入即時 workflow step、執行動畫、取消與 cleanup 狀態、欄位連動驗證、圖表 tooltip／縮放、artifact 下載按鈕、run history，以及更完整的空白／錯誤／手機版狀態。
 
 「量測紀錄」頁會唯讀掃描本機 `output/` 中有效的 metadata，依時間由新到舊顯示
@@ -142,6 +147,12 @@ Every result shows a relative output location above its artifact buttons, for ex
 `output/20260820T110057Z_real-frequency-sweep_afb64617df/`. The GUI hides absolute paths
 to avoid exposing user names or company directory details. Users can open HTML, CSV,
 JSON, and Metadata directly.
+
+If a button reports `Not found`, a stale Python Web process may still own the same port
+after a code update. The current server uses an exclusive bind: a second instance on the
+same host/port fails immediately instead of randomly splitting requests across versions.
+Stop the Web process with `Ctrl+C`, then start it once after updating; do not run multiple
+`python -m cmp180_evm.web` instances on the same port.
 
 The current GUI is a functional MVP. The second UI/UX pass adds live workflow steps, running animation, cancellation and cleanup state, cross-field validation, plot tooltips/zoom, artifact download buttons, run history, and stronger empty/error/mobile states.
 

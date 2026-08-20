@@ -11,10 +11,15 @@ from cmp180_evm.web.mock_service import (
 )
 from cmp180_evm.web.server import (
     Cmp180WebHandler,
+    ExclusiveThreadingHTTPServer,
     list_run_history,
     validate_cable_route,
     validate_hardware_bind,
 )
+
+
+def test_web_server_disables_address_reuse_to_prevent_stale_duplicate_instances():
+    assert ExclusiveThreadingHTTPServer.allow_reuse_address is False
 
 
 def test_run_history_is_newest_first_and_exposes_only_safe_artifact_urls(tmp_path):
