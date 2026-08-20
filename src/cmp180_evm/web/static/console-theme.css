@@ -53,3 +53,4 @@
 [data-theme="dark"] .inline-alert { background: #3a171c; border-color: #ff6b75; color: #ffb7bd; }
 [data-theme="dark"] .theme-toggle { border-color: #49515f; background: #1b2028; color: #fff; }
 .job-panel{margin:14px 0;padding:18px 22px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}.job-panel[hidden]{display:none}.job-panel progress{width:100%;height:12px;accent-color:#17d4d4}.job-actions{display:flex;justify-content:space-between;align-items:center;margin-top:14px}.job-actions button{width:auto;padding:9px 20px}
+.history-empty{padding:28px;text-align:center;color:var(--muted)}.history-empty[hidden]{display:none}.history-links{white-space:nowrap}.history-links a{color:var(--accent);text-decoration:none}.history-links a:hover{text-decoration:underline}.hardware-source{color:#5ee7b7;border-color:#245f4d;background:#102f29}.panel-head>.ghost{width:auto;padding:9px 16px}

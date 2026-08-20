@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+from datetime import datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -23,6 +24,54 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 VERIFIED_CABLE_ROUTE = "RF1.1-RF1.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 JOB_MANAGER = JobManager()
+
+
+def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, object]]:
+    """Return safe, newest-first summaries for locally saved measurement runs."""
+    bounded_limit = max(1, min(limit, 200))
+    if not output_root.is_dir():
+        return []
+    runs: list[dict[str, object]] = []
+    for metadata_path in output_root.glob("*/metadata.json"):
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            if not isinstance(metadata, dict):
+                continue
+            run_dir = metadata_path.parent
+            # 歷史 API 僅回傳白名單欄位與 output/ 相對 URL，避免洩漏本機路徑或原始 SCPI。
+            artifacts = {
+                name: f"/artifacts/{run_dir.name}/{filename}"
+                for name, filename in {
+                    "csv": "results.csv",
+                    "json": "results.json",
+                    "metadata": "metadata.json",
+                    "report": "report.html",
+                }.items()
+                if (run_dir / filename).is_file()
+            }
+            created_at = str(metadata.get("created_at") or "")
+            # 無效時間保留顯示，但排序降到最後；單一損壞 run 不應讓整頁失效。
+            try:
+                sort_time = datetime.fromisoformat(created_at.replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                sort_time = 0.0
+            runs.append(
+                {
+                    "run_id": str(metadata.get("run_id") or run_dir.name),
+                    "test_name": str(metadata.get("test_name") or "measurement"),
+                    "created_at": created_at,
+                    "simulated": bool(metadata.get("simulated", True)),
+                    "status": str(metadata.get("status") or "complete"),
+                    "completed_points": int(metadata.get("completed_points") or 0),
+                    "source": str(metadata.get("source") or "unknown"),
+                    "artifact_urls": artifacts,
+                    "_sort_time": sort_time,
+                }
+            )
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            continue
+    runs.sort(key=lambda item: float(item.pop("_sort_time")), reverse=True)
+    return runs[:bounded_limit]
 
 
 def validate_cable_route(value: object) -> str:
@@ -73,7 +122,11 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
         return value
 
     def do_GET(self) -> None:  # noqa: N802
-        parsed_path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        parsed_path = parsed.path
+        if parsed_path == "/api/runs":
+            self._json_response({"runs": list_run_history(PROJECT_ROOT / "output")})
+            return
         if parsed_path.startswith("/api/jobs/"):
             job_id = parsed_path.removeprefix("/api/jobs/")
             try:
