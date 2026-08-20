@@ -7,7 +7,7 @@
 Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 loopback bind 的固定 profile 實機 SingleShot。Mock 頁面不會控制 CMP180，也不會開啟 RF。可測試：
 
 - 繁體中文／英文即時切換。
-- 亮／暗主題切換（右上角按鈕，選擇會存在瀏覽器 `localStorage`，下次開啟延續）。
+- 亮／暗主題切換（右上角按鈕，預設為暗色，選擇會存在瀏覽器 `localStorage`，下次開啟延續）。
 - 手機、平板與桌面響應式版面。
 - 單一頻點 Mock 量測。
 - 起始頻率、結束頻率與步進的 Mock frequency sweep。
@@ -91,7 +91,7 @@ GUI 會顯示 `HARDWARE ENABLED` 與 `ARMED`。執行前必須：
 The Web GUI currently provides a complete mock workflow. It does not control the CMP180 or enable RF. You can test:
 
 - Instant Traditional Chinese/English switching.
-- Light/dark theme toggle (top-right button; the choice persists in browser `localStorage`).
+- Light/dark theme toggle (top-right button; defaults to dark; the choice persists in browser `localStorage`).
 - Responsive phone, tablet, and desktop layouts.
 - A mock single-frequency measurement.
 - A mock frequency sweep using start, stop, and step.

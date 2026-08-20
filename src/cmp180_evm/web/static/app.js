@@ -14,7 +14,7 @@ function drawChart(points){const svg=$('#chart'),metric=$('#chartMetric').value,
 $('#chartMetric').onchange=()=>{if(latest.length)drawChart(latest)};
 const sunIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
 const moonIcon='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.7 15.3A8.7 8.7 0 0 1 9.7 4.3a.6.6 0 0 0-.75-.8A10 10 0 1 0 21.5 16a.6.6 0 0 0-.8-.7z"/></svg>';
-let theme=localStorage.getItem('cmp180-theme')||'light';
+let theme=localStorage.getItem('cmp180-theme')||'dark';
 function applyTheme(){document.documentElement.dataset.theme=theme;const button=$('#themeButton');button.innerHTML=theme==='dark'?sunIcon:moonIcon;const label=theme==='dark'?'Switch to light theme':'Switch to dark theme';button.title=label;button.setAttribute('aria-label',label)}
 $('#themeButton').onclick=()=>{theme=theme==='dark'?'light':'dark';localStorage.setItem('cmp180-theme',theme);applyTheme()};
 applyTheme();
