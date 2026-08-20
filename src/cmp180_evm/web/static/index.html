@@ -11,7 +11,7 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="mark">RF</span><div><strong>CMP180 Automation</strong><small data-i18n="subtitle">WLAN TX EVM 自動化量測</small></div></div>
-    <div class="top-actions"><span class="status mock" data-i18n="mockBadge">模擬模式</span><button id="languageButton" class="ghost">EN</button></div>
+    <div class="top-actions"><span class="status mock" data-i18n="mockBadge">模擬模式</span><button id="themeButton" class="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle light/dark theme"></button><button id="languageButton" class="ghost">EN</button></div>
   </header>
   <main>
     <section class="hero">
@@ -43,9 +43,9 @@
         <label><span data-i18n="start">起始頻率</span><div class="input-unit"><input name="start_mhz" type="number" value="5925" required><b>MHz</b></div></label>
         <label><span data-i18n="stop">結束頻率</span><div class="input-unit"><input name="stop_mhz" type="number" value="6125" required><b>MHz</b></div></label>
         <label><span data-i18n="step">步進</span><div class="input-unit"><input name="step_mhz" type="number" value="20" min="1" required><b>MHz</b></div></label>
-        <label><span data-i18n="dwell">停留時間</span><div class="input-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100" required><b>ms</b></div></label>
+        <label><span data-i18n="dwell">停留時間</span><div class="input-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100" required><b>ms</b></div><small class="field-help" data-i18n="dwellHelp">每個頻點之間的等待時間，範圍 100–2000 ms。</small></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
-        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-30" required><b>dBm</b></div></label>
+        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-40" required><b>dBm</b></div><small class="field-help" data-i18n="sweepPowerHelp">安全短掃頻上限為 -40 dBm。</small></label>
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-sweep"></label>
         <button class="primary submit" type="submit" data-i18n="runSweep">執行 Mock Sweep</button>
       </form>
