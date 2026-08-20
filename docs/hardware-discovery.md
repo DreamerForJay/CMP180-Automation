@@ -1,7 +1,7 @@
 ﻿# CMP180 Hardware and CMsquares Discovery
 
 Initial discovery date: 2026-08-13
-Latest read-only verification: 2026-08-18
+Latest hardware verification: 2026-08-20
 Source: CMP180 local Device UI and read-only SCPI queries  
 Device address: `192.168.200.50`
 
@@ -340,3 +340,41 @@ Independent query-only auditing confirmed Generator 6105 MHz/-40 dBm with RF `OF
 Analyzer RF1.5/BW32/6105 MHz/expected -20 dBm, and measurement `RDY`; every error-queue
 query returned `0,"No error"`. This completes hardware HIL for fetching and saving all
 five statistics in one SingleShot. Frequency and Power Sweep remain unverified on hardware.
+
+## 中文：2026-08-20 三點頻率掃描 HIL
+
+操作員重新確認 RF1.1 → RF1.5 50 Ω 直連、無衰減器且人在 CMP180 旁後，執行固定
+6085／6105／6125 MHz、320 MHz、Generator -40 dBm、Analyzer expected -20 dBm、
+100 ms dwell 的完整 Python 三點頻率掃描。三點結果如下：
+
+| 頻率 | EVM All（平均） | Burst Power（平均） | Frequency Error（平均） |
+|---:|---:|---:|---:|
+| 6085 MHz | -36.15892 dB | -40.48821 dBm | -20.14753 Hz |
+| 6105 MHz | -36.22592 dB | -40.44269 dBm | -8.378243 Hz |
+| 6125 MHz | -36.20570 dB | -40.44243 dBm | -31.73889 Hz |
+
+Run `bb3e8db580` 完成三點，`simulated=false`、`status=complete`、沒有失敗頻率；
+每點 instrument／cleanup errors 均為空。每一個頻點都保存 average／current／minimum／
+maximum／standard deviation 五組、每組 28 欄的 raw response。CSV、JSON、metadata、raw
+與 HTML report 均已成功產生。最外層收尾確認 RF `OFF`、measurement `RDY`、error queue
+空。這正式完成固定三點頻率掃描的實機 HIL；功率掃描與 Web 實機掃頻仍未驗證／開放。
+
+## English: 2026-08-20 three-point frequency-sweep HIL
+
+After the operator reconfirmed a direct 50-ohm RF1.1-to-RF1.5 cable, no attenuator,
+and physical presence beside the CMP180, Python ran the fixed 6085/6105/6125 MHz,
+320 MHz, -40 dBm Generator, -20 dBm Analyzer expected-power, 100 ms dwell sweep.
+
+| Frequency | Average EVM All | Average Burst Power | Average Frequency Error |
+|---:|---:|---:|---:|
+| 6085 MHz | -36.15892 dB | -40.48821 dBm | -20.14753 Hz |
+| 6105 MHz | -36.22592 dB | -40.44269 dBm | -8.378243 Hz |
+| 6125 MHz | -36.20570 dB | -40.44243 dBm | -31.73889 Hz |
+
+Run `bb3e8db580` completed all three points with `simulated=false`, `status=complete`,
+and no failed frequency. Every point had empty instrument and cleanup error lists and
+saved five 28-field raw responses: average, current, minimum, maximum, and standard
+deviation. CSV, JSON, metadata, raw, and HTML artifacts were created successfully.
+Outer cleanup confirmed RF `OFF`, measurement `RDY`, and an empty error queue. This
+completes hardware HIL for the fixed three-point frequency sweep. Power-sweep HIL and
+the Web hardware sweep remain unverified/locked.
