@@ -55,6 +55,17 @@ git diff --check
 git status --short
 ```
 
+或直接執行 `scripts\precommit_check.ps1`，會依序跑完 pytest、兩份 config
+validation、`git diff --check`，並額外跑 ruff／mypy（非阻斷，只是提示，不會讓
+腳本失敗）：
+
+```powershell
+.\scripts\precommit_check.ps1
+```
+
+ruff／mypy 目前是新加入的，既有程式碼還沒清完全部既有問題，CI 裡也設成
+`continue-on-error`，先觀察雜訊量，之後視情況再決定是否收緊成阻斷檢查。
+
 提交訊息應描述功能，不使用模糊的 `update` 或 `fix stuff`。若文件與功能在同一次
 變更中完成，應放在同一個 commit 或相鄰且容易追蹤的 commits。
 
