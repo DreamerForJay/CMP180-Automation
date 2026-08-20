@@ -50,6 +50,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [硬體探索](docs/hardware-discovery.md) | 已驗證事實與量測證據 |
 | [SingleShot 狀態機](docs/single-measurement-state-machine.md) | RF workflow 與 cleanup |
 | [安全短掃描](docs/sweep-safety.md) | 頻率／功率 sweep 限制與 HIL gate |
+| [Limit Profile](docs/limit-profiles.md) | Draft／Approved 判定、margin 與追溯規則 |
 | [視覺化規格](docs/result-visualization-spec.md) | artifacts 與圖表要求 |
 | [開發流程](docs/development-workflow.md) | 測試與文件規則 |
 | [交接](HANDOFF.md) | 最新狀態與下一步 |

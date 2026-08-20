@@ -7,10 +7,21 @@ import json
 import math
 import uuid
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
+from cmp180_evm.limits import LimitProfile, evaluate_limits
+
 MAXIMUM_DEMO_SWEEP_POINTS = 11
+DEMO_LIMIT_PROFILE = LimitProfile(
+    profile_id="draft-eht-mcs11-bw320-loopback",
+    revision="0.1-draft",
+    lifecycle="draft",
+    description="Development-only example; not DUT compliance",
+    maximum_evm_db=-32.0,
+    maximum_absolute_frequency_error_hz=1000.0,
+    maximum_absolute_power_error_db=3.0,
+)
 
 
 @dataclass(frozen=True)
@@ -77,6 +88,13 @@ def simulate_point(
     burst_power = generator_power_dbm - 0.45 + 0.12 * math.cos(phase)
     frequency_error = 7.5 * math.sin(phase * 0.7)
     clock_error = 0.18 * math.cos(phase * 0.4)
+    limit_result = evaluate_limits(
+        DEMO_LIMIT_PROFILE,
+        evm_db=evm_all,
+        frequency_error_hz=frequency_error,
+        measured_power_dbm=burst_power,
+        expected_power_dbm=generator_power_dbm,
+    )
     return MockPoint(
         point_index=point_index,
         frequency_hz=frequency_hz,
@@ -89,7 +107,7 @@ def simulate_point(
         frequency_error_hz=round(frequency_error, 4),
         clock_error_ppm=round(clock_error, 6),
         valid=True,
-        limit_status="PASS" if evm_all <= -32.0 else "FAIL",
+        limit_status=limit_result.overall_status,
     )
 
 
@@ -99,7 +117,7 @@ def save_mock_run(
     test_name: str,
 ) -> dict[str, str]:
     """Persist normalized mock CSV/JSON and a self-contained HTML report."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     run_id = uuid.uuid4().hex[:10]
     safe_name = "".join(char if char.isalnum() or char in "-_" else "_" for char in test_name)
     run_dir = output_root / f"{now.strftime('%Y%m%dT%H%M%SZ')}_{safe_name}_{run_id}"
@@ -135,6 +153,8 @@ def save_mock_run(
                 "status": "complete",
                 "simulated": True,
                 "point_count": len(points),
+                "limit_profile": DEMO_LIMIT_PROFILE.snapshot(),
+                "compliance_claim": False,
             },
             indent=2,
         ),
@@ -155,10 +175,20 @@ def _build_html_report(run_id: str, rows: list[dict[str, object]]) -> str:
     encoded = json.dumps(rows).replace("</", "<\\/")
     return f"""<!doctype html>
 <html lang="zh-Hant"><meta charset="utf-8"><title>CMP180 Mock Report</title>
-<style>body{{font:15px system-ui;margin:32px;color:#172033}}table{{border-collapse:collapse;width:100%}}
-th,td{{padding:8px;border-bottom:1px solid #ddd;text-align:right}}th:first-child,td:first-child{{text-align:left}}
+<style>
+body{{font:15px system-ui;margin:32px;color:#172033}}
+table{{border-collapse:collapse;width:100%}}
+th,td{{padding:8px;border-bottom:1px solid #ddd;text-align:right}}
+th:first-child,td:first-child{{text-align:left}}
 .badge{{background:#fff3cd;padding:8px 12px;border-radius:8px}}</style>
 <h1>CMP180 WLAN EVM Mock Report</h1><p class="badge">SIMULATED / 模擬資料</p>
+<p class="badge">DRAFT LIMITS / 非正式限制，不代表 DUT compliance</p>
 <p>Run ID: {run_id}</p><table id="results"></table>
-<script>const rows={encoded};const keys=['point_index','frequency_hz','evm_all_db','burst_power_dbm','frequency_error_hz','limit_status'];
-document.querySelector('#results').innerHTML='<tr>'+keys.map(k=>`<th>${{k}}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+keys.map(k=>`<td>${{r[k]}}</td>`).join('')+'</tr>').join('');</script></html>"""
+<script>
+const rows={encoded};
+const keys=['point_index','frequency_hz','evm_all_db','burst_power_dbm',
+  'frequency_error_hz','limit_status'];
+document.querySelector('#results').innerHTML='<tr>'+
+  keys.map(k=>`<th>${{k}}</th>`).join('')+'</tr>'+
+  rows.map(r=>'<tr>'+keys.map(k=>`<td>${{r[k]}}</td>`).join('')+'</tr>').join('');
+</script></html>"""

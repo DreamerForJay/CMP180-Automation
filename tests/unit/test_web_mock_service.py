@@ -90,8 +90,12 @@ def test_mock_artifacts_include_csv_json_and_html(tmp_path):
     with open(artifacts["csv"], encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
     payload = json.loads(open(artifacts["json"], encoding="utf-8").read())
+    metadata = json.loads(open(artifacts["run_dir"] + "/metadata.json", encoding="utf-8").read())
     assert len(rows) == 1
     assert payload["simulated"] is True
+    assert rows[0]["limit_status"] == "DRAFT_PASS"
+    assert metadata["limit_profile"]["lifecycle"] == "draft"
+    assert metadata["compliance_claim"] is False
     assert "SIMULATED" in open(artifacts["report"], encoding="utf-8").read()
 
 
