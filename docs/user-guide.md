@@ -87,20 +87,13 @@ Dry Run 只列出預計步驟，不建立儀器連線，也不送出 SCPI：
 
 ## 6. 啟動 GUI
 
+早期的 Tkinter 桌面 GUI（僅支援設定驗證、Dry Run、Test Connection）已移除；這些功能改用 CLI（見上方章節）即可，單點量測、頻率掃描與圖表請改用 Web GUI：
+
 ```powershell
-.\.venv\Scripts\python.exe -m cmp180_evm.gui
+python -m cmp180_evm.web
 ```
 
-建議操作順序：
-
-1. 保持 `Use mock instrument` 勾選。
-2. 選擇 `configs/instrument.example.yaml`。
-3. 按下 Validate Config。
-4. 選擇 `configs/wlan_baseline.example.yaml`。
-5. 執行 Dry Run。
-6. 執行 Test Connection，確認 Result 與 Technical log。
-
-取消 Mock 代表會連接真實硬體；完成唯讀驗證前不要取消。
+詳見 [Web GUI 操作指南](web-gui-guide.md)。
 
 ## 7. 執行測試
 

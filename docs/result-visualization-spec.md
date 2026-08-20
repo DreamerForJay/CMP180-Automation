@@ -66,6 +66,8 @@ python scripts\build_report.py output\<run-id>
 
 後續 power sweep 需增加 Power vs. EVM 與 Power vs. output power error。圖表必須顯示單位、run ID、測試時間、有效點與 limit line；無效點不得連成正常資料線。
 
+**2026-08-20 更新（Mock 版本已完成）**：Web GUI 功率掃描 tab 的圖表已支援 Power vs. EVM（沿用現有結果圖表，X 軸依掃描類型自動切換頻率／功率並標示單位），且無效點（`valid=false`）不會連成正常資料線、以紅色標示。Run ID／測試時間顯示在圖表正上方的 `#runMeta`，不是畫在 SVG 內部。**Power vs. output power error**（設定功率與實際 Burst Power 的差值）尚未實作——目前只能透過既有下拉選單看 Power vs. Burst Power（絕對值，不是誤差），仍是待辦。這些都只是 Mock 資料，實機功率掃描仍未通過 HIL（見 `docs/sweep-safety.md`）。
+
 ### 6. GUI 與 Web 整合
 
 - GUI／Web 在量測時顯示即時進度與預覽圖。
@@ -148,6 +150,8 @@ For a frequency sweep, the first release must produce at least:
 5. PASS/FAIL/INVALID status for every frequency point.
 
 A later power-sweep release adds Power vs. EVM and Power vs. output-power error. Every plot must show units, run ID, test time, valid points, and limit lines. Invalid points must not be connected as normal data.
+
+**2026-08-20 update (mock version complete)**: the Web GUI's Power Sweep tab chart now supports Power vs. EVM (the existing results chart, with its X axis auto-switching between frequency and power depending on sweep type, labeled with units). Invalid points (`valid=false`) are no longer connected into the normal data line and are marked in red. Run ID/test time appear in `#runMeta` directly above the chart, not drawn inside the SVG itself. **Power vs. output-power error** (the difference between set power and actual Burst Power) is not implemented yet — the existing metric dropdown only offers Power vs. Burst Power (an absolute value, not an error), which remains open work. All of this is mock data only; the real power sweep has not passed HIL (see `docs/sweep-safety.md`).
 
 ### 6. GUI and web integration
 

@@ -52,8 +52,18 @@ class FakeCmp180:
                 if self.measurement_queries >= 2:
                     self.measurement_state = "RDY"
             return self.measurement_state
-        if command == REGISTRY.require("results.modulation_average"):
-            return "1,2" if self.malformed_result else ",".join(str(index) for index in range(1, 29))
+        stat_offsets = {
+            REGISTRY.require("results.modulation_average"): 0,
+            REGISTRY.require("results.modulation_current"): 100,
+            REGISTRY.require("results.modulation_minimum"): 200,
+            REGISTRY.require("results.modulation_maximum"): 300,
+            REGISTRY.require("results.modulation_std_dev"): 400,
+        }
+        if command in stat_offsets:
+            if self.malformed_result:
+                return "1,2"
+            offset = stat_offsets[command]
+            return ",".join(str(offset + index) for index in range(1, 29))
         if command in values:
             return values[command]
         raise AssertionError(f"Unexpected query: {command}")
@@ -77,7 +87,17 @@ def test_complete_backend_fetches_new_result_and_cleans_up():
     io = FakeCmp180()
     backend = Cmp180SingleMeasurementBackend(io, REGISTRY, poll_interval_s=0)
     result = run_single_measurement(backend, plan())
+    # average 沿用無前綴欄位名稱（向後相容）；其餘 4 組統計各自加前綴保存。
     assert result.values["evm_all_carriers_db"] == "16"
+    assert result.values["current_evm_all_carriers_db"] == "116"
+    assert result.values["min_evm_all_carriers_db"] == "216"
+    assert result.values["max_evm_all_carriers_db"] == "316"
+    assert result.values["stddev_evm_all_carriers_db"] == "416"
+    assert result.values["raw"].startswith("1,2,")
+    assert result.values["raw_current"].startswith("101,102,")
+    assert result.values["raw_minimum"].startswith("201,202,")
+    assert result.values["raw_maximum"].startswith("301,302,")
+    assert result.values["raw_std_dev"].startswith("401,402,")
     assert io.rf_state == "OFF"
     assert REGISTRY.require("wlan_tx.stop") in io.writes
     assert io.writes[-1] == REGISTRY.require("generator.rf_off")

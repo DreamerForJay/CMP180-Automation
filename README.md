@@ -9,8 +9,8 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - YAML 驗證、Mock／實機連線、Generator／Analyzer setter、measurement lifecycle 與 RF On／Off。
 - 已完成 RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm 的 Python 實機 SingleShot。
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
-- 雙語響應式 Web GUI、Mock 單點／掃頻、受保護實機 SingleShot、artifact links 與 EVM／Power／Frequency Error 圖表。
-- 安全短掃頻核心：最大 11 點／200 MHz span、-40 dBm 上限與逐點 cleanup；實機 sweep HIL 尚未完成，因此 Web 實機 sweep 鎖定。
+- 雙語響應式 Web GUI（含亮／暗主題切換）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifact links 與 EVM／Power／Frequency Error 圖表。
+- 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；實機 sweep HIL 尚未完成，因此 Web 實機 sweep 鎖定。
 - GitHub Actions 執行 Windows／Python 3.11 unit、Mock 與設定驗證；不執行實機 RF。
 
 Mock、dry-run、CMsquares 手動量測或單獨 stored `FETCh` 不得描述成新的完整 Python 實機量測。
@@ -47,7 +47,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [SCPI matrix](docs/scpi-command-matrix.md) | 指令來源、驗證與 schema |
 | [硬體探索](docs/hardware-discovery.md) | 已驗證事實與量測證據 |
 | [SingleShot 狀態機](docs/single-measurement-state-machine.md) | RF workflow 與 cleanup |
-| [安全短掃頻](docs/frequency-sweep-safety.md) | sweep 限制與 HIL gate |
+| [安全短掃描](docs/sweep-safety.md) | 頻率／功率 sweep 限制與 HIL gate |
 | [視覺化規格](docs/result-visualization-spec.md) | artifacts 與圖表要求 |
 | [開發流程](docs/development-workflow.md) | 測試與文件規則 |
 | [交接](HANDOFF.md) | 最新狀態與下一步 |
@@ -65,8 +65,8 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - YAML validation, mock/real connection, hardware-verified setters, measurement lifecycle, and RF On/Off.
 - Complete Python hardware SingleShot at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
-- Bilingual responsive Web GUI, mock single/sweep, guarded hardware SingleShot, artifact links, and EVM/Power/Frequency Error plots.
-- Safety-bounded short-sweep core with 11-point/200 MHz-span, -40 dBm, and per-point cleanup limits. Hardware sweep HIL is pending, so the Web hardware sweep remains locked.
+- Bilingual responsive Web GUI (with a light/dark theme toggle), mock single/frequency-sweep/power-sweep, guarded hardware SingleShot, artifact links, and EVM/Power/Frequency Error plots.
+- Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. Hardware sweep HIL is pending for both, so the Web hardware sweep buttons remain locked.
 - Windows/Python 3.11 GitHub Actions for unit, mock, and configuration checks; CI never runs live RF.
 
 Do not describe mock, dry-run, manual CMsquares operation, or a standalone stored `FETCh` as a new complete Python hardware measurement.

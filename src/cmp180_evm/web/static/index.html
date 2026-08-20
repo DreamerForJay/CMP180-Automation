@@ -11,7 +11,7 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="mark">RF</span><div><strong>CMP180 Automation</strong><small data-i18n="subtitle">WLAN TX EVM 自動化量測</small></div></div>
-    <div class="top-actions"><span class="status mock" data-i18n="mockBadge">模擬模式</span><button id="languageButton" class="ghost">EN</button></div>
+    <div class="top-actions"><span class="status mock" data-i18n="mockBadge">模擬模式</span><button id="themeButton" class="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle light/dark theme"></button><button id="languageButton" class="ghost">EN</button></div>
   </header>
   <main>
     <section class="hero">
@@ -22,6 +22,7 @@
     <nav class="tabs" aria-label="Workspace">
       <button class="tab active" data-tab="single" data-i18n="singleTab">單點量測</button>
       <button class="tab" data-tab="sweep" data-i18n="sweepTab">頻率掃描</button>
+      <button class="tab" data-tab="powerSweep" data-i18n="powerSweepTab">功率掃描</button>
       <button class="tab" data-tab="hardware" data-i18n="hardwareTab">實機單點</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
     </nav>
@@ -31,7 +32,7 @@
       <form id="singleForm" class="form-grid">
         <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
-        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-30" step="1" required><b>dBm</b></div></label>
+        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-30" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="singlePowerHelp">上限 -30 dBm。</small></label>
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-single"></label>
         <button class="primary submit" type="submit" data-i18n="runSingle">執行 Mock 單點</button>
       </form>
@@ -43,20 +44,35 @@
         <label><span data-i18n="start">起始頻率</span><div class="input-unit"><input name="start_mhz" type="number" value="5925" required><b>MHz</b></div></label>
         <label><span data-i18n="stop">結束頻率</span><div class="input-unit"><input name="stop_mhz" type="number" value="6125" required><b>MHz</b></div></label>
         <label><span data-i18n="step">步進</span><div class="input-unit"><input name="step_mhz" type="number" value="20" min="1" required><b>MHz</b></div></label>
-        <label><span data-i18n="dwell">停留時間</span><div class="input-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100" required><b>ms</b></div></label>
+        <label><span data-i18n="dwell">停留時間</span><div class="input-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100" required><b>ms</b></div><small class="field-help" data-i18n="dwellHelp">每個頻點之間的等待時間，範圍 100–2000 ms。</small></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
-        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-30" required><b>dBm</b></div></label>
+        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-40" required><b>dBm</b></div><small class="field-help" data-i18n="sweepPowerHelp">安全短掃頻上限為 -40 dBm。</small></label>
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-sweep"></label>
         <button class="primary submit" type="submit" data-i18n="runSweep">執行 Mock Sweep</button>
       </form>
     </section>
 
+    <section id="powerSweep" class="panel">
+      <div class="panel-head"><div><h2 data-i18n="powerSweepTitle">Mock 功率掃描</h2><p data-i18n="powerSweepHelp">固定頻率，依起點、終點與步進建立功率點，最多 1001 點。</p></div><span class="pill">SIMULATED</span></div>
+      <form id="powerSweepForm" class="form-grid">
+        <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
+        <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
+        <label><span data-i18n="startPower">起始功率</span><div class="input-unit"><input name="start_dbm" type="number" value="-60" min="-60" max="-40" step="1" required><b>dBm</b></div></label>
+        <label><span data-i18n="stopPower">結束功率</span><div class="input-unit"><input name="stop_dbm" type="number" value="-40" min="-60" max="-40" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="sweepPowerHelp">安全短掃頻上限為 -40 dBm。</small></label>
+        <label><span data-i18n="stepPower">步進</span><div class="input-unit"><input name="step_dbm" type="number" value="5" min="1" required><b>dBm</b></div></label>
+        <label><span data-i18n="dwell">停留時間</span><div class="input-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100" required><b>ms</b></div><small class="field-help" data-i18n="dwellHelp">每個頻點之間的等待時間，範圍 100–2000 ms。</small></label>
+        <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-power-sweep"></label>
+        <button class="primary submit" type="submit" data-i18n="runPowerSweep">執行 Mock 功率掃描</button>
+      </form>
+    </section>
+
     <section id="hardware" class="panel">
       <div class="panel-head"><div><h2 data-i18n="hardwareTitle">CMP180 實機 SingleShot</h2><p data-i18n="hardwareHelp">固定使用已驗證的 RF1.1→RF1.5、6105 MHz、320 MHz、-40 dBm profile。</p></div><span id="hardwareBadge" class="pill danger">LOCKED</span></div>
+      <div id="serverLockedNotice" class="locked-notice" hidden><strong data-i18n="serverLockedTitle">此頁面目前無法使用</strong><p data-i18n="serverLockedText">伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。</p></div>
       <div class="warning-card"><strong data-i18n="rfWarning">此動作會產生真實 RF</strong><p data-i18n="rfWarningText">只有在線材已確認且操作員位於儀器旁時才能執行。錯誤或取消時會 STOP/ABORT 並 RF Off。</p></div>
       <div id="hardwareAlert" class="inline-alert" role="alert" aria-live="assertive" hidden></div>
       <form id="hardwareForm" class="form-grid">
-        <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
+        <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" data-i18n-placeholder="cablePlaceholder" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5" data-i18n="cableVerifiedOption">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
         <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="operatorPresent">我人在 CMP180 旁並能觀察儀器</span></label>
         <div class="preflight-card">
           <strong data-i18n="preflightTitle">執行前安全檢查</strong>
@@ -72,11 +88,12 @@
       <div class="panel-head"><div><h2 data-i18n="resultTitle">量測結果</h2><p id="runMeta" data-i18n="empty">尚未執行 Mock 量測。</p></div><span id="resultBadge" class="pill neutral">NO DATA</span></div>
       <div id="metrics" class="metrics"></div>
       <div class="chart-card"><div class="chart-title"><strong data-i18n="resultChart">結果趨勢圖</strong><select id="chartMetric"><option value="evm_all_db">EVM (dB)</option><option value="burst_power_dbm">Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option></select></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
-      <div class="table-wrap"><table><thead><tr><th>#</th><th>MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
+  <div id="modeBar" class="mode-bar" data-i18n="modeBarMock">SIMULATED — 目前為 Mock 模式，不會控制真實 CMP180</div>
   <script src="/app.js"></script>
   <script src="/hardware.js"></script>
 </body>

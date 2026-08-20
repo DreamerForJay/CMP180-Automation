@@ -53,6 +53,10 @@ python -m cmp180_evm.web --enable-hardware
 - 最終 RF state 為 `OFF`。
 - CSV、JSON、Metadata、Raw SCPI 與 HTML Report 按鈕都能開啟。
 
+### 3.1 已保存的統計種類
+
+CSV／JSON 現在保存全部 5 組已驗證統計查詢，不只 average：`evm_all_carriers_db` 等欄位沿用無前綴命名代表 average（向後相容既有欄位），另外加前綴保存 `current_*`（目前值）、`min_*`（最小值）、`max_*`（最大值）、`stddev_*`（標準差）。對應的 raw SCPI 回應也各自存成 `raw/modulation_{average,current,minimum,maximum,std_dev}.txt`。
+
 ### 4. 主要欄位意義
 
 | 欄位 | 意義 | 單位／方向 |
@@ -143,6 +147,10 @@ A reasonable check does not require identical numbers on every run. Instead veri
 - The workflow reaches `RDY`, with empty instrument and cleanup error lists.
 - Final RF state is `OFF`.
 - CSV, JSON, Metadata, Raw SCPI, and HTML Report buttons open successfully.
+
+### 3.1 Saved statistics
+
+CSV/JSON now save all 5 verified statistic queries, not just average: fields such as `evm_all_carriers_db` keep the unprefixed name for average (backward compatible), plus prefixed `current_*`, `min_*`, `max_*`, and `stddev_*` variants. The matching raw SCPI responses are saved as `raw/modulation_{average,current,minimum,maximum,std_dev}.txt`.
 
 ### 4. Main field meanings
 

@@ -5,6 +5,8 @@ Object.assign(translations.zh, {
   rfWarning: '此動作會產生真實 RF',
   rfWarningText: '只有在線材已確認且操作員位於儀器旁時才能執行。錯誤時會 STOP/ABORT 並 RF Off。',
   cableText: '接線路徑（可選擇或輸入）',
+  cablePlaceholder: '例如 RF1.1-RF1.5',
+  cableVerifiedOption: '已驗證：RF1.1 → RF1.5',
   cableHelp: '可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。',
   operatorPresent: '我人在 CMP180 旁並能觀察儀器',
   runHardware: '執行實機 SingleShot',
@@ -15,6 +17,9 @@ Object.assign(translations.zh, {
   ,hardwareSafeText: '只有完成執行前檢查後才會向 CMP180 發送 RF 指令'
   ,hardwareIntro: 'Mock 流程、實機 SingleShot、結果輸出與圖表皆可使用；實機操作受安全檢查保護。'
   ,hardwareBadge: '實機模式'
+  ,serverLockedTitle: '此頁面目前無法使用'
+  ,serverLockedText: '伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。'
+  ,modeBarHardware: 'HARDWARE ENABLED — 實機模式已解鎖，僅限已驗證的固定 profile'
 });
 
 Object.assign(translations.en, {
@@ -24,6 +29,8 @@ Object.assign(translations.en, {
   rfWarning: 'This action produces real RF',
   rfWarningText: 'Run only with confirmed cabling and an operator beside the instrument. Errors trigger STOP/ABORT and RF Off.',
   cableText: 'Cable route (select or type)',
+  cablePlaceholder: 'e.g. RF1.1-RF1.5',
+  cableVerifiedOption: 'Verified: RF1.1 → RF1.5',
   cableHelp: 'Custom routes are accepted as input, but unverified routes trigger a warning and cannot enable RF.',
   operatorPresent: 'I am beside the CMP180 and can observe it',
   runHardware: 'Run hardware SingleShot',
@@ -34,6 +41,9 @@ Object.assign(translations.en, {
   ,hardwareSafeText: 'RF commands are sent only after all preflight checks pass'
   ,hardwareIntro: 'Mock workflows, hardware SingleShot, artifacts, and plots are available with guarded RF controls.'
   ,hardwareBadge: 'Hardware Mode'
+  ,serverLockedTitle: 'This page is currently unavailable'
+  ,serverLockedText: 'The server was not started with --enable-hardware and is running in read-only mock mode. To use this page, restart the server locally with `python -m cmp180_evm.web --enable-hardware`; it may only bind to a loopback address.'
+  ,modeBarHardware: 'HARDWARE ENABLED — armed for the verified fixed profile only'
 });
 
 let hardwareEnabled = false;
@@ -65,6 +75,10 @@ async function loadHardwareStatus() {
     const status = await response.json();
     hardwareEnabled = status.hardware_enabled === true;
     $('#hardwareBadge').textContent = hardwareEnabled ? 'ARMED' : 'LOCKED';
+    $('#serverLockedNotice').hidden = hardwareEnabled;
+    const modeBar = $('#modeBar');
+    modeBar.dataset.i18n = hardwareEnabled ? 'modeBarHardware' : 'modeBarMock';
+    modeBar.classList.toggle('hardware', hardwareEnabled);
     if (hardwareEnabled) {
       // 啟用實機 server 時改用紅色狀態，避免操作員誤認為 Mock。
       const badge = document.querySelector('.status.mock');

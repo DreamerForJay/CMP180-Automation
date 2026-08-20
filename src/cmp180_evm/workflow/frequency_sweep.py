@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field, replace
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 
 from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.workflow.single_measurement import (
@@ -13,6 +13,14 @@ from cmp180_evm.workflow.single_measurement import (
     SingleMeasurementResult,
     run_single_measurement,
 )
+
+# HIL 前先把可變頻率 workflow 鎖在核准包絡；Plan 欄位不得用來放寬這些硬性限制。
+VERIFIED_MINIMUM_FREQUENCY_HZ = 5_925_000_000.0
+VERIFIED_MAXIMUM_FREQUENCY_HZ = 7_125_000_000.0
+VERIFIED_MAXIMUM_SPAN_HZ = 200_000_000.0
+VERIFIED_SWEEP_BANDWIDTH_HZ = 320_000_000.0
+VERIFIED_MAXIMUM_GENERATOR_POWER_DBM = -40.0
+VERIFIED_MAXIMUM_POINTS = 11
 
 
 @dataclass(frozen=True)
@@ -32,23 +40,38 @@ class FrequencySweepPlan:
         self.single.validate_safety()
         if self.single.generator_port != "RF1.1" or self.single.analyzer_port != "RF1.5":
             raise SafetyGuardError("Short sweep currently permits only RF1.1 to RF1.5.")
-        if self.single.generator_power_dbm > -40.0:
+        if self.single.bandwidth_hz != VERIFIED_SWEEP_BANDWIDTH_HZ:
+            raise SafetyGuardError(
+                "Short sweep currently permits only the verified 320 MHz bandwidth."
+            )
+        if self.single.generator_power_dbm > VERIFIED_MAXIMUM_GENERATOR_POWER_DBM:
             raise SafetyGuardError("Short sweep generator power must not exceed -40 dBm.")
         if not 0.1 <= self.dwell_time_s <= 2.0:
             raise SafetyGuardError("Dwell time must be between 0.1 and 2.0 seconds.")
         if self.step_frequency_hz <= 0 or self.stop_frequency_hz < self.start_frequency_hz:
             raise SafetyGuardError("Sweep stop must follow start and step must be positive.")
+        # 自訂上下限只能比硬性 6 GHz 包絡更窄，不能把未驗證頻率帶進實機 backend。
+        effective_minimum = max(self.minimum_frequency_hz, VERIFIED_MINIMUM_FREQUENCY_HZ)
+        effective_maximum = min(self.maximum_frequency_hz, VERIFIED_MAXIMUM_FREQUENCY_HZ)
         if not (
-            self.minimum_frequency_hz <= self.start_frequency_hz
-            and self.stop_frequency_hz <= self.maximum_frequency_hz
+            effective_minimum
+            <= self.start_frequency_hz
+            <= self.stop_frequency_hz
+            <= effective_maximum
         ):
             raise SafetyGuardError("Sweep frequencies exceed the approved 6 GHz lab range.")
-        if self.stop_frequency_hz - self.start_frequency_hz > self.maximum_span_hz:
+        effective_maximum_span = min(self.maximum_span_hz, VERIFIED_MAXIMUM_SPAN_HZ)
+        if self.stop_frequency_hz - self.start_frequency_hz > effective_maximum_span:
             raise SafetyGuardError("Short sweep span exceeds 200 MHz.")
-        count = int((self.stop_frequency_hz - self.start_frequency_hz) // self.step_frequency_hz) + 1
-        if count > self.maximum_points:
-            raise SafetyGuardError(f"Short sweep exceeds {self.maximum_points} points.")
-        return tuple(self.start_frequency_hz + index * self.step_frequency_hz for index in range(count))
+        count = (
+            int((self.stop_frequency_hz - self.start_frequency_hz) // self.step_frequency_hz) + 1
+        )
+        effective_maximum_points = min(self.maximum_points, VERIFIED_MAXIMUM_POINTS)
+        if count > effective_maximum_points:
+            raise SafetyGuardError(f"Short sweep exceeds {effective_maximum_points} points.")
+        return tuple(
+            self.start_frequency_hz + index * self.step_frequency_hz for index in range(count)
+        )
 
 
 @dataclass(frozen=True)

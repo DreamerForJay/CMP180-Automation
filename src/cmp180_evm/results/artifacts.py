@@ -26,17 +26,31 @@ def save_single_result(
     raw_dir = run_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=False)
 
-    raw = str(values.get("raw", ""))
-    normalized = {key: value for key, value in values.items() if key != "raw"}
+    # "raw"（average，向後相容）與 "raw_*"（current/min/max/std_dev 等其他
+    # 已驗證統計查詢）都各自獨立保存，parser 或 schema 更新後仍可離線重現；
+    # 兩者都從主要結果欄位中排除，不進 CSV/JSON row。
+    normalized = {
+        key: value
+        for key, value in values.items()
+        if key != "raw" and not key.startswith("raw_")
+    }
     row = {
         "run_id": run_id,
         "timestamp": now.isoformat(),
         "simulated": simulated,
         **normalized,
     }
-    # 實機 raw response 獨立保存，parser 或 schema 更新後仍可離線重現。
-    raw_path = raw_dir / "modulation_average.txt"
-    raw_path.write_text(raw, encoding="utf-8")
+    raw_paths: dict[str, Path] = {}
+    for key, value in values.items():
+        if key == "raw":
+            filename = "modulation_average.txt"
+        elif key.startswith("raw_"):
+            filename = f"modulation_{key[len('raw_'):]}.txt"
+        else:
+            continue
+        path = raw_dir / filename
+        path.write_text(str(value), encoding="utf-8")
+        raw_paths[key] = path
     csv_path = run_dir / "results.csv"
     with csv_path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(row))
@@ -83,6 +97,6 @@ def save_single_result(
         "csv": str(csv_path.resolve()),
         "json": str(json_path.resolve()),
         "metadata": str(metadata_path.resolve()),
-        "raw": str(raw_path.resolve()),
         "report": str(report_path.resolve()),
+        **{key: str(path.resolve()) for key, path in raw_paths.items()},
     }
