@@ -136,6 +136,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 if isinstance(result, dict) and isinstance(result.get("artifacts"), dict):
                     # 只回傳 output/ 下的受控 URL，不把本機絕對路徑當成瀏覽器連結。
                     result["artifact_urls"] = self._artifact_urls(result["artifacts"])
+                    result["output_location"] = self._output_location(result["artifacts"])
                     if result.get("simulated") is True:
                         result["limit_profile"] = DEMO_LIMIT_PROFILE.snapshot()
                         result["compliance_claim"] = False
@@ -184,6 +185,11 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
             for key, path in artifacts.items()
             if key not in {"run_id", "run_dir"} and Path(path).is_file()
         }
+
+    @staticmethod
+    def _output_location(artifacts: dict[str, str]) -> str:
+        # 顯示專案相對位置即可；絕對路徑可能包含員工帳號或公司目錄資訊。
+        return f"output/{Path(artifacts['run_dir']).name}/"
 
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
@@ -323,6 +329,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
 
                 payload = run_verified_real_single(output_root=PROJECT_ROOT / "output")
                 payload["artifact_urls"] = self._artifact_urls(payload["artifacts"])
+                payload["output_location"] = self._output_location(payload["artifacts"])
                 self._json_response(payload)
                 return
             else:
@@ -350,6 +357,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 "points": [point.__dict__ for point in points],
                 "artifacts": artifacts,
                 "artifact_urls": self._artifact_urls(artifacts),
+                "output_location": self._output_location(artifacts),
             }
         )
 

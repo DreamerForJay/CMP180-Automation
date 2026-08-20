@@ -60,6 +60,27 @@
   text-decoration: none;
 }
 
+.output-location {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  color: var(--muted);
+}
+
+.output-location code {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: inherit;
+  background: #11182055;
+  word-break: break-all;
+}
+
+.preflight-card [tabindex="0"], #hardwareBadge[tabindex="0"] {
+  cursor: help;
+}
+
 .field-help {
   display: block;
   margin-top: 7px;

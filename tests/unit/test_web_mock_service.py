@@ -115,3 +115,11 @@ def test_hardware_mode_must_not_bind_to_network_interfaces():
     validate_hardware_bind("0.0.0.0", False)
     with pytest.raises(ValueError, match="loopback"):
         validate_hardware_bind("0.0.0.0", True)
+
+
+def test_output_location_is_project_relative_and_hides_absolute_path(tmp_path):
+    run_dir = tmp_path / "20260820T000000Z_demo_abc123"
+    artifacts = {"run_dir": str(run_dir), "run_id": "abc123"}
+    location = Cmp180WebHandler._output_location(artifacts)
+    assert location == "output/20260820T000000Z_demo_abc123/"
+    assert str(tmp_path) not in location
