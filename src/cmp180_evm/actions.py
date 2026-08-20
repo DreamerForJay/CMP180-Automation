@@ -1,8 +1,8 @@
-"""High-level actions shared by the CLI (cli.py) and the Tkinter GUI (gui/).
+"""High-level actions used by the CLI (cli.py).
 
-Kept separate from both entry points so neither one duplicates the other's
-logic: each is a thin presentation layer that calls into these functions and
-renders the result (text output for CLI, widgets for GUI).
+Kept separate from cli.py so it stays a thin presentation layer over these
+functions, and so the config-validation/dry-run/connection-test logic stays
+usable from other front ends (e.g. the Web GUI) without duplicating it.
 """
 
 from dataclasses import dataclass, field

@@ -68,9 +68,9 @@ Other `workflow/*_validation.py` modules (`analyzer_setter_validation.py`, `gene
 
 `config/models.py` mirrors `configs/instrument.example.yaml` and `configs/wlan_baseline.example.yaml` field-for-field; pydantic enforces types/required-ness only. Cross-field domain rules that need more than one field of context (e.g. band-vs-frequency consistency) live in `config/validators.py`, not in the models. `config/loader.py` detects config kind (instrument vs. WLAN baseline) and loads/validates accordingly; `actions.validate_config()` combines both layers and is what the CLI's `validate-config` command calls.
 
-### `actions.py` is the shared logic layer for CLI and Tkinter GUI
+### `actions.py` is the shared logic layer for the CLI
 
-`cli.py` (argparse) and `gui/app.py` (Tkinter) are both thin presentation layers over `actions.py` — neither duplicates the other's logic. When adding a new user-facing action, add it to `actions.py` first, then wire a thin CLI subcommand and/or GUI handler.
+`cli.py` (argparse) is a thin presentation layer over `actions.py`'s config-validation/dry-run/connection-test functions. There was previously also a Tkinter GUI (`gui/`) sharing this layer; it only ever covered config validation/dry-run/test-connection (never single-measurement, sweep, or RF control) and has been removed now that the Web GUI covers everything it did and more — recoverable from git history if a non-browser interface is needed again. When adding a new CLI-facing action, add it to `actions.py` first, then wire a thin CLI subcommand.
 
 ### Results: normalized values + raw response kept side by side
 
