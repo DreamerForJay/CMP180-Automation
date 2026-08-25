@@ -9,7 +9,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - YAML 驗證、Mock／實機連線、Generator／Analyzer setter、measurement lifecycle 與 RF On／Off。
 - 已完成 RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm 的 Python 實機 SingleShot。
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
-- 雙語響應式 RF 工作站：Dark／Light／System、Mock 與受保護實機量測、可搜尋排序 Runs Table、多 Run Trace 比較、metric／逐點 Table、Zoom／Pan／A-B Cursor、Draft 校正 SOP，以及完整 artifacts 與可復原紀錄管理。
+- 雙語響應式橫向量測工作區：Dark／Light、Mock 與受保護實機量測、量測紀錄、多 Run 疊圖比較、可自訂 Trace 名稱／顏色／顯示、Draft 校正 SOP，以及完整 artifacts 與可復原紀錄管理。歷史分析只讀既有 CSV／JSON，不會送出 RF。
 - 導覽明確區分示範與實機量測；實機掃描已通過 HIL，`LOCKED` 只表示本次 server 未明確啟用硬體。結果頁顯示安全的相對輸出位置。
 - Mock Sweep 使用非同步 Job API，支援逐點進度、取消、partial artifacts 與單一 active-job 鎖。
 - 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；CLI HIL 與 Web 實機三點頻率／功率取消驗收均已通過。Web 實機模式仍只允許 loopback 本機啟用與固定安全 profile。
@@ -46,7 +46,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [使用者指南](docs/user-guide.md) | 安裝、CLI、GUI、Mock 與實機操作 |
 | [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
 | [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
-| [Web V2 設計](docs/web-v2-design.md) | 全新資訊架構、互動、響應式與驗收規則 |
+| [Web V2 設計（封存參考）](docs/web-v2-design.md) | 未採用版型與可回用互動的設計紀錄 |
 | [RF 工作站 UX 規格](docs/rf-workstation-ux-plan.md) | Runs Table、多 Run 比較、Trace、主題與 RF 安全設計 |
 | [UI/UX roadmap](docs/ui-ux-roadmap.md) | 公司內部控制台資訊架構與改版階段 |
 | [量測欄位](docs/measurement-example-and-fields.md) | 正確輸出與 EVM／Power／Frequency Error |
@@ -75,8 +75,8 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - YAML validation, mock/real connection, hardware-verified setters, measurement lifecycle, and RF On/Off.
 - Complete Python hardware SingleShot at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
-- Bilingual responsive RF workstation with Dark/Light/System themes, mock and guarded hardware measurements, searchable/sortable Runs, multi-run traces, metric and point tables, zoom/pan/A-B cursors, a Draft calibration SOP, artifacts, and recoverable run management.
-- The clean Web V2 frontend is isolated in `static_v2/` and loads one stylesheet and one script, eliminating legacy style-order and cache conflicts.
+- Bilingual responsive horizontal workspace with Dark/Light themes, mock and guarded hardware measurements, run history, multi-run overlays, editable trace names/colours/visibility, a Draft calibration SOP, artifacts, and recoverable run management.
+- The operator-approved horizontal workspace in `static/` is the served frontend. It supports read-only comparison of 2–8 saved runs with editable trace names, colours, visibility, and discontinuities at invalid points; this analysis never transmits RF.
 - Navigation clearly separates demo and hardware measurements. Hardware sweeps passed HIL; `LOCKED` only means hardware was not enabled for the current server. Results show a safe relative output location.
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
 - Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. CLI HIL and Web hardware three-point frequency/cancellation acceptance have passed. Hardware Web mode remains loopback-only and limited to fixed safe profiles.

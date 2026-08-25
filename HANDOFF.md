@@ -8,7 +8,8 @@
   已依規則停止；最終 Generator `OFF`、Analyzer `RDY`、error queue empty。此結果是
   finding，不是通過證據。已修正 `INV` 正規化與 partial artifact 保留；重新 HIL 前需先
   確認 trigger／ranging 設定並取得新的現場授權。
-- 2026-08-25 已放棄舊版多層 CSS Web 介面並建立乾淨 V2：伺服器只提供 `static_v2/` 的
+- 2026-08-25 操作員評估後已恢復 `static/` 原版橫向量測工作區；`static_v2/` 保留為封存設計參考但不再由伺服器提供。正式介面新增從量測紀錄勾選 2–8 筆 Run 的唯讀疊圖比較，可調整 Trace 名稱、顏色與顯示，並在 `INV`／缺值處中斷曲線；不會因此啟動量測或 RF。
+- 2026-08-25 曾建立隔離的 V2：伺服器提供 `static_v2/` 的
   `index.html`、`app.css` 與 `app.js`。V2 先以 Demo 單點／頻率掃描／功率掃描、結果、
   artifact、紀錄與中英切換作為瀏覽器驗收範圍；儀器供電不穩期間不執行 RF。
 - Web V2 已進一步重構為 RF 工作站：移除所有頁面重複的固定量測 Hero，加入每頁情境標題、
@@ -75,7 +76,8 @@
   and an empty error queue. This is a finding, not passing evidence. `INV` normalization and
   partial-artifact retention are corrected; a rerun requires trigger/ranging review and fresh
   on-site authorization.
-- On 2026-08-25 the legacy layered-CSS Web UI was abandoned and replaced by a clean V2. The
+- After operator review on 2026-08-25, the original horizontal workspace in `static/` was restored as the served UI. `static_v2/` remains an archived design reference. The production UI now compares 2–8 saved runs read-only, with editable trace names, colours, visibility, and breaks at `INV` or missing values; comparison never starts RF.
+- On 2026-08-25 an isolated V2 was created. The
   server now serves only `static_v2/index.html`, `app.css`, and `app.js`. Browser acceptance is
   limited to Demo single/frequency/power measurements, results, artifacts, runs, and bilingual
   switching while instrument power is unstable; no RF is used for this validation.

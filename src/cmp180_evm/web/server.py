@@ -31,8 +31,8 @@ from cmp180_evm.web.mock_service import (
 )
 from cmp180_evm.web.run_records import load_run_record, move_run_to_trash, open_run_folder
 
-# V2 完全隔離舊版多層 CSS／JS，避免瀏覽器載入互相覆蓋的歷史資產。
-STATIC_DIR = Path(__file__).with_name("static_v2")
+# 原版橫向量測工作區已由操作員確認較符合實驗室流程；新版分析能力回填此介面。
+STATIC_DIR = Path(__file__).with_name("static")
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 VERIFIED_CABLE_ROUTE = "RF1.1-RF1.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}

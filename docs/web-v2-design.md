@@ -1,5 +1,9 @@
 # CMP180 Web V2 設計規格 / CMP180 Web V2 Design Specification
 
+> 狀態：封存參考。2026-08-25 經操作員評估後，正式介面已切回 `static/` 的橫向量測工作區；`static_v2/` 不再由伺服器提供。V2 的歷史多 Run 分析概念已移植回正式介面。
+
+> Status: archived reference. After operator review on 2026-08-25, the served UI returned to the horizontal measurement workspace in `static/`; `static_v2/` is no longer served. The useful V2 historical multi-run analysis concept was ported into the production UI.
+
 ## 中文版本
 
 ### 重建原則
