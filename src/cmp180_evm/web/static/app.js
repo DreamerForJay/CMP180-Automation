@@ -7,6 +7,8 @@ const $=selector=>document.querySelector(selector);
 function applyLanguage(){document.documentElement.lang=language==='zh'?'zh-Hant':'en';document.querySelectorAll('[data-i18n]').forEach(el=>{const value=translations[language][el.dataset.i18n];if(value)el.textContent=value});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const value=translations[language][el.dataset.i18nPlaceholder];if(value)el.placeholder=value});$('#languageButton').textContent=language==='zh'?'EN':'中文'}
 $('#languageButton').onclick=()=>{language=language==='zh'?'en':'zh';applyLanguage()};
 document.querySelectorAll('.tab').forEach(button=>button.onclick=()=>{document.querySelectorAll('.tab,.panel').forEach(el=>el.classList.remove('active'));button.classList.add('active');$('#'+button.dataset.tab).classList.add('active');if(button.dataset.tab==='history')loadRunHistory()});
+document.querySelectorAll('[data-measure-view]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-measure-view],.measurement-view').forEach(el=>el.classList.remove('active'));button.classList.add('active');$('#'+button.dataset.measureView).classList.add('active')});
+document.querySelectorAll('[data-demo-tab]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-demo-tab],.demo-panel').forEach(el=>el.classList.remove('active'));button.classList.add('active');$('#'+button.dataset.demoTab).classList.add('active')});
 function historyLink(url,label){return url?`<a href="${url}" target="_blank" rel="noopener">${label}</a>`:''}
 async function loadRunHistory(){const button=$('#refreshHistoryButton');button.disabled=true;try{const response=await fetch('/api/runs');const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load run history');$('#historyEmpty').hidden=data.runs.length>0;$('#historyRows').innerHTML=data.runs.map(run=>{const files=run.artifact_urls||{};const links=[historyLink(files.report,'HTML'),historyLink(files.csv,'CSV'),historyLink(files.json,'JSON'),historyLink(files.metadata,'Metadata')].filter(Boolean).join(' · ');const source=run.simulated?'DEMO':'HARDWARE';return `<tr><td>${run.created_at?new Date(run.created_at).toLocaleString():'—'}</td><td>${escapeHtml(run.test_name)}</td><td><code>${escapeHtml(run.run_id)}</code></td><td><span class="pill ${run.simulated?'neutral':'hardware-source'}">${source}</span></td><td>${escapeHtml(run.status.toUpperCase())}</td><td>${run.completed_points}</td><td class="history-links">${links||'—'}</td><td class="record-actions"><button type="button" data-record-action="load" data-run-key="${escapeHtml(run.run_key)}">Load</button><button type="button" data-record-action="open" data-run-key="${escapeHtml(run.run_key)}">Open Folder</button><button type="button" class="danger-mini" data-record-action="trash" data-run-key="${escapeHtml(run.run_key)}" data-run-id="${escapeHtml(run.run_id)}">Delete</button></td></tr>`}).join('')}catch(error){toast(error.message,'error')}finally{button.disabled=false}}
 function escapeHtml(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
@@ -16,6 +18,9 @@ async function loadRunRecord(runKey){const response=await fetch(`/api/runs/${enc
 async function postRecordAction(runKey,action,payload={}){const response=await fetch(`/api/runs/${encodeURIComponent(runKey)}/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Record action failed');return data}
 $('#historyRows').onclick=async event=>{const button=event.target.closest('[data-record-action]');if(!button)return;const action=button.dataset.recordAction,runKey=button.dataset.runKey;button.disabled=true;try{if(action==='load')await loadRunRecord(runKey);if(action==='open'){await postRecordAction(runKey,'open-folder');toast(language==='zh'?'已開啟輸出資料夾':'Output folder opened')}if(action==='trash'){const runId=button.dataset.runId;const typed=prompt(language==='zh'?`輸入 Run ID ${runId} 確認移至 Trash`:`Type Run ID ${runId} to move it to Trash`);if(typed!==runId)return;if(!confirm(language==='zh'?'此操作可由 .trash 復原，確定繼續？':'This can be recovered from .trash. Continue?'))return;await postRecordAction(runKey,'trash',{confirm_run_id:typed});$('#historyDetail').hidden=true;await loadRunHistory();toast(language==='zh'?'紀錄已移至 Trash':'Run moved to Trash')}}catch(error){toast(error.message,'error')}finally{button.disabled=false}};
 $('#closeHistoryDetail').onclick=()=>{$('#historyDetail').hidden=true};
+// 紀錄動作使用工作目的命名，避免把「查看詳情」誤解成會載入並覆寫量測計畫。
+const historyActionLabels=new MutationObserver(()=>{document.querySelectorAll('[data-record-action]').forEach(button=>{const labels=language==='zh'?{load:'查看詳情',open:'開啟資料夾',trash:'刪除'}:{load:'View details',open:'Open folder',trash:'Delete'};button.textContent=labels[button.dataset.recordAction]||button.textContent;button.title=button.dataset.recordAction==='open'?(language==='zh'?'在檔案總管開啟此 Run 的輸出資料夾':'Open this run output in File Explorer'):''})});
+historyActionLabels.observe($('#historyRows'),{childList:true,subtree:true});
 function toast(message,type='info'){const node=$('#toast');node.textContent=message;node.dataset.type=type;node.classList.add('show');setTimeout(()=>node.classList.remove('show'),4800)}
 async function send(path,payload,button){button.disabled=true;try{const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Request failed');render(data);document.querySelector('[data-tab="results"]').click();return data}catch(error){toast(error.message,'error');return null}finally{button.disabled=false}}
 let activeJobId=null;
@@ -30,17 +35,53 @@ let latestAxis='frequency';
 function xFieldFor(axis){return axis==='power'?'generator_power_dbm':'frequency_hz'}
 function xUnitFor(axis){return axis==='power'?'dBm':'MHz'}
 function xDisplayFor(axis,value){return axis==='power'?value.toFixed(1):(value/1e6).toFixed(1)}
-function render(data){latest=data.points;latestAxis=data.sweep_axis||'frequency';const xField=xFieldFor(latestAxis);const avg=latest.reduce((sum,p)=>sum+p.evm_all_db,0)/latest.length;const worst=Math.max(...latest.map(p=>p.evm_all_db));const pass=latest.filter(p=>['PASS','DRAFT_PASS'].includes(p.limit_status)).length;const fixedLabel=latestAxis==='power'?'Frequency':'Power';const fixedValue=latestAxis==='power'?(latest[0].frequency_hz/1e6).toFixed(1)+' MHz':latest[0].generator_power_dbm+' dBm';const sourceLabel=data.simulated?(language==='zh'?'示範資料':'DEMO DATA'):'HARDWARE';$('#runMeta').textContent=`Run ${data.artifacts.run_id} · ${latest.length} points · ${sourceLabel}`;$('#resultBadge').textContent=sourceLabel;$('#xAxisHeader').textContent=xUnitFor(latestAxis);const passLabel=data.limit_profile?.lifecycle==='draft'?'DRAFT PASS':'PASS';$('#metrics').innerHTML=metric('Avg EVM',avg.toFixed(2)+' dB')+metric('Worst EVM',worst.toFixed(2)+' dB')+metric(passLabel,`${pass}/${latest.length}`)+metric(fixedLabel,fixedValue);renderLimitProfile(data.limit_profile,data.compliance_claim);$('#resultRows').innerHTML=latest.map(p=>`<tr><td>${p.point_index+1}</td><td>${xDisplayFor(latestAxis,p[xField])}</td><td>${p.evm_all_db.toFixed(2)}</td><td>${p.burst_power_dbm.toFixed(2)}</td><td>${p.frequency_error_hz.toFixed(2)}</td><td class="${p.limit_status.toLowerCase()}">${p.limit_status}</td></tr>`).join('');const urls=data.artifact_urls||{};$('#artifacts').innerHTML=['csv','json','report'].filter(key=>urls[key]).map(key=>`<a href="${urls[key]}" target="_blank" rel="noopener">${key==='report'?'HTML':key.toUpperCase()}</a>`).join(' · ');drawChart(latest,latestAxis)}
+function formatMeasured(value,digits=2){return Number.isFinite(value)?value.toFixed(digits):'—'}
+function render(data){
+  latest=data.points;
+  latestAxis=data.sweep_axis||'frequency';
+  const xField=xFieldFor(latestAxis);
+  const validEvm=latest.map(point=>point.evm_all_db).filter(Number.isFinite);
+  const avg=validEvm.length?validEvm.reduce((sum,value)=>sum+value,0)/validEvm.length:null;
+  const worst=validEvm.length?Math.max(...validEvm):null;
+  const pass=latest.filter(point=>['PASS','DRAFT_PASS'].includes(point.limit_status)).length;
+  const fixedLabel=latestAxis==='power'?'Frequency':'Power';
+  const fixedValue=latestAxis==='power'?(latest[0].frequency_hz/1e6).toFixed(1)+' MHz':latest[0].generator_power_dbm+' dBm';
+  const sourceLabel=data.simulated?(language==='zh'?'示範資料':'DEMO DATA'):'HARDWARE';
+  $('#runMeta').textContent=`Run ${data.artifacts.run_id} · ${latest.length} points · ${sourceLabel}`;
+  $('#resultBadge').textContent=sourceLabel;
+  $('#xAxisHeader').textContent=xUnitFor(latestAxis);
+  const passLabel=data.limit_profile?.lifecycle==='draft'?'DRAFT PASS':'PASS';
+  $('#metrics').innerHTML=metric('Avg EVM',avg===null?'—':avg.toFixed(2)+' dB')+metric('Worst EVM',worst===null?'—':worst.toFixed(2)+' dB')+metric(passLabel,`${pass}/${latest.length}`)+metric(fixedLabel,fixedValue);
+  renderLimitProfile(data.limit_profile,data.compliance_claim);
+  // INV／null 是量測無效訊號，表格以破折號呈現，不得補零或讓前端拋出例外。
+  $('#resultRows').innerHTML=latest.map(point=>`<tr><td>${point.point_index+1}</td><td>${xDisplayFor(latestAxis,point[xField])}</td><td>${formatMeasured(point.evm_all_db)}</td><td>${formatMeasured(point.burst_power_dbm)}</td><td>${formatMeasured(point.frequency_error_hz)}</td><td class="${point.limit_status.toLowerCase()}">${point.limit_status}</td></tr>`).join('');
+  const urls=data.artifact_urls||{};
+  $('#artifacts').innerHTML=['csv','json','report'].filter(key=>urls[key]).map(key=>`<a href="${urls[key]}" target="_blank" rel="noopener">${key==='report'?'HTML':key.toUpperCase()}</a>`).join(' · ');
+  drawChart(latest,latestAxis);
+}
 function renderLimitProfile(profile,complianceClaim){const card=$('#limitProfileCard');if(!profile){card.hidden=true;return}card.hidden=false;const warning=complianceClaim?'APPROVED':'DRAFT · NOT A DUT COMPLIANCE CLAIM';card.innerHTML=`<strong>${escapeHtml(profile.profile_id)} · ${escapeHtml(profile.revision)}</strong><span class="pill ${complianceClaim?'hardware-source':'draft-limit'}">${warning}</span><p>EVM ≤ ${profile.maximum_evm_db} dB · |Frequency Error| ≤ ${profile.maximum_absolute_frequency_error_hz} Hz · |Power Error| ≤ ${profile.maximum_absolute_power_error_db} dB</p>`}
 function metric(label,value){return `<div class="metric"><small>${label}</small><strong>${value}</strong></div>`}
-function drawChart(points,axis='frequency'){const svg=$('#chart'),metric=$('#chartMetric').value,w=900,h=300,pad=45,xField=xFieldFor(axis),xUnit=xUnitFor(axis);const xs=points.map(p=>p[xField]),ys=points.map(p=>p[metric]);const xmin=Math.min(...xs),xmax=Math.max(...xs),margin=Math.max((Math.max(...ys)-Math.min(...ys))*.15,.5),ymin=Math.min(...ys)-margin,ymax=Math.max(...ys)+margin;const x=v=>pad+(v-xmin)/(xmax-xmin||1)*(w-pad*2),y=v=>h-pad-(v-ymin)/(ymax-ymin||1)*(h-pad*2);let html='';for(let i=0;i<5;i++){const yy=pad+i*(h-pad*2)/4;html+=`<line class="grid-line" x1="${pad}" y1="${yy}" x2="${w-pad}" y2="${yy}"/><text class="axis-label" x="5" y="${yy+4}">${(ymax-i*(ymax-ymin)/4).toFixed(1)}</text>`}
-  // 無效點不得連成正常資料線：依 valid 分段畫 polyline。
+function drawChart(points,axis='frequency'){
+  const svg=$('#chart'),metric=$('#chartMetric').value,w=900,h=300,pad=45,xField=xFieldFor(axis),xUnit=xUnitFor(axis);
+  const xs=points.map(point=>point[xField]).filter(Number.isFinite);
+  const validPoints=points.filter(point=>point.valid&&Number.isFinite(point[metric]));
+  const ys=validPoints.map(point=>point[metric]);
+  if(!xs.length||!ys.length){svg.innerHTML='<text class="axis-label" x="450" y="150" text-anchor="middle">No valid numeric data</text>';return}
+  const xmin=Math.min(...xs),xmax=Math.max(...xs),margin=Math.max((Math.max(...ys)-Math.min(...ys))*.15,.5),ymin=Math.min(...ys)-margin,ymax=Math.max(...ys)+margin;
+  const x=value=>pad+(value-xmin)/(xmax-xmin||1)*(w-pad*2),y=value=>h-pad-(value-ymin)/(ymax-ymin||1)*(h-pad*2);
+  let html='';
+  for(let index=0;index<5;index++){const yy=pad+index*(h-pad*2)/4;html+=`<line class="grid-line" x1="${pad}" y1="${yy}" x2="${w-pad}" y2="${yy}"/><text class="axis-label" x="5" y="${yy+4}">${(ymax-index*(ymax-ymin)/4).toFixed(1)}</text>`}
+  // 無效點不得跨越連線：先依 valid 與數值完整性切成獨立線段。
   const segments=[];let segment=[];
-  points.forEach(p=>{if(p.valid){segment.push(p)}else{if(segment.length)segments.push(segment);segment=[]}});
+  points.forEach(point=>{if(point.valid&&Number.isFinite(point[metric])){segment.push(point)}else{if(segment.length)segments.push(segment);segment=[]}});
   if(segment.length)segments.push(segment);
-  html+=segments.map(seg=>`<polyline class="plot-line" points="${seg.map(p=>`${x(p[xField])},${y(p[metric])}`).join(' ')}"/>`).join('');
-  html+=points.map(p=>`<circle class="plot-dot${p.valid?'':' invalid'}" cx="${x(p[xField])}" cy="${y(p[metric])}" r="4"><title>${xDisplayFor(axis,p[xField])} ${xUnit} · ${p[metric].toFixed(3)}</title></circle>`).join('');
-  html+=`<text class="axis-label" x="${pad}" y="${h-8}">${xDisplayFor(axis,xmin)} ${xUnit}</text><text class="axis-label" x="${w-pad-60}" y="${h-8}">${xDisplayFor(axis,xmax)} ${xUnit}</text>`;svg.innerHTML=html}
+  html+=segments.map(values=>`<polyline class="plot-line" points="${values.map(point=>`${x(point[xField])},${y(point[metric])}`).join(' ')}"/>`).join('');
+  html+=validPoints.map(point=>`<circle class="plot-dot" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${xDisplayFor(axis,point[xField])} ${xUnit} · ${point[metric].toFixed(3)}</title></circle>`).join('');
+  // 無效點固定畫在圖底並標示叉號，保留其頻率／功率位置且不偽造 Y 值。
+  html+=points.filter(point=>!point.valid||!Number.isFinite(point[metric])).map(point=>`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-pad})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${xDisplayFor(axis,point[xField])} ${xUnit} · INVALID</title></g>`).join('');
+  html+=`<text class="axis-label" x="${pad}" y="${h-8}">${xDisplayFor(axis,xmin)} ${xUnit}</text><text class="axis-label" x="${w-pad-60}" y="${h-8}">${xDisplayFor(axis,xmax)} ${xUnit}</text>`;
+  svg.innerHTML=html;
+}
 $('#chartMetric').onchange=()=>{if(latest.length)drawChart(latest,latestAxis)};
 const sunIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
 const moonIcon='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.7 15.3A8.7 8.7 0 0 1 9.7 4.3a.6.6 0 0 0-.75-.8A10 10 0 1 0 21.5 16a.6.6 0 0 0-.8-.7z"/></svg>';

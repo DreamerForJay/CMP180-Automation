@@ -16,8 +16,8 @@ Object.assign(translations.zh, {
   ,hardwareBadge: '實機模式'
   ,hardwareControlState: '已啟用實機控制'
   ,hardwareControlHint: '僅允許已驗證的固定 profile'
-  ,serverLockedTitle: '此頁面目前無法使用'
-  ,serverLockedText: '伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。'
+  ,serverLockedTitle: '實機控制未啟用'
+  ,serverLockedText: '目前只能查看設定，無法送出 RF。需要量測時，請由系統管理員在本機啟用實機模式。'
 });
 
 Object.assign(translations.en, {
@@ -38,8 +38,8 @@ Object.assign(translations.en, {
   ,hardwareBadge: 'Hardware Mode'
   ,hardwareControlState: 'Hardware control enabled'
   ,hardwareControlHint: 'Verified fixed profile only'
-  ,serverLockedTitle: 'This page is currently unavailable'
-  ,serverLockedText: 'The server was not started with --enable-hardware and is running in read-only mock mode. To use this page, restart the server locally with `python -m cmp180_evm.web --enable-hardware`; it may only bind to a loopback address.'
+  ,serverLockedTitle: 'Hardware control is disabled'
+  ,serverLockedText: 'Settings remain visible, but RF cannot be transmitted. Ask the system administrator to enable local hardware mode when measurement is required.'
 });
 
 let hardwareEnabled = false;
@@ -82,6 +82,9 @@ async function loadHardwareStatus() {
       $('.workspace-state').classList.add('hardware');
       applyLanguage();
     }
+    // Demo server 直接開啟示範工作區；實機 server 則進入實機頁，減少操作員看到無法操作頁面的困惑。
+    const initialView = hardwareEnabled ? 'hardware' : 'demoWorkspace';
+    document.querySelector(`[data-measure-view="${initialView}"]`).click();
     updatePreflight();
   } catch (error) {
     toast(`Status error: ${error.message}`);
