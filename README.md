@@ -55,6 +55,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [Limit Profile](docs/limit-profiles.md) | Draft／Approved 判定、margin 與追溯規則 |
 | [Calibration Profile](docs/calibration-profiles.md) | 線損資料、內插、有效期限與核准閘門 |
 | [Calibration Adapters](docs/calibration-adapters.md) | 外部儀器介面、安全限制與 HIL 閘門 |
+| [Custom Hardware Sweep](docs/custom-hardware-sweep.md) | 自訂掃描安全包絡、雙重啟動閘門與 HIL SOP |
 | [視覺化規格](docs/result-visualization-spec.md) | artifacts 與圖表要求 |
 | [開發流程](docs/development-workflow.md) | 測試與文件規則 |
 | [交接](HANDOFF.md) | 最新狀態與下一步 |

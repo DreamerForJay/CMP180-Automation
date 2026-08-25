@@ -73,7 +73,12 @@ class JobManager:
         job.state = "running"
         try:
             job.result = worker(job)
-            job.state = "cancelled" if job.cancel_requested else "complete"
+            # 量測失敗仍保留 partial artifacts；狀態不可因 worker 正常回傳而誤標 complete。
+            if job.result.get("measurement_failed") is True:
+                job.error = str(job.result.get("error") or "Measurement failed")
+                job.state = "failed"
+            else:
+                job.state = "cancelled" if job.cancel_requested else "complete"
         except Exception as exc:
             job.error = f"{type(exc).__name__}: {exc}"
             job.state = "failed"
