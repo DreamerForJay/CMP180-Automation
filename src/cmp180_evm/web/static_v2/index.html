@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CMP180 Measurement Console</title>
+  <link rel="stylesheet" href="/app.css?v=1">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="#measure" aria-label="CMP180 Measurement Console">
+      <span class="brand-mark">RF</span><span><strong>CMP180</strong><small>MEASUREMENT CONSOLE</small></span>
+    </a>
+    <div class="header-actions">
+      <span id="modeBadge" class="mode-badge demo"><i></i><b>DEMO</b></span>
+      <button id="languageButton" class="icon-button" type="button">EN</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主要功能">
+      <nav>
+        <button class="nav-item active" data-view="measure"><span>01</span><b data-t="navMeasure">量測</b></button>
+        <button class="nav-item" data-view="results"><span>02</span><b data-t="navResults">結果</b></button>
+        <button class="nav-item" data-view="runs"><span>03</span><b data-t="navRuns">紀錄</b></button>
+        <button class="nav-item" data-view="calibration"><span>04</span><b data-t="navCalibration">校正</b></button>
+        <button class="nav-item" data-view="guide"><span>05</span><b data-t="navGuide">指南</b></button>
+      </nav>
+      <div class="sidebar-foot"><span class="status-dot"></span><div><small data-t="serverState">SERVER</small><strong id="serverState">ONLINE</strong></div></div>
+    </aside>
+
+    <main class="workspace">
+      <section class="workspace-header">
+        <div><p class="eyebrow">WLAN TX EVM AUTOMATION</p><h1 data-t="pageTitle">建立量測計畫</h1><p data-t="pageIntro">設定條件、檢查安全範圍，然後執行量測。</p></div>
+        <div class="instrument-card"><span class="instrument-icon">CMP</span><div><small data-t="instrument">儀器</small><strong id="instrumentName">CMP180</strong><p id="instrumentAddress">192.168.200.50 · RF control disabled</p></div><span id="instrumentState" class="state-chip">VIEW ONLY</span></div>
+      </section>
+
+      <section id="measure" class="view active">
+        <div class="measure-layout">
+          <section class="card plan-card">
+            <div class="card-title"><span>01</span><div><h2 data-t="planTitle">量測設定</h2><p data-t="planHelp">選擇量測類型並輸入參數。</p></div></div>
+            <div class="segmented" role="tablist" aria-label="量測類型">
+              <button class="active" type="button" data-axis="single" data-t="single">單點</button>
+              <button type="button" data-axis="frequency" data-t="frequencySweep">頻率掃描</button>
+              <button type="button" data-axis="power" data-t="powerSweep">功率掃描</button>
+            </div>
+            <form id="planForm" novalidate>
+              <div class="field-grid">
+                <label class="field axis-power axis-single"><span data-t="centerFrequency">中心頻率</span><div class="with-unit"><input name="center_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
+                <label class="field axis-frequency axis-power axis-single"><span data-t="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
+                <label class="field axis-frequency" hidden><span data-t="startFrequency">起始頻率</span><div class="with-unit"><input name="start_mhz" type="number" value="6085"><b>MHz</b></div></label>
+                <label class="field axis-frequency" hidden><span data-t="stopFrequency">結束頻率</span><div class="with-unit"><input name="stop_mhz" type="number" value="6125"><b>MHz</b></div></label>
+                <label class="field axis-frequency" hidden><span data-t="frequencyStep">頻率步進</span><div class="with-unit"><input name="step_mhz" type="number" value="20" min="1"><b>MHz</b></div></label>
+                <label class="field axis-power" hidden><span data-t="startPower">起始功率</span><div class="with-unit"><input name="start_dbm" type="number" value="-55" min="-60" max="-40"><b>dBm</b></div></label>
+                <label class="field axis-power" hidden><span data-t="stopPower">結束功率</span><div class="with-unit"><input name="stop_dbm" type="number" value="-40" min="-60" max="-40"><b>dBm</b></div></label>
+                <label class="field axis-power" hidden><span data-t="powerStep">功率步進</span><div class="with-unit"><input name="step_dbm" type="number" value="5" min="1"><b>dBm</b></div></label>
+                <label class="field axis-single axis-frequency"><span data-t="generatorPower">Generator 功率</span><div class="with-unit"><input name="power_dbm" type="number" value="-40" max="-40"><b>dBm</b></div></label>
+                <label class="field axis-frequency axis-power" hidden><span data-t="dwell">停留時間</span><div class="with-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100"><b>ms</b></div></label>
+                <label class="field full"><span data-t="testName">測試名稱</span><input name="test_name" value="demo-measurement" maxlength="80"></label>
+              </div>
+            </form>
+          </section>
+
+          <aside class="measure-side">
+            <section class="card safety-card">
+              <div class="card-title compact"><span>02</span><div><h2 data-t="reviewTitle">執行摘要</h2><p data-t="reviewHelp">送出前確認點位與限制。</p></div></div>
+              <dl class="summary-list">
+                <div><dt data-t="mode">模式</dt><dd id="summaryMode">Demo · Single</dd></div>
+                <div><dt data-t="points">點數</dt><dd id="summaryPoints">1</dd></div>
+                <div><dt data-t="estimatedTime">預估時間</dt><dd id="summaryTime">&lt; 1 s</dd></div>
+                <div><dt data-t="maximumPower">最大功率</dt><dd id="summaryPower">-40 dBm</dd></div>
+              </dl>
+              <div id="safetyState" class="safety-state safe"><span>✓</span><div><strong data-t="demoSafe">Demo 安全</strong><p data-t="demoSafeHelp">不會連線儀器或產生 RF。</p></div></div>
+              <button id="runButton" class="run-button" type="button"><span data-t="runDemo">執行 Demo 量測</span><b>→</b></button>
+            </section>
+            <section class="card quick-guide"><strong data-t="beforeRun">執行前</strong><ol><li data-t="checkMode">確認右上角為 DEMO</li><li data-t="checkValues">檢查頻率、功率與點數</li><li data-t="openResults">完成後前往結果頁</li></ol></section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="results" class="view">
+        <div class="section-heading"><div><p class="eyebrow">RUN OUTPUT</p><h2 data-t="resultsTitle">量測結果</h2></div><span id="resultStatus" class="state-chip">NO DATA</span></div>
+        <div id="emptyResults" class="empty-state"><span>∿</span><h3 data-t="noResults">尚無量測結果</h3><p data-t="noResultsHelp">執行 Demo 量測後，指標、圖表和檔案會顯示在這裡。</p></div>
+        <div id="resultContent" hidden><div id="metrics" class="metric-grid"></div><div class="card chart-card"><svg id="chart" viewBox="0 0 960 300"></svg></div><div id="artifactLinks" class="artifact-grid"></div></div>
+      </section>
+
+      <section id="runs" class="view"><div class="section-heading"><div><p class="eyebrow">RUN HISTORY</p><h2 data-t="runsTitle">量測紀錄</h2></div><button id="refreshRuns" class="secondary-button" type="button" data-t="refresh">重新整理</button></div><div id="runsGrid" class="runs-grid"></div></section>
+      <section id="calibration" class="view"><div class="empty-state"><span>CAL</span><h2 data-t="calibrationTitle">校正流程重新設計中</h2><p data-t="calibrationHelp">新版將使用四步精靈：器材、讀值、線損檢查、核准。</p></div></section>
+      <section id="guide" class="view"><div class="section-heading"><div><p class="eyebrow">OPERATOR GUIDE</p><h2 data-t="guideTitle">快速開始</h2></div></div><div class="guide-grid"><article class="command-card"><h3 data-t="startDemo">啟動 Demo</h3><pre><code>.\.venv\Scripts\Activate.ps1
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre><button class="copy-button" type="button" data-copy data-t="copy">複製指令</button></article><article class="command-card danger"><h3 data-t="rfHold">RF 暫停</h3><p data-t="rfHoldHelp">供電不穩定期間不要加入 --enable-hardware。</p></article></div></section>
+    </main>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js?v=1"></script>
+</body>
+</html>

@@ -8,6 +8,9 @@
   已依規則停止；最終 Generator `OFF`、Analyzer `RDY`、error queue empty。此結果是
   finding，不是通過證據。已修正 `INV` 正規化與 partial artifact 保留；重新 HIL 前需先
   確認 trigger／ranging 設定並取得新的現場授權。
+- 2026-08-25 已放棄舊版多層 CSS Web 介面並建立乾淨 V2：伺服器只提供 `static_v2/` 的
+  `index.html`、`app.css` 與 `app.js`。V2 先以 Demo 單點／頻率掃描／功率掃描、結果、
+  artifact、紀錄與中英切換作為瀏覽器驗收範圍；儀器供電不穩期間不執行 RF。
 
 - 分支：`feature/web-sweep-jobs`（Web Sweep PR #12）。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
@@ -68,6 +71,10 @@
   and an empty error queue. This is a finding, not passing evidence. `INV` normalization and
   partial-artifact retention are corrected; a rerun requires trigger/ranging review and fresh
   on-site authorization.
+- On 2026-08-25 the legacy layered-CSS Web UI was abandoned and replaced by a clean V2. The
+  server now serves only `static_v2/index.html`, `app.css`, and `app.js`. Browser acceptance is
+  limited to Demo single/frequency/power measurements, results, artifacts, runs, and bilingual
+  switching while instrument power is unstable; no RF is used for this validation.
 
 - Branch: `feature/web-sweep-jobs` (Web Sweep PR #12).
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.

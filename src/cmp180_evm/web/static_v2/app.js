@@ -1,0 +1,55 @@
+const $=selector=>document.querySelector(selector);
+const $$=selector=>[...document.querySelectorAll(selector)];
+const copy={
+  zh:{navMeasure:'量測',navResults:'結果',navRuns:'紀錄',navCalibration:'校正',navGuide:'指南',serverState:'SERVER',pageTitle:'建立量測計畫',pageIntro:'設定條件、檢查安全範圍，然後執行量測。',instrument:'儀器',planTitle:'量測設定',planHelp:'選擇量測類型並輸入參數。',single:'單點',frequencySweep:'頻率掃描',powerSweep:'功率掃描',centerFrequency:'中心頻率',bandwidth:'頻寬',startFrequency:'起始頻率',stopFrequency:'結束頻率',frequencyStep:'頻率步進',startPower:'起始功率',stopPower:'結束功率',powerStep:'功率步進',generatorPower:'Generator 功率',dwell:'停留時間',testName:'測試名稱',reviewTitle:'執行摘要',reviewHelp:'送出前確認點位與限制。',mode:'模式',points:'點數',estimatedTime:'預估時間',maximumPower:'最大功率',demoSafe:'Demo 安全',demoSafeHelp:'不會連線儀器或產生 RF。',runDemo:'執行 Demo 量測',beforeRun:'執行前',checkMode:'確認右上角為 DEMO',checkValues:'檢查頻率、功率與點數',openResults:'完成後前往結果頁',resultsTitle:'量測結果',noResults:'尚無量測結果',noResultsHelp:'執行 Demo 量測後，指標、圖表和檔案會顯示在這裡。',runsTitle:'量測紀錄',refresh:'重新整理',calibrationTitle:'校正流程重新設計中',calibrationHelp:'新版將使用四步精靈：器材、讀值、線損檢查、核准。',guideTitle:'快速開始',startDemo:'啟動 Demo',copy:'複製指令',rfHold:'RF 暫停',rfHoldHelp:'供電不穩定期間不要加入 --enable-hardware。'},
+  en:{navMeasure:'Measure',navResults:'Results',navRuns:'Runs',navCalibration:'Calibration',navGuide:'Guide',serverState:'SERVER',pageTitle:'Build a measurement plan',pageIntro:'Set conditions, review the safety envelope, then run.',instrument:'Instrument',planTitle:'Measurement settings',planHelp:'Choose a measurement type and enter parameters.',single:'Single',frequencySweep:'Frequency sweep',powerSweep:'Power sweep',centerFrequency:'Center frequency',bandwidth:'Bandwidth',startFrequency:'Start frequency',stopFrequency:'Stop frequency',frequencyStep:'Frequency step',startPower:'Start power',stopPower:'Stop power',powerStep:'Power step',generatorPower:'Generator power',dwell:'Dwell time',testName:'Test name',reviewTitle:'Execution summary',reviewHelp:'Review points and limits before running.',mode:'Mode',points:'Points',estimatedTime:'Estimated time',maximumPower:'Maximum power',demoSafe:'Demo safe',demoSafeHelp:'No instrument connection or RF.',runDemo:'Run Demo measurement',beforeRun:'Before running',checkMode:'Confirm the top-right badge says DEMO',checkValues:'Review frequency, power, and points',openResults:'Open Results when complete',resultsTitle:'Measurement results',noResults:'No measurement results',noResultsHelp:'Run a Demo measurement to display metrics, plots, and files.',runsTitle:'Run history',refresh:'Refresh',calibrationTitle:'Calibration workflow is being rebuilt',calibrationHelp:'V2 will use a four-step wizard: equipment, readings, loss review, and approval.',guideTitle:'Quick start',startDemo:'Start Demo',copy:'Copy command',rfHold:'RF on hold',rfHoldHelp:'Do not add --enable-hardware while instrument power is unstable.'}
+};
+let language='zh',axis='single',activeJob=null;
+function t(key){return copy[language][key]||key}
+function applyLanguage(){document.documentElement.lang=language==='zh'?'zh-Hant':'en';$$('[data-t]').forEach(node=>node.textContent=t(node.dataset.t));$('#languageButton').textContent=language==='zh'?'EN':'中文';updateSummary()}
+$('#languageButton').onclick=()=>{language=language==='zh'?'en':'zh';applyLanguage()};
+
+function showView(id){$$('.nav-item,.view').forEach(node=>node.classList.remove('active'));$(`[data-view="${id}"]`).classList.add('active');$(`#${id}`).classList.add('active');if(id==='runs')loadRuns()}
+$$('.nav-item').forEach(button=>button.onclick=()=>showView(button.dataset.view));
+
+function setAxis(next){axis=next;$$('[data-axis]').forEach(button=>button.classList.toggle('active',button.dataset.axis===axis));$$('.field[class*="axis-"]').forEach(field=>{field.hidden=!field.classList.contains(`axis-${axis}`)});updateSummary()}
+$$('[data-axis]').forEach(button=>button.onclick=()=>setAxis(button.dataset.axis));
+$('#planForm').addEventListener('input',updateSummary);
+
+function number(name){return Number(new FormData($('#planForm')).get(name))}
+function planSummary(){
+  // 前端摘要只提供即時回饋；後端仍會再次驗證點數與 -40 dBm 安全上限，不能只信任瀏覽器。
+  if(axis==='single')return{points:1,power:number('power_dbm'),seconds:.5,valid:number('power_dbm')<=-40};
+  const start=axis==='frequency'?number('start_mhz'):number('start_dbm');
+  const stop=axis==='frequency'?number('stop_mhz'):number('stop_dbm');
+  const step=axis==='frequency'?number('step_mhz'):number('step_dbm');
+  const points=step>0&&stop>=start?Math.floor((stop-start)/step)+1:0;
+  const power=axis==='frequency'?number('power_dbm'):stop;
+  return{points,power,seconds:Math.max(points,1)*number('dwell_ms')/1000,valid:points>0&&points<=11&&power<=-40};
+}
+function updateSummary(){const summary=planSummary();$('#summaryMode').textContent=`Demo · ${axis==='single'?t('single'):axis==='frequency'?t('frequencySweep'):t('powerSweep')}`;$('#summaryPoints').textContent=summary.points||'—';$('#summaryTime').textContent=summary.seconds<1?'< 1 s':`${summary.seconds.toFixed(1)} s`;$('#summaryPower').textContent=Number.isFinite(summary.power)?`${summary.power} dBm`:'—';const state=$('#safetyState');state.classList.toggle('safe',summary.valid);state.classList.toggle('error',!summary.valid);state.querySelector('span').textContent=summary.valid?'✓':'!';state.querySelector('strong').textContent=summary.valid?t('demoSafe'):(language==='zh'?'計畫不符合限制':'Plan is outside limits');state.querySelector('p').textContent=summary.valid?t('demoSafeHelp'):(language==='zh'?'最多 11 點且功率不得高於 -40 dBm。':'Maximum 11 points and no power above -40 dBm.');$('#runButton').disabled=!summary.valid||activeJob!==null}
+
+function payload(){
+  const form=new FormData($('#planForm'));
+  // UI 使用工程師熟悉的 MHz；API 與儀器工作流程一律使用 Hz，避免單位混用造成錯頻。
+  const common={bandwidth_hz:number('bandwidth_mhz')*1e6,test_name:form.get('test_name')};
+  if(axis==='single')return{path:'/api/mock/single',body:{...common,frequency_hz:number('center_mhz')*1e6,generator_power_dbm:number('power_dbm')}};
+  if(axis==='frequency')return{path:'/api/jobs/mock/frequency-sweep',body:{...common,start_hz:number('start_mhz')*1e6,stop_hz:number('stop_mhz')*1e6,step_hz:number('step_mhz')*1e6,generator_power_dbm:number('power_dbm'),dwell_ms:number('dwell_ms')}};
+  return{path:'/api/jobs/mock/power-sweep',body:{...common,frequency_hz:number('center_mhz')*1e6,start_dbm:number('start_dbm'),stop_dbm:number('stop_dbm'),step_dbm:number('step_dbm'),dwell_ms:number('dwell_ms')}};
+}
+async function post(path,body){const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Request failed');return data}
+$('#runButton').onclick=async()=>{const request=payload();try{$('#runButton span').textContent=language==='zh'?'執行中…':'Running…';$('#runButton').disabled=true;if(axis==='single'){render(await post(request.path,request.body));return}const job=await post(request.path,request.body);activeJob=job.job_id;await pollJob()}catch(error){toast(error.message)}finally{activeJob=null;$('#runButton span').textContent=t('runDemo');updateSummary()}};
+async function pollJob(){while(activeJob){const response=await fetch(`/api/jobs/${activeJob}`);const job=await response.json();$('#runButton span').textContent=`${job.completed_points}/${job.total_points}`;if(job.state==='complete'){render(job.result);return}if(job.state==='failed')throw new Error(job.error);await new Promise(resolve=>setTimeout(resolve,180))}}
+
+function finite(values,key){return values.map(point=>point[key]).filter(Number.isFinite)}
+function metric(label,value){return `<div class="metric"><small>${label}</small><strong>${value}</strong></div>`}
+function render(data){const points=data.points||[];const evm=finite(points,'evm_all_db'),power=finite(points,'burst_power_dbm'),frequencyError=finite(points,'frequency_error_hz');$('#emptyResults').hidden=true;$('#resultContent').hidden=false;$('#resultStatus').textContent=data.simulated?'DEMO DATA':'HARDWARE';$('#metrics').innerHTML=metric('POINTS',points.length)+metric('AVG EVM',evm.length?`${(evm.reduce((a,b)=>a+b,0)/evm.length).toFixed(2)} dB`:'—')+metric('AVG POWER',power.length?`${(power.reduce((a,b)=>a+b,0)/power.length).toFixed(2)} dBm`:'—')+metric('MAX |FERR|',frequencyError.length?`${Math.max(...frequencyError.map(Math.abs)).toFixed(1)} Hz`:'—');draw(points);const urls=data.artifact_urls||{};$('#artifactLinks').innerHTML=Object.entries(urls).filter(([,url])=>url).map(([key,url])=>`<a href="${url}" target="_blank" rel="noopener">${key.toUpperCase()}</a>`).join('');showView('results')}
+function draw(points){const svg=$('#chart'),valid=points.filter(point=>Number.isFinite(point.evm_all_db));if(!valid.length){svg.innerHTML='';return}const w=960,h=300,pad=44,xs=valid.map((_,i)=>i),ys=valid.map(point=>point.evm_all_db),min=Math.min(...ys)-1,max=Math.max(...ys)+1,x=i=>pad+i/(Math.max(xs.length-1,1))*(w-pad*2),y=value=>h-pad-(value-min)/(max-min)*(h-pad*2);let html='';for(let i=0;i<5;i++){const yy=pad+i*(h-pad*2)/4;html+=`<line class="grid-line" x1="${pad}" y1="${yy}" x2="${w-pad}" y2="${yy}"/>`}html+=`<polyline class="plot-line" points="${valid.map((point,i)=>`${x(i)},${y(point.evm_all_db)}`).join(' ')}"/>`;html+=valid.map((point,i)=>`<circle class="plot-dot" cx="${x(i)}" cy="${y(point.evm_all_db)}" r="4"><title>${point.evm_all_db} dB</title></circle>`).join('');svg.innerHTML=html}
+
+async function loadRuns(){const grid=$('#runsGrid');grid.innerHTML='<div class="empty-state">Loading…</div>';try{const response=await fetch('/api/runs');const data=await response.json();grid.innerHTML=data.runs.length?data.runs.slice(0,30).map(run=>`<article class="run-row"><div><strong>${escapeHtml(run.test_name)}</strong><p>${new Date(run.created_at).toLocaleString()} · ${run.completed_points} points · ${run.status}</p></div><span class="state-chip">${run.simulated?'DEMO':'HARDWARE'}</span></article>`).join(''):`<div class="empty-state"><p>${language==='zh'?'尚無紀錄':'No runs found'}</p></div>`}catch(error){grid.innerHTML=`<div class="empty-state"><p>${escapeHtml(error.message)}</p></div>`}}
+$('#refreshRuns').onclick=loadRuns;
+function escapeHtml(value){const span=document.createElement('span');span.textContent=String(value);return span.innerHTML}
+function toast(message){const node=$('#toast');node.textContent=message;node.classList.add('show');setTimeout(()=>node.classList.remove('show'),3200)}
+$('.copy-button').onclick=async()=>{try{await navigator.clipboard.writeText($('.command-card pre').innerText);toast(language==='zh'?'指令已複製':'Command copied')}catch{toast(language==='zh'?'請手動選取指令':'Select the command manually')}};
+async function loadStatus(){try{const response=await fetch('/api/status');const status=await response.json();$('#serverState').textContent='ONLINE';if(status.hardware_enabled){$('#modeBadge').className='mode-badge hardware';$('#modeBadge b').textContent='HARDWARE';$('#instrumentState').textContent='RF ENABLED'}else{$('#instrumentState').textContent='VIEW ONLY'}}catch{$('#serverState').textContent='OFFLINE'}}
+setAxis('single');applyLanguage();loadStatus();

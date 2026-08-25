@@ -46,6 +46,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [使用者指南](docs/user-guide.md) | 安裝、CLI、GUI、Mock 與實機操作 |
 | [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
 | [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
+| [Web V2 設計](docs/web-v2-design.md) | 全新資訊架構、互動、響應式與驗收規則 |
 | [UI/UX roadmap](docs/ui-ux-roadmap.md) | 公司內部控制台資訊架構與改版階段 |
 | [量測欄位](docs/measurement-example-and-fields.md) | 正確輸出與 EVM／Power／Frequency Error |
 | [SCPI matrix](docs/scpi-command-matrix.md) | 指令來源、驗證與 schema |
@@ -74,6 +75,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - Complete Python hardware SingleShot at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
 - Bilingual responsive Web GUI (with a light/dark theme toggle), mock and guarded hardware measurements, artifact links, EVM/Power/Frequency Error plots, and read-only run history.
+- The clean Web V2 frontend is isolated in `static_v2/` and loads one stylesheet and one script, eliminating legacy style-order and cache conflicts.
 - Navigation clearly separates demo and hardware measurements. Hardware sweeps passed HIL; `LOCKED` only means hardware was not enabled for the current server. Results show a safe relative output location.
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
 - Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. CLI HIL and Web hardware three-point frequency/cancellation acceptance have passed. Hardware Web mode remains loopback-only and limited to fixed safe profiles.
