@@ -65,6 +65,17 @@ class CustomBackend:
         return []
 
 
+class InvalidSecondPointBackend(CustomBackend):
+    calls = 0
+
+    def fetch_result(self):
+        self.__class__.calls += 1
+        values = super().fetch_result()
+        if self.__class__.calls == 2:
+            values["evm_all_carriers_db"] = "INV"
+        return values
+
+
 def test_custom_real_service_revalidates_runs_saves_and_cleans_up(monkeypatch, tmp_path):
     instrument = CleanupInstrument()
     monkeypatch.setitem(
@@ -90,3 +101,32 @@ def test_custom_real_service_revalidates_runs_saves_and_cleans_up(monkeypatch, t
     assert job.completed_points == 3
     assert instrument.closed is True
     assert REGISTRY.require("generator.rf_off") in instrument.writes
+
+
+def test_custom_real_service_preserves_invalid_partial_result(monkeypatch, tmp_path):
+    instrument = CleanupInstrument()
+    InvalidSecondPointBackend.calls = 0
+    monkeypatch.setitem(
+        sys.modules,
+        "RsInstrument",
+        SimpleNamespace(RsInstrument=lambda *args, **kwargs: instrument),
+    )
+    monkeypatch.setattr(real_service, "Cmp180SingleMeasurementBackend", InvalidSecondPointBackend)
+    request = {
+        "axis": "frequency",
+        "start_hz": 6_085_000_000,
+        "stop_hz": 6_105_000_000,
+        "step_hz": 20_000_000,
+        "bandwidth_hz": 320_000_000,
+        "generator_power_dbm": -45,
+        "dwell_ms": 100,
+    }
+    job = SweepJob("job-invalid", "hardware-custom-frequency", 2)
+    result = real_service.run_custom_real_sweep(job, request=request, output_root=tmp_path)
+    assert result["measurement_failed"] is True
+    assert "evm_all_carriers_db" in result["error"]
+    assert len(result["points"]) == 2
+    assert result["points"][1]["valid"] is False
+    assert result["points"][1]["evm_all_db"] is None
+    assert result["artifacts"]["csv"]
+    assert instrument.closed is True

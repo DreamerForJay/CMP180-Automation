@@ -25,19 +25,33 @@ VERIFIED_ARB_WAVEFORM = (
 def _web_point(
     index: int, axis_value: float, values: dict[str, object], axis: str
 ) -> dict[str, object]:
+    def optional_float(field: str) -> float | None:
+        try:
+            return float(values[field])
+        except (KeyError, TypeError, ValueError):
+            # INV 必須保留在 raw artifact；Web 正規化用 null 表示該數值不可用，避免遮蔽失敗原因。
+            return None
+
+    normalized = {
+        "evm_all_db": optional_float("evm_all_carriers_db"),
+        "evm_data_db": optional_float("evm_data_carriers_db"),
+        "evm_pilot_db": optional_float("evm_pilot_carriers_db"),
+        "burst_power_dbm": optional_float("burst_power_dbm"),
+        "frequency_error_hz": optional_float("frequency_error_hz"),
+        "clock_error_ppm": optional_float("clock_error_ppm"),
+    }
+    critical_valid = all(
+        normalized[field] is not None
+        for field in ("evm_all_db", "burst_power_dbm", "frequency_error_hz")
+    )
     return {
         "point_index": index,
         "frequency_hz": axis_value if axis == "frequency" else 6_105_000_000.0,
         "generator_power_dbm": axis_value if axis == "power" else -40.0,
         "bandwidth_hz": 320_000_000.0,
-        "evm_all_db": float(values["evm_all_carriers_db"]),
-        "evm_data_db": float(values["evm_data_carriers_db"]),
-        "evm_pilot_db": float(values["evm_pilot_carriers_db"]),
-        "burst_power_dbm": float(values["burst_power_dbm"]),
-        "frequency_error_hz": float(values["frequency_error_hz"]),
-        "clock_error_ppm": float(values["clock_error_ppm"]),
-        "valid": True,
-        "limit_status": "MEASURED",
+        **normalized,
+        "valid": critical_valid,
+        "limit_status": "MEASURED" if critical_valid else "INVALID",
     }
 
 
