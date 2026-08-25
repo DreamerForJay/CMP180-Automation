@@ -4,6 +4,11 @@
 
 ### 狀態（2026-08-20）
 
+- 2026-08-25 自訂兩點頻率 HIL（6085／6105 MHz、-45 dBm）在第 2 點回傳 `INV`，
+  已依規則停止；最終 Generator `OFF`、Analyzer `RDY`、error queue empty。此結果是
+  finding，不是通過證據。已修正 `INV` 正規化與 partial artifact 保留；重新 HIL 前需先
+  確認 trigger／ranging 設定並取得新的現場授權。
+
 - 分支：`feature/web-sweep-jobs`（Web Sweep PR #12）。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
 - Web GUI 已有雙語響應式版面（亮／暗主題切換，預設暗色）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifacts 與圖表。
@@ -57,6 +62,12 @@
 ## English Version
 
 ### Status (2026-08-20)
+
+- The 2026-08-25 custom two-point frequency HIL (6085/6105 MHz at -45 dBm) returned
+  `INV` at point 2 and stopped as required. Final state was Generator `OFF`, Analyzer `RDY`,
+  and an empty error queue. This is a finding, not passing evidence. `INV` normalization and
+  partial-artifact retention are corrected; a rerun requires trigger/ranging review and fresh
+  on-site authorization.
 
 - Branch: `feature/web-sweep-jobs` (Web Sweep PR #12).
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.

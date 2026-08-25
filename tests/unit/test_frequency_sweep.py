@@ -28,7 +28,12 @@ class SweepBackend:
             raise TimeoutError("point timeout")
 
     def fetch_result(self):
-        return {"frequency_hz": self.frequency, "evm_all_carriers_db": -36.0}
+        return {
+            "frequency_hz": self.frequency,
+            "evm_all_carriers_db": -36.0,
+            "burst_power_dbm": -45.0,
+            "frequency_error_hz": 1.0,
+        }
 
     def stop_measurement(self):
         self.calls.append(("stop", self.frequency))
@@ -81,6 +86,25 @@ def test_error_queue_stops_before_next_frequency():
     assert len(result.points) == 2
     assert result.failed_frequency_hz == 6_105e6
     assert result.error is not None and "Execution error" in result.error
+    assert ("configure", 6_125e6) not in backend.calls
+
+
+def test_invalid_critical_result_stops_before_next_frequency():
+    backend = SweepBackend()
+    original_fetch = backend.fetch_result
+
+    def fetch_result():
+        values = original_fetch()
+        if backend.frequency == 6_105e6:
+            values["evm_all_carriers_db"] = "INV"
+        return values
+
+    backend.fetch_result = fetch_result
+    result = run_frequency_sweep(backend, sweep_plan(), sleeper=lambda _: None)
+    assert result.completed is False
+    assert len(result.points) == 2
+    assert result.failed_frequency_hz == 6_105e6
+    assert result.error == "Invalid critical result fields: evm_all_carriers_db"
     assert ("configure", 6_125e6) not in backend.calls
 
 

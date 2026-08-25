@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from math import isfinite
 
 from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.workflow.single_measurement import (
@@ -21,6 +22,21 @@ VERIFIED_MAXIMUM_SPAN_HZ = 200_000_000.0
 VERIFIED_SWEEP_BANDWIDTH_HZ = 320_000_000.0
 VERIFIED_MAXIMUM_GENERATOR_POWER_DBM = -40.0
 VERIFIED_MAXIMUM_POINTS = 11
+CRITICAL_RESULT_FIELDS = ("evm_all_carriers_db", "burst_power_dbm", "frequency_error_hz")
+
+
+def _invalid_critical_fields(values: dict[str, object]) -> tuple[str, ...]:
+    """Return critical fields that cannot represent a valid measurement point."""
+    invalid: list[str] = []
+    for field in CRITICAL_RESULT_FIELDS:
+        try:
+            numeric_value = float(values[field])
+        except (KeyError, TypeError, ValueError):
+            invalid.append(field)
+        else:
+            if not isfinite(numeric_value):
+                invalid.append(field)
+    return tuple(invalid)
 
 
 @dataclass(frozen=True)
@@ -124,6 +140,16 @@ def run_frequency_sweep(
                     f"Point safety errors: instrument={point_result.instrument_errors}, "
                     f"cleanup={point_result.cleanup_errors}"
                 ),
+            )
+        invalid_fields = _invalid_critical_fields(point_result.values)
+        if invalid_fields:
+            # CMP180 可能以 INV 表示未觸發；error queue 為空仍不得把該點視為有效量測。
+            return FrequencySweepResult(
+                requested_frequencies_hz=frequencies,
+                points=tuple(results),
+                completed=False,
+                failed_frequency_hz=frequency_hz,
+                error=f"Invalid critical result fields: {', '.join(invalid_fields)}",
             )
         if index < len(frequencies) - 1:
             sleeper(plan.dwell_time_s)

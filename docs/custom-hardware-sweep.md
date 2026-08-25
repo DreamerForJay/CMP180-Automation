@@ -48,6 +48,18 @@ python -m cmp180_evm.web --host 127.0.0.1 `
 5. 再跑 2 點低功率功率掃描；任一 `INV` 立即停止。
 6. 通過後才擴大到既有安全包絡，並更新 HIL 文件與 Profile 狀態。
 
+### 2026-08-25 首次自訂頻率 HIL 結果
+
+- 計畫：6085／6105 MHz、步進 20 MHz、320 MHz、Generator -45 dBm、每點 100 ms。
+- Fingerprint：`34F76E0BED46`；Job：`8b385c3eb620`。
+- 第 2 點回傳 `INV`，整批依規則停止，不得視為通過。
+- 收尾唯讀確認 Generator `OFF`、Analyzer `RDY`，所有查詢的 SCPI error queue 均為
+  `0,"No error"`。
+- Web 正規化層曾嘗試將 `INV` 轉為浮點數，導致 partial artifact 未完整回傳；修正後
+  `INV` 保留於 raw artifact，Web 欄位使用 `null`／`INVALID`，frequency sweep 也會在
+  第一個無效關鍵欄位立即停止。
+- 找出 -45 dBm 下正確的 trigger／ranging 設定並取得新現場授權前，不得重跑或擴大範圍。
+
 ---
 
 ## English Version
@@ -102,3 +114,18 @@ recomputes the confirmation so a request cannot be changed after preview.
 4. Check every point, raw data, error queue, and final state.
 5. Run a two-point low-power power sweep; stop immediately on any `INV`.
 6. Expand only after passing, and update HIL evidence and profile state.
+
+### First custom-frequency HIL result on 2026-08-25
+
+- Plan: 6085/6105 MHz, 20 MHz step, 320 MHz bandwidth, -45 dBm Generator, and 100 ms
+  dwell per point.
+- Fingerprint: `34F76E0BED46`; job: `8b385c3eb620`.
+- Point 2 returned `INV`; the batch stopped as required and did not pass acceptance.
+- Read-only cleanup verification confirmed Generator `OFF`, Analyzer `RDY`, and
+  `0,"No error"` for all queried SCPI error queues.
+- The Web normalization layer had attempted to convert `INV` to a float, preventing the
+  partial artifact from being returned completely. The correction retains `INV` in raw
+  artifacts, represents unavailable Web values as `null`/`INVALID`, and stops a frequency
+  sweep on the first invalid critical field.
+- Do not rerun or expand the range until the correct -45 dBm trigger/ranging settings are
+  identified and fresh on-site authorization is provided.
