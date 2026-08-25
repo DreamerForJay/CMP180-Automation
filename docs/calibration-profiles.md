@@ -57,6 +57,8 @@ python scripts\cmp180_calibration_profile.py `
 
 只有 CMP180 loopback 而沒有校正過的參考 Source／Receiver 時，這個流程只能稱為相對路徑驗證，不能宣稱為可追溯的絕對功率校正。未來接入 Keysight Power Meter、Signal Generator 或 Signal Analyzer 時，應新增 instrument adapter 產生相同 CSV schema，而不是改寫 Profile 計算規則。
 
+一般操作員不需要執行上述 PowerShell。Web「校正 SOP」頁面的「匯入 CSV」與「計算 Draft Profile」會直接呼叫同一個 Python 計算核心；CLI 保留給批次、自動化與維護用途。頁面提供「載入範例」、「從儀器擷取」與各欄位 `?` 說明。「從儀器擷取」在尚未設定外部儀器 adapter 時只會顯示缺少的設定，不會啟動 CMP180 或 RF。
+
 ---
 
 ## English Version
@@ -108,3 +110,5 @@ until approved data exists.
 6. Before measurement, verify route, calibrated frequency range, and expiry. Preserve the full profile snapshot in the resulting artifacts.
 
 With only CMP180 loopback and no calibrated reference source/receiver, this process is a relative path verification, not traceable absolute-power calibration. Future Keysight power meter, signal-generator, or signal-analyzer support should be implemented as instrument adapters that produce the same CSV schema without changing the profile calculation rules.
+
+Normal operators do not need to run the PowerShell command. The Web Calibration SOP page's Import CSV and Calculate Draft Profile buttons call the same Python calculation core; the CLI remains available for batch automation and maintenance. The page provides Load Example, Capture from Instrument, and per-field `?` help. Until an external-instrument adapter is configured, Capture from Instrument only explains the missing setup and does not start the CMP180 or RF.
