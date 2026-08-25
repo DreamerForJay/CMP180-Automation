@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import mimetypes
 import socket
@@ -20,6 +21,7 @@ from cmp180_evm.web.mock_service import (
     save_mock_run,
     simulate_point,
 )
+from cmp180_evm.web.run_records import load_run_record, move_run_to_trash, open_run_folder
 
 STATIC_DIR = Path(__file__).with_name("static")
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -74,6 +76,7 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
             runs.append(
                 {
                     "run_id": str(metadata.get("run_id") or run_dir.name),
+                    "run_key": run_dir.name,
                     "test_name": str(metadata.get("test_name") or "measurement"),
                     "created_at": created_at,
                     "simulated": bool(metadata.get("simulated", True)),
@@ -137,11 +140,27 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
             raise ValueError("JSON body must be an object")
         return value
 
+    def _is_local_client(self) -> bool:
+        """Return whether this request originates from the local workstation."""
+        try:
+            return ipaddress.ip_address(self.client_address[0]).is_loopback
+        except ValueError:
+            return False
+
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         parsed_path = parsed.path
         if parsed_path == "/api/runs":
             self._json_response({"runs": list_run_history(PROJECT_ROOT / "output")})
+            return
+        if parsed_path.startswith("/api/runs/"):
+            run_key = unquote(parsed_path.removeprefix("/api/runs/"))
+            try:
+                self._json_response(load_run_record(PROJECT_ROOT / "output", run_key))
+            except FileNotFoundError as exc:
+                self._json_response({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+                self._json_response({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         if parsed_path.startswith("/api/jobs/"):
             job_id = parsed_path.removeprefix("/api/jobs/")
@@ -214,6 +233,32 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 self._json_response(JOB_MANAGER.cancel(job_id).public())
                 return
             data = self._read_json()
+            if path.startswith("/api/runs/") and path.endswith("/open-folder"):
+                # 開啟 Explorer 是工作站副作用；內網遠端請求不得觸發本機 GUI。
+                if not self._is_local_client():
+                    self._json_response(
+                        {"error": "Open folder is available only from the local workstation"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                run_key = unquote(path.removeprefix("/api/runs/").removesuffix("/open-folder"))
+                open_run_folder(PROJECT_ROOT / "output", run_key)
+                self._json_response({"status": "opened"})
+                return
+            if path.startswith("/api/runs/") and path.endswith("/trash"):
+                # 移至 .trash 雖可復原，仍屬檔案狀態變更，只允許本機操作員執行。
+                if not self._is_local_client():
+                    self._json_response(
+                        {"error": "Trash is available only from the local workstation"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                run_key = unquote(path.removeprefix("/api/runs/").removesuffix("/trash"))
+                result = move_run_to_trash(
+                    PROJECT_ROOT / "output", run_key, str(data.get("confirm_run_id") or "")
+                )
+                self._json_response(result)
+                return
             if path in {"/api/jobs/hardware/frequency-sweep", "/api/jobs/hardware/power-sweep"}:
                 if not self.hardware_enabled:
                     self._json_response({"error": "Hardware mode is locked"}, HTTPStatus.FORBIDDEN)

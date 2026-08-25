@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 from cmp180_evm import actions
+from cmp180_evm.calibration import load_calibration_profile
 
 
 def _cmd_validate_config(args: argparse.Namespace) -> int:
@@ -42,6 +43,27 @@ def _cmd_test_connection(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_validate_calibration(args: argparse.Namespace) -> int:
+    try:
+        profile = load_calibration_profile(Path(args.config))
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"INVALID: {exc}")
+        return 1
+    print("OK (calibration)")
+    print(f"  Profile: {profile.profile_id} rev {profile.revision}")
+    print(f"  Lifecycle: {profile.lifecycle}")
+    print(f"  Route: {profile.route}")
+    print(f"  Range: {profile.points[0].frequency_hz:g}..{profile.points[-1].frequency_hz:g} Hz")
+    print(f"  Expires: {profile.expires_at.isoformat()}")
+    if profile.lifecycle != "approved":
+        print("  Measurement use: BLOCKED (profile is not approved)")
+    elif profile.is_expired():
+        print("  Measurement use: BLOCKED (profile is expired)")
+    else:
+        print("  Measurement use: ALLOWED")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cmp180_evm")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -51,6 +73,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validate_config.add_argument("config", help="Path to the YAML config file.")
     validate_config.set_defaults(func=_cmd_validate_config)
+
+    validate_calibration = subparsers.add_parser(
+        "validate-calibration", help="Validate a path-loss calibration profile."
+    )
+    validate_calibration.add_argument("config", help="Path to the calibration YAML file.")
+    validate_calibration.set_defaults(func=_cmd_validate_calibration)
 
     dry_run = subparsers.add_parser(
         "dry-run", help="Print the planned steps for a run without sending any SCPI writes."

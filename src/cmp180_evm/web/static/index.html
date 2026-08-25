@@ -107,7 +107,12 @@
     <section id="history" class="panel">
       <div class="panel-head"><div><h2 data-i18n="historyTitle">量測紀錄</h2><p data-i18n="historyHelp">瀏覽本機保存的實機與示範結果；不會啟動量測或 RF。</p></div><button id="refreshHistoryButton" class="ghost" type="button" data-i18n="refreshHistory">重新整理</button></div>
       <div id="historyEmpty" class="history-empty" data-i18n="historyEmpty">尚無可用紀錄。</div>
-      <div class="table-wrap"><table><thead><tr><th data-i18n="historyTime">時間</th><th data-i18n="historyName">名稱</th><th>Run ID</th><th data-i18n="historySource">來源</th><th data-i18n="historyStatus">狀態</th><th data-i18n="historyPoints">點數</th><th data-i18n="historyFiles">檔案</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th data-i18n="historyTime">時間</th><th data-i18n="historyName">名稱</th><th>Run ID</th><th data-i18n="historySource">來源</th><th data-i18n="historyStatus">狀態</th><th data-i18n="historyPoints">點數</th><th data-i18n="historyFiles">檔案</th><th>Actions</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+      <section id="historyDetail" class="history-detail" hidden aria-live="polite">
+        <div class="panel-head"><div><h3 id="historyDetailTitle">Run detail</h3><p id="historyDetailPath"></p></div><button id="closeHistoryDetail" class="ghost" type="button">Close</button></div>
+        <div class="history-detail-grid"><div><h4>Settings / 設定</h4><div id="historySettings"></div></div><div><h4>Waveform / 波形</h4><div id="historyWaveform"></div><h4>Raw files</h4><div id="historyRawFiles"></div></div></div>
+        <details><summary>Results JSON / 過去量測值</summary><pre id="historyResults"></pre></details>
+      </section>
     </section>
   </main>
   <div id="toast" role="status"></div>
