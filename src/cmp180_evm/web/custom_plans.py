@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 
 from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan
@@ -17,6 +19,8 @@ class CustomSweepPreview:
     bandwidth_hz: float
     generator_power_dbm: float | None
     center_frequency_hz: float | None
+    plan_fingerprint: str
+    required_confirmation: str
     execution_allowed: bool = False
 
     def public(self) -> dict[str, object]:
@@ -28,9 +32,17 @@ class CustomSweepPreview:
             "bandwidth_hz": self.bandwidth_hz,
             "generator_power_dbm": self.generator_power_dbm,
             "center_frequency_hz": self.center_frequency_hz,
+            "plan_fingerprint": self.plan_fingerprint,
+            "required_confirmation": self.required_confirmation,
             "execution_allowed": self.execution_allowed,
             "gate": "SOFTWARE_PREVIEW_ONLY_PENDING_CUSTOM_PROFILE_HIL",
         }
+
+
+def _fingerprint(payload: dict[str, object]) -> tuple[str, str]:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:12].upper()
+    return digest, f"EXECUTE-CUSTOM-{digest}"
 
 
 def build_custom_sweep_preview(data: dict[str, object]) -> CustomSweepPreview:
@@ -50,8 +62,25 @@ def build_custom_sweep_preview(data: dict[str, object]) -> CustomSweepPreview:
             step_frequency_hz=float(data["step_hz"]),
             dwell_time_s=dwell_time_s,
         )
+        points = plan.frequencies()
+        fingerprint, confirmation = _fingerprint(
+            {
+                "axis": axis,
+                "points": points,
+                "dwell_time_s": dwell_time_s,
+                "bandwidth_hz": bandwidth_hz,
+                "generator_power_dbm": generator_power_dbm,
+            }
+        )
         return CustomSweepPreview(
-            axis, plan.frequencies(), dwell_time_s, bandwidth_hz, generator_power_dbm, None
+            axis,
+            points,
+            dwell_time_s,
+            bandwidth_hz,
+            generator_power_dbm,
+            None,
+            fingerprint,
+            confirmation,
         )
     if axis == "power":
         center_frequency_hz = float(data.get("center_frequency_hz", 6_105_000_000))
@@ -66,8 +95,25 @@ def build_custom_sweep_preview(data: dict[str, object]) -> CustomSweepPreview:
             step_power_dbm=float(data["step_dbm"]),
             dwell_time_s=dwell_time_s,
         )
+        points = plan.powers()
+        fingerprint, confirmation = _fingerprint(
+            {
+                "axis": axis,
+                "points": points,
+                "dwell_time_s": dwell_time_s,
+                "bandwidth_hz": bandwidth_hz,
+                "center_frequency_hz": center_frequency_hz,
+            }
+        )
         return CustomSweepPreview(
-            axis, plan.powers(), dwell_time_s, bandwidth_hz, None, center_frequency_hz
+            axis,
+            points,
+            dwell_time_s,
+            bandwidth_hz,
+            None,
+            center_frequency_hz,
+            fingerprint,
+            confirmation,
         )
     raise ValueError("Sweep axis must be 'frequency' or 'power'")
 

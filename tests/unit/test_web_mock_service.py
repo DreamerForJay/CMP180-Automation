@@ -14,6 +14,7 @@ from cmp180_evm.web.server import (
     ExclusiveThreadingHTTPServer,
     list_run_history,
     validate_cable_route,
+    validate_custom_hardware_startup,
     validate_hardware_bind,
 )
 
@@ -120,6 +121,14 @@ def test_hardware_mode_must_not_bind_to_network_interfaces():
     validate_hardware_bind("0.0.0.0", False)
     with pytest.raises(ValueError, match="loopback"):
         validate_hardware_bind("0.0.0.0", True)
+
+
+def test_custom_hardware_requires_both_flags_and_loopback():
+    validate_custom_hardware_startup("127.0.0.1", True, True)
+    with pytest.raises(ValueError, match="requires --enable-hardware"):
+        validate_custom_hardware_startup("127.0.0.1", False, True)
+    with pytest.raises(ValueError, match="loopback"):
+        validate_custom_hardware_startup("0.0.0.0", True, True)
 
 
 def test_output_location_is_project_relative_and_hides_absolute_path(tmp_path):

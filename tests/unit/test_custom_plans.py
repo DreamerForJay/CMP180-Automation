@@ -24,6 +24,23 @@ def test_frequency_preview_accepts_bounded_user_inputs_but_keeps_rf_locked():
         6_125_000_000,
     )
     assert preview.public()["execution_allowed"] is False
+    assert preview.required_confirmation.startswith("EXECUTE-CUSTOM-")
+
+
+def test_plan_fingerprint_is_stable_and_changes_with_any_rf_parameter():
+    base = {
+        "axis": "frequency",
+        "start_hz": 6_085_000_000,
+        "stop_hz": 6_125_000_000,
+        "step_hz": 20_000_000,
+        "bandwidth_hz": 320_000_000,
+        "generator_power_dbm": -45,
+        "dwell_ms": 100,
+    }
+    first = build_custom_sweep_preview(base)
+    assert build_custom_sweep_preview(dict(base)).plan_fingerprint == first.plan_fingerprint
+    changed = build_custom_sweep_preview(base | {"generator_power_dbm": -46})
+    assert changed.plan_fingerprint != first.plan_fingerprint
 
 
 def test_preview_reuses_hard_bandwidth_power_span_point_and_dwell_guards():

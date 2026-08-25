@@ -24,6 +24,7 @@
 - 新增器材更換校正 SOP：CSV 讀值轉 Draft Profile 腳本、Web 校正精靈，以及自訂掃描安全點位預覽。這些新路徑目前不會送 RF；自訂實機執行仍待 HIL。
 - Web 校正頁新增 CSV 匯入、示範資料、外部儀器擷取入口與各欄位可鍵盤操作的 `?` 說明；一般操作員不必手動輸入 CLI。外部 adapter 未設定時會說明原因且不控制 RF。
 - 新增 Calibration Adapter registry、共用 capture controller 與 Mock Reference Adapter；Web 會查詢可用能力並顯示 DEMO／unavailable。所有 capture 路徑在例外時仍執行 output off／close。
+- 自訂 CMP180 頻率／功率掃描已完成軟體執行接線：雙重 startup gate、後端 fingerprint 確認、Job／取消、partial artifacts、失敗狀態保留與 emergency RF Off。尚未執行新的自訂實機 HIL。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -77,6 +78,7 @@
 - Added the equipment-change calibration SOP: a CSV-to-draft-profile script, a Web calibration wizard, and safety-bounded custom sweep point preview. These new paths do not transmit RF; custom live execution remains HIL-gated.
 - The Web calibration page now has CSV import, example data, an external-instrument capture entry point, and keyboard-accessible per-field `?` help. Normal operators do not need the CLI. Missing adapters are explained without controlling RF.
 - Added the Calibration Adapter registry, shared capture controller, and Mock Reference Adapter. The Web UI queries capabilities and labels DEMO/unavailable states. Every capture path still runs output-off/close cleanup on exceptions.
+- Custom CMP180 frequency/power sweep execution is software-wired with a dual startup gate, backend fingerprint confirmation, jobs/cancellation, partial artifacts, retained failure state, and emergency RF Off. No new custom live HIL has been run yet.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had

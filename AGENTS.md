@@ -18,7 +18,7 @@ All new or rewritten project documentation must contain a complete Traditional C
 
 本專案建立可重現的 CMP180 WLAN TX EVM Python 3.11+ 自動化系統，長期產品為中英雙語、響應式公司內網 Web 應用。CMsquares 在探索與除錯期間仍是參考介面。
 
-已完成設定驗證、Mock／實機連線、WLAN discovery、Generator／Analyzer setter、measurement lifecycle、RF On/Off，以及 RF1.1→RF1.5、6105 MHz、320 MHz、-40 dBm 的完整 Python SingleShot。完整 SingleShot 後已擷取並保存 28 欄 OFDM SISO 結果。Frequency sweep 與 GUI 實機模式仍未完成；不得把 dry-run、Mock、CMsquares 操作或單獨 stored `FETCh` 說成新的完整 Python 自動量測。
+已完成設定驗證、Mock／實機連線、WLAN discovery、Generator／Analyzer setter、measurement lifecycle、RF On/Off、SingleShot，以及固定三點頻率與四點功率掃描 HIL。Web 固定 profile HIL 已通過；自訂掃描的軟體執行路徑已完成但仍待新的現場 HIL。不得把 dry-run、Mock、預覽、CMsquares 操作或單獨 stored `FETCh` 說成新的完整 Python 自動量測。
 
 ### 硬體安全與開發規則
 
@@ -44,7 +44,7 @@ Build a reproducible Python 3.11+ automation system for Rohde & Schwarz CMP180 W
 
 - Implemented: configuration validation, mock and real connection checks, WLAN discovery, Generator/Analyzer setters, measurement lifecycle, RF On/Off, and a complete Python SingleShot with 28-field OFDM SISO result artifacts.
 - Hardware verified: `192.168.200.50:5025`, WLAN MEAS1, RF1.1-to-RF1.5 direct-cable loopback, 6105 MHz, 320 MHz, -40 dBm Generator power, -20 dBm expected power, and deterministic cleanup.
-- Not yet implemented: real frequency sweep and unlocked real-hardware Web GUI operation.
+- Fixed frequency/power sweeps and guarded Web execution passed HIL. User-defined sweep execution is software-wired but remains locked behind a separate startup flag until a new on-site HIL passes.
 
 Never describe a dry-run, mock result, CMsquares action, or a standalone stored `FETCh` as a new fully automated Python measurement. Only the verified end-to-end SingleShot workflow qualifies.
 

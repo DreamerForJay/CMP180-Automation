@@ -61,3 +61,21 @@ def test_only_one_active_job_is_allowed():
     with pytest.raises(RuntimeError, match="already active"):
         manager.start("mock", 1, lambda active: {})
     wait_terminal(manager, first.job_id)
+
+
+def test_measurement_failure_keeps_partial_result_and_failed_state():
+    manager = JobManager()
+    job = manager.start(
+        "hardware-custom",
+        3,
+        lambda _active: {
+            "measurement_failed": True,
+            "error": "INV at point 2",
+            "points": [{"point_index": 0}],
+            "artifacts": {"run_id": "partial"},
+        },
+    )
+    done = wait_terminal(manager, job.job_id)
+    assert done.state == "failed"
+    assert done.error == "INV at point 2"
+    assert done.result["artifacts"]["run_id"] == "partial"
