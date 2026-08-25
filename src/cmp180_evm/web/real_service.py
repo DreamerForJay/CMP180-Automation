@@ -16,6 +16,10 @@ from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan, run_frequenc
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
 
+VERIFIED_ARB_WAVEFORM = (
+    "KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv"
+)
+
 
 def _web_point(
     index: int, axis_value: float, values: dict[str, object], axis: str
@@ -77,7 +81,10 @@ def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> d
                 completed=result.completed,
                 failed_frequency_hz=result.failed_frequency_hz,
                 error=result.error,
-                metadata={"source": "web_verified_frequency_sweep"},
+                metadata={
+                    "source": "web_verified_frequency_sweep",
+                    "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
+                },
             )
             web_points = [
                 _web_point(index, value, point.values, axis)
@@ -104,7 +111,10 @@ def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> d
                 completed=result.completed,
                 failed_power_dbm=result.failed_power_dbm,
                 error=result.error,
-                metadata={"source": "web_verified_power_sweep"},
+                metadata={
+                    "source": "web_verified_power_sweep",
+                    "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
+                },
             )
             web_points = [
                 _web_point(index, value, point.values, axis)
@@ -198,6 +208,7 @@ def run_verified_real_single(
                 "expected_nominal_power_dbm": plan.expected_nominal_power_dbm,
                 "generator_port": plan.generator_port,
                 "analyzer_port": plan.analyzer_port,
+                "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
             },
         )
         values = result.values

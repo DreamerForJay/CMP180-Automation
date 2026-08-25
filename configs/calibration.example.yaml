@@ -1,0 +1,18 @@
+# 中文：開發用範例，不是有效校正證書。loss 必須由校正程序實測後由負責人核准。
+# English: Development example only, not a valid calibration certificate. Loss values
+# require measurement and owner approval before use.
+
+profile_id: "draft-rf1.1-rf1.5-direct-cable"
+revision: "0.1-draft"
+lifecycle: "draft"
+route: "RF1.1-RF1.5"
+calibrated_at: 2026-08-20
+expires_at: 2026-11-20
+equipment_reference: "DRAFT — cable/adapter serials not yet recorded"
+points:
+  - frequency_hz: 5925000000
+    loss_db: 0.0
+  - frequency_hz: 6105000000
+    loss_db: 0.0
+  - frequency_hz: 7125000000
+    loss_db: 0.0
