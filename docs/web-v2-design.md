@@ -31,6 +31,15 @@ V2 保留既有 Python workflow、SCPI registry、安全限制、Job、artifact 
 - 所有尺寸共用相同 DOM 與設計 token，不建立另一套手機頁。
 - 支援鍵盤 focus、文字換行及 reduced motion。
 
+### 結果與紀錄管理
+
+- 最新結果顯示完成時間、Run ID 與不含員工帳號的 `output/<run>/` 相對位置。
+- CSV、JSON、Metadata 與 HTML Report 使用受控 artifact URL，可直接在瀏覽器開啟。
+- 紀錄使用響應式卡片呈現時間戳、來源、狀態、點數、Run ID 與輸出位置。
+- 「查看與管理」載入既有 metadata、results、raw 檔案清單與 waveform reference；此動作唯讀且不控制 RF。
+- 「開啟資料夾」只允許本機 loopback 使用者開啟已驗證的 `output/` 子目錄。
+- 刪除前必須輸入完整 Run ID；後端再次驗證後只移至 `output/.trash/`，不做永久刪除。
+
 ## English Version
 
 ### Rebuild principle
@@ -63,3 +72,15 @@ power sweep share one form and reveal only relevant fields.
 - 720 px and below: bottom navigation and single-column fields/cards.
 - Every size uses the same DOM and design tokens; there is no separate mobile page.
 - Keyboard focus, text reflow, and reduced motion are supported.
+
+### Results and run management
+
+- The latest result shows its completion time, Run ID, and a relative `output/<run>/` location
+  that does not disclose an employee account name.
+- CSV, JSON, Metadata, and the HTML Report use controlled artifact URLs and open in the browser.
+- Responsive run cards show timestamps, source, status, point count, Run ID, and output location.
+- View & Manage loads saved metadata, results, raw-file names, and waveform references. This is
+  read-only and never controls RF.
+- Open Folder is restricted to a local loopback operator and a validated direct child of `output/`.
+- Deletion requires the complete Run ID. The backend validates it again and moves the directory
+  to `output/.trash/`; it does not permanently delete data.

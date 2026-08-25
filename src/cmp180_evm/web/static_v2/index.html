@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CMP180 Measurement Console</title>
-  <link rel="stylesheet" href="/app.css?v=1">
+  <link rel="stylesheet" href="/app.css?v=2">
 </head>
 <body>
   <header class="app-header">
@@ -81,16 +81,32 @@
       <section id="results" class="view">
         <div class="section-heading"><div><p class="eyebrow">RUN OUTPUT</p><h2 data-t="resultsTitle">量測結果</h2></div><span id="resultStatus" class="state-chip">NO DATA</span></div>
         <div id="emptyResults" class="empty-state"><span>∿</span><h3 data-t="noResults">尚無量測結果</h3><p data-t="noResultsHelp">執行 Demo 量測後，指標、圖表和檔案會顯示在這裡。</p></div>
-        <div id="resultContent" hidden><div id="metrics" class="metric-grid"></div><div class="card chart-card"><svg id="chart" viewBox="0 0 960 300"></svg></div><div id="artifactLinks" class="artifact-grid"></div></div>
+        <div id="resultContent" hidden>
+          <section class="result-meta card">
+            <div><small data-t="completedAt">完成時間</small><strong id="resultTimestamp">—</strong></div>
+            <div><small>RUN ID</small><strong id="resultRunId">—</strong></div>
+            <div class="output-path"><small data-t="outputLocation">輸出位置</small><code id="resultOutput">—</code></div>
+          </section>
+          <div id="metrics" class="metric-grid"></div><div class="card chart-card"><svg id="chart" viewBox="0 0 960 300"></svg></div><div id="artifactLinks" class="artifact-grid"></div>
+        </div>
       </section>
 
-      <section id="runs" class="view"><div class="section-heading"><div><p class="eyebrow">RUN HISTORY</p><h2 data-t="runsTitle">量測紀錄</h2></div><button id="refreshRuns" class="secondary-button" type="button" data-t="refresh">重新整理</button></div><div id="runsGrid" class="runs-grid"></div></section>
+      <section id="runs" class="view"><div class="section-heading"><div><p class="eyebrow">RUN HISTORY</p><h2 data-t="runsTitle">量測紀錄</h2><p class="section-help" data-t="runsHelp">查看時間、輸出位置與檔案；刪除會移至可復原的 Trash。</p></div><button id="refreshRuns" class="secondary-button" type="button" data-t="refresh">重新整理</button></div><div id="runsGrid" class="runs-grid"></div></section>
       <section id="calibration" class="view"><div class="empty-state"><span>CAL</span><h2 data-t="calibrationTitle">校正流程重新設計中</h2><p data-t="calibrationHelp">新版將使用四步精靈：器材、讀值、線損檢查、核准。</p></div></section>
       <section id="guide" class="view"><div class="section-heading"><div><p class="eyebrow">OPERATOR GUIDE</p><h2 data-t="guideTitle">快速開始</h2></div></div><div class="guide-grid"><article class="command-card"><h3 data-t="startDemo">啟動 Demo</h3><pre><code>.\.venv\Scripts\Activate.ps1
 python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre><button class="copy-button" type="button" data-copy data-t="copy">複製指令</button></article><article class="command-card danger"><h3 data-t="rfHold">RF 暫停</h3><p data-t="rfHoldHelp">供電不穩定期間不要加入 --enable-hardware。</p></article></div></section>
     </main>
   </div>
+  <dialog id="runDialog" class="run-dialog">
+    <div class="dialog-head"><div><small>RUN DETAIL</small><h2 id="dialogTitle">—</h2></div><button id="closeDialog" class="icon-button" type="button" aria-label="Close">×</button></div>
+    <div id="dialogSummary" class="detail-grid"></div>
+    <div class="dialog-section"><small data-t="outputLocation">輸出位置</small><code id="dialogOutput">—</code></div>
+    <div id="dialogArtifacts" class="artifact-grid"></div>
+    <details><summary data-t="technicalDetails">技術詳細資料</summary><pre id="dialogTechnical"></pre></details>
+    <div class="dialog-actions"><button id="openRunFolder" class="secondary-button" type="button" data-t="openFolder">開啟資料夾</button><button id="requestTrash" class="danger-button" type="button" data-t="deleteRun">刪除紀錄</button></div>
+    <section id="trashConfirmation" class="trash-confirmation" hidden><strong data-t="deleteConfirmTitle">確認移至 Trash</strong><p id="trashHelp"></p><input id="trashRunId" autocomplete="off"><div><button id="cancelTrash" class="secondary-button" type="button" data-t="cancel">取消</button><button id="confirmTrash" class="danger-button" type="button" disabled data-t="moveToTrash">移至 Trash</button></div></section>
+  </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js?v=1"></script>
+  <script src="/app.js?v=2"></script>
 </body>
 </html>
