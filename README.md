@@ -47,6 +47,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
 | [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
 | [Web V2 設計](docs/web-v2-design.md) | 全新資訊架構、互動、響應式與驗收規則 |
+| [RF 工作站 UX 規格](docs/rf-workstation-ux-plan.md) | Runs Table、多 Run 比較、Trace、主題與 RF 安全設計 |
 | [UI/UX roadmap](docs/ui-ux-roadmap.md) | 公司內部控制台資訊架構與改版階段 |
 | [量測欄位](docs/measurement-example-and-fields.md) | 正確輸出與 EVM／Power／Frequency Error |
 | [SCPI matrix](docs/scpi-command-matrix.md) | 指令來源、驗證與 schema |
