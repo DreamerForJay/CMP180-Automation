@@ -7,12 +7,18 @@ import ipaddress
 import json
 import mimetypes
 import socket
+from dataclasses import asdict
 from datetime import date, datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from cmp180_evm.calibration_adapters import (
+    capture_calibration_readings,
+    create_calibration_adapter,
+    list_calibration_adapters,
+)
 from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_profile
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 from cmp180_evm.web.jobs import JobManager
@@ -152,6 +158,11 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         parsed_path = parsed.path
+        if parsed_path == "/api/calibration/adapters":
+            self._json_response(
+                {"adapters": [asdict(adapter) for adapter in list_calibration_adapters()]}
+            )
+            return
         if parsed_path == "/api/runs":
             self._json_response({"runs": list_run_history(PROJECT_ROOT / "output")})
             return
@@ -235,6 +246,22 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 self._json_response(JOB_MANAGER.cancel(job_id).public())
                 return
             data = self._read_json()
+            if path == "/api/calibration/capture":
+                adapter_id = str(data.get("adapter_id") or "")
+                adapter = create_calibration_adapter(adapter_id)
+                # 模擬擷取也必須由 UI 明確標示，避免示範讀值混入正式 Profile。
+                if adapter.simulated and data.get("allow_simulated") is not True:
+                    raise ValueError("Simulated capture requires explicit acknowledgement")
+                frequencies_raw = data.get("frequencies_hz")
+                if not isinstance(frequencies_raw, list):
+                    raise ValueError("frequencies_hz must be a list")
+                result = capture_calibration_readings(
+                    adapter,
+                    tuple(float(value) for value in frequencies_raw),
+                    float(data.get("source_power_dbm", -40)),
+                )
+                self._json_response(result.public())
+                return
             if path == "/api/hardware/custom-plan-preview":
                 # 預覽只建立安全點位，不連線儀器、不送 SCPI，也不開 RF。
                 preview = build_custom_sweep_preview(data)

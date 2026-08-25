@@ -45,8 +45,17 @@ Object.entries(calibrationHelp).forEach(([name, help]) => {
 
 const calibrationToolbar = document.createElement('div');
 calibrationToolbar.className = 'calibration-toolbar';
-calibrationToolbar.innerHTML = '<button class="ghost" type="button" data-action="import">匯入 CSV</button><input type="file" accept=".csv,text/csv" hidden><button class="ghost" type="button" data-action="example">載入範例</button><button class="ghost" type="button" data-action="capture">從儀器擷取</button><button class="help-button" type="button" data-action="help" aria-label="說明校正資料來源">?</button>';
+calibrationToolbar.innerHTML = '<select data-role="adapter" aria-label="校正儀器 Adapter"><option>載入 Adapter…</option></select><button class="ghost" type="button" data-action="import">匯入 CSV</button><input type="file" accept=".csv,text/csv" hidden><button class="ghost" type="button" data-action="example">載入範例</button><button class="ghost" type="button" data-action="capture">從儀器擷取</button><button class="help-button" type="button" data-action="help" aria-label="說明校正資料來源">?</button>';
 calibrationForm.before(calibrationToolbar);
+
+const calibrationAdapterSelect = calibrationToolbar.querySelector('[data-role="adapter"]');
+fetch('/api/calibration/adapters').then(response => response.json()).then(data => {
+  calibrationAdapterSelect.innerHTML = data.adapters.map(adapter =>
+    `<option value="${adapter.adapter_id}" ${adapter.available ? '' : 'disabled'}>${adapter.label}${adapter.simulated ? ' · DEMO' : ''}${adapter.available ? '' : ' · unavailable'}</option>`
+  ).join('');
+}).catch(() => {
+  calibrationAdapterSelect.innerHTML = '<option value="">Adapter API unavailable</option>';
+});
 
 const calibrationFile = calibrationToolbar.querySelector('input[type="file"]');
 calibrationToolbar.querySelector('[data-action="import"]').onclick = () => calibrationFile.click();
@@ -59,8 +68,36 @@ calibrationToolbar.querySelector('[data-action="example"]').onclick = () => {
   calibrationForm.elements.readings.value = 'frequency_hz,source_reference_dbm,receiver_reading_dbm\n6085000000,-40.000,-40.850\n6105000000,-40.000,-40.870\n6125000000,-40.000,-40.890';
   toast(language === 'zh' ? '已載入示範資料；不可作為正式校正。' : 'Example data loaded; it is not a formal calibration.');
 };
-calibrationToolbar.querySelector('[data-action="capture"]').onclick = () => {
-  showCalibrationHelp('從儀器擷取尚未啟用', '尚未設定外部校正儀器型號、連線位址與 SCPI adapter。目前請匯入儀器輸出的 CSV；此按鍵不會控制 CMP180 或產生 RF。');
+calibrationToolbar.querySelector('[data-action="capture"]').onclick = async event => {
+  const adapterId = calibrationAdapterSelect.value;
+  if (adapterId !== 'mock-reference') {
+    showCalibrationHelp('外部 Adapter 尚未設定', '請提供儀器型號、連線位址、官方 SCPI 與安全限制。目前不會控制 CMP180 或產生 RF。');
+    return;
+  }
+  const acknowledged = confirm(language === 'zh'
+    ? '這是純軟體 DEMO Adapter，不是正式校正讀值。是否繼續？'
+    : 'This is a software-only DEMO adapter, not formal calibration data. Continue?');
+  if (!acknowledged) return;
+  event.currentTarget.disabled = true;
+  try {
+    const existing = parseCalibrationCsv(calibrationForm.elements.readings.value);
+    const response = await fetch('/api/calibration/capture', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+        adapter_id: adapterId,
+        allow_simulated: true,
+        frequencies_hz: existing.map(reading => reading.frequency_hz),
+        source_power_dbm: existing[0].source_reference_dbm
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Adapter capture failed');
+    calibrationForm.elements.readings.value = 'frequency_hz,source_reference_dbm,receiver_reading_dbm\n' + data.readings.map(reading => `${reading.frequency_hz},${reading.source_reference_dbm},${reading.receiver_reading_dbm}`).join('\n');
+    toast(language === 'zh' ? `DEMO 擷取完成，最終輸出 ${data.final_output_state}` : `DEMO capture complete; final output ${data.final_output_state}`);
+  } catch (error) {
+    toast(error.message, 'error');
+  } finally {
+    event.currentTarget.disabled = false;
+  }
 };
 calibrationToolbar.querySelector('[data-action="help"]').onclick = () => {
   showCalibrationHelp('校正資料來源', '正式校正應由已校正的 Source 與 Receiver／Power Meter 提供讀值。CMP180 自打自收只能作相對路徑驗證。');
