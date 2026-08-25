@@ -34,6 +34,29 @@ python -m cmp180_evm validate-calibration configs\calibration.example.yaml
 實機 SCPI workflow。下一步是在取得真實線損後，核對路由並把 Approved snapshot 寫入
 每個 CSV／JSON／metadata／HTML 報告。未取得核准資料前，既有固定 HIL profile 仍維持原設定。
 
+### 換器材時的固定 SOP
+
+1. 為新線材、轉接頭、衰減器與參考儀器登錄不重複的資產／序號。
+2. 使用校正設備在目標頻率點輸出 `frequency_hz,source_reference_dbm,receiver_reading_dbm` CSV。
+3. 執行以下腳本，或在 Web 的「校正 SOP」頁貼上同一份 CSV：
+
+```powershell
+python scripts\cmp180_calibration_profile.py `
+  configs\calibration_readings.example.csv `
+  --output output\calibration-drafts\rf1.1-rf1.5.yaml `
+  --profile-id rf1.1-rf1.5-cable `
+  --route RF1.1-RF1.5 `
+  --calibrated-at 2026-08-25 `
+  --expires-at 2026-11-25 `
+  --equipment-reference "cable:C01;adapter:A01;power-meter:P01"
+```
+
+4. 審查損耗曲線、異常點、參考面、日期與器材資料。工具會拒絕負損耗與 30 dB 以上結果，且永遠先輸出 `draft`。
+5. RF／Test Owner 完成審查後，才可透過受控核准流程轉為 `approved`。
+6. 量測前比對路徑、頻率範圍與有效期限；量測後把完整 snapshot 寫入 artifacts。
+
+只有 CMP180 loopback 而沒有校正過的參考 Source／Receiver 時，這個流程只能稱為相對路徑驗證，不能宣稱為可追溯的絕對功率校正。未來接入 Keysight Power Meter、Signal Generator 或 Signal Analyzer 時，應新增 instrument adapter 產生相同 CSV schema，而不是改寫 Profile 計算規則。
+
 ---
 
 ## English Version
@@ -74,3 +97,14 @@ implemented. The draft example is not connected to the live SCPI workflow. After
 data is available, the next integration will verify route matching and write the approved
 snapshot into CSV/JSON/metadata/HTML artifacts. Existing fixed HIL profiles remain unchanged
 until approved data exists.
+
+### Fixed SOP when equipment changes
+
+1. Register unique asset/serial identifiers for every cable, adapter, attenuator, and reference instrument.
+2. Use calibrated equipment to export `frequency_hz,source_reference_dbm,receiver_reading_dbm` CSV at the target frequencies.
+3. Run `scripts/cmp180_calibration_profile.py` with the arguments shown in the Chinese example, or paste the same CSV into the Web Calibration SOP page.
+4. Review the loss curve, outliers, reference planes, dates, and equipment identity. The tool rejects negative or greater-than-30-dB loss and always creates a `draft` first.
+5. An RF/test owner must complete a controlled review before changing it to `approved`.
+6. Before measurement, verify route, calibrated frequency range, and expiry. Preserve the full profile snapshot in the resulting artifacts.
+
+With only CMP180 loopback and no calibrated reference source/receiver, this process is a relative path verification, not traceable absolute-power calibration. Future Keysight power meter, signal-generator, or signal-analyzer support should be implemented as instrument adapters that produce the same CSV schema without changing the profile calculation rules.
