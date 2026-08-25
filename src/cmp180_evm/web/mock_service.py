@@ -150,9 +150,12 @@ def save_mock_run(
             {
                 "run_id": run_id,
                 "test_name": test_name,
+                "created_at": now.isoformat(),
                 "status": "complete",
                 "simulated": True,
                 "point_count": len(points),
+                "completed_points": len(points),
+                "source": "web-demo",
                 "limit_profile": DEMO_LIMIT_PROFILE.snapshot(),
                 "compliance_claim": False,
             },

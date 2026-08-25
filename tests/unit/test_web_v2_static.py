@@ -8,8 +8,8 @@ def test_v2_uses_one_stylesheet_and_one_application_script():
     html = (STATIC_V2 / "index.html").read_text(encoding="utf-8")
     assert html.count('rel="stylesheet"') == 1
     assert html.count("<script") == 1
-    assert 'href="/app.css?v=2"' in html
-    assert 'src="/app.js?v=2"' in html
+    assert 'href="/app.css?v=3"' in html
+    assert 'src="/app.js?v=3"' in html
 
 
 def test_v2_contains_measurement_workflow_and_rf_hold_guidance():
@@ -40,3 +40,21 @@ def test_v2_exposes_traceable_run_output_and_recoverable_record_actions():
     assert "/open-folder" in javascript
     assert "/trash" in javascript
     assert "output/.trash" in javascript
+
+
+def test_v2_is_an_rf_workstation_without_a_repeated_global_measurement_hero():
+    html = (STATIC_V2 / "index.html").read_text(encoding="utf-8")
+    javascript = (STATIC_V2 / "app.js").read_text(encoding="utf-8")
+    assert "建立量測計畫" not in html
+    assert 'id="themeButton"' in html
+    assert 'id="runSearch"' in html
+    assert 'id="runSort"' in html
+    assert 'id="compareRuns"' in html
+    assert 'id="chartMetric"' in html
+    assert 'id="traceList"' in html
+    assert "localStorage.setItem('cmp180-theme'" in javascript
+    assert "drawTraces" in javascript
+    assert "chartZoom" in javascript
+    assert "chartCursors" in javascript
+    assert 'id="calibrationForm"' in html
+    assert "/api/calibration/draft-preview" in javascript

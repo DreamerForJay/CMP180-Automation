@@ -11,6 +11,10 @@
 - 2026-08-25 已放棄舊版多層 CSS Web 介面並建立乾淨 V2：伺服器只提供 `static_v2/` 的
   `index.html`、`app.css` 與 `app.js`。V2 先以 Demo 單點／頻率掃描／功率掃描、結果、
   artifact、紀錄與中英切換作為瀏覽器驗收範圍；儀器供電不穩期間不執行 RF。
+- Web V2 已進一步重構為 RF 工作站：移除所有頁面重複的固定量測 Hero，加入每頁情境標題、
+  Dark／Light／System、Runs Table 搜尋／篩選／排序、2–8 Run 比較、Trace 名稱／顏色／拖曳、
+  metric、逐點 Table、Zoom／Pan／A-B Cursor 與 Draft 校正 SOP。歷史 Demo 時間戳相容層
+  只讀 `results.json`，不改寫舊 artifacts。本批 Chrome 與自動測試僅使用 Demo／既有資料。
 
 - 分支：`feature/web-sweep-jobs`（Web Sweep PR #12）。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
@@ -75,6 +79,11 @@
   server now serves only `static_v2/index.html`, `app.css`, and `app.js`. Browser acceptance is
   limited to Demo single/frequency/power measurements, results, artifacts, runs, and bilingual
   switching while instrument power is unstable; no RF is used for this validation.
+- Web V2 is now an RF workstation rather than a repeated measurement hero: contextual headings,
+  Dark/Light/System, searchable/filterable/sortable Runs, 2–8 run comparison, trace naming/color/
+  drag order, metric and point tables, zoom/pan/A-B cursors, and a Draft calibration SOP. Legacy
+  Demo timestamps are recovered read-only from `results.json`; old artifacts are not rewritten.
+  This browser and automated-test batch used Demo/saved data only.
 
 - Branch: `feature/web-sweep-jobs` (Web Sweep PR #12).
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.

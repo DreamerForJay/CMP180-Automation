@@ -77,6 +77,11 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
                 if (run_dir / filename).is_file()
             }
             created_at = str(metadata.get("created_at") or "")
+            if not created_at and (run_dir / "results.json").is_file():
+                # 舊版 Demo metadata 未保存時間；只讀 results.json 補回排序，不修改歷史 artifact。
+                legacy_results = json.loads((run_dir / "results.json").read_text(encoding="utf-8"))
+                if isinstance(legacy_results, dict):
+                    created_at = str(legacy_results.get("created_at") or "")
             # 無效時間保留顯示，但排序降到最後；單一損壞 run 不應讓整頁失效。
             try:
                 sort_time = datetime.fromisoformat(created_at.replace("Z", "+00:00")).timestamp()
@@ -90,7 +95,9 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
                     "created_at": created_at,
                     "simulated": bool(metadata.get("simulated", True)),
                     "status": str(metadata.get("status") or "complete"),
-                    "completed_points": int(metadata.get("completed_points") or 0),
+                    "completed_points": int(
+                        metadata.get("completed_points") or metadata.get("point_count") or 0
+                    ),
                     "source": str(metadata.get("source") or "unknown"),
                     "artifact_urls": artifacts,
                     "_sort_time": sort_time,

@@ -39,6 +39,11 @@ V2 保留既有 Python workflow、SCPI registry、安全限制、Job、artifact 
 - 「查看與管理」載入既有 metadata、results、raw 檔案清單與 waveform reference；此動作唯讀且不控制 RF。
 - 「開啟資料夾」只允許本機 loopback 使用者開啟已驗證的 `output/` 子目錄。
 - 刪除前必須輸入完整 Run ID；後端再次驗證後只移至 `output/.trash/`，不做永久刪除。
+- 全域固定「建立量測計畫」Hero 已移除；量測、分析、紀錄、校正與系統各自顯示正確情境標題。
+- 支援 Dark／Light／System 主題並保存偏好。
+- 桌面紀錄使用可搜尋、來源／狀態篩選與排序的 Table；手機使用摘要卡。
+- 可勾選 2–8 筆 Run 進入 Analyze，多 Trace 支援顯示、名稱、顏色、拖曳順序與 metric 切換。
+- Analyze 顯示逐點 Table；舊實機欄位會正規化，`INV` 保持 INVALID 且不連成正常 trace。
 
 ## English Version
 
@@ -84,3 +89,11 @@ power sweep share one form and reveal only relevant fields.
 - Open Folder is restricted to a local loopback operator and a validated direct child of `output/`.
 - Deletion requires the complete Run ID. The backend validates it again and moves the directory
   to `output/.trash/`; it does not permanently delete data.
+- The repeated global “Build a measurement plan” hero is removed. Measure, Analyze, Runs,
+  Calibration, and System each own their contextual heading.
+- Dark, Light, and System themes persist the user's preference.
+- Desktop Runs uses a searchable, source/status-filtered, sortable table; mobile uses summary cards.
+- Selecting 2–8 runs opens Analyze. Traces support visibility, names, colors, drag ordering, and
+  metric switching.
+- Analyze includes a point table. Legacy hardware fields are normalized; `INV` remains INVALID
+  and never connects as a normal trace.
