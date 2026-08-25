@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <base target="_top">
+  <?!= include('Stylesheet'); ?>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>RF</span><div><strong>CMP180 Automation</strong><small>WLAN TX EVM</small></div></div>
+    <div class="actions"><span class="mode">● CLOUD VIEWER</span><button id="theme" title="Theme">☼</button><button id="language">EN</button></div>
+  </header>
+  <main>
+    <section class="hero">
+      <div><p>WLAN TX MEASUREMENT</p><h1 data-zh="量測資料中心" data-en="Measurement Data Hub">量測資料中心</h1><span data-zh="分享、匯入與比較已去識別化的 CMP180 結果" data-en="Share, import, and compare de-identified CMP180 results">分享、匯入與比較已去識別化的 CMP180 結果</span></div>
+      <aside><small data-zh="控制狀態" data-en="Control state">控制狀態</small><strong>READ ONLY</strong><span data-zh="不連接儀器、不傳送 RF" data-en="No instrument or RF access">不連接儀器、不傳送 RF</span></aside>
+    </section>
+    <nav><button class="active" data-view="analysis" data-zh="資料分析" data-en="Data analysis">資料分析</button><button data-view="guide" data-zh="操作指南" data-en="Guide">操作指南</button><button data-view="about" data-zh="系統說明" data-en="About">系統說明</button></nav>
+
+    <section id="analysis" class="view active">
+      <div class="panel upload-panel"><div><p class="eyebrow">IMPORT RUNS</p><h2 data-zh="匯入過去量測資料" data-en="Import historical runs">匯入過去量測資料</h2><p data-zh="選擇多個 results.json 或 results.csv；檔案只在目前瀏覽器中解析。" data-en="Select multiple results.json or results.csv files; files are parsed only in this browser.">選擇多個 results.json 或 results.csv；檔案只在目前瀏覽器中解析。</p></div><label class="upload"><input id="files" type="file" multiple accept=".json,.csv"><span data-zh="選擇 CSV／JSON" data-en="Choose CSV / JSON">選擇 CSV／JSON</span></label></div>
+      <div id="empty" class="empty"><strong data-zh="尚未載入資料" data-en="No data loaded">尚未載入資料</strong><span data-zh="可一次選擇 2–8 個 Run 進行比較。" data-en="Choose 2–8 runs for comparison.">可一次選擇 2–8 個 Run 進行比較。</span></div>
+      <div id="workspace" hidden>
+        <section class="metrics"><article><small>RUNS</small><strong id="runCount">0</strong></article><article><small>POINTS</small><strong id="pointCount">0</strong></article><article><small>VISIBLE</small><strong id="visibleCount">0</strong></article><article><small>MODE</small><strong>LOCAL</strong></article></section>
+        <section class="panel chart-panel"><div class="panel-head"><div><p class="eyebrow">MULTI-RUN ANALYSIS</p><h2 data-zh="量測趨勢比較" data-en="Measurement trend comparison">量測趨勢比較</h2></div><select id="metric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option></select></div><svg id="chart" viewBox="0 0 1000 360" role="img"></svg></section>
+        <section class="panel"><div class="panel-head"><h2>Traces</h2><button id="clear" class="secondary" data-zh="清除全部" data-en="Clear all">清除全部</button></div><div id="traces" class="traces"></div></section>
+      </div>
+    </section>
+
+    <section id="guide" class="view"><div class="panel"><p class="eyebrow">OPERATOR PLAYBOOK</p><h2 data-zh="分享版標準流程" data-en="Sharing workflow">分享版標準流程</h2><div class="steps"><article><b>01</b><strong data-zh="匯出結果" data-en="Export results">匯出結果</strong><span>results.csv / results.json</span></article><article><b>02</b><strong data-zh="移除敏感資訊" data-en="Remove sensitive data">移除敏感資訊</strong><span data-zh="IP、序號、內部路徑" data-en="IP, serials, internal paths">IP、序號、內部路徑</span></article><article><b>03</b><strong data-zh="匯入比較" data-en="Import and compare">匯入比較</strong><span data-zh="名稱、顏色、指標" data-en="Names, colours, metrics">名稱、顏色、指標</span></article><article><b>04</b><strong data-zh="分享網址" data-en="Share URL">分享網址</strong><span data-zh="由 Workspace 權限控管" data-en="Controlled by Workspace access">由 Workspace 權限控管</span></article></div></div></section>
+    <section id="about" class="view"><div class="panel about"><h2 data-zh="為什麼不能控制實機？" data-en="Why is hardware control unavailable?">為什麼不能控制實機？</h2><p data-zh="Apps Script 執行於 Google 雲端，無法直接存取公司內網 CMP180。實機 RF 操作必須使用實驗室電腦上的本機 Web GUI，並遵守接線、功率與現場操作員安全確認。" data-en="Apps Script runs in Google Cloud and cannot directly access an intranet CMP180. RF operations must use the laboratory workstation and its cabling, power, and on-site operator safeguards.">Apps Script 執行於 Google 雲端，無法直接存取公司內網 CMP180。實機 RF 操作必須使用實驗室電腦上的本機 Web GUI，並遵守接線、功率與現場操作員安全確認。</p><div class="notice">Cloud Viewer ≠ CMP180 Controller</div></div></section>
+  </main>
+  <?!= include('JavaScript'); ?>
+</body>
+</html>

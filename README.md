@@ -46,6 +46,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
 | [使用者指南](docs/user-guide.md) | 安裝、CLI、GUI、Mock 與實機操作 |
 | [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
 | [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
+| [Google Apps Script 分享版](docs/google-apps-script-deployment.md) | 固定網址部署、更新與去識別化歷史分析 |
 | [Web V2 設計（封存參考）](docs/web-v2-design.md) | 未採用版型與可回用互動的設計紀錄 |
 | [RF 工作站 UX 規格](docs/rf-workstation-ux-plan.md) | Runs Table、多 Run 比較、Trace、主題與 RF 安全設計 |
 | [UI/UX roadmap](docs/ui-ux-roadmap.md) | 公司內部控制台資訊架構與改版階段 |
