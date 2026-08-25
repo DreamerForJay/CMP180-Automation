@@ -65,3 +65,16 @@ def test_example_calibration_is_draft_and_covers_verified_frequency():
     calibration = load_calibration_profile(Path("configs/calibration.example.yaml"))
     assert calibration.lifecycle == "draft"
     assert calibration.loss_at(6_105_000_000) == 0
+
+
+def test_loader_accepts_json_compatible_yaml_iso_date_strings(tmp_path):
+    path = tmp_path / "draft.yaml"
+    path.write_text(
+        '{"profile_id":"p","revision":"1","lifecycle":"draft","route":"r",'
+        '"calibrated_at":"2026-01-01","expires_at":"2026-12-31",'
+        '"equipment_reference":"e","points":['
+        '{"frequency_hz":6000000000,"loss_db":1},'
+        '{"frequency_hz":6100000000,"loss_db":1.1}]}',
+        encoding="utf-8",
+    )
+    assert load_calibration_profile(path).expires_at == date(2026, 12, 31)

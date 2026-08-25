@@ -7,12 +7,14 @@ import ipaddress
 import json
 import mimetypes
 import socket
-from datetime import datetime
+from datetime import date, datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_profile
+from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
     DEMO_LIMIT_PROFILE,
@@ -233,6 +235,42 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 self._json_response(JOB_MANAGER.cancel(job_id).public())
                 return
             data = self._read_json()
+            if path == "/api/hardware/custom-plan-preview":
+                # 預覽只建立安全點位，不連線儀器、不送 SCPI，也不開 RF。
+                preview = build_custom_sweep_preview(data)
+                self._json_response(preview.public())
+                return
+            if path == "/api/calibration/draft-preview":
+                raw_readings = data.get("readings")
+                if not isinstance(raw_readings, list):
+                    raise ValueError("Calibration readings must be a list")
+                readings = tuple(
+                    CalibrationReading(
+                        float(item["frequency_hz"]),
+                        float(item["source_reference_dbm"]),
+                        float(item["receiver_reading_dbm"]),
+                    )
+                    for item in raw_readings
+                    if isinstance(item, dict)
+                )
+                if len(readings) != len(raw_readings):
+                    raise ValueError("Every calibration reading must be an object")
+                profile = build_draft_profile(
+                    readings,
+                    profile_id=str(data["profile_id"]),
+                    revision=str(data.get("revision") or "0.1-draft"),
+                    route=validate_cable_route(data.get("route")),
+                    calibrated_at=date.fromisoformat(str(data["calibrated_at"])),
+                    expires_at=date.fromisoformat(str(data["expires_at"])),
+                    equipment_reference=str(data["equipment_reference"]),
+                )
+                self._json_response(
+                    {
+                        "profile": profile.snapshot(),
+                        "measurement_use": "BLOCKED_DRAFT_REQUIRES_OWNER_APPROVAL",
+                    }
+                )
+                return
             if path.startswith("/api/runs/") and path.endswith("/open-folder"):
                 # 開啟 Explorer 是工作站副作用；內網遠端請求不得觸發本機 GUI。
                 if not self._is_local_client():

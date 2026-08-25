@@ -21,6 +21,7 @@
 - Web server 改用 exclusive port bind，防止多個新舊 process 同時佔用相同 port 而造成新版頁面呼叫舊 API 的 `Not found`。
 - Run History 已擴充為可載入過去設定／結果／波形參考、開啟本機輸出資料夾，並以 Run ID 二次確認後移至可復原的 `output/.trash/`；本機檔案副作用 API 僅允許 loopback client。
 - 新增 Path Loss／Calibration Profile 核心：Draft／Approved、有效期限、0–30 dB、範圍內線性內插、禁止外插及 CLI 驗證。範例仍是 Draft 佔位值，尚未套入實機量測。
+- 新增器材更換校正 SOP：CSV 讀值轉 Draft Profile 腳本、Web 校正精靈，以及自訂掃描安全點位預覽。這些新路徑目前不會送 RF；自訂實機執行仍待 HIL。
 - Tkinter 桌面 GUI 已移除（功能已被 Web GUI 完全取代），改用 CLI／Web GUI。
 - Result artifacts 現在保存全部 5 組已驗證統計（average／current／min／max／std_dev），不只 average。
 - 2026-08-20 已完成五統計同一實機 SingleShot HIL：五組各 28 欄、`simulated=false`、
@@ -71,6 +72,7 @@
 - The Web server now uses an exclusive port bind, preventing stale and current processes from sharing a port and causing new pages to call old APIs with `Not found`.
 - Run History can now load prior settings/results/waveform references, open the local output folder, and move a run to recoverable `output/.trash/` after exact Run ID confirmation. Local filesystem side effects are restricted to loopback clients.
 - Added the Path Loss/Calibration Profile core: Draft/Approved lifecycle, expiry, a 0–30 dB bound, in-range linear interpolation, blocked extrapolation, and CLI validation. The example remains a draft placeholder and is not applied to live measurements.
+- Added the equipment-change calibration SOP: a CSV-to-draft-profile script, a Web calibration wizard, and safety-bounded custom sweep point preview. These new paths do not transmit RF; custom live execution remains HIL-gated.
 - The Tkinter desktop GUI has been removed (fully superseded by the Web GUI); use the CLI/Web GUI instead.
 - Result artifacts now save all 5 verified statistics (average/current/min/max/std_dev), not just average.
 - On 2026-08-20, one real SingleShot completed five-statistic HIL: all five responses had

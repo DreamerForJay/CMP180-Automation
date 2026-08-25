@@ -1,0 +1,73 @@
+"""Parse user-defined sweep inputs through the non-bypassable workflow safety envelope."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan
+from cmp180_evm.workflow.power_sweep import PowerSweepPlan
+from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
+
+
+@dataclass(frozen=True)
+class CustomSweepPreview:
+    axis: str
+    points: tuple[float, ...]
+    dwell_time_s: float
+    bandwidth_hz: float
+    generator_power_dbm: float | None
+    center_frequency_hz: float | None
+    execution_allowed: bool = False
+
+    def public(self) -> dict[str, object]:
+        return {
+            "axis": self.axis,
+            "points": self.points,
+            "point_count": len(self.points),
+            "dwell_ms": round(self.dwell_time_s * 1000),
+            "bandwidth_hz": self.bandwidth_hz,
+            "generator_power_dbm": self.generator_power_dbm,
+            "center_frequency_hz": self.center_frequency_hz,
+            "execution_allowed": self.execution_allowed,
+            "gate": "SOFTWARE_PREVIEW_ONLY_PENDING_CUSTOM_PROFILE_HIL",
+        }
+
+
+def build_custom_sweep_preview(data: dict[str, object]) -> CustomSweepPreview:
+    axis = str(data.get("axis") or "")
+    bandwidth_hz = float(data.get("bandwidth_hz", 320_000_000))
+    dwell_time_s = float(data.get("dwell_ms", 100)) / 1000
+    if axis == "frequency":
+        generator_power_dbm = float(data.get("generator_power_dbm", -40))
+        single = SingleMeasurementPlan(
+            "RF1.1", "RF1.5", float(data["start_hz"]), bandwidth_hz,
+            generator_power_dbm, -20, 0, True, -40,
+        )
+        plan = FrequencySweepPlan(
+            single=single,
+            start_frequency_hz=float(data["start_hz"]),
+            stop_frequency_hz=float(data["stop_hz"]),
+            step_frequency_hz=float(data["step_hz"]),
+            dwell_time_s=dwell_time_s,
+        )
+        return CustomSweepPreview(
+            axis, plan.frequencies(), dwell_time_s, bandwidth_hz, generator_power_dbm, None
+        )
+    if axis == "power":
+        center_frequency_hz = float(data.get("center_frequency_hz", 6_105_000_000))
+        single = SingleMeasurementPlan(
+            "RF1.1", "RF1.5", center_frequency_hz, bandwidth_hz,
+            float(data["start_dbm"]), -20, 0, True, -40,
+        )
+        plan = PowerSweepPlan(
+            single=single,
+            start_power_dbm=float(data["start_dbm"]),
+            stop_power_dbm=float(data["stop_dbm"]),
+            step_power_dbm=float(data["step_dbm"]),
+            dwell_time_s=dwell_time_s,
+        )
+        return CustomSweepPreview(
+            axis, plan.powers(), dwell_time_s, bandwidth_hz, None, center_frequency_hz
+        )
+    raise ValueError("Sweep axis must be 'frequency' or 'power'")
+

@@ -84,4 +84,8 @@ def load_calibration_profile(path: Path) -> CalibrationProfile:
     if not isinstance(data, dict) or not isinstance(data.get("points"), list):
         raise ValueError("Calibration profile must contain a points list")
     points = tuple(CalibrationPoint(**point) for point in data.pop("points"))
+    # YAML parser 可能回傳 date，JSON-compatible YAML 則回傳 ISO 字串；統一成 date。
+    for field in ("calibrated_at", "expires_at"):
+        if isinstance(data.get(field), str):
+            data[field] = date.fromisoformat(data[field])
     return CalibrationProfile(points=points, **data)
