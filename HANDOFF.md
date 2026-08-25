@@ -7,6 +7,9 @@
 - Web IA-1 重構進行中：七個同級頁籤已縮減為量測／校正／結果／紀錄；量測內分實機與
   示範，示範內再分單點／頻掃／功掃。`Load` 顯示名稱改為「查看詳情」，自訂區改名
   「自訂量測計畫」，並新增完整雙語 UI/UX 重構規格。尚未完成紀錄後端分頁與校正精靈。
+- Web Console Design System 已統一全寬 1680 px 版面、字級、間距、表單、按鍵、卡片、
+  表格、焦點與響應式規則。新增「操作指南」與終端指令卡，涵蓋 Demo 啟動、YAML 驗證、
+  query-only 連線與暫停的實機模式；供電不穩期間頁面明確顯示 RF HOLD。
 - 2026-08-25 自訂兩點頻率 HIL（6085／6105 MHz、-45 dBm）在第 2 點回傳 `INV`，
   已依規則停止；最終 Generator `OFF`、Analyzer `RDY`、error queue empty。此結果是
   finding，不是通過證據。已修正 `INV` 正規化與 partial artifact 保留；重新 HIL 前需先
@@ -71,6 +74,10 @@
   and Power subtabs. `Load` is relabeled “View details,” the custom area is renamed “Custom
   Measurement Plan,” and a complete bilingual UI/UX restructure specification was added.
   History backend pagination and the calibration wizard remain pending.
+- The Web Console Design System now standardizes a full-width 1680 px layout, typography,
+  spacing, forms, buttons, cards, tables, focus states, and responsive behavior. A new Operator
+  Guide provides terminal-style cards for Demo startup, YAML validation, query-only connection,
+  and the paused hardware mode, with an explicit RF HOLD during unstable power.
 - The 2026-08-25 custom two-point frequency HIL (6085/6105 MHz at -45 dBm) returned
   `INV` at point 2 and stopped as required. Final state was Generator `OFF`, Analyzer `RDY`,
   and an empty error queue. This is a finding, not passing evidence. `INV` normalization and

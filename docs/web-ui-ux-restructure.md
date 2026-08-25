@@ -65,11 +65,12 @@
 
 ### 分階段交付
 
-1. IA-1：四主工作區、量測雙層切換、清楚命名與狀態文案。
-2. MEAS-2：固定與自訂計畫合併、即時安全摘要、簡化 HIL 確認。
-3. HIST-3：紀錄分頁／篩選、查看詳情、載入為新計畫與直接開啟資料夾。
-4. CAL-4：四步校正精靈、曲線與審核生命週期。
-5. QA-5：雙語、鍵盤、螢幕閱讀器、響應式與實機狀態機驗收。
+1. IA-1：四主工作區、量測雙層切換、清楚命名與狀態文案（已完成）。
+2. GUIDE-1：新增產品內操作指南、可複製 PowerShell 指令、預期輸出與 RF HOLD 警示（已完成）。
+3. MEAS-2：固定與自訂計畫合併、即時安全摘要、簡化 HIL 確認。
+4. HIST-3：紀錄分頁／篩選、查看詳情、載入為新計畫與直接開啟資料夾。
+5. CAL-4：四步校正精靈、曲線與審核生命週期。
+6. QA-5：雙語、鍵盤、螢幕閱讀器、響應式與實機狀態機驗收。
 
 ## English Version
 
@@ -142,8 +143,10 @@ field gets keyboard-accessible help describing purpose, unit, range, source, and
 
 ### Delivery phases
 
-1. IA-1: four workspaces, two-level measurement navigation, names, and status copy.
-2. MEAS-2: merge fixed/custom plans, live safety summary, and simplified HIL confirmation.
-3. HIST-3: pagination/filtering, details, load-as-new-plan, and direct folder opening.
-4. CAL-4: four-step calibration wizard, plots, and approval lifecycle.
-5. QA-5: bilingual, keyboard, screen-reader, responsive, and live state-machine acceptance.
+1. IA-1: four workspaces, two-level measurement navigation, names, and status copy (complete).
+2. GUIDE-1: in-product operator guide, copyable PowerShell commands, expected output, and RF
+   HOLD warnings (complete).
+3. MEAS-2: merge fixed/custom plans, live safety summary, and simplified HIL confirmation.
+4. HIST-3: pagination/filtering, details, load-as-new-plan, and direct folder opening.
+5. CAL-4: four-step calibration wizard, plots, and approval lifecycle.
+6. QA-5: bilingual, keyboard, screen-reader, responsive, and live state-machine acceptance.

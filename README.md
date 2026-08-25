@@ -11,6 +11,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
 - 雙語響應式 Web GUI（含亮／暗主題切換）、Mock 與受保護實機量測、artifact links、EVM／Power／Frequency Error 圖表，以及唯讀量測紀錄頁。
 - 導覽明確區分示範與實機量測；實機掃描已通過 HIL，`LOCKED` 只表示本次 server 未明確啟用硬體。結果頁顯示安全的相對輸出位置。
+- 全寬響應式工程控制台與產品內「操作指南」：提供可複製 Demo／validation／query-only 指令、預期結果及 RF HOLD 安全提示。
 - Mock Sweep 使用非同步 Job API，支援逐點進度、取消、partial artifacts 與單一 active-job 鎖。
 - 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；CLI HIL 與 Web 實機三點頻率／功率取消驗收均已通過。Web 實機模式仍只允許 loopback 本機啟用與固定安全 profile。
 - GitHub Actions 執行 Windows／Python 3.11 unit、Mock 與設定驗證；不執行實機 RF。
@@ -76,6 +77,8 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
 - Bilingual responsive Web GUI (with a light/dark theme toggle), mock and guarded hardware measurements, artifact links, EVM/Power/Frequency Error plots, and read-only run history.
 - Navigation clearly separates demo and hardware measurements. Hardware sweeps passed HIL; `LOCKED` only means hardware was not enabled for the current server. Results show a safe relative output location.
+- A full-width responsive engineering console includes an in-product Operator Guide with
+  copyable Demo/validation/query-only commands, expected results, and RF HOLD guidance.
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
 - Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. CLI HIL and Web hardware three-point frequency/cancellation acceptance have passed. Hardware Web mode remains loopback-only and limited to fixed safe profiles.
 - Windows/Python 3.11 GitHub Actions for unit, mock, and configuration checks; CI never runs live RF.

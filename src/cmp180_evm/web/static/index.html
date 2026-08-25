@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
+  <link rel="stylesheet" href="/design-system.css?v=console3">
 </head>
 <body>
   <header class="topbar">
@@ -28,6 +29,7 @@
       <button class="tab" data-tab="calibration">校正</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
       <button class="tab" data-tab="history" data-i18n="historyTab">量測紀錄</button>
+      <button class="tab" data-tab="guide" data-i18n="guideTab">操作指南</button>
     </nav>
     <section id="jobPanel" class="job-panel" hidden aria-live="polite">
       <div class="panel-head"><div><h2 id="jobTitle">Sweep job</h2><p id="jobMessage">Preparing</p></div><span id="jobState" class="pill neutral">QUEUED</span></div>
@@ -159,9 +161,47 @@
         <details><summary>Results JSON / 過去量測值</summary><pre id="historyResults"></pre></details>
       </section>
     </section>
+    <section id="guide" class="panel guide-panel">
+      <div class="guide-hero">
+        <div><p class="workspace-kicker">OPERATOR PLAYBOOK</p><h2 data-i18n="guideTitle">從啟動到取得報告</h2><p data-i18n="guideIntro">每張卡片都是可直接執行的標準操作。先確認要使用示範資料、唯讀查詢，或經授權的實機模式。</p></div>
+        <div class="guide-state"><span class="check-dot ok"></span><div><strong data-i18n="guideSafeTitle">目前建議：Demo 模式</strong><small data-i18n="guideSafeText">供電不穩定期間不要啟用 RF</small></div></div>
+      </div>
+      <ol class="workflow-line" aria-label="操作流程">
+        <li><strong>01</strong><span data-i18n="guideStep1">啟動服務</span></li>
+        <li><strong>02</strong><span data-i18n="guideStep2">選擇量測</span></li>
+        <li><strong>03</strong><span data-i18n="guideStep3">檢查結果</span></li>
+        <li><strong>04</strong><span data-i18n="guideStep4">開啟報告</span></li>
+      </ol>
+      <div class="command-grid">
+        <article class="command-card featured">
+          <div class="command-copy"><span class="command-icon">01</span><div><h3 data-i18n="demoCommandTitle">啟動 Demo 控制台</h3><p data-i18n="demoCommandHelp">不連線 CMP180、不送 SCPI、不產生 RF；適合現在查看與練習。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b><button type="button" data-copy-target="cmd-demo" data-i18n="copyCommand">複製</button></div><pre id="cmd-demo"><code><em>PS</em> .\.venv\Scripts\Activate.ps1
+<em>PS</em> python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
+          <div class="command-outcome"><strong data-i18n="openBrowser">開啟瀏覽器</strong><code>http://127.0.0.1:8765</code></div>
+        </article>
+        <article class="command-card">
+          <div class="command-copy"><span class="command-icon">02</span><div><h3 data-i18n="configCommandTitle">檢查設定檔</h3><p data-i18n="configCommandHelp">只驗證 YAML 欄位與安全設定，不會接觸儀器。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b><button type="button" data-copy-target="cmd-config" data-i18n="copyCommand">複製</button></div><pre id="cmd-config"><code><em>PS</em> python -m cmp180_evm validate-config configs\instrument.example.yaml
+<em>PS</em> python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</code></pre></div>
+          <div class="command-outcome"><strong data-i18n="expectedOutput">正確輸出</strong><code>OK (instrument) · OK (wlan_baseline)</code></div>
+        </article>
+        <article class="command-card">
+          <div class="command-copy"><span class="command-icon">03</span><div><h3 data-i18n="connectionCommandTitle">唯讀連線檢查</h3><p data-i18n="connectionCommandHelp">讀取 IDN、Options 與 Error Queue，不啟動量測、不開 RF。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b><button type="button" data-copy-target="cmd-query" data-i18n="copyCommand">複製</button></div><pre id="cmd-query"><code><em>PS</em> python -m cmp180_evm test-connection --instrument-config configs\instrument.example.yaml</code></pre></div>
+          <div class="command-outcome warning"><strong data-i18n="powerWarning">供電不穩時</strong><span data-i18n="queryOnlyAdvice">只執行唯讀檢查，不要啟用硬體 Web 模式。</span></div>
+        </article>
+        <article class="command-card locked-command">
+          <div class="command-copy"><span class="command-icon">04</span><div><h3 data-i18n="hardwareCommandTitle">實機模式（暫停）</h3><p data-i18n="hardwareCommandHelp">只有供電穩定、接線確認、操作員在場且完成授權後才能使用。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b></div><pre><code><i># 暫停使用 / HOLD</i>
+<em>PS</em> python -m cmp180_evm.web --enable-hardware</code></pre></div>
+          <div class="command-outcome danger"><strong>RF HOLD</strong><span data-i18n="hardwareHold">目前儀器供電不穩，禁止執行。</span></div>
+        </article>
+      </div>
+      <section class="guide-notes"><div><span>?</span><h3 data-i18n="whereResultsTitle">結果會存在哪裡？</h3><p data-i18n="whereResultsText">每次執行會建立獨立 output Run 資料夾。到「量測紀錄」按「開啟資料夾」，或在「結果與圖表」開啟 HTML、CSV、JSON。</p></div><div><span>!</span><h3 data-i18n="whenStopTitle">何時必須停止？</h3><p data-i18n="whenStopText">看到 INV、RF 狀態不明、量測逾時、SCPI Error、接線異動或供電異常時，立即停止並確認 RF OFF。</p></div></section>
+    </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=workspace2"></script>
+  <script src="/app.js?v=console3"></script>
   <script src="/hardware.js?v=workspace2"></script>
   <script src="/calibration.js?v=1"></script>
   <script src="/custom-plan.js?v=1"></script>
