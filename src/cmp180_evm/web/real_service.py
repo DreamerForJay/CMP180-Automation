@@ -12,7 +12,13 @@ from cmp180_evm.results.artifacts import (
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 from cmp180_evm.web.jobs import SweepJob
-from cmp180_evm.workflow.cmp180_single_backend import Cmp180SingleMeasurementBackend
+from cmp180_evm.workflow.cmp180_single_backend import (
+    VERIFIED_TRIGGER_SOURCE,
+    VERIFIED_TRIGGER_THRESHOLD_DB,
+    VERIFIED_WLAN_BAND_READBACK,
+    VERIFIED_WLAN_STANDARD_READBACK,
+    Cmp180SingleMeasurementBackend,
+)
 from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan, run_frequency_sweep
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
@@ -20,6 +26,27 @@ from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_si
 VERIFIED_ARB_WAVEFORM = (
     "KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv"
 )
+
+
+def _measurement_diagnostics(
+    backend: Cmp180SingleMeasurementBackend,
+    plan: SingleMeasurementPlan,
+) -> dict[str, object]:
+    """Return the verified configuration and observed state trace for artifacts."""
+    # 這些值都已在 RF On 前完成 readback；保存快照不會額外控制儀器。
+    return {
+        # Adapter 測試替身可能不提供狀態追蹤；正式 backend 仍會保存完整轉換序列。
+        "measurement_state_trace": list(
+            getattr(backend, "last_measurement_states", [])
+        ),
+        "wlan_standard": VERIFIED_WLAN_STANDARD_READBACK,
+        "wlan_band": VERIFIED_WLAN_BAND_READBACK,
+        "trigger_source": VERIFIED_TRIGGER_SOURCE,
+        "trigger_threshold_db": VERIFIED_TRIGGER_THRESHOLD_DB,
+        "expected_nominal_power_dbm": plan.expected_nominal_power_dbm,
+        "external_attenuation_db": plan.external_attenuation_db,
+        "ranging_strategy": "expected_nominal_power_fixed",
+    }
 
 
 def _web_point(
@@ -99,6 +126,7 @@ def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> d
                 metadata={
                     "source": "web_verified_frequency_sweep",
                     "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
+                    **_measurement_diagnostics(backend, single),
                 },
             )
             web_points = [
@@ -129,6 +157,7 @@ def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> d
                 metadata={
                     "source": "web_verified_power_sweep",
                     "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
+                    **_measurement_diagnostics(backend, single),
                 },
             )
             web_points = [
@@ -239,6 +268,7 @@ def run_custom_real_sweep(
                 should_cancel=job.is_cancel_requested,
                 on_point_complete=callback,
             )
+            metadata.update(_measurement_diagnostics(backend, single))
             raw_points = [
                 {"frequency_hz": value, **point.values}
                 for value, point in zip(result.requested_frequencies_hz, result.points)
@@ -275,6 +305,7 @@ def run_custom_real_sweep(
                 should_cancel=job.is_cancel_requested,
                 on_point_complete=callback,
             )
+            metadata.update(_measurement_diagnostics(backend, single))
             raw_points = [
                 {"generator_power_dbm": value, **point.values}
                 for value, point in zip(result.requested_powers_dbm, result.points)
@@ -382,6 +413,7 @@ def run_verified_real_single(
                 "generator_port": plan.generator_port,
                 "analyzer_port": plan.analyzer_port,
                 "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
+                **_measurement_diagnostics(backend, plan),
             },
         )
         values = result.values

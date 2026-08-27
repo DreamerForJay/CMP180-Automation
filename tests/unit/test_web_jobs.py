@@ -50,6 +50,56 @@ def test_cancel_stops_before_remaining_points_and_preserves_partial():
     assert done.result["partial"] is True
 
 
+def test_pause_waits_at_point_boundary_then_resumes() -> None:
+    manager = JobManager()
+    points = [simulate_point(6_105e6, 320e6, -40, index) for index in range(5)]
+    job = manager.start(
+        "mock-frequency-sweep",
+        len(points),
+        lambda active: manager.run_mock_points(
+            active, points, lambda rows: {"count": len(rows)}, 0.02
+        ),
+    )
+    while manager.get(job.job_id).completed_points == 0:
+        time.sleep(0.005)
+    manager.pause(job.job_id)
+    for _ in range(100):
+        if manager.get(job.job_id).state == "paused":
+            break
+        time.sleep(0.005)
+    paused = manager.get(job.job_id)
+    assert paused.state == "paused"
+    paused_count = paused.completed_points
+    time.sleep(0.04)
+    # 暫停期間不得進入下一點；實機 workflow 同樣在 RF Off 邊界呼叫此 gate。
+    assert manager.get(job.job_id).completed_points == paused_count
+    manager.resume(job.job_id)
+    done = wait_terminal(manager, job.job_id)
+    assert done.state == "complete"
+    assert done.completed_points == 5
+
+
+def test_cancel_unblocks_a_paused_job() -> None:
+    manager = JobManager()
+    points = [simulate_point(6_105e6, 320e6, -40, index) for index in range(5)]
+    job = manager.start(
+        "mock-frequency-sweep",
+        len(points),
+        lambda active: manager.run_mock_points(
+            active, points, lambda rows: {"count": len(rows)}, 0.02
+        ),
+    )
+    manager.pause(job.job_id)
+    for _ in range(100):
+        if manager.get(job.job_id).state == "paused":
+            break
+        time.sleep(0.005)
+    manager.cancel(job.job_id)
+    done = wait_terminal(manager, job.job_id)
+    assert done.state == "cancelled"
+    assert done.cancel_requested is True
+
+
 def test_only_one_active_job_is_allowed():
     manager = JobManager()
     points = [simulate_point(6_105e6, 320e6, -40, index) for index in range(2)]

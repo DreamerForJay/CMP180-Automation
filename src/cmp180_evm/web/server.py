@@ -20,6 +20,7 @@ from cmp180_evm.calibration_adapters import (
     list_calibration_adapters,
 )
 from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_profile
+from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
@@ -37,6 +38,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 VERIFIED_CABLE_ROUTE = "RF1.1-RF1.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 JOB_MANAGER = JobManager()
+CAPABILITY_PROFILE_PATH = PROJECT_ROOT / "configs" / "instrument_capabilities.example.yaml"
 
 
 class ExclusiveThreadingHTTPServer(ThreadingHTTPServer):
@@ -87,6 +89,36 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
                 sort_time = datetime.fromisoformat(created_at.replace("Z", "+00:00")).timestamp()
             except ValueError:
                 sort_time = 0.0
+            results_path = run_dir / "results.json"
+            result_payload: object = None
+            if results_path.is_file():
+                result_payload = json.loads(results_path.read_text(encoding="utf-8"))
+            result_points = (
+                result_payload
+                if isinstance(result_payload, list)
+                else result_payload.get("points", [])
+                if isinstance(result_payload, dict)
+                else []
+            )
+            # EVM dB 越接近 0 越差，因此 Worst EVM 取有效數值的最大值，不使用一般升降語意。
+            evm_values = [
+                float(point.get("evm_all_db"))
+                for point in result_points
+                if isinstance(point, dict)
+                and isinstance(point.get("evm_all_db"), (int, float))
+            ]
+            frequency_values = [
+                float(point.get("frequency_hz"))
+                for point in result_points
+                if isinstance(point, dict)
+                and isinstance(point.get("frequency_hz"), (int, float))
+            ]
+            power_values = [
+                float(point.get("generator_power_dbm"))
+                for point in result_points
+                if isinstance(point, dict)
+                and isinstance(point.get("generator_power_dbm"), (int, float))
+            ]
             runs.append(
                 {
                     "run_id": str(metadata.get("run_id") or run_dir.name),
@@ -99,6 +131,25 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
                         metadata.get("completed_points") or metadata.get("point_count") or 0
                     ),
                     "source": str(metadata.get("source") or "unknown"),
+                    "measurement_type": str(
+                        metadata.get("measurement_type")
+                        or metadata.get("sweep_axis")
+                        or metadata.get("test_type")
+                        or "unknown"
+                    ),
+                    "operator": str(metadata.get("operator") or metadata.get("operator_id") or ""),
+                    "dut": str(metadata.get("dut") or metadata.get("dut_id") or ""),
+                    "notes": str(metadata.get("notes") or metadata.get("comment") or ""),
+                    "bandwidth_hz": metadata.get("bandwidth_hz"),
+                    "route": str(metadata.get("route") or metadata.get("cable_route") or ""),
+                    "calibration_profile": str(
+                        metadata.get("calibration_profile_id")
+                        or metadata.get("calibration_profile")
+                        or ""
+                    ),
+                    "frequency_hz": frequency_values[0] if frequency_values else None,
+                    "generator_power_dbm": power_values[0] if power_values else None,
+                    "worst_evm_db": max(evm_values) if evm_values else None,
                     "artifact_urls": artifacts,
                     "_sort_time": sort_time,
                 }
@@ -180,6 +231,10 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
             self._json_response(
                 {"adapters": [asdict(adapter) for adapter in list_calibration_adapters()]}
             )
+            return
+        if parsed_path == "/api/capabilities":
+            # 此端點只公開能力分層，不會查詢儀器、送 SCPI 或授予 RF 權限。
+            self._json_response(load_capability_profile(CAPABILITY_PROFILE_PATH).public())
             return
         if parsed_path == "/api/runs":
             self._json_response({"runs": list_run_history(PROJECT_ROOT / "output")})
@@ -273,6 +328,15 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         try:
+            if path.startswith("/api/jobs/") and path.endswith("/pause"):
+                job_id = path.removeprefix("/api/jobs/").removesuffix("/pause")
+                # Pause 只設 cooperative gate；worker 會在 STOP／RF Off 的點位邊界停住。
+                self._json_response(JOB_MANAGER.pause(job_id).public())
+                return
+            if path.startswith("/api/jobs/") and path.endswith("/resume"):
+                job_id = path.removeprefix("/api/jobs/").removesuffix("/resume")
+                self._json_response(JOB_MANAGER.resume(job_id).public())
+                return
             if path.startswith("/api/jobs/") and path.endswith("/cancel"):
                 job_id = path.removeprefix("/api/jobs/").removesuffix("/cancel")
                 self._json_response(JOB_MANAGER.cancel(job_id).public())
