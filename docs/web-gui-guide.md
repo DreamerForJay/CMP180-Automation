@@ -2,6 +2,14 @@
 
 ## 中文版本
 
+### 目前介面層級
+
+主導覽只負責切換首頁、量測、校正、結果、紀錄與說明；每頁只顯示一個主要功能標題。量測頁以「實機量測／示範訓練」切換資料來源，實機表單中的進階範圍統一稱為「掃描設定」。說明頁提供可直接複製的 PowerShell 指令，會先切換到專案目錄，且不包含 PowerShell 畫面上的 `PS` 提示符。
+
+實機量測與示範訓練都使用「單點／頻率掃描／功率掃描」三級分頁。切換實機分頁會同步後端 action；單點不顯示掃描欄位，只有頻率或功率掃描才展開掃描設定。結果圖表使用固定 900 × 300 工程座標；滾輪只縮放 X 軸，拖曳只水平平移且限制在資料畫布內。靠近量測點會顯示十字游標與完整 EVM、功率、頻率誤差及 VALID／INVALID 狀態。
+
+說明頁的命令順序為 Git clone、進入專案、建立 Python 3.11 虛擬環境、安裝、啟動 Demo、驗證兩份 YAML、唯讀連線檢查、由 `results.csv` 產生 SVG，以及由既有 Run 資料夾重建 HTML 報告。實機服務命令獨立收合；啟動服務本身不會送 RF。
+
 ### 目前可測試範圍
 
 Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 loopback bind 的固定 profile 實機 SingleShot。Mock 頁面不會控制 CMP180，也不會開啟 RF。可測試：
@@ -102,6 +110,9 @@ GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控�
 1. 確認 RF1.1 → RF1.5 cable。
 2. 確認操作員位於 CMP180 旁。
 3. 在確認欄輸入完全相同的 `RF1.1-RF1.5`。
+4. 選擇量測 profile 並按下執行；Web 會顯示即將送出的頻率、功率、頻寬與 Route 摘要。只有再次確認後才會送出 RF，取消則不送出任何 RF。
+
+上述操作員確認可直接在 Web 完成，不需要每次回到對話工具重新輸入授權文字；但後端安全包絡、接線路徑檢查與錯誤 cleanup 不可停用。
 4. 勾選操作員在場。
 
 目前實機頁面只允許已驗證的 6105 MHz、320 MHz、-40 dBm、expected power -20 dBm profile；不能從網頁任意提高功率或變更頻段。每次 run 保存非模擬 CSV、JSON、metadata 與 raw response。錯誤時 service 會執行 workflow cleanup，並額外進行 emergency STOP／ABORt、RF Off 與最終 state read-back。
@@ -112,7 +123,26 @@ GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控�
 
 ---
 
+### 2026-08-25 介面與實機啟動更新
+
+- 實機與自訂安全掃描必須由使用者的 Windows 工作階段啟動 Web 伺服器：`python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware --enable-custom-hardware`。啟動伺服器本身不會送出 RF；仍需在 Web 頁面完成接線、操作員與最終摘要確認。
+- 首頁提供互動 RF 系統架構，說明量測計畫、安全閘門、CMP180、結果正規化與 artifacts 的資料流。
+- 結果圖表支援滾輪縮放、拖曳平移、Reset，以及 A/B 測點游標。這些功能只改變瀏覽器檢視，不會修改原始結果或重新量測。
+- 實機與首頁採響應式安全邊距；亮色模式的刪除按鈕維持紅色破壞性操作語意。
+
+### CMsquares 啟發的積木控制
+
+實機頁以 Generator、Analyzer 與 Measurement Flow 三個積木顯示資源狀態。Run 仍走既有 route／操作員／Profile／最終 RF 摘要確認。多點掃描的 Pause 只在目前點完成 STOP 與 RF Off 後生效；Resume 從下一點繼續，Stop 執行 cooperative cancellation 並保留 partial artifacts。SingleShot 不支援中途 Pause，Generator 方塊也不能獨立 RF On。
+
 ## English Version
+
+### Current interface hierarchy
+
+The primary navigation only switches Home, Measurement, Calibration, Results, Runs, and Help, and each page presents one main functional heading. Measurement uses Hardware/Demo Training to select the data source, while advanced hardware ranges are consistently named Sweep Setup. Help provides copyable PowerShell commands that change to the project directory first and do not include the visual `PS` prompt.
+
+Hardware and Demo Training both use Single, Frequency Sweep, and Power Sweep tabs. A hardware-tab change synchronizes the backend action. Single hides sweep fields, while frequency or power opens Sweep Setup. Result charts use a fixed 900 by 300 engineering coordinate system. The wheel zooms only the X axis, panning is horizontal and clamped to the data canvas, and the Y axis cannot drift. Moving near a point displays a crosshair and complete EVM, power, frequency-error, and VALID/INVALID values.
+
+Help now proceeds through Git clone, entering the repository, creating a Python 3.11 virtual environment, installation, Demo startup, both YAML validations, query-only connection testing, SVG generation from `results.csv`, and HTML-report reconstruction from a saved run directory. The hardware server command is separately collapsed; starting the server does not itself transmit RF.
 
 ### Currently testable scope
 
@@ -219,6 +249,13 @@ The top-right status displays `Hardware Mode`, the workspace displays
 1. Confirm the RF1.1-to-RF1.5 cable.
 2. Confirm that an operator is beside the CMP180.
 3. Enter the exact confirmation text `RF1.1-RF1.5`.
+4. Select the measurement profile and execute it. The Web UI shows the exact frequency,
+   power, bandwidth, and route that will be transmitted. RF starts only after the final
+   browser confirmation; cancelling transmits no RF.
+
+The operator can complete these confirmations entirely in the Web UI and does not need
+to repeat an authorization phrase in a chat tool. Backend safety envelopes, route checks,
+and deterministic error cleanup remain mandatory.
 4. Select the operator-present checkbox.
 
 The hardware screen currently permits only the verified 6105 MHz, 320 MHz, -40 dBm, -20 dBm expected-power profile. The page cannot arbitrarily increase power or change bands. Every run saves non-simulated CSV, JSON, metadata, and raw response artifacts. On error, the service runs workflow cleanup followed by independent emergency STOP/ABORt, RF Off, and final-state read-back.
@@ -226,3 +263,13 @@ The hardware screen currently permits only the verified 6105 MHz, 320 MHz, -40 d
 End-to-end Web API HIL acceptance passed on 2026-08-19. Invalid confirmation data was first rejected with HTTP 400. Correct confirmation then completed a new hardware SingleShot with EVM All -36.51843 dB, Burst Power -40.18850 dBm, Frequency Error 6.986657 Hz, and run ID `2d099714ee`. The response reported `simulated=false`; CSV and raw artifacts existed. Independent final auditing confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
 
 The second UI pass uses the company TMXLAB KIT Demo as an information-hierarchy reference: cyan represents actionable/measurement state and red represents RF risk. Cable confirmation is now an editable suggestion list. Users can type a custom route, but only the verified `RF1.1-RF1.5` route can unlock RF. Results use clickable CSV, JSON, Metadata, Raw SCPI, and HTML Report buttons. The separate Fault Tests screen has been removed; the normal workflow now warns about an empty route, an unverified route, missing operator presence, duplicate submission, and locked hardware mode.
+### 2026-08-25 UI and hardware-startup update
+
+- Real and custom safe sweeps must be served from the user's Windows session with `python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware --enable-custom-hardware`. Starting the server does not transmit RF. Route, operator-presence, and final summary confirmation are still required in the Web UI.
+- The home page includes an interactive RF system architecture that explains the flow through planning, the safety gate, CMP180 control, result normalization, and artifacts.
+- Result charts support wheel zoom, drag pan, reset, and A/B point cursors. These controls only change the browser view; they do not modify source results or start a measurement.
+- The hardware workspace and home page use responsive safe margins. Destructive Delete actions remain red in the light theme.
+
+### CMsquares-inspired block controls
+
+The hardware page displays Generator, Analyzer, and Measurement Flow as separate resource blocks. Run still follows the existing route/operator/profile/final-RF-summary confirmations. For a multi-point sweep, Pause takes effect only after the current point completes STOP and RF Off; Resume continues with the next point, while Stop performs cooperative cancellation and preserves partial artifacts. SingleShot cannot pause mid-transaction, and the Generator block cannot enable RF independently.

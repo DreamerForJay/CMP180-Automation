@@ -236,3 +236,49 @@ SingleShot. All five responses contained 28 fields, instrument/cleanup errors we
 and independent final auditing confirmed RF `OFF`, measurement `RDY`, and an empty error
 queue. Evidence is run `e854e20fd8` in `docs/hardware-discovery.md`. This validates only
 the fixed-profile SingleShot and does not qualify as Sweep HIL.
+
+## 中文：2026-08-25 新確認的控制命令
+
+下列命令由 CMP180 6.0.50.23 內建 Help 確認，並完成 setter/readback。ARB 模式必須
+使用 Sequencer state；通用 Generator state 不代表 ARB 正在播放。也必須檢查
+`FETCh:...:STATe:ALL?`，因為主狀態 `RDY` 仍可能同時含 `INV`。
+
+| 功能 | Setter／Query | 狀態 |
+|---|---|---|
+| ARB On/Off | `SOURce:GPRF:GEN:SEQuencer:STATe ON/OFF`、同樹 `?` | Help + hardware verified |
+| ARB repetition | `SOURce:GPRF:GEN:SEQuencer:REPetition CONT`、同樹 `?` | Help + hardware verified |
+| WLAN standard | `CONFigure:WLAN:MEAS:ISIGnal:STANdard EHTofdm` | Help + `EHT` readback |
+| WLAN band | `CONFigure:WLAN:MEAS:RFSettings:FREQuency:BAND B6GHz` | Help + `B6GH` readback |
+| Trigger threshold | `TRIGger:WLAN:MEAS:MEValuation:THReshold -45` | Help + readback；尚無有效結果 |
+| Trigger source | `TRIGger:WLAN:MEAS:MEValuation:SOURce "GPRF Gen1: Restart Marker"` | Help + readback；終態仍 `INV` |
+
+## English: newly confirmed control commands on 2026-08-25
+
+The following commands were confirmed by CMP180 6.0.50.23 built-in Help and exercised
+with setter/readback checks. ARB mode must use the Sequencer state; the generic Generator
+state does not indicate ARB playback. `FETCh:...:STATe:ALL?` must also be checked because
+a main `RDY` state can still contain an `INV` substate.
+
+| Function | Setter/query | Status |
+|---|---|---|
+| ARB On/Off | `SOURce:GPRF:GEN:SEQuencer:STATe ON/OFF` and same-tree `?` | Help + hardware verified |
+| ARB repetition | `SOURce:GPRF:GEN:SEQuencer:REPetition CONT` and same-tree `?` | Help + hardware verified |
+| WLAN standard | `CONFigure:WLAN:MEAS:ISIGnal:STANdard EHTofdm` | Help + `EHT` readback |
+| WLAN band | `CONFigure:WLAN:MEAS:RFSettings:FREQuency:BAND B6GHz` | Help + `B6GH` readback |
+| Trigger threshold | `TRIGger:WLAN:MEAS:MEValuation:THReshold -45` | Help + readback; no valid result yet |
+| Trigger source | `TRIGger:WLAN:MEAS:MEValuation:SOURce "GPRF Gen1: Restart Marker"` | Help + readback; final state still `INV` |
+
+## 中文：2026-08-27 Baseband ARB 狀態樹修正
+
+本固定 profile 使用 GPRF Baseband ARB，因此 RF workflow 必須使用
+`SOURce:GPRF:GEN:STATe ON/OFF` 與同樹 query。`...:SEQuencer:STATe` 僅適用 ARB
+Sequencer mode，不得拿來啟動已由 Baseband ARB 選取的 waveform。本修正已由有效
+SingleShot、三點頻率 sweep 與四點功率 sweep 實機驗證。
+
+## English: 2026-08-27 Baseband ARB state-tree correction
+
+The fixed profile uses GPRF Baseband ARB, so its RF workflow must use
+`SOURce:GPRF:GEN:STATe ON/OFF` and same-tree queries. `...:SEQuencer:STATe` applies only
+to ARB Sequencer mode and must not start a waveform selected through Baseband ARB. The
+correction is hardware-verified by a valid SingleShot, three-point frequency sweep, and
+four-point power sweep.

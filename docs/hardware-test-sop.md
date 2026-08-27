@@ -138,6 +138,17 @@ python scripts\cmp180_power_sweep_validate.py `
 
 若低功率點無法觸發或任何 cleanup／error queue 異常，工具會停止後續點並保存 partial artifacts，不會自行提高功率或變更 expected power。結束時必須顯示 RF `OFF`、measurement `OFF` 或 `RDY`、error queue `[]`。
 
+## 2026-08-25 現場重驗注意事項
+
+目前儀器 waveform pool 只有 lib1/GI08 候選檔，與本 SOP 的已驗證 lib8/GI32 固定
+profile 不同。該候選檔在 -40 dBm 下，以 IF Power 或 Generator Restart Marker 觸發
+都得到完整狀態 `RDY,ADJ,INV`。在 CMsquares 能產生有效數值並確認 waveform/profile
+完全一致前，不得執行 sweep，也不得只看到主狀態 `RDY` 就判定成功。
+
+**2026-08-27 更正**：原 lib8/GI32 waveform 仍存在且已重新通過 HIL。Baseband ARB
+必須使用 `SOURce:GPRF:GEN:STATe`；不得改用 ARB Sequencer state tree。RF On 前仍須
+逐項確認 6105 MHz、6 GHz channel 31、RF1.5、expected -20 dBm 與 Generator -40 dBm。
+
 ## English Version
 
 This SOP records the verified RF1.1-to-RF1.5 WLAN loopback workflow. It separates CMsquares actions from operations already supported by Python.
@@ -206,6 +217,19 @@ Confirm RF1.2 through RF1.8 are not enabled as generator outputs.
 | Repetition / statistics | SingleShot / 10 |
 
 The first trial with expected nominal power at -40 dBm reported `Input Overdriven`. Do not increase generator power to fix this. The successful trial kept generator power at -40 dBm and set analyzer expected nominal power to -20 dBm for additional range.
+
+## 2026-08-25 on-site revalidation note
+
+The current waveform pool contains only a lib1/GI08 candidate, which differs from this
+SOP's verified lib8/GI32 fixed profile. At -40 dBm, that candidate ended in the full state
+`RDY,ADJ,INV` with either IF Power or Generator Restart Marker triggering. Do not run a
+sweep or treat the main `RDY` state as success until CMsquares produces numeric results
+and the waveform/profile match is confirmed.
+
+**2026-08-27 correction**: The original lib8/GI32 waveform is still present and has passed
+renewed HIL. Baseband ARB must use `SOURce:GPRF:GEN:STATe`; do not substitute the ARB
+Sequencer state tree. Before RF on, still verify 6105 MHz, 6 GHz channel 31, RF1.5,
+-20 dBm expected power, and -40 dBm Generator power individually.
 
 ## 5. Manual execution
 

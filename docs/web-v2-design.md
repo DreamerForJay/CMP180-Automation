@@ -8,9 +8,9 @@
 
 ### 重建原則
 
-V2 保留既有 Python workflow、SCPI registry、安全限制、Job、artifact 與 API，但完全停止載入
-舊版 `static/` 的 HTML、CSS 與 JavaScript。新前端位於 `static_v2/`，只使用一份 `app.css`
-與一份 `app.js`，避免不同載入順序、快取或 selector specificity 造成畫面不一致。
+V2 曾規劃保留既有 Python workflow、SCPI registry、安全限制、Job、artifact 與 API，並以
+`static_v2/` 的單一 `app.css`／`app.js` 取代當時的 `static/`。此方案已封存且不再由伺服器
+提供；目前正式前端仍位於 `static/`，僅把 V2 中有價值的歷史分析互動移植回正式介面。
 
 ### 操作模型
 
@@ -53,10 +53,10 @@ V2 保留既有 Python workflow、SCPI registry、安全限制、Job、artifact 
 
 ### Rebuild principle
 
-V2 preserves the existing Python workflows, SCPI registry, safety limits, jobs, artifacts, and
-APIs, but stops loading all legacy `static/` HTML, CSS, and JavaScript. The new frontend lives in
-`static_v2/` and uses exactly one `app.css` and one `app.js`, preventing load order, caching, and
-selector-specificity differences.
+V2 was designed to preserve the Python workflows, SCPI registry, safety limits, jobs, artifacts,
+and APIs while replacing the then-current `static/` frontend with one `static_v2/app.css` and
+`static_v2/app.js`. That approach is now archived and is not served. The production frontend
+remains in `static/`, with only the useful historical-analysis interactions ported back.
 
 ### Interaction model
 

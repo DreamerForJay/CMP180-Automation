@@ -513,3 +513,71 @@ partial results and complete artifacts. Independent read-only cleanup checks con
 Generator `OFF`, measurement `RDY`, and `0,"No error"` after every status query. This
 passes Web hardware progress, normal completion, cooperative cancellation, partial
 artifact, and emergency-cleanup acceptance.
+
+## 中文：2026-08-25 現場重驗與目前阻點
+
+RF1.1 → RF1.5 單一直連、無衰減器且操作員在場。儀器韌體為 6.0.50.23。現場發現
+儀器曾回到 CW、802.11a/g（`LOFD`）與 2.4 GHz（`B24G`）；已在 RF Off 狀態恢復
+ARB、EHT、6 GHz、BW320，並載入目前儀器可用的
+`KV352_lib1_11be_EHT_MU_BW320_4xLTF_GI08_MCS11_LEN4096_LDPC.wv`。原文件的
+lib8/GI32 檔案目前不在 waveform pool，兩者不可視為同一固定 profile。
+
+內建 Help 與實機 readback 確認 ARB Sequencer `STATe`、`REPetition CONT`、WLAN
+standard/band、trigger threshold 與 trigger source setter。以 -40 dBm、6105 MHz、
+320 MHz 重驗時，run `414f714ee6` 的五組 28 欄結果皆為 reliability `4` 加 27 個
+`INV`；instrument/cleanup errors 均空。IF Power 與 `GPRF Gen1: Restart Marker`
+兩種觸發都得到 `RUN → RDY`，但完整終態為 `RDY,ADJ,INV`。因此 2026-08-25
+沒有新的有效 SingleShot，也沒有執行新的 frequency/power sweep。既有 2026-08-20
+HIL 證據仍保留，但目前 waveform/profile 必須先完成同步或解調診斷才能重驗。
+
+## English: 2026-08-25 on-site revalidation and current blocker
+
+The setup used one direct RF1.1-to-RF1.5 cable, no attenuator, and an on-site operator.
+The instrument firmware is 6.0.50.23. It had reverted to CW, 802.11a/g (`LOFD`), and
+2.4 GHz (`B24G`). With RF off, it was restored to ARB, EHT, 6 GHz, and BW320, using
+`KV352_lib1_11be_EHT_MU_BW320_4xLTF_GI08_MCS11_LEN4096_LDPC.wv`, the waveform
+currently available on the instrument. The previously documented lib8/GI32 file is not
+present in the current waveform pool, so these must not be treated as the same profile.
+
+Built-in Help and hardware readback confirmed ARB Sequencer `STATe`, `REPetition CONT`,
+WLAN standard/band, trigger-threshold, and trigger-source setters. At -40 dBm, 6105 MHz,
+and 320 MHz, run `414f714ee6` returned reliability `4` plus 27 `INV` fields for all five
+statistics, with empty instrument/cleanup error lists. Both IF Power and
+`GPRF Gen1: Restart Marker` triggering produced `RUN → RDY`, but the full final state
+was `RDY,ADJ,INV`. Therefore, no new valid SingleShot or frequency/power sweep was
+completed on 2026-08-25. The 2026-08-20 HIL evidence remains recorded, but the current
+waveform/profile needs synchronization or demodulation diagnosis first.
+
+## 中文：2026-08-27 根因修正與重新 HIL
+
+Chrome 現場檢查確認原 lib8/GI32 waveform 仍存在且已選取；8/25 的「只剩 lib1」判斷
+已被本次實機證據推翻。實際漂移項目為 Generator/WLAN 頻率 5500 MHz、Analyzer 5 GHz、
+expected power -32.48 dBm、Generator level -20 dBm，以及 RF connection 未正確顯示。
+在 RF Off 下恢復 6105 MHz、6 GHz channel 31、RF1.5、expected -20 dBm、Generator
+-40 dBm 後，CMsquares stored result run `5460070513` 得到 reliability 0、平均 EVM
+-36.65688 dB。
+
+Python 根因為把 GPRF Baseband ARB waveform 誤用 ARB Sequencer state tree。依內建 Help
+改用 `SOURce:GPRF:GEN:STATe ON` 並以同樹 query 驗證後，run `5cabdc74de` 完整
+SingleShot 通過：EVM -36.72543 dB、Burst Power -39.95473 dBm、Frequency Error
+-18.1467 Hz，errors 與 cleanup errors 皆空。頻率 sweep `e0a40c3bab` 完成
+6085/6105/6125 MHz；功率 sweep `5cbb6c37a7` 完成 -55/-50/-45/-40 dBm。兩批最終
+皆 RF OFF、measurement RDY、error queue empty。
+
+## English: 2026-08-27 root-cause correction and renewed HIL
+
+On-site Chrome inspection confirmed that the original lib8/GI32 waveform is still present
+and selected; the August 25 conclusion that only lib1 remained is superseded by this hardware
+evidence. The actual drift was Generator/WLAN at 5500 MHz, Analyzer on 5 GHz, expected power
+at -32.48 dBm, Generator level at -20 dBm, and an RF connection that was not correctly shown.
+After restoring 6105 MHz, 6 GHz channel 31, RF1.5, -20 dBm expected power, and -40 dBm
+Generator power while RF was off, CMsquares stored-result run `5460070513` returned
+reliability 0 and average EVM of -36.65688 dB.
+
+The Python root cause was using the ARB Sequencer state tree for a GPRF Baseband ARB
+waveform. After switching to `SOURce:GPRF:GEN:STATe ON` with same-tree readback, complete
+SingleShot run `5cabdc74de` passed with EVM -36.72543 dB, Burst Power -39.95473 dBm,
+Frequency Error -18.1467 Hz, and empty instrument/cleanup errors. Frequency sweep
+`e0a40c3bab` completed 6085/6105/6125 MHz, and power sweep `5cbb6c37a7` completed
+-55/-50/-45/-40 dBm. Both batches ended with RF off, measurement ready, and an empty
+error queue.
