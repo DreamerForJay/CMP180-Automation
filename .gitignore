@@ -25,3 +25,6 @@ configs/*.private.yaml
 /Remote_Control_SCPI_GettingStarted_en_04.pdf
 /RF_Intern_EVM_Plan_Presentation.pdf
 /.claude/settings.local.json
+# Apps Script 專案 ID 與本機 OAuth 狀態不可提交到版本庫。
+deploy/google-apps-script/.clasp.json
+.clasprc.json

@@ -102,7 +102,30 @@ def test_mock_artifacts_include_csv_json_and_html(tmp_path):
     assert rows[0]["limit_status"] == "DRAFT_PASS"
     assert metadata["limit_profile"]["lifecycle"] == "draft"
     assert metadata["compliance_claim"] is False
+    assert metadata["created_at"] == payload["created_at"]
+    assert metadata["completed_points"] == 1
+    assert metadata["source"] == "web-demo"
     assert "SIMULATED" in open(artifacts["report"], encoding="utf-8").read()
+
+
+def test_run_history_recovers_legacy_demo_timestamp_without_rewriting_artifacts(tmp_path):
+    run = tmp_path / "legacy-demo"
+    run.mkdir()
+    metadata_path = run / "metadata.json"
+    metadata_path.write_text(
+        json.dumps({"run_id": "legacy", "point_count": 3, "simulated": True}),
+        encoding="utf-8",
+    )
+    (run / "results.json").write_text(
+        json.dumps({"created_at": "2026-08-25T08:00:00+00:00", "points": []}),
+        encoding="utf-8",
+    )
+
+    result = list_run_history(tmp_path)[0]
+
+    assert result["created_at"] == "2026-08-25T08:00:00+00:00"
+    assert result["completed_points"] == 3
+    assert "created_at" not in json.loads(metadata_path.read_text(encoding="utf-8"))
 
 
 def test_web_hardware_endpoint_is_locked_by_default():

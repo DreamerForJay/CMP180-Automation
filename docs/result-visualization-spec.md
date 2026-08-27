@@ -45,14 +45,17 @@ output/<timestamp>_<test-name>_<run-id>/
 
 ### 4. 獨立視覺化腳本
 
-規劃提供以下離線命令：
+目前提供以下離線命令：
 
 ```powershell
 python scripts\plot_results.py output\<run-id>\results.csv
 python scripts\build_report.py output\<run-id>
 ```
 
-`plot_results.py` 必須只讀輸入資料，預設將圖表寫入同一 run 的 `plots/`，並支援指定輸出目錄。`build_report.py` 必須使用已保存的 artifacts 建立 HTML，不得重新連線或控制 CMP180。
+`plot_results.py` 只讀輸入資料，預設將無外部套件依賴的 SVG 圖表寫入同一 run 的
+`plots/`，並可用 `--output-dir` 指定輸出目錄。`build_report.py` 使用已保存的 CSV
+重建自包含中英雙語 HTML，不會重新連線或控制 CMP180。Web 比較畫面另支援 SVG、
+PNG 與整理後 CSV 匯出。
 
 ### 5. 必要圖表
 
@@ -130,14 +133,18 @@ Column names and units remain stable regardless of the selected UI language. Inv
 
 ### 4. Standalone visualization scripts
 
-The planned offline commands are:
+The following offline commands are available:
 
 ```powershell
 python scripts\plot_results.py output\<run-id>\results.csv
 python scripts\build_report.py output\<run-id>
 ```
 
-`plot_results.py` must only read its input data. By default, it writes plots to the run's `plots/` directory and supports an explicit output directory. `build_report.py` must build HTML from saved artifacts without reconnecting to or controlling the CMP180.
+`plot_results.py` reads only its input and writes dependency-free SVG charts to the run's
+`plots/` directory by default; `--output-dir` selects another destination. `build_report.py`
+rebuilds a self-contained bilingual HTML report from the saved CSV without reconnecting
+to or controlling the CMP180. The Web comparison view additionally exports SVG, PNG, and
+a normalized comparison CSV.
 
 ### 5. Required plots
 

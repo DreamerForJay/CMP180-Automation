@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
 from RsInstrument import RsInstrument
 
-from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.results.artifacts import save_single_result
+from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.workflow.cmp180_single_backend import Cmp180SingleMeasurementBackend
 from cmp180_evm.workflow.single_measurement import (
     SingleMeasurementPlan,
@@ -74,6 +75,23 @@ def main() -> int:
                 "cleanup_errors": result.cleanup_errors,
             },
         )
+        # 儀器可能以 RDY 結束但回傳 INV；不可把無效量測誤報為實機 PASS。
+        critical_fields = ("evm_all_carriers_db", "burst_power_dbm", "frequency_error_hz")
+        invalid_fields = []
+        for field in critical_fields:
+            try:
+                valid = math.isfinite(float(result.values[field]))
+            except (KeyError, TypeError, ValueError):
+                valid = False
+            if not valid:
+                invalid_fields.append(field)
+        if invalid_fields:
+            print(
+                f"FAIL invalid critical result fields: {', '.join(invalid_fields)}",
+                file=sys.stderr,
+            )
+            print(f"  Artifacts: {json.dumps(artifacts)}")
+            return 4
         print("PASS real SingleShot")
         print(f"  EVM all: {result.values['evm_all_carriers_db']} dB")
         print(f"  Burst power: {result.values['burst_power_dbm']} dBm")

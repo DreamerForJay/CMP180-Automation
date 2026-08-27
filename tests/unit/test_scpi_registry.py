@@ -51,6 +51,11 @@ def test_help_confirmed_generator_setters_render_named_values():
     assert registry.render("generator.set_power", power_dbm=-40).endswith("LEVel -40")
     assert registry.require("generator.rf_on").endswith("STATe ON")
     assert registry.require("generator.rf_off").endswith("STATe OFF")
+    assert registry.require("generator.arb_rf_on").endswith("SEQuencer:STATe ON")
+    assert registry.require("generator_query.arb_state").endswith("SEQuencer:STATe?")
+    assert registry.render("generator.arb_set_repetition", repetition="CONT").endswith(
+        "SEQuencer:REPetition CONT"
+    )
 
 
 def test_help_confirmed_analyzer_setters_render_named_values():
@@ -64,6 +69,16 @@ def test_help_confirmed_analyzer_setters_render_named_values():
     assert registry.render("wlan_tx.set_frequency", frequency_hz="6.105E9").endswith(
         "FREQuency 6.105E9"
     )
+    assert registry.render("wlan_tx.set_standard", standard="EHTofdm").endswith(
+        "STANdard EHTofdm"
+    )
+    assert registry.render("wlan_tx.set_trigger_threshold", threshold_db=-45).endswith(
+        "THReshold -45"
+    )
+    assert registry.render(
+        "wlan_tx.set_trigger_source", source='"GPRF Gen1: Restart Marker"'
+    ).endswith('SOURce "GPRF Gen1: Restart Marker"')
+    assert registry.render("wlan_tx.set_band", band="B6GHz").endswith("BAND B6GHz")
 
 
 def test_help_confirmed_measurement_lifecycle_commands_are_configured():

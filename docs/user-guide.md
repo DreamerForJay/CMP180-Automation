@@ -1,6 +1,6 @@
 ﻿# CMP180 EVM Automation 使用者操作指南
 
-本文件說明目前工具。除了設定、Mock、連線與唯讀探索外，固定安全 profile 的 Python 實機 SingleShot 與本機 Web GUI 已完成。實機 frequency sweep 尚未通過 HIL，因此保持鎖定。完成一次量測後，仍可使用下列唯讀工具擷取上一筆 28 欄 OFDM SISO 結果：
+本文件說明目前工具。除了設定、Mock、連線與唯讀探索外，固定安全 profile 的 Python 實機 SingleShot、頻率／功率掃描與本機 Web GUI 已完成 HIL。自訂兩點頻率 HIL 曾在第二點收到 `INV` 並安全停止，因此自訂實機掃描仍須重新驗收；不得把該次結果描述為通過。完成一次量測後，仍可使用下列唯讀工具擷取上一筆 28 欄 OFDM SISO 結果：
 
 ```powershell
 python scripts\cmp180_wlan_result_discover.py
@@ -22,7 +22,7 @@ cd <project-root>
 git branch --show-current
 ```
 
-目前開發應位於 `feature/phase2-integration`，不要直接在 `main` 修改。
+功能開發應位於專用 feature branch，不要直接在 `main` 修改；分支名稱以當次 PR／交接文件為準，不在操作指南寫死。
 
 ## 2. 啟用環境
 
@@ -102,7 +102,7 @@ New-Item -ItemType Directory -Force output | Out-Null
 .\.venv\Scripts\python.exe -m pytest -q --basetemp=output\pytest-tmp
 ```
 
-目前基準為 `95 passed`。
+2026-08-27 本機基準為 `152 passed`；後續新增功能時，以當次完整測試輸出為準並同步更新文件。
 
 已驗證 WLAN query-only discovery 時，可執行：
 
@@ -113,6 +113,16 @@ python scripts\cmp180_wlan_discover.py |
 
 此工具只從集中式 `configs/scpi_command_map.yaml` 讀取已驗證 query，
 不包含任何 WLAN setter、measurement initiate 或 RF control command。
+
+保存量測後可完全離線重建圖表與報告；這兩個命令只讀 artifacts，不會連線儀器：
+
+```powershell
+python scripts\plot_results.py output\<run-folder>\results.csv
+python scripts\build_report.py output\<run-folder>
+```
+
+Web 的歷史比較可拖拉曲線排序、直接改名並調整顏色、線型與點型，也可匯出
+SVG、PNG 與整理後 CSV。
 
 ## 8. 第一次連接 CMP180
 
@@ -138,9 +148,9 @@ python scripts\cmp180_wlan_discover.py |
 
 固定安全 profile（RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm）的 RF ON、Generator／Analyzer setter、Initiate/Stop/Abort 與 EVM／Burst Power／Frequency Error 讀值已完成實機驗證，可透過 CLI SingleShot 或 `--enable-hardware` Web GUI 使用。以下項目仍未完成：
 
-- 實機 frequency／power sweep（安全短掃頻核心與 Mock 已完成，3 點 HIL 尚未執行，Web 實機 sweep 鎖定）。
+- 固定 profile 的 frequency／power sweep 已完成 CLI 與 Web HIL；自訂實機掃描仍待針對 `INV` finding 完成 trigger／ranging 複查與重新 HIL。
 - 正式 WLAN Pass/Fail 判定（尚無正式 limit、path-loss／calibration table，目前只能顯示 workflow health 或示範 threshold）。
-- 任意頻率／功率／DUT 輸入（Web 實機模式鎖定單一已驗證 profile）。
+- 超出已驗證安全包絡的任意頻率／功率／DUT 輸入；自訂值只能在後端硬限制內預覽，正式送 RF 仍受雙重啟動閘門與 HIL 狀態限制。
 - 內網 deployment 所需 authentication、RBAC 與 audit log。
 
 上述功能必須先完成對應的 CMP180 HIL 驗證、命令審核與安全檢查。
@@ -171,3 +181,93 @@ git status
 
 不要將 `*`、整個磁碟或不認識的路徑加入 `safe.directory`。若相同路徑被重複
 加入通常不影響 Git；可用 `--get-all` 查看目前清單。
+
+---
+
+# CMP180 EVM Automation User Guide
+
+### 積木式實機控制
+
+實機頁面的 GPRF Generator、WLAN TX Analyzer 與 Measurement Flow 方塊用來顯示各資源狀態。Run 仍會觸發既有安全表單與最終 RF 摘要確認；不能從 Generator 方塊單獨 RF On。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。
+
+## English Version
+
+This guide describes the current tool. Configuration validation, Mock operation,
+connection checks, query-only discovery, the fixed-profile Python hardware SingleShot,
+frequency and power sweeps, and the local Web GUI have completed their applicable
+validation. A custom two-point frequency HIL returned `INV` at its second point and
+stopped safely, so custom live execution still requires trigger/ranging review and a new
+HIL. It must not be reported as a passing run.
+
+### 1. Open the project
+
+Open PowerShell in `<project-root>` and run `git branch --show-current`. Develop on a
+dedicated feature branch rather than directly on `main`; use the current PR or handoff
+document as the source of truth for the branch name.
+
+### 2. Activate the environment
+
+Run `\.venv\Scripts\Activate.ps1`. For a new environment, create it with
+`python -m venv .venv`, then install `-e ".[dev,hardware]"` with the virtual-environment
+Python.
+
+### 3. Validate configuration
+
+Run `python -m cmp180_evm validate-config` for both
+`configs\instrument.example.yaml` and `configs\wlan_baseline.example.yaml`. An `OK`
+result validates the file format; it does not independently revalidate every CMP180 SCPI
+command.
+
+### 4. Dry run
+
+Use `python -m cmp180_evm dry-run --instrument-config ... --config ...` to preview the
+workflow. A dry run opens no instrument session and sends no SCPI. Planned EVM or RF-Off
+steps in its output are not evidence of a completed hardware workflow.
+
+### 5. Mock connection
+
+Run `python -m cmp180_evm test-connection --mock`. The expected output includes a Mock
+identity, options, and an empty error queue. No CMP180 is required.
+
+### 6. Start the Web GUI
+
+Run `python -m cmp180_evm.web`, then open `http://127.0.0.1:8765`. The served frontend is
+the horizontal workspace in `src/cmp180_evm/web/static/`; `static_v2/` is an archived
+design reference. The old Tkinter GUI has been removed.
+
+### 7. Run tests
+
+Run `\.venv\Scripts\python.exe -m pytest -q --basetemp=output\pytest-tmp`. The local
+baseline on 2026-08-27 is `152 passed`; always treat the current full test output as
+authoritative. The WLAN discovery script is query-only and does not send setters,
+measurement initiation, or RF-control commands.
+
+After saving a run, use `python scripts\plot_results.py <results.csv>` and
+`python scripts\build_report.py <run-folder>` to rebuild charts and a self-contained
+report entirely offline. The Web history comparison supports drag-to-reorder, inline
+trace renaming, colour/line/point styling, and SVG, PNG, or normalized CSV export.
+
+### 8. First CMP180 connection
+
+Connect only after the PC and instrument addressing, Ethernet path, and TCP port have
+been confirmed. Start with `test-connection`; this path is limited to `*IDN?`, `*OPT?`,
+and `SYST:ERR?`. See `hardware-readonly-validation.md` for the complete rules.
+
+### 9. Current limitations
+
+Fixed-profile SingleShot, frequency sweep, and power sweep have passed their CLI/Web HIL.
+Custom hardware sweep remains gated after the `INV` finding. Formal WLAN compliance is
+also unavailable until approved limits and an approved Path Loss/Calibration Profile
+exist. Inputs outside the verified safety envelope are prohibited, and intranet exposure
+still requires authentication, RBAC, and audit logging.
+
+### 10. Git dubious ownership
+
+If Windows Git reports dubious ownership after sandbox activity, add only the confirmed
+project path with `git config --global --add safe.directory <project-root>`. Never add
+`*`, a whole drive, or an unknown directory. Verify the result with `--get-all`, then run
+`git branch --show-current` and `git status`.
+
+### 11. Block-based hardware control
+
+The GPRF Generator, WLAN TX Analyzer, and Measurement Flow blocks on the hardware page expose per-resource state. Run still delegates to the guarded form and final RF-summary confirmation; the Generator block cannot enable RF independently. For multi-point sweeps, Pause waits until the current point has completed STOP and RF Off before reporting `PAUSED`; Resume continues at the next point, and Stop terminates while preserving partial artifacts. SingleShot cannot pause mid-transaction.

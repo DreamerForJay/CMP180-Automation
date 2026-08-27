@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CMP180 Measurement Console</title>
+  <link rel="stylesheet" href="/app.css?v=3">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="#measure" aria-label="CMP180 Measurement Console">
+      <span class="brand-mark">RF</span><span><strong>CMP180</strong><small>MEASUREMENT CONSOLE</small></span>
+    </a>
+    <div class="header-actions">
+      <span id="modeBadge" class="mode-badge demo"><i></i><b>DEMO</b></span>
+      <button id="themeButton" class="icon-button" type="button" aria-label="Theme">◐</button>
+      <button id="languageButton" class="icon-button" type="button">EN</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主要功能">
+      <nav>
+        <button class="nav-item active" data-view="measure"><span>01</span><b data-t="navMeasure">量測</b></button>
+        <button class="nav-item" data-view="results"><span>02</span><b data-t="navResults">分析</b></button>
+        <button class="nav-item" data-view="runs"><span>03</span><b data-t="navRuns">紀錄</b></button>
+        <button class="nav-item" data-view="calibration"><span>04</span><b data-t="navCalibration">校正</b></button>
+        <button class="nav-item" data-view="guide"><span>05</span><b data-t="navGuide">指南</b></button>
+      </nav>
+      <div class="sidebar-foot"><span class="status-dot"></span><div><small data-t="serverState">SERVER</small><strong id="serverState">ONLINE</strong></div></div>
+    </aside>
+
+    <main class="workspace">
+      <section class="status-strip"><div><span class="status-dot"></span><strong>CMP180</strong><small>192.168.200.50</small></div><div><small>ROUTE</small><strong>RF1.1 → RF1.5</strong></div><div><small>CONTROL</small><strong id="instrumentState">VIEW ONLY</strong></div></section>
+
+      <section id="measure" class="view active">
+        <div class="section-heading"><div><p class="eyebrow">MEASURE</p><h1 data-t="measureHeading">量測</h1><p class="section-help" data-t="measureIntro">建立單點或掃描條件，執行前由安全摘要再次確認。</p></div></div>
+        <div class="measure-layout">
+          <section class="card plan-card">
+            <div class="card-title"><span>01</span><div><h2 data-t="planTitle">量測設定</h2><p data-t="planHelp">選擇量測類型並輸入參數。</p></div></div>
+            <div class="segmented" role="tablist" aria-label="量測類型">
+              <button class="active" type="button" data-axis="single" data-t="single">單點</button>
+              <button type="button" data-axis="frequency" data-t="frequencySweep">頻率掃描</button>
+              <button type="button" data-axis="power" data-t="powerSweep">功率掃描</button>
+            </div>
+            <form id="planForm" novalidate>
+              <div class="field-grid">
+                <label class="field axis-power axis-single"><span data-t="centerFrequency">中心頻率</span><div class="with-unit"><input name="center_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
+                <label class="field axis-frequency axis-power axis-single"><span data-t="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
+                <label class="field axis-frequency" hidden><span data-t="startFrequency">起始頻率</span><div class="with-unit"><input name="start_mhz" type="number" value="6085"><b>MHz</b></div></label>
+                <label class="field axis-frequency" hidden><span data-t="stopFrequency">結束頻率</span><div class="with-unit"><input name="stop_mhz" type="number" value="6125"><b>MHz</b></div></label>
+                <label class="field axis-frequency" hidden><span data-t="frequencyStep">頻率步進</span><div class="with-unit"><input name="step_mhz" type="number" value="20" min="1"><b>MHz</b></div></label>
+                <label class="field axis-power" hidden><span data-t="startPower">起始功率</span><div class="with-unit"><input name="start_dbm" type="number" value="-55" min="-60" max="-40"><b>dBm</b></div></label>
+                <label class="field axis-power" hidden><span data-t="stopPower">結束功率</span><div class="with-unit"><input name="stop_dbm" type="number" value="-40" min="-60" max="-40"><b>dBm</b></div></label>
+                <label class="field axis-power" hidden><span data-t="powerStep">功率步進</span><div class="with-unit"><input name="step_dbm" type="number" value="5" min="1"><b>dBm</b></div></label>
+                <label class="field axis-single axis-frequency"><span data-t="generatorPower">Generator 功率</span><div class="with-unit"><input name="power_dbm" type="number" value="-40" max="-40"><b>dBm</b></div></label>
+                <label class="field axis-frequency axis-power" hidden><span data-t="dwell">停留時間</span><div class="with-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100"><b>ms</b></div></label>
+                <label class="field full"><span data-t="testName">測試名稱</span><input name="test_name" value="demo-measurement" maxlength="80"></label>
+              </div>
+            </form>
+          </section>
+
+          <aside class="measure-side">
+            <section class="card safety-card">
+              <div class="card-title compact"><span>02</span><div><h2 data-t="reviewTitle">執行摘要</h2><p data-t="reviewHelp">送出前確認點位與限制。</p></div></div>
+              <dl class="summary-list">
+                <div><dt data-t="mode">模式</dt><dd id="summaryMode">Demo · Single</dd></div>
+                <div><dt data-t="points">點數</dt><dd id="summaryPoints">1</dd></div>
+                <div><dt data-t="estimatedTime">預估時間</dt><dd id="summaryTime">&lt; 1 s</dd></div>
+                <div><dt data-t="maximumPower">最大功率</dt><dd id="summaryPower">-40 dBm</dd></div>
+              </dl>
+              <div id="safetyState" class="safety-state safe"><span>✓</span><div><strong data-t="demoSafe">Demo 安全</strong><p data-t="demoSafeHelp">不會連線儀器或產生 RF。</p></div></div>
+              <button id="runButton" class="run-button" type="button"><span data-t="runDemo">執行 Demo 量測</span><b>→</b></button>
+            </section>
+            <section class="card quick-guide"><strong data-t="beforeRun">執行前</strong><ol><li data-t="checkMode">確認右上角為 DEMO</li><li data-t="checkValues">檢查頻率、功率與點數</li><li data-t="openResults">完成後前往結果頁</li></ol></section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="results" class="view">
+        <div class="section-heading"><div><p class="eyebrow">ANALYZE</p><h1 data-t="resultsTitle">分析與比較</h1><p class="section-help" data-t="analyzeHelp">切換指標、查看逐點資料，或從量測紀錄加入多筆 Run 比較。</p></div><span id="resultStatus" class="state-chip">NO DATA</span></div>
+        <div id="emptyResults" class="empty-state"><span>∿</span><h3 data-t="noResults">尚無量測結果</h3><p data-t="noResultsHelp">執行 Demo 量測後，指標、圖表和檔案會顯示在這裡。</p></div>
+        <div id="resultContent" hidden>
+          <section class="result-meta card">
+            <div><small data-t="completedAt">完成時間</small><strong id="resultTimestamp">—</strong></div>
+            <div><small>RUN ID</small><strong id="resultRunId">—</strong></div>
+            <div class="output-path"><small data-t="outputLocation">輸出位置</small><code id="resultOutput">—</code></div>
+          </section>
+          <div id="metrics" class="metric-grid"></div><div class="analyze-layout"><aside class="card trace-panel"><div class="panel-label">TRACES</div><div id="traceList"></div><p id="compareHint" class="section-help">從紀錄勾選 2–8 筆 Run 後加入比較。</p></aside><section class="card chart-card"><div class="chart-toolbar"><label><span data-t="metric">指標</span><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select></label><div class="chart-actions"><span id="cursorDelta">A/B: —</span><button id="cursorToggle" class="secondary-button" type="button">A/B Cursor</button><button id="resetChart" class="secondary-button" type="button">Reset</button></div></div><svg id="chart" viewBox="0 0 960 360" aria-label="Interactive RF trace chart"></svg><p class="chart-help">滾輪縮放 · 拖曳平移 · A/B Cursor 開啟後點兩下比較 ΔFrequency</p></section></div><div class="point-table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Frequency</th><th>Set Power</th><th>EVM All</th><th>Burst Power</th><th>Freq Error</th><th>Status</th></tr></thead><tbody id="pointRows"></tbody></table></div><div id="artifactLinks" class="artifact-grid"></div>
+        </div>
+      </section>
+
+      <section id="runs" class="view"><div class="section-heading"><div><p class="eyebrow">RUN HISTORY</p><h1 data-t="runsTitle">量測紀錄</h1><p class="section-help" data-t="runsHelp">搜尋、篩選、排序並選取多筆 Run 進行比較。</p></div><button id="refreshRuns" class="secondary-button" type="button" data-t="refresh">重新整理</button></div><div class="runs-toolbar card"><input id="runSearch" type="search" placeholder="搜尋名稱或 Run ID"><select id="runSource"><option value="all">全部來源</option><option value="hardware">Hardware</option><option value="demo">Demo</option></select><select id="runStatus"><option value="all">全部狀態</option><option value="complete">Complete</option><option value="partial">Partial</option><option value="failed">Failed</option></select><select id="runSort"><option value="newest">時間：新到舊</option><option value="oldest">時間：舊到新</option><option value="name">名稱</option><option value="points">點數</option></select><button id="compareRuns" class="run-button compact" type="button" disabled>比較已選 Run</button></div><div class="run-table-wrap"><table class="data-table run-table"><thead><tr><th>＋</th><th>Timestamp</th><th>Test name</th><th>Run ID</th><th>Source</th><th>Status</th><th>Points</th><th>Output</th><th>Actions</th></tr></thead><tbody id="runsGrid"></tbody></table></div><div id="runMobileCards" class="run-mobile-cards"></div></section>
+      <section id="calibration" class="view"><div class="section-heading"><div><p class="eyebrow">CALIBRATION</p><h1>Path Loss 校正</h1><p class="section-help">器材識別、讀值、Loss curve 審查與核准狀態集中在同一 SOP。</p></div><span class="state-chip">DRAFT ONLY</span></div><ol class="cal-steps"><li class="active"><b>01</b><span>器材</span></li><li><b>02</b><span>讀值</span></li><li><b>03</b><span>線損</span></li><li><b>04</b><span>核准</span></li></ol><section class="card calibration-card"><form id="calibrationForm"><div class="field-grid"><label class="field"><span>Adapter</span><select name="adapter_id" id="calAdapter"><option value="mock-reference">Mock Reference · DEMO</option></select></label><label class="field"><span>Profile ID</span><input name="profile_id" value="rf1.1-rf1.5-cable"></label><label class="field"><span>Route</span><input name="route" value="RF1.1-RF1.5" readonly></label><label class="field"><span>Equipment references</span><input name="equipment_reference" placeholder="cable:C01; adapter:A01; meter:P01"></label><label class="field"><span>Calibrated date</span><input name="calibrated_at" type="date"></label><label class="field"><span>Expiry date</span><input name="expires_at" type="date"></label><label class="field full"><span>Readings CSV <button class="help-button" type="button" title="frequency_hz,source_reference_dbm,receiver_reading_dbm">?</button></span><textarea name="readings_csv" id="calReadings" rows="8" placeholder="frequency_hz,source_reference_dbm,receiver_reading_dbm"></textarea></label></div><div class="cal-actions"><button id="loadCalExample" class="secondary-button" type="button">載入示範</button><button id="calculateCalibration" class="run-button compact" type="button">計算 Draft Profile</button></div></form><div id="calResult" class="cal-result" hidden><h3>Loss curve preview</h3><div id="calLossTable"></div><pre id="calProfileJson"></pre></div></section></section>
+      <section id="guide" class="view"><div class="section-heading"><div><p class="eyebrow">OPERATOR GUIDE</p><h2 data-t="guideTitle">快速開始</h2></div></div><div class="guide-grid"><article class="command-card"><h3 data-t="startDemo">啟動 Demo</h3><pre><code>.\.venv\Scripts\Activate.ps1
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre><button class="copy-button" type="button" data-copy data-t="copy">複製指令</button></article><article class="command-card danger"><h3 data-t="rfHold">RF 暫停</h3><p data-t="rfHoldHelp">供電不穩定期間不要加入 --enable-hardware。</p></article></div></section>
+    </main>
+  </div>
+  <dialog id="runDialog" class="run-dialog">
+    <div class="dialog-head"><div><small>RUN DETAIL</small><h2 id="dialogTitle">—</h2></div><button id="closeDialog" class="icon-button" type="button" aria-label="Close">×</button></div>
+    <div id="dialogSummary" class="detail-grid"></div>
+    <div class="dialog-section"><small data-t="outputLocation">輸出位置</small><code id="dialogOutput">—</code></div>
+    <div id="dialogArtifacts" class="artifact-grid"></div>
+    <details><summary data-t="technicalDetails">技術詳細資料</summary><pre id="dialogTechnical"></pre></details>
+    <div class="dialog-actions"><button id="openRunFolder" class="secondary-button" type="button" data-t="openFolder">開啟資料夾</button><button id="requestTrash" class="danger-button" type="button" data-t="deleteRun">刪除紀錄</button></div>
+    <section id="trashConfirmation" class="trash-confirmation" hidden><strong data-t="deleteConfirmTitle">確認移至 Trash</strong><p id="trashHelp"></p><input id="trashRunId" autocomplete="off"><div><button id="cancelTrash" class="secondary-button" type="button" data-t="cancel">取消</button><button id="confirmTrash" class="danger-button" type="button" disabled data-t="moveToTrash">移至 Trash</button></div></section>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js?v=3"></script>
+</body>
+</html>

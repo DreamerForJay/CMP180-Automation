@@ -2,14 +2,46 @@
 
 ## 中文版本
 
-### 狀態（2026-08-20）
+### 狀態（2026-08-27）
+
+- 2026-08-27 實機量測改為與示範訓練一致的單點／頻率掃描／功率掃描分頁；切換會同步後端 action，單點隱藏掃描欄位。圖表改為固定座標，滾輪只縮放 X 軸、拖曳只水平平移且有邊界，hover 顯示十字游標與完整工程值。說明頁新增 Git clone、Python 3.11 安裝、Demo、YAML validation、唯讀連線、離線 SVG 與 HTML report 指令。完整基準為 `155 passed`；本批未連線儀器、未送 RF。
+
+- 2026-08-27 收斂 Web 操作層級：隱藏重複的頁面 Hero／控制狀態卡，將「自訂量測計畫」改名為「掃描設定」，並以三步快速操作取代重複的 Operator Playbook 卡片。PowerShell 指南現在先切到專案目錄，且複製內容不再包含錯誤的 `PS` 提示符。新增 `docs/next-hil-campaign.md`，把下一次機台時段整理成 90 分鐘能力快照、RF-Off 回讀、參考點、邊界點、短掃描與稽核批次。完整基準為 `153 passed`；本批未連線儀器、未送 RF。
+
+- 2026-08-27 已解決新實機阻點：原 lib8/GI32 waveform 仍存在；根因是儀器 profile
+  漂移與 Baseband ARB／ARB Sequencer state tree 混用。Python SingleShot run
+  `5cabdc74de`、三點頻率 sweep `e0a40c3bab`、四點功率 sweep `5cbb6c37a7` 全部通過，
+  最終 RF OFF／measurement RDY／error queue empty。
+
+- 2026-08-27 依 CMsquares Workspace 操作模型新增 Generator／Analyzer／Measurement Flow 積木。Run 仍走既有安全表單；掃描 Pause 只在點位 STOP／RF Off 邊界進入 `PAUSED`，Resume 從下一點繼續，Stop 可解除暫停並保存 partial artifacts。新增兩項 Job pause/cancel 測試，完整基準為 `150 passed`。本批只使用 Mock／unit，不是新的實機 HIL。
+- 2026-08-27 新增實機 artifact 診斷快照：量測狀態轉換、WLAN standard／band、ARB waveform、trigger source／threshold、expected nominal power、external attenuation 與 ranging strategy。既有 2026-08-27 結果顯示有效 GI3.2/MCS11 結果與最終 `RDY`；`RDY,ADJ,INV` 是可用狀態集合，不可單獨視為本次 INV。此修改尚未執行新的 RF HIL。
+- 2026-08-27 新增 CMP180 四層能力模型與 `/api/capabilities`：Catalog、Installed、Approved Profile、Verified HIL 必須分開。首頁顯示能力矩陣，型錄的 400 MHz–8 GHz／最高 500 MHz 只供規劃，RF 執行仍由 approved profile 授權。新增交付與能力擴充文件；完整基準為 `152 passed`，本批未送 RF。
+- 2026-08-27 完成 repository hygiene：移除 37 個可重建的 pytest／mypy／ruff cache 目錄，保留 `output/` 量測成果；README 新增 GitHub 中英文跳轉、能力狀態、實機／自訂啟動方式與專案結構，並新增 `docs/README.md` 文件中心，明確標示權威規格及封存資料。本批只整理檔案與文件，未連線儀器、未送 RF。
+
+- 2026-08-25 固定 profile 現場重驗未通過：目前可用 lib1/GI08 waveform 在 -40 dBm
+  下，IF Power 與 Generator Restart Marker 觸發皆得到 `RUN → RDY`，但完整狀態為
+  `RDY,ADJ,INV`，五組 28 欄結果皆無效。程式已改為檢查完整 substate 與關鍵欄位，
+  不再把主狀態 `RDY` 誤報為 PASS。既有 2026-08-20 HIL 保留，但目前 profile 需先
+  排除 waveform／同步／解調差異，才能重新執行 sweep。
 
 - 2026-08-25 自訂兩點頻率 HIL（6085／6105 MHz、-45 dBm）在第 2 點回傳 `INV`，
   已依規則停止；最終 Generator `OFF`、Analyzer `RDY`、error queue empty。此結果是
   finding，不是通過證據。已修正 `INV` 正規化與 partial artifact 保留；重新 HIL 前需先
   確認 trigger／ranging 設定並取得新的現場授權。
+- 2026-08-25 操作員評估後已恢復 `static/` 原版橫向量測工作區；`static_v2/` 保留為封存設計參考但不再由伺服器提供。正式介面新增從量測紀錄勾選 2–8 筆 Run 的唯讀疊圖比較，可調整 Trace 名稱、顏色與顯示，並在 `INV`／缺值處中斷曲線；不會因此啟動量測或 RF。
+- 2026-08-25 修正量測紀錄前端反覆 mutation 導致的空白／卡住風險，改為一次性列渲染並在啟動時預先讀取；同時修正校正步驟雙重編號、操作指南分頁切換、各工作區情境標題與完整亮／暗主題覆寫。該批只使用 API、既有資料與自動測試，未送 RF。
+- 2026-08-25 實機／示範量測子頁已真正互斥顯示；Runs 新增全文搜尋、日期／來源／狀態篩選、RF 排序、列內詳情與瀏覽器輸出。Trace 新增線型、點型、色彩鎖、Solo、移除、拖曳與 SVG／PNG／CSV 匯出。Explorer 權限失敗路徑不再由 UI 呼叫；刪除維持 Run ID 防呆與可復原 Trash。
+- Web 實機授權改為頁內完成：Route、操作員在場與後端安全 profile 通過後，最後確認框顯示實際頻率／功率／頻寬摘要；取消不送 RF。另新增曲線鄰近點 hover 完整讀值與亮色按鈕反光互動。
+- 新增公司內部產品首頁：雙語 Hero、系統能力、RF 自動化流程、Artifacts、校正、歷史比較與操作手冊入口。首頁使用本機 CSS 動畫且只做導覽，不會呼叫 RF API；HeyGen／HyperFrames 教學影片保留為後續可選內容。
+- 2026-08-25 曾建立隔離的 V2 並完成 Demo 瀏覽器驗收；操作員評估後已停止提供
+  `static_v2/`，目前只保留為封存設計參考。正式伺服器提供 `static/` 原版橫向量測
+  工作區，並已回用 V2 的歷史多 Run 比較概念。
+- Web V2 已進一步重構為 RF 工作站：移除所有頁面重複的固定量測 Hero，加入每頁情境標題、
+  Dark／Light／System、Runs Table 搜尋／篩選／排序、2–8 Run 比較、Trace 名稱／顏色／拖曳、
+  metric、逐點 Table、Zoom／Pan／A-B Cursor 與 Draft 校正 SOP。歷史 Demo 時間戳相容層
+  只讀 `results.json`，不改寫舊 artifacts。本批 Chrome 與自動測試僅使用 Demo／既有資料。
 
-- 分支：`feature/web-sweep-jobs`（Web Sweep PR #12）。
+- 分支：`feature/web-v2-clean-rebuild`。
 - Python 實機 SingleShot 已通過：RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm。
 - Web GUI 已有雙語響應式版面（亮／暗主題切換，預設暗色）、Mock 單點／頻率掃描／功率掃描、受保護實機 SingleShot、artifacts 與圖表。
 - 實機 Web 只允許 loopback bind；尚無 authentication／RBAC，不得對內網公開 RF endpoint。
@@ -61,15 +93,52 @@
 
 ## English Version
 
-### Status (2026-08-20)
+- On 2026-08-27, Hardware Measurement adopted the same Single/Frequency Sweep/Power Sweep tabs as Demo Training. Tab changes synchronize the backend action and Single hides sweep-only fields. Charts now use fixed coordinates: the wheel zooms only X, drag pans horizontally within bounds, and hover shows a crosshair plus complete engineering values. Help now covers Git clone, Python 3.11 installation, Demo startup, YAML validation, query-only connection checks, offline SVG generation, and HTML report rebuilding. The complete baseline is `155 passed`; this batch did not connect to the instrument or transmit RF.
+
+- On 2026-08-27, the Web hierarchy was reduced: duplicate page heroes/control-state cards are hidden, "Custom Measurement Plan" is renamed "Sweep Setup," and a three-step quick-start replaces the repeated Operator Playbook cards. PowerShell guidance now changes to the project directory first and copied commands no longer include the invalid `PS` prompt. `docs/next-hil-campaign.md` defines a ninety-minute capability snapshot, RF-Off readback, reference-point, boundary-point, short-sweep, and audit campaign for the next instrument slot. The complete baseline is `153 passed`; this batch did not connect to the instrument or transmit RF.
+
+### Status (2026-08-27)
+
+- The new hardware blocker was resolved on 2026-08-27. The original lib8/GI32 waveform
+  is still present; the root cause was profile drift plus mixing the Baseband ARB and ARB
+  Sequencer state trees. Python SingleShot `5cabdc74de`, three-point frequency sweep
+  `e0a40c3bab`, and four-point power sweep `5cbb6c37a7` all passed, ending with RF off,
+  measurement ready, and an empty error queue.
+
+- On 2026-08-27, CMsquares-inspired Generator, Analyzer, and Measurement Flow blocks were added. Run still delegates to the guarded form. Sweep Pause enters `PAUSED` only at a STOP/RF-Off point boundary, Resume continues at the next point, and Stop releases a paused job while preserving partial artifacts. Two job pause/cancel tests were added, bringing the complete baseline to `150 passed`. This batch used mock/unit testing only and is not new hardware HIL evidence.
+- On 2026-08-27, hardware artifacts gained diagnostic snapshots for measurement-state transitions, WLAN standard/band, ARB waveform, trigger source/threshold, expected nominal power, external attenuation, and ranging strategy. Existing 2026-08-27 artifacts contain valid GI3.2/MCS11 results and end in `RDY`; `RDY,ADJ,INV` is a state catalog and must not be treated as proof that the run entered INV. No new RF HIL was executed for this change.
+- On 2026-08-27, a four-layer CMP180 capability model and `/api/capabilities` were added. Catalog, Installed, Approved Profile, and Verified HIL are now separate, and the home page renders the matrix. The catalog 400 MHz–8 GHz/up-to-500 MHz figures are planning-only; RF execution remains authorized by an approved profile. Partner-delivery documentation was added. The full baseline is `152 passed`; no RF was transmitted in this batch.
+- On 2026-08-27, repository hygiene removed 37 reproducible pytest/mypy/ruff cache directories while preserving measurement artifacts under `output/`. The README gained GitHub language navigation, a capability matrix, guarded hardware/custom startup commands, and a repository map. A new `docs/README.md` documentation centre now identifies authoritative and archived material. This batch only organized files and documentation; it did not connect to the instrument or transmit RF.
+
+- The fixed-profile on-site revalidation on 2026-08-25 did not pass. With the currently
+  available lib1/GI08 waveform at -40 dBm, both IF Power and Generator Restart Marker
+  triggering produced `RUN → RDY`, but the full state was `RDY,ADJ,INV` and all five
+  28-field statistics were invalid. The workflow now checks the full substate and critical
+  fields instead of reporting PASS from the main `RDY` state alone. Existing 2026-08-20
+  HIL evidence remains, but waveform/synchronization/demodulation differences must be
+  resolved before rerunning sweeps.
 
 - The 2026-08-25 custom two-point frequency HIL (6085/6105 MHz at -45 dBm) returned
   `INV` at point 2 and stopped as required. Final state was Generator `OFF`, Analyzer `RDY`,
   and an empty error queue. This is a finding, not passing evidence. `INV` normalization and
   partial-artifact retention are corrected; a rerun requires trigger/ranging review and fresh
   on-site authorization.
+- After operator review on 2026-08-25, the original horizontal workspace in `static/` was restored as the served UI. `static_v2/` remains an archived design reference. The production UI now compares 2–8 saved runs read-only, with editable trace names, colours, visibility, and breaks at `INV` or missing values; comparison never starts RF.
+- On 2026-08-25, the run-history DOM mutation loop that could leave the table blank or stalled was replaced with deterministic row rendering and eager startup loading. The same change fixed duplicated calibration-step numbers, Operator Guide navigation, contextual workspace headings, and complete light/dark overrides. Validation used APIs, saved data, and automated tests only; no RF was transmitted.
+- On 2026-08-25, hardware/demo measurement subviews became truly mutually exclusive. Runs gained full-text search, date/source/status filters, RF-aware sorting, inline details, and browser-native output opening. Traces gained line/point styles, colour lock, Solo, removal, drag ordering, and SVG/PNG/CSV export. The UI no longer calls the Explorer path that failed under workstation permissions; deletion retains exact Run-ID confirmation and recoverable Trash.
+- Hardware authorization is now completed in-page: after route, operator-presence, and backend safe-profile checks, a final dialog shows the exact frequency/power/bandwidth summary. Cancelling transmits no RF. The chart also gained nearest-point hover readouts and light-theme reflective button interaction.
+- Added a bilingual internal-product home with a capability overview, RF automation workflow, artifacts, calibration, run comparison, and operator-manual entry points. The home uses local CSS motion and navigation-only CTAs that call no RF API; a HeyGen/HyperFrames tutorial remains an optional follow-up.
+- On 2026-08-25 an isolated V2 was created and validated with Demo data. After operator
+  review, `static_v2/` stopped being served and remains only as an archived design reference.
+  The server now serves the original horizontal workspace from `static/`, with the useful
+  V2 historical multi-run comparison concept ported into production.
+- Web V2 is now an RF workstation rather than a repeated measurement hero: contextual headings,
+  Dark/Light/System, searchable/filterable/sortable Runs, 2–8 run comparison, trace naming/color/
+  drag order, metric and point tables, zoom/pan/A-B cursors, and a Draft calibration SOP. Legacy
+  Demo timestamps are recovered read-only from `results.json`; old artifacts are not rewritten.
+  This browser and automated-test batch used Demo/saved data only.
 
-- Branch: `feature/web-sweep-jobs` (Web Sweep PR #12).
+- Branch: `feature/web-v2-clean-rebuild`.
 - Python hardware SingleShot passed at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - The Web GUI provides a bilingual responsive layout (light/dark theme toggle, dark by default), mock single/frequency-sweep/power-sweep, guarded hardware SingleShot, artifacts, and plots.
 - Hardware Web mode is loopback-only. Authentication/RBAC are absent, so never expose the RF endpoint to the network.

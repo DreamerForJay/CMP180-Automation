@@ -20,7 +20,12 @@ class SweepJob:
     result: dict[str, object] | None = None
     error: str | None = None
     cancel_requested: bool = False
+    pause_requested: bool = False
     _cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    _resume_event: threading.Event = field(default_factory=threading.Event, repr=False)
+
+    def __post_init__(self) -> None:
+        self._resume_event.set()
 
     def public(self) -> dict[str, object]:
         # threading.Event 不可序列化；公開欄位明列，避免洩漏執行緒內部狀態。
@@ -34,6 +39,7 @@ class SweepJob:
             "result": self.result,
             "error": self.error,
             "cancel_requested": self.cancel_requested,
+            "pause_requested": self.pause_requested,
         }
         payload["progress_percent"] = round(
             self.completed_points / self.total_points * 100 if self.total_points else 0, 1
@@ -41,6 +47,14 @@ class SweepJob:
         return payload
 
     def is_cancel_requested(self) -> bool:
+        # 暫停只會在 workflow 的點位邊界被檢查；上一點已 STOP 且 RF Off，禁止在 RF On 中途凍結。
+        while self.pause_requested and not self._cancel_event.is_set():
+            self.state = "paused"
+            self.message = f"Paused safely after point {self.completed_points}/{self.total_points}"
+            self._resume_event.wait(timeout=0.1)
+        if not self._cancel_event.is_set() and self.state == "paused":
+            self.state = "running"
+            self.message = f"Resuming at point {self.completed_points + 1}/{self.total_points}"
         return self._cancel_event.is_set()
 
     def point_completed(self, count: int) -> None:
@@ -62,7 +76,10 @@ class JobManager:
         worker: Callable[[SweepJob], dict[str, object]],
     ) -> SweepJob:
         with self._lock:
-            if any(job.state in {"queued", "running", "stopping"} for job in self._jobs.values()):
+            if any(
+                job.state in {"queued", "running", "paused", "stopping"}
+                for job in self._jobs.values()
+            ):
                 raise RuntimeError("Another measurement job is already active")
             job = SweepJob(uuid.uuid4().hex[:12], kind, total_points)
             self._jobs[job.job_id] = job
@@ -91,12 +108,34 @@ class JobManager:
 
     def cancel(self, job_id: str) -> SweepJob:
         job = self.get(job_id)
-        if job.state not in {"queued", "running", "stopping"}:
+        if job.state not in {"queued", "running", "paused", "stopping"}:
             return job
         # 取消採 cooperative gate；實機接入時由 workflow 在點與點間做 STOP/RF Off。
         job.cancel_requested = True
+        job.pause_requested = False
         job.state = "stopping"
         job._cancel_event.set()
+        job._resume_event.set()
+        return job
+
+    def pause(self, job_id: str) -> SweepJob:
+        job = self.get(job_id)
+        if job.state not in {"queued", "running"}:
+            return job
+        # 只提出暫停要求；真正 PAUSED 由下一個 RF Off 點位邊界進入。
+        job.pause_requested = True
+        job.message = "Pause requested; waiting for the next RF-Off boundary"
+        job._resume_event.clear()
+        return job
+
+    def resume(self, job_id: str) -> SweepJob:
+        job = self.get(job_id)
+        if job.state != "paused" and not job.pause_requested:
+            return job
+        job.pause_requested = False
+        job.state = "running"
+        job.message = f"Resuming at point {job.completed_points + 1}/{job.total_points}"
+        job._resume_event.set()
         return job
 
     @staticmethod
@@ -108,7 +147,7 @@ class JobManager:
     ) -> dict[str, object]:
         captured: list[object] = []
         for index, point in enumerate(points):
-            if job._cancel_event.is_set():
+            if job.is_cancel_requested():
                 break
             captured.append(point)
             job.completed_points = index + 1

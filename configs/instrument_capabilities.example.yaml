@@ -1,0 +1,39 @@
+# CMP180 型錄能力只用於顯示與計畫預覽；不得直接作為 RF 執行權限。
+# Catalog capabilities are display/planning bounds and never grant RF execution.
+instrument_model: CMP180
+catalog:
+  frequency_min_hz: 400000000
+  frequency_max_hz: 8000000000
+  maximum_analysis_bandwidth_hz: 500000000
+  analyzer_count: 2
+  generator_count: 2
+  rf_port_count: 16
+  supports_list_mode: true
+installed:
+  # 必須由 *OPT?、CMsquares 與選件文件確認；未知值不可推定為已安裝。
+  # Confirm with *OPT?, CMsquares, and option records; unknown is not installed.
+  frequency_min_hz: 400000000
+  frequency_max_hz: 8000000000
+  analysis_bandwidths_hz: [320000000]
+  analyzer_count: 1
+  generator_count: 1
+  rf_ports: [RF1.1, RF1.2, RF1.3, RF1.4, RF1.5, RF1.6, RF1.7, RF1.8, RF2.1, RF2.2, RF2.3, RF2.4, RF2.5, RF2.6, RF2.7, RF2.8]
+approved_profile:
+  profile_id: rf1.1-rf1.5-direct-cable-v1
+  lifecycle: approved
+  frequency_min_hz: 5925000000
+  frequency_max_hz: 7125000000
+  maximum_span_hz: 200000000
+  bandwidths_hz: [320000000]
+  generator_power_min_dbm: -60
+  generator_power_max_dbm: -40
+  dwell_min_ms: 100
+  dwell_max_ms: 2000
+  maximum_points: 11
+  routes: [RF1.1-RF1.5]
+verified_hil:
+  frequencies_hz: [6085000000, 6105000000, 6125000000]
+  bandwidths_hz: [320000000]
+  generator_powers_dbm: [-55, -50, -45, -40]
+  dwell_ms: [100]
+  routes: [RF1.1-RF1.5]

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
+  <link rel="stylesheet" href="/design-system.css?v=console8">
 </head>
 <body>
   <header class="topbar">
@@ -15,7 +16,7 @@
   </header>
   <main>
     <section class="workspace-head">
-      <div><p class="workspace-kicker">WLAN TX MEASUREMENT</p><h1 data-i18n="workspaceTitle">量測工作區</h1><p class="profile-line">RF1.1 → RF1.5 <span>·</span> 6105 MHz <span>·</span> 320 MHz <span>·</span> -40 dBm</p></div>
+      <div><p id="pageKicker" class="workspace-kicker">WLAN TX MEASUREMENT</p><h1 id="pageTitle">量測控制台</h1><p id="pageContext" class="profile-line">RF1.1 → RF1.5 <span>·</span> 6105 MHz <span>·</span> 320 MHz <span>·</span> -40 dBm</p></div>
       <div class="workspace-state" aria-label="Current control state">
         <small data-i18n="controlState">控制狀態</small>
         <strong id="controlStateText" data-i18n="demoControlState">Demo data only</strong>
@@ -24,21 +25,110 @@
     </section>
 
     <nav class="tabs" aria-label="Workspace">
-      <button class="tab active" data-tab="single" data-i18n="singleTab" title="不連接儀器，用可重現資料練習單點流程 / No instrument; deterministic demo data">示範單點</button>
-      <button class="tab" data-tab="sweep" data-i18n="sweepTab" title="不開 RF 的頻率掃描介面測試 / Frequency-sweep UI test without RF">示範頻掃</button>
-      <button class="tab" data-tab="powerSweep" data-i18n="powerSweepTab" title="不開 RF 的功率掃描介面測試 / Power-sweep UI test without RF">示範功掃</button>
-      <button class="tab" data-tab="hardware" data-i18n="hardwareTab" title="控制已連接 CMP180；需本機明確啟用 / Controls CMP180 when locally enabled">實機量測</button>
-      <button class="tab" data-tab="calibration" title="建立 Draft 線損 Profile；不會啟動 RF / Build a draft loss profile without RF">校正 SOP</button>
+      <button class="tab active" data-tab="home" data-i18n="homeTab">首頁</button>
+      <button class="tab" data-tab="measurement">量測</button>
+      <button class="tab" data-tab="calibration">校正</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
       <button class="tab" data-tab="history" data-i18n="historyTab">量測紀錄</button>
+      <button class="tab" data-tab="guide" data-i18n="guideTab">操作指南</button>
     </nav>
     <section id="jobPanel" class="job-panel" hidden aria-live="polite">
       <div class="panel-head"><div><h2 id="jobTitle">Sweep job</h2><p id="jobMessage">Preparing</p></div><span id="jobState" class="pill neutral">QUEUED</span></div>
       <progress id="jobProgress" max="100" value="0"></progress>
-      <div class="job-actions"><span id="jobCount">0 / 0</span><button id="cancelJobButton" class="danger-button" type="button">停止量測 / Cancel</button></div>
+      <div class="job-actions"><span id="jobCount">0 / 0</span><div><button id="pauseJobButton" class="ghost" type="button">安全暫停 / Pause</button><button id="resumeJobButton" class="primary" type="button" hidden>繼續 / Resume</button><button id="cancelJobButton" class="danger-button" type="button">停止量測 / Cancel</button></div></div>
     </section>
 
-    <section id="single" class="panel active">
+    <section id="home" class="panel active product-home">
+      <div class="home-hero">
+        <div class="hero-copy">
+          <p class="workspace-kicker">CMP180 WLAN TX EVM AUTOMATION</p>
+          <h2 data-home="heroTitle">讓 RF 量測成為<br><span>可重現的工程流程</span></h2>
+          <p data-home="heroIntro">從安全檢查、SingleShot、頻率／功率掃描，到 EVM 分析、歷史比較與可稽核報告，集中在同一個本機 Web 工作站。</p>
+          <div class="hero-actions"><button class="primary" type="button" data-go-tab="measurement" data-home="enterConsole">進入量測控制台</button><button class="ghost" type="button" data-go-tab="guide" data-home="openManual">查看操作手冊</button></div>
+          <div class="hero-tags"><span>Python 3.11+</span><span>SCPI / TCP 5025</span><span>Wi-Fi 6 / 6E / 7</span><span>中英雙語</span></div>
+        </div>
+        <div class="signal-console" aria-label="Automation workflow preview">
+          <div class="signal-orbit orbit-one"></div><div class="signal-orbit orbit-two"></div>
+          <div class="instrument-core"><span>RF</span><strong>CMP180</strong><small>READY</small></div>
+          <div class="signal-node node-source"><b>01</b><span>PLAN</span></div>
+          <div class="signal-node node-measure"><b>02</b><span>MEASURE</span></div>
+          <div class="signal-node node-analyze"><b>03</b><span>ANALYZE</span></div>
+          <div class="signal-node node-report"><b>04</b><span>REPORT</span></div>
+        </div>
+      </div>
+
+      <div class="home-status-grid">
+        <article><small>CONTROL</small><strong>本機安全控制</strong><span>Loopback-only Web endpoint</span></article>
+        <article><small>MEASUREMENT</small><strong>SingleShot 與 Sweep</strong><span>固定 HIL profile＋安全自訂計畫</span></article>
+        <article><small>RESULT</small><strong>28 欄 OFDM SISO</strong><span>EVM、Power、Frequency Error</span></article>
+        <article><small>TRACEABILITY</small><strong>完整 Artifacts</strong><span>CSV、JSON、Raw、HTML、Metadata</span></article>
+      </div>
+
+      <section class="home-section capability-envelope" aria-labelledby="capabilityEnvelopeTitle">
+        <div class="home-section-head"><p class="workspace-kicker">INSTRUMENT ENVELOPE</p><h3 id="capabilityEnvelopeTitle">CMP180 能力與目前執行範圍</h3><p>型錄能力不是 RF 授權；實機執行只採用已核准 Profile，HIL 欄顯示目前有實測證據的點位。</p></div>
+        <div class="table-wrap"><table><thead><tr><th>項目</th><th>CMP180 型錄</th><th>本機／選件</th><th>核准 Profile</th><th>HIL 證據</th></tr></thead><tbody id="capabilityRows"><tr><td colspan="5">Loading capability profile…</td></tr></tbody></table></div>
+        <p id="capabilityGate" class="field-help"></p>
+      </section>
+
+      <section class="architecture-panel" aria-labelledby="architectureTitle">
+        <div class="home-section-head"><p class="workspace-kicker">SYSTEM ARCHITECTURE</p><h3 id="architectureTitle">互動 RF 量測架構</h3><p>依序選取節點，了解從量測計畫、安全閘門、CMP180 控制到可追溯結果的資料流。</p></div>
+        <div class="architecture-flow" role="list">
+          <button class="architecture-node active" type="button" data-architecture="plan" role="listitem"><b>01</b><strong>量測計畫</strong><small>頻率、功率、頻寬與掃描軸</small></button>
+          <button class="architecture-node" type="button" data-architecture="safety" role="listitem"><b>02</b><strong>安全閘門</strong><small>Route、操作員、Profile 與限制</small></button>
+          <button class="architecture-node" type="button" data-architecture="instrument" role="listitem"><b>03</b><strong>CMP180</strong><small>SCPI、狀態機與 RF cleanup</small></button>
+          <button class="architecture-node" type="button" data-architecture="result" role="listitem"><b>04</b><strong>結果正規化</strong><small>EVM、Power、Error 與 INVALID</small></button>
+          <button class="architecture-node" type="button" data-architecture="artifact" role="listitem"><b>05</b><strong>報告與比較</strong><small>CSV、JSON、HTML 與歷史 Trace</small></button>
+        </div>
+        <div id="architectureDetail" class="architecture-detail" aria-live="polite">先建立量測條件；此步驟只定義計畫，不會送出 RF。</div>
+      </section>
+
+      <section class="home-section">
+        <div class="home-section-head"><p class="workspace-kicker">CAPABILITIES</p><h3 data-home="capabilityTitle">工程師真正需要的功能</h3><p data-home="capabilityIntro">保留 CMsquares 作為探索與除錯參考，把重複操作轉成可驗證、可比較、可交接的自動化流程。</p></div>
+        <div class="feature-grid">
+          <article><span class="feature-code">RF-01</span><h4 data-home="f1t">安全實機量測</h4><p data-home="f1p">Route、操作員、頻率、頻寬與功率通過檢查後，Web 顯示最終發射摘要。</p></article>
+          <article><span class="feature-code">RF-02</span><h4 data-home="f2t">頻率與功率掃描</h4><p data-home="f2p">逐點進度、取消、partial artifacts，以及任何異常立即停止整批。</p></article>
+          <article><span class="feature-code">DSP-03</span><h4 data-home="f3t">EVM 結果分析</h4><p data-home="f3p">EVM All／Data／Pilot、Burst Power、Frequency Error 與 INVALID 中斷規則。</p></article>
+          <article><span class="feature-code">DATA-04</span><h4 data-home="f4t">歷史 Run 比較</h4><p data-home="f4p">搜尋、篩選、排序並比較 2–8 筆量測，調整 Trace 樣式與匯出圖表。</p></article>
+          <article><span class="feature-code">CAL-05</span><h4 data-home="f5t">Path Loss 校正</h4><p data-home="f5p">器材識別、參考面讀值、線損檢查、Draft Profile 與核准流程。</p></article>
+          <article><span class="feature-code">OPS-06</span><h4 data-home="f6t">可稽核與可交接</h4><p data-home="f6p">原始回應、設定快照、cleanup 狀態、報告與中英操作文件一起保存。</p></article>
+        </div>
+      </section>
+
+      <section class="home-section workflow-section">
+        <div class="home-section-head"><p class="workspace-kicker">STANDARD WORKFLOW</p><h3 data-home="workflowTitle">五步完成一次可靠量測</h3></div>
+        <ol class="home-workflow">
+          <li><b>01</b><div><strong>建立計畫</strong><span>選擇 SingleShot／Sweep 與測試條件</span></div></li>
+          <li><b>02</b><div><strong>安全預檢</strong><span>確認 Route、功率、頻寬與操作員</span></div></li>
+          <li><b>03</b><div><strong>執行量測</strong><span>即時顯示狀態、進度與取消控制</span></div></li>
+          <li><b>04</b><div><strong>分析結果</strong><span>檢視 EVM、Power、Error 與異常點</span></div></li>
+          <li><b>05</b><div><strong>保存報告</strong><span>開啟 artifacts、比較 Runs、輸出圖表</span></div></li>
+        </ol>
+      </section>
+
+      <section class="home-section manual-preview">
+        <div class="home-section-head"><p class="workspace-kicker">OPERATOR MANUAL</p><h3 data-home="manualTitle">從這裡開始操作</h3><p data-home="manualIntro">首頁只說明與導覽；只有進入量測頁並完成最後確認才可能送出 RF。</p></div>
+        <div class="manual-grid">
+          <button type="button" data-go-tab="measurement"><b>01</b><span><strong>執行量測</strong><small>實機、示範、SingleShot 與 Sweep</small></span><i>→</i></button>
+          <button type="button" data-go-tab="calibration"><b>02</b><span><strong>建立校正</strong><small>Path Loss 與器材更換 SOP</small></span><i>→</i></button>
+          <button type="button" data-go-tab="history"><b>03</b><span><strong>尋找紀錄</strong><small>搜尋、篩選、詳情與輸出檔案</small></span><i>→</i></button>
+          <button type="button" data-go-tab="results"><b>04</b><span><strong>比較資料</strong><small>Trace、相容性與圖表匯出</small></span><i>→</i></button>
+          <button type="button" data-go-tab="guide"><b>05</b><span><strong>完整手冊</strong><small>啟動指令、安全規則與正確輸出</small></span><i>→</i></button>
+        </div>
+      </section>
+    </section>
+
+    <section id="measurement" class="panel measurement-workspace">
+      <div class="section-switch" role="tablist" aria-label="量測資料來源">
+        <button type="button" class="section-switch-button active" data-measure-view="hardware">實機量測</button>
+        <button type="button" class="section-switch-button" data-measure-view="demoWorkspace">示範與訓練</button>
+      </div>
+      <div id="demoWorkspace" class="measurement-view">
+        <div class="subtabs" role="tablist" aria-label="示範量測類型">
+          <button type="button" class="subtab active" data-demo-tab="single">單點</button>
+          <button type="button" class="subtab" data-demo-tab="sweep">頻率掃描</button>
+          <button type="button" class="subtab" data-demo-tab="powerSweep">功率掃描</button>
+        </div>
+    <section id="single" class="demo-panel active">
       <div class="panel-head"><div><h2 data-i18n="singleTitle">Mock 單點量測</h2><p data-i18n="singleHelp">輸入一個測試點，驗證完整 GUI、資料保存與圖表流程。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="singleForm" class="form-grid">
         <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
@@ -49,7 +139,7 @@
       </form>
     </section>
 
-    <section id="sweep" class="panel">
+    <section id="sweep" class="demo-panel">
       <div class="panel-head"><div><h2 data-i18n="sweepTitle">Mock 頻率掃描</h2><p data-i18n="sweepHelp">依起點、終點與步進建立頻點，最多 11 點。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="sweepForm" class="form-grid">
         <label><span data-i18n="start">起始頻率</span><div class="input-unit"><input name="start_mhz" type="number" value="5925" required><b>MHz</b></div></label>
@@ -63,7 +153,7 @@
       </form>
     </section>
 
-    <section id="powerSweep" class="panel">
+    <section id="powerSweep" class="demo-panel">
       <div class="panel-head"><div><h2 data-i18n="powerSweepTitle">Mock 功率掃描</h2><p data-i18n="powerSweepHelp">固定頻率，依起點、終點與步進建立功率點，最多 11 點。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="powerSweepForm" class="form-grid">
         <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
@@ -77,13 +167,25 @@
       </form>
     </section>
 
-    <section id="hardware" class="panel">
+      </div>
+    <section id="hardware" class="measurement-view active">
       <div class="panel-head"><div><h2 data-i18n="hardwareTitle">CMP180 實機量測</h2><p data-i18n="hardwareHelp">提供已驗證的 SingleShot、頻率掃描與功率掃描固定 profile。</p></div><span id="hardwareBadge" class="pill danger" tabindex="0" title="LOCKED：伺服器未開放實機控制；ARMED：完成安全確認後可送出 RF / LOCKED: control disabled; ARMED: RF available after preflight">LOCKED</span></div>
       <div id="serverLockedNotice" class="locked-notice" hidden><strong data-i18n="serverLockedTitle">此頁面目前無法使用</strong><p data-i18n="serverLockedText">伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。</p></div>
       <div class="warning-card"><strong data-i18n="rfWarning">此動作會產生真實 RF</strong><p data-i18n="rfWarningText">只有在線材已確認且操作員位於儀器旁時才能執行。錯誤或取消時會 STOP/ABORT 並 RF Off。</p></div>
       <div id="hardwareAlert" class="inline-alert" role="alert" aria-live="assertive" hidden></div>
+      <div class="subtabs hardware-subtabs" role="tablist" aria-label="實機量測類型">
+        <button type="button" class="subtab active" data-hardware-action="single">單點</button>
+        <button type="button" class="subtab" data-hardware-action="frequency">頻率掃描</button>
+        <button type="button" class="subtab" data-hardware-action="power">功率掃描</button>
+      </div>
+      <section class="instrument-block-board" aria-label="CMsquares-inspired instrument blocks">
+        <article class="instrument-block" data-instrument-block="generator"><div class="block-head"><span class="block-icon">GEN</span><span class="block-state" id="generatorBlockState">RF OFF</span></div><h3>GPRF Generator</h3><p>RF1.1 · ARB · 6105 MHz</p><small>只能由完整量測流程開啟 RF，不提供獨立 RF On。</small></article>
+        <article class="instrument-block" data-instrument-block="analyzer"><div class="block-head"><span class="block-icon">VSA</span><span class="block-state" id="analyzerBlockState">IDLE</span></div><h3>WLAN TX Analyzer</h3><p>RF1.5 · 320 MHz · Multi Evaluation</p><small>狀態包含 RDY／ADJ／INV；INV 會立即停止整批。</small></article>
+        <article class="instrument-block workflow-block" data-instrument-block="workflow"><div class="block-head"><span class="block-icon">FLOW</span><span class="block-state" id="workflowBlockState">READY</span></div><h3>Measurement Flow</h3><p>Preflight → Run → Fetch → Cleanup</p><div class="block-actions"><button id="blockRunButton" class="primary" type="button">Run</button><button id="blockPauseButton" class="ghost" type="button" disabled>Pause</button><button id="blockStopButton" class="danger-button" type="button" disabled>Stop</button></div><small>Pause 僅在點與點之間、RF Off 後生效。</small></article>
+      </section>
       <form id="hardwareForm" class="form-grid">
-        <label><span>量測模式 / Measurement</span><select name="hardware_action" title="僅列出已通過實機 HIL 的固定安全 profile / Only fixed profiles that passed hardware HIL"><option value="single">SingleShot · 6105 MHz · -40 dBm</option><option value="frequency">Frequency Sweep · 6085/6105/6125 MHz</option><option value="power">Power Sweep · -55/-50/-45/-40 dBm</option></select></label>
+        <label class="hardware-action-field"><span>量測模式 / Measurement</span><select name="hardware_action" title="由上方實機量測分頁選擇"><option value="single">SingleShot · 6105 MHz · -40 dBm</option><option value="frequency">Frequency Sweep · 6085/6105/6125 MHz</option><option value="power">Power Sweep · -55/-50/-45/-40 dBm</option></select></label>
+        <div id="hardwareProfileSummary" class="hardware-profile-summary"><small>目前設定</small><strong>SingleShot</strong><span>6105 MHz · 320 MHz · -40 dBm</span></div>
         <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" data-i18n-placeholder="cablePlaceholder" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5" data-i18n="cableVerifiedOption">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
         <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="operatorPresent">我人在 CMP180 旁並能觀察儀器</span></label>
         <div class="preflight-card">
@@ -94,8 +196,8 @@
         </div>
         <button id="hardwareButton" class="danger-button submit" type="submit" disabled data-i18n="runHardware">執行實機量測</button>
       </form>
-      <details class="custom-plan-card"><summary>自訂安全掃描預覽 / Custom Safe Sweep Preview</summary>
-        <p class="field-help">可自訂頻率、功率、步進、點數與 dwell；目前只驗證計畫，不會開 RF。頻寬暫限已驗證的 320 MHz。</p>
+      <details id="hardwareSweepSetup" class="custom-plan-card" hidden><summary>掃描設定 / Sweep Setup</summary>
+        <p class="field-help">設定掃描軸、範圍、步進與停留時間；送出前會顯示點位、預估時間與安全檢查結果。</p>
         <form id="customPlanForm" class="form-grid">
           <label><span>Axis / 掃描軸</span><select name="axis"><option value="frequency">Frequency</option><option value="power">Power</option></select></label>
           <label><span>Bandwidth</span><select name="bandwidth_mhz"><option value="320">320 MHz (HIL verified)</option></select></label>
@@ -105,15 +207,16 @@
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="100" max="2000" step="100" required><b>ms</b></div></label>
           <label><span>Fixed generator power</span><div class="input-unit"><input name="generator_power_dbm" type="number" value="-45" max="-40" required><b>dBm</b></div></label>
           <label><span>Fixed center frequency</span><div class="input-unit"><input name="center_frequency_mhz" type="number" value="6105" required><b>MHz</b></div></label>
-          <button class="primary submit" type="submit">驗證並預覽點位 / Validate Plan</button>
+          <button class="primary submit" type="submit">檢查量測計畫 / Review Plan</button>
         </form>
         <pre id="customPlanPreview" hidden></pre>
       </details>
     </section>
+    </section>
 
     <section id="calibration" class="panel">
       <div class="panel-head"><div><h2>Path Loss 校正 SOP</h2><p>輸入校正設備的參考面讀值，建立待審查 Draft Profile；此頁不會控制儀器或開啟 RF。</p></div><span class="pill draft-limit">DRAFT ONLY</span></div>
-      <ol class="sop-steps"><li>登錄線材、轉接頭、功率計／分析儀識別資料</li><li>由校正設備或 adapter 取得各頻點 Source／Receiver 讀值</li><li>計算並審查 Path Loss</li><li>RF／Test Owner 核准後才能供正式量測使用</li></ol>
+      <ol class="sop-steps calibration-steps"><li><strong>01</strong><span>登錄器材</span></li><li><strong>02</strong><span>取得讀值</span></li><li><strong>03</strong><span>檢查線損</span></li><li><strong>04</strong><span>送交核准</span></li></ol>
       <form id="calibrationForm" class="form-grid">
         <label><span>Profile ID</span><input name="profile_id" value="rf1.1-rf1.5-cable" required></label>
         <label><span>Revision</span><input name="revision" value="0.1-draft" required></label>
@@ -134,25 +237,97 @@
       <div class="panel-head"><div><h2 data-i18n="resultTitle">量測結果</h2><p id="runMeta" data-i18n="empty">尚未執行 Mock 量測。</p></div><span id="resultBadge" class="pill neutral">NO DATA</span></div>
       <div id="metrics" class="metrics"></div>
       <div id="limitProfileCard" class="limit-profile-card" hidden></div>
-      <div class="chart-card"><div class="chart-title"><strong data-i18n="resultChart">結果趨勢圖</strong><select id="chartMetric"><option value="evm_all_db">EVM (dB)</option><option value="burst_power_dbm">Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option></select></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
+      <section id="comparisonPanel" class="comparison-panel" hidden><div><strong>歷史資料比較 / Historical comparison</strong><p id="comparisonHint">可調整曲線名稱、顏色與顯示狀態。</p></div><div id="traceList" class="trace-list"></div></section>
+      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small>EVM dB 越負通常越好；INVALID 不與有效點連線</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button">PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
       <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
     </section>
 
     <section id="history" class="panel">
-      <div class="panel-head"><div><h2 data-i18n="historyTitle">量測紀錄</h2><p data-i18n="historyHelp">瀏覽本機保存的實機與示範結果；不會啟動量測或 RF。</p></div><button id="refreshHistoryButton" class="ghost" type="button" data-i18n="refreshHistory">重新整理</button></div>
+      <div class="panel-head"><div><h2 data-i18n="historyTitle">量測紀錄</h2><p data-i18n="historyHelp">瀏覽本機保存的實機與示範結果；不會啟動量測或 RF。</p></div><div class="history-toolbar"><span id="compareCount">已選 0 筆</span><button id="compareSelectedButton" class="primary compact" type="button" disabled>比較所選資料</button><button id="refreshHistoryButton" class="ghost" type="button" data-i18n="refreshHistory">重新整理</button></div></div>
+      <div class="run-filters" aria-label="Run filters">
+        <label class="run-search"><span>搜尋</span><input id="runSearch" type="search" placeholder="Test name、Run ID、DUT、操作者、註記"></label>
+        <label><span>日期</span><select id="runDateFilter"><option value="all">全部日期</option><option value="today">今天</option><option value="7">最近 7 天</option><option value="30">最近 30 天</option></select></label>
+        <label><span>來源</span><select id="runSourceFilter"><option value="all">全部來源</option><option value="hardware">Hardware</option><option value="demo">Demo</option></select></label>
+        <label><span>狀態</span><select id="runStatusFilter"><option value="all">全部狀態</option><option value="complete">Complete</option><option value="partial">Partial</option><option value="failed">Failed</option></select></label>
+        <label><span>排序</span><select id="runSort"><option value="time-desc">時間：新到舊</option><option value="time-asc">時間：舊到新</option><option value="points-desc">點數：多到少</option><option value="frequency-asc">頻率：低到高</option><option value="power-asc">功率：低到高</option><option value="evm-desc">Worst EVM：較差優先</option></select></label>
+      </div>
       <div id="historyEmpty" class="history-empty" data-i18n="historyEmpty">尚無可用紀錄。</div>
-      <div class="table-wrap"><table><thead><tr><th data-i18n="historyTime">時間</th><th data-i18n="historyName">名稱</th><th>Run ID</th><th data-i18n="historySource">來源</th><th data-i18n="historyStatus">狀態</th><th data-i18n="historyPoints">點數</th><th data-i18n="historyFiles">檔案</th><th>Actions</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th class="select-column">比較</th><th data-i18n="historyTime">時間</th><th data-i18n="historyName">名稱</th><th>Run ID</th><th data-i18n="historySource">來源</th><th data-i18n="historyStatus">狀態</th><th data-i18n="historyPoints">點數</th><th data-i18n="historyFiles">檔案</th><th>Actions</th></tr></thead><tbody id="historyRows"></tbody></table></div>
       <section id="historyDetail" class="history-detail" hidden aria-live="polite">
         <div class="panel-head"><div><h3 id="historyDetailTitle">Run detail</h3><p id="historyDetailPath"></p></div><button id="closeHistoryDetail" class="ghost" type="button">Close</button></div>
         <div class="history-detail-grid"><div><h4>Settings / 設定</h4><div id="historySettings"></div></div><div><h4>Waveform / 波形</h4><div id="historyWaveform"></div><h4>Raw files</h4><div id="historyRawFiles"></div></div></div>
         <details><summary>Results JSON / 過去量測值</summary><pre id="historyResults"></pre></details>
       </section>
     </section>
+    <section id="guide" class="panel guide-panel">
+      <section class="quick-guide" aria-labelledby="quickGuideTitle">
+        <div class="quick-guide-head"><div><h2 id="quickGuideTitle">快速操作</h2><p>啟動服務、選擇量測、取得報告。</p></div><button class="primary compact" type="button" data-go-tab="measurement">開啟量測</button></div>
+        <div class="quick-guide-grid">
+          <article class="quick-step"><b>1</b><h3>啟動</h3><p>先切到專案資料夾，再啟動虛擬環境與 Web 服務。</p></article>
+          <article class="quick-step"><b>2</b><h3>量測</h3><p>選擇示範或實機模式，填入參數並查看安全檢查。</p></article>
+          <article class="quick-step"><b>3</b><h3>結果</h3><p>在量測紀錄查看明細，並於結果頁比較 EVM、功率與頻率誤差。</p></article>
+        </div>
+        <div class="command-strip"><header><span>PowerShell · Demo</span><button type="button" data-copy-target="cmd-quick-demo" data-i18n="copyCommand">複製</button></header><pre id="cmd-quick-demo"><code><span class="prompt">Set-Location</span> "C:\path\to\CMP180-Automation"
+<span class="prompt">.\.venv\Scripts\Activate.ps1</span>
+<span class="prompt">python</span> -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
+        <div class="command-outcome"><strong>網址</strong><code>http://127.0.0.1:8765</code><span>　輸出：<code>output\&lt;timestamp&gt;_&lt;run&gt;\</code></span></div>
+        <div class="guide-command-list">
+          <details><summary data-i18n="guideInstallTitle">第一次安裝</summary><div class="command-strip"><header><span>PowerShell</span><button type="button" data-copy-target="cmd-install" data-i18n="copyCommand">複製</button></header><pre id="cmd-install"><code><span class="prompt">git clone</span> https://github.com/DreamerForJay/CMP180-Automation.git
+<span class="prompt">Set-Location</span> .\CMP180-Automation
+<span class="prompt">py -3.11</span> -m venv .venv
+<span class="prompt">.\.venv\Scripts\Activate.ps1</span>
+<span class="prompt">python</span> -m pip install -e ".[dev]"</code></pre></div></details>
+          <details><summary data-i18n="guideCliTitle">CLI：檢查連線與設定</summary><div class="command-strip"><header><span>PowerShell · Query only</span><button type="button" data-copy-target="cmd-cli" data-i18n="copyCommand">複製</button></header><pre id="cmd-cli"><code><span class="prompt">python</span> -m cmp180_evm validate-config configs\instrument.example.yaml
+<span class="prompt">python</span> -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
+<span class="prompt">python</span> -m cmp180_evm test-connection --instrument-config configs\instrument.example.yaml</code></pre></div></details>
+          <details><summary data-i18n="guideDataTitle">取得與分析資料</summary><div class="command-strip"><header><span>PowerShell · Offline analysis</span><button type="button" data-copy-target="cmd-data" data-i18n="copyCommand">複製</button></header><pre id="cmd-data"><code><span class="prompt">python</span> scripts\plot_results.py output\&lt;run-folder&gt;\results.csv
+<span class="prompt">python</span> scripts\build_report.py output\&lt;run-folder&gt;</code></pre></div><p data-i18n="guideDataHelp">也可在「量測紀錄」開啟詳情，再到「結果與圖表」比較 2–8 筆 Run。</p></details>
+        </div>
+        <details class="hardware-launch"><summary>實機服務啟動方式</summary><p>啟動服務不會立即發 RF；RF 只會在量測頁完成接線、安全範圍與操作員確認後送出。</p><div class="command-strip"><pre><code><span class="prompt">python</span> -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware</code></pre></div></details>
+      </section>
+      <div class="guide-hero">
+        <div><p class="workspace-kicker">OPERATOR PLAYBOOK</p><h2 data-i18n="guideTitle">從啟動到取得報告</h2><p data-i18n="guideIntro">每張卡片都是可直接執行的標準操作。先確認要使用示範資料、唯讀查詢，或經授權的實機模式。</p></div>
+        <div class="guide-state"><span class="check-dot ok"></span><div><strong data-i18n="guideSafeTitle">目前建議：Demo 模式</strong><small data-i18n="guideSafeText">供電不穩定期間不要啟用 RF</small></div></div>
+      </div>
+      <ol class="workflow-line" aria-label="操作流程">
+        <li><strong>01</strong><span data-i18n="guideStep1">啟動服務</span></li>
+        <li><strong>02</strong><span data-i18n="guideStep2">選擇量測</span></li>
+        <li><strong>03</strong><span data-i18n="guideStep3">檢查結果</span></li>
+        <li><strong>04</strong><span data-i18n="guideStep4">開啟報告</span></li>
+      </ol>
+      <div class="command-grid">
+        <article class="command-card featured">
+          <div class="command-copy"><span class="command-icon">01</span><div><h3 data-i18n="demoCommandTitle">啟動 Demo 控制台</h3><p data-i18n="demoCommandHelp">不連線 CMP180、不送 SCPI、不產生 RF；適合現在查看與練習。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b><button type="button" data-copy-target="cmd-demo" data-i18n="copyCommand">複製</button></div><pre id="cmd-demo"><code>Set-Location "C:\path\to\CMP180-Automation"
+.\.venv\Scripts\Activate.ps1
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
+          <div class="command-outcome"><strong data-i18n="openBrowser">開啟瀏覽器</strong><code>http://127.0.0.1:8765</code></div>
+        </article>
+        <article class="command-card">
+          <div class="command-copy"><span class="command-icon">02</span><div><h3 data-i18n="configCommandTitle">檢查設定檔</h3><p data-i18n="configCommandHelp">只驗證 YAML 欄位與安全設定，不會接觸儀器。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b><button type="button" data-copy-target="cmd-config" data-i18n="copyCommand">複製</button></div><pre id="cmd-config"><code>python -m cmp180_evm validate-config configs\instrument.example.yaml
+python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</code></pre></div>
+          <div class="command-outcome"><strong data-i18n="expectedOutput">正確輸出</strong><code>OK (instrument) · OK (wlan_baseline)</code></div>
+        </article>
+        <article class="command-card">
+          <div class="command-copy"><span class="command-icon">03</span><div><h3 data-i18n="connectionCommandTitle">唯讀連線檢查</h3><p data-i18n="connectionCommandHelp">讀取 IDN、Options 與 Error Queue，不啟動量測、不開 RF。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b><button type="button" data-copy-target="cmd-query" data-i18n="copyCommand">複製</button></div><pre id="cmd-query"><code>python -m cmp180_evm test-connection --instrument-config configs\instrument.example.yaml</code></pre></div>
+          <div class="command-outcome warning"><strong data-i18n="powerWarning">供電不穩時</strong><span data-i18n="queryOnlyAdvice">只執行唯讀檢查，不要啟用硬體 Web 模式。</span></div>
+        </article>
+        <article class="command-card locked-command">
+          <div class="command-copy"><span class="command-icon">04</span><div><h3 data-i18n="hardwareCommandTitle">實機模式（暫停）</h3><p data-i18n="hardwareCommandHelp">只有供電穩定、接線確認、操作員在場且完成授權後才能使用。</p></div></div>
+          <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b></div><pre><code><i># 暫停使用 / HOLD</i>
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware</code></pre></div>
+          <div class="command-outcome danger"><strong>RF HOLD</strong><span data-i18n="hardwareHold">目前儀器供電不穩，禁止執行。</span></div>
+        </article>
+      </div>
+      <section class="guide-notes"><div><span>?</span><h3 data-i18n="whereResultsTitle">結果會存在哪裡？</h3><p data-i18n="whereResultsText">每次執行會建立獨立 output Run 資料夾。到「量測紀錄」按「開啟資料夾」，或在「結果與圖表」開啟 HTML、CSV、JSON。</p></div><div><span>!</span><h3 data-i18n="whenStopTitle">何時必須停止？</h3><p data-i18n="whenStopText">看到 INV、RF 狀態不明、量測逾時、SCPI Error、接線異動或供電異常時，立即停止並確認 RF OFF。</p></div></section>
+    </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=history1"></script>
-  <script src="/hardware.js?v=jobs2"></script>
+  <script src="/app.js?v=console9"></script>
+  <script src="/hardware.js?v=workspace3"></script>
   <script src="/calibration.js?v=1"></script>
   <script src="/custom-plan.js?v=1"></script>
 </body>

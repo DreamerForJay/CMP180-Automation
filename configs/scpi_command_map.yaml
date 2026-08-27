@@ -23,6 +23,10 @@ generator:
   # RF state tree 已由內建 Help 確認；實機 pulse 驗證前仍須人工確認線材。
   rf_on: "SOURce:GPRF:GEN:STATe ON"
   rf_off: "SOURce:GPRF:GEN:STATe OFF"
+  # ARB Sequencer 狀態樹由 2026-08-25 CMP180 內建 Help 確認。
+  arb_rf_on: "SOURce:GPRF:GEN:SEQuencer:STATe ON"
+  arb_rf_off: "SOURce:GPRF:GEN:SEQuencer:STATe OFF"
+  arb_set_repetition: "SOURce:GPRF:GEN:SEQuencer:REPetition {repetition}"
 
 # Query forms confirmed in CMP180 built-in Help. The discovery script checks
 # each command against real hardware and reads SYST:ERR? after every query.
@@ -31,6 +35,8 @@ generator_query:
   level: "SOURce:GPRF:GEN:RFSettings:LEVel?"
   peak_power: "SOURce:GPRF:GEN:RFSettings:PEPower?"
   state: "SOURce:GPRF:GEN:STATe?"
+  arb_state: "SOURce:GPRF:GEN:SEQuencer:STATe?"
+  arb_repetition: "SOURce:GPRF:GEN:SEQuencer:REPetition?"
   states: "SOURce:GPRF:GEN:STATe:ALL?"
   rf_path: "ROUTe:GPRF:GEN:SPATh?"
 
@@ -40,9 +46,14 @@ wlan_tx:
   set_rf_path: "ROUTe:WLAN:MEAS:SPATh {rf_path}"
   set_frequency: "CONFigure:WLAN:MEAS:RFSettings:FREQuency {frequency_hz}"
   set_bandwidth: "CONFigure:WLAN:MEAS:ISIGnal:BWIDth {bandwidth}"
+  # EHT 與 6 GHz 枚舉由韌體 6.0.50.23 內建 Help 確認。
+  set_standard: "CONFigure:WLAN:MEAS:ISIGnal:STANdard {standard}"
   set_expected_power: "CONFigure:WLAN:MEAS:RFSettings:ENPower {expected_power_dbm}"
   set_external_attenuation: "CONFigure:WLAN:MEAS:RFSettings:EATTenuation {external_attenuation_db}"
-  set_band: null
+  set_band: "CONFigure:WLAN:MEAS:RFSettings:FREQuency:BAND {band}"
+  # IF Power trigger threshold setter 由韌體 6.0.50.23 內建 Help 確認。
+  set_trigger_threshold: "TRIGger:WLAN:MEAS:MEValuation:THReshold {threshold_db}"
+  set_trigger_source: "TRIGger:WLAN:MEAS:MEValuation:SOURce {source}"
   adjust_level: null
   clear_statistics: null
   # 量測 lifecycle 命令由 CMP180 內建 Help 確認；驗證時 Generator 必須 OFF。

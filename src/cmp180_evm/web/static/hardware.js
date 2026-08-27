@@ -1,9 +1,9 @@
 Object.assign(translations.zh, {
   hardwareTab: '實機量測',
-  hardwareTitle: 'CMP180 實機量測',
-  hardwareHelp: '提供已驗證的 SingleShot、頻率掃描與功率掃描固定 profile。',
-  rfWarning: '此動作會產生真實 RF',
-  rfWarningText: '只有在線材已確認且操作員位於儀器旁時才能執行。錯誤時會 STOP/ABORT 並 RF Off。',
+  hardwareTitle: '實機量測',
+  hardwareHelp: '選擇量測、設定參數並完成執行前檢查。',
+  rfWarning: 'RF 輸出',
+  rfWarningText: '送出前確認接線與輸入功率；異常時系統會停止量測並關閉 RF。',
   cableText: '接線路徑（可選擇或輸入）',
   cablePlaceholder: '例如 RF1.1-RF1.5',
   cableVerifiedOption: '已驗證：RF1.1 → RF1.5',
@@ -15,17 +15,17 @@ Object.assign(translations.zh, {
   operatorCheck: '操作員在儀器旁'
   ,hardwareBadge: '實機模式'
   ,hardwareControlState: '已啟用實機控制'
-  ,hardwareControlHint: '僅允許已驗證的固定 profile'
-  ,serverLockedTitle: '此頁面目前無法使用'
-  ,serverLockedText: '伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。'
+  ,hardwareControlHint: '待執行前安全確認'
+  ,serverLockedTitle: '實機控制未啟用'
+  ,serverLockedText: '請以 `python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware` 重新啟動服務。'
 });
 
 Object.assign(translations.en, {
   hardwareTab: 'Hardware Measurement',
-  hardwareTitle: 'CMP180 Hardware Measurement',
-  hardwareHelp: 'Provides fixed HIL-verified SingleShot, frequency-sweep, and power-sweep profiles.',
-  rfWarning: 'This action produces real RF',
-  rfWarningText: 'Run only with confirmed cabling and an operator beside the instrument. Errors trigger STOP/ABORT and RF Off.',
+  hardwareTitle: 'Hardware Measurement',
+  hardwareHelp: 'Select a measurement, configure parameters, and complete preflight.',
+  rfWarning: 'RF output',
+  rfWarningText: 'Confirm cabling and input power before execution. An anomaly stops measurement and turns RF off.',
   cableText: 'Cable route (select or type)',
   cablePlaceholder: 'e.g. RF1.1-RF1.5',
   cableVerifiedOption: 'Verified: RF1.1 → RF1.5',
@@ -37,9 +37,9 @@ Object.assign(translations.en, {
   operatorCheck: 'Operator is beside the instrument'
   ,hardwareBadge: 'Hardware Mode'
   ,hardwareControlState: 'Hardware control enabled'
-  ,hardwareControlHint: 'Verified fixed profile only'
-  ,serverLockedTitle: 'This page is currently unavailable'
-  ,serverLockedText: 'The server was not started with --enable-hardware and is running in read-only mock mode. To use this page, restart the server locally with `python -m cmp180_evm.web --enable-hardware`; it may only bind to a loopback address.'
+  ,hardwareControlHint: 'Preflight required before execution'
+  ,serverLockedTitle: 'Hardware control is disabled'
+  ,serverLockedText: 'Restart with `python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware`.'
 });
 
 let hardwareEnabled = false;
@@ -62,7 +62,9 @@ function updatePreflight() {
   const operatorPresent = form.elements.operator_present.checked;
   $('#routeCheck').classList.toggle('ok', routeVerified);
   $('#operatorCheck').classList.toggle('ok', operatorPresent);
-  $('#hardwareButton').disabled = !hardwareEnabled || !routeVerified || !operatorPresent || hardwareRequestRunning;
+  const blocked = !hardwareEnabled || !routeVerified || !operatorPresent || hardwareRequestRunning;
+  $('#hardwareButton').disabled = blocked;
+  $('#blockRunButton').disabled = blocked;
 }
 
 async function loadHardwareStatus() {
@@ -88,6 +90,33 @@ async function loadHardwareStatus() {
   }
 }
 
+const hardwareProfiles = {
+  single: {title: 'SingleShot', detail: '6105 MHz · 320 MHz · -40 dBm'},
+  frequency: {title: 'Frequency Sweep', detail: '6085 / 6105 / 6125 MHz · 320 MHz · -40 dBm'},
+  power: {title: 'Power Sweep', detail: '6105 MHz · 320 MHz · -55 / -50 / -45 / -40 dBm'}
+};
+
+function selectHardwareAction(action) {
+  const form = $('#hardwareForm');
+  if (!hardwareProfiles[action]) return;
+  form.elements.hardware_action.value = action;
+  document.querySelectorAll('[data-hardware-action]').forEach(button => {
+    button.classList.toggle('active', button.dataset.hardwareAction === action);
+  });
+  const profile = hardwareProfiles[action];
+  $('#hardwareProfileSummary').innerHTML = `<small>${language === 'zh' ? '目前設定' : 'Profile'}</small><strong>${profile.title}</strong><span>${profile.detail}</span>`;
+  const setup = $('#hardwareSweepSetup');
+  setup.hidden = action === 'single';
+  setup.open = action !== 'single';
+  // 實機分頁與自訂掃描共用同一個安全驗證模型，切換時同步掃描軸但不送出 RF。
+  if (action !== 'single') $('#customPlanForm').elements.axis.value = action;
+}
+
+document.querySelectorAll('[data-hardware-action]').forEach(button => {
+  button.addEventListener('click', () => selectHardwareAction(button.dataset.hardwareAction));
+});
+selectHardwareAction('single');
+
 $('#hardwareForm').onsubmit = event => {
   event.preventDefault();
   const form = new FormData(event.target);
@@ -112,10 +141,24 @@ $('#hardwareForm').onsubmit = event => {
     showHardwareAlert(language === 'zh' ? '量測正在執行，請勿重複送出。' : 'A measurement is already running.');
     return;
   }
+  const action = form.get('hardware_action');
+  const profileSummary = action === 'frequency'
+    ? 'Frequency Sweep · 6085 / 6105 / 6125 MHz · 320 MHz · -40 dBm'
+    : action === 'power'
+      ? 'Power Sweep · 6105 MHz · 320 MHz · -55 / -50 / -45 / -40 dBm'
+      : 'SingleShot · 6105 MHz · 320 MHz · -40 dBm';
+  // 最後一次確認留在 Web 內完成，摘要顯示真正將送出的固定 profile，避免誤按或選錯模式。
+  const approved = confirm(language === 'zh'
+    ? `即將送出真實 RF\n\n${profileSummary}\nRoute: ${route}\n\n確認接線未變、操作員在場並開始量測？`
+    : `Real RF will be transmitted\n\n${profileSummary}\nRoute: ${route}\n\nConfirm unchanged cabling, operator presence, and start?`);
+  if (!approved) {
+    toast(language === 'zh' ? '已取消，未送出 RF。' : 'Cancelled; no RF was transmitted.');
+    return;
+  }
   showHardwareAlert('');
   hardwareRequestRunning = true;
+  updateBlockJobState({state: 'running'});
   updatePreflight();
-  const action = form.get('hardware_action');
   if (action === 'frequency' || action === 'power') {
     const profile = action === 'frequency' ? '6085-6125MHz' : '-55--40dBm';
     startJob(`/api/jobs/hardware/${action}-sweep`, {
@@ -133,6 +176,7 @@ $('#hardwareForm').onsubmit = event => {
     operator_present: form.get('operator_present') === 'on'
   }, event.submitter).finally(() => {
     hardwareRequestRunning = false;
+    updateBlockJobState(null);
     updatePreflight();
   });
 };
