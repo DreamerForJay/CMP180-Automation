@@ -33,6 +33,9 @@ class GeneratorCommands(BaseModel):
     set_power: str | None = None
     rf_on: str | None = None
     rf_off: str | None = None
+    arb_rf_on: str | None = None
+    arb_rf_off: str | None = None
+    arb_set_repetition: str | None = None
 
 
 class GeneratorQueryCommands(BaseModel):
@@ -40,6 +43,8 @@ class GeneratorQueryCommands(BaseModel):
     level: str
     peak_power: str
     state: str
+    arb_state: str
+    arb_repetition: str
     states: str
     rf_path: str
 
@@ -48,7 +53,10 @@ class WlanTxCommands(BaseModel):
     set_rf_path: str | None = None
     set_frequency: str | None = None
     set_bandwidth: str | None = None
+    set_standard: str | None = None
     set_band: str | None = None
+    set_trigger_threshold: str | None = None
+    set_trigger_source: str | None = None
     set_expected_power: str | None = None
     set_external_attenuation: str | None = None
     adjust_level: str | None = None

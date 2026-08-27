@@ -12,7 +12,6 @@ from cmp180_evm.workflow.analyzer_setter_validation import (
 from cmp180_evm.workflow.generator_setter_validation import ScpiIo
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
 
-
 BANDWIDTH_ENUMS = {
     20_000_000: "BW20",
     40_000_000: "BW40",
@@ -20,6 +19,14 @@ BANDWIDTH_ENUMS = {
     160_000_000: "BW16",
     320_000_000: "BW32",
 }
+
+VERIFIED_WLAN_STANDARD = "EHTofdm"
+VERIFIED_WLAN_STANDARD_READBACK = "EHT"
+VERIFIED_WLAN_BAND = "B6GHz"
+VERIFIED_WLAN_BAND_READBACK = "B6GH"
+# -40 dBm 直連短封包在預設 -30 dB threshold 曾觸發逾時；-45 dB 仍在 Help 規定的 -50..0 dB 範圍。
+VERIFIED_TRIGGER_THRESHOLD_DB = -45.0
+VERIFIED_TRIGGER_SOURCE = "IF Power"
 
 
 class Cmp180SingleMeasurementBackend:
@@ -38,6 +45,7 @@ class Cmp180SingleMeasurementBackend:
         self.timeout_s = timeout_s
         self.poll_interval_s = poll_interval_s
         self.raw_result: str | None = None
+        self.last_measurement_states: list[str] = []
 
     def _query(self, name: str) -> str:
         return self.io.query_str(self.registry.require(name)).strip()
@@ -68,7 +76,9 @@ class Cmp180SingleMeasurementBackend:
             raise RuntimeError("Generator RF must be OFF before configuration")
         measurement_state = self._query("wlan_tx_query.measurement_state")
         if measurement_state not in ALLOWED_IDLE_MEASUREMENT_STATES:
-            raise RuntimeError(f"Measurement must be idle before configuration: {measurement_state}")
+            raise RuntimeError(
+                f"Measurement must be idle before configuration: {measurement_state}"
+            )
         bandwidth = BANDWIDTH_ENUMS.get(int(plan.bandwidth_hz))
         if bandwidth is None:
             raise ValueError(f"Unsupported WLAN bandwidth: {plan.bandwidth_hz}")
@@ -76,6 +86,9 @@ class Cmp180SingleMeasurementBackend:
         # 這些 setter 已逐項通過實機同值驗證；每一項仍獨立 OPC 與查錯。
         self._write_checked("generator.set_frequency", frequency_hz=plan.center_frequency_hz)
         self._write_checked("generator.set_power", power_dbm=plan.generator_power_dbm)
+        # 儀器重啟後可能回到 LOFD/B24G，必須在頻寬與頻率前恢復 EHT/6 GHz。
+        self._write_checked("wlan_tx.set_standard", standard=VERIFIED_WLAN_STANDARD)
+        self._write_checked("wlan_tx.set_band", band=VERIFIED_WLAN_BAND)
         self._write_checked("wlan_tx.set_rf_path", rf_path=f'"{plan.analyzer_port}"')
         self._write_checked("wlan_tx.set_bandwidth", bandwidth=bandwidth)
         self._write_checked("wlan_tx.set_frequency", frequency_hz=plan.center_frequency_hz)
@@ -87,9 +100,19 @@ class Cmp180SingleMeasurementBackend:
             "wlan_tx.set_expected_power",
             expected_power_dbm=plan.expected_nominal_power_dbm,
         )
+        self._write_checked(
+            "wlan_tx.set_trigger_threshold",
+            threshold_db=VERIFIED_TRIGGER_THRESHOLD_DB,
+        )
+        # lib8/GI32 實機 HIL 使用 IF Power；Restart Marker 曾造成 RDY,ADJ,INV。
+        self._write_checked(
+            "wlan_tx.set_trigger_source", source=f'"{VERIFIED_TRIGGER_SOURCE}"'
+        )
         # 所有 setter 完成後逐項 read-back，避免在錯誤設定下繼續 RF On。
         self._require_readback("generator_query.frequency", plan.center_frequency_hz)
         self._require_readback("generator_query.level", plan.generator_power_dbm)
+        self._require_readback("wlan_tx_query.standard", VERIFIED_WLAN_STANDARD_READBACK)
+        self._require_readback("wlan_tx_query.band", VERIFIED_WLAN_BAND_READBACK)
         self._require_readback("wlan_tx_query.rf_path", plan.analyzer_port)
         self._require_readback("wlan_tx_query.bandwidth", bandwidth)
         self._require_readback("wlan_tx_query.center_frequency", plan.center_frequency_hz)
@@ -99,11 +122,18 @@ class Cmp180SingleMeasurementBackend:
         self._require_readback(
             "wlan_tx_query.expected_nominal_power", plan.expected_nominal_power_dbm
         )
+        self._require_readback(
+            "wlan_tx_query.trigger_threshold", VERIFIED_TRIGGER_THRESHOLD_DB
+        )
+        self._require_readback("wlan_tx_query.trigger_source", VERIFIED_TRIGGER_SOURCE)
 
     def rf_on(self) -> None:
+        # 此 profile 是 GPRF Baseband ARB，不是 ARB Sequencer；狀態樹不可混用。
         self._write_checked("generator.rf_on")
-        if self._query("generator_query.state") != "ON":
-            raise RuntimeError("Generator RF On readback failed")
+        actual_state = self._query("generator_query.state")
+        if actual_state != "ON":
+            # 狀態 token 是安全判定證據；失敗訊息必須保留實機回值，不能只寫模糊 failed。
+            raise RuntimeError(f"Generator RF On readback failed: {actual_state!r}")
 
     def initiate_single(self) -> None:
         self._write_checked("wlan_tx.initiate")
@@ -116,10 +146,14 @@ class Cmp180SingleMeasurementBackend:
             if not observed or state != observed[-1]:
                 observed.append(state)
             if state == "RDY":
+                # 保存狀態轉換供 artifact 稽核；這不會額外送出 SCPI 或改變儀器狀態。
+                self.last_measurement_states = observed.copy()
                 return
             if state in {"INV", "OFF"}:
+                self.last_measurement_states = observed.copy()
                 raise RuntimeError(f"Measurement entered {state}; observed={observed}")
             time.sleep(self.poll_interval_s)
+        self.last_measurement_states = observed.copy()
         raise TimeoutError(f"Measurement did not reach RDY; observed={observed}")
 
     # 5 組已個別驗證過的聚合統計查詢；average 沿用無前綴欄位名稱以維持既有
@@ -147,9 +181,15 @@ class Cmp180SingleMeasurementBackend:
         self._write_checked("wlan_tx.stop")
 
     def rf_off(self) -> None:
+        # 雙層關閉可處理 ARB 與通用 Generator 狀態，例外清理不得只關其中一層。
+        self._write_checked("generator.arb_rf_off")
         self._write_checked("generator.rf_off")
-        if self._query("generator_query.state") != "OFF":
-            raise RuntimeError("Generator RF Off readback failed")
+        arb_state = self._query("generator_query.arb_state")
+        rf_state = self._query("generator_query.state")
+        if arb_state not in {"OFF", "RDY"} or rf_state != "OFF":
+            raise RuntimeError(
+                f"Generator RF Off readback failed: arb={arb_state!r}, rf={rf_state!r}"
+            )
 
     def drain_error_queue(self) -> list[str]:
         errors: list[str] = []

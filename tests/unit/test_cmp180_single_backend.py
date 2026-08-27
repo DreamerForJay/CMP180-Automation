@@ -16,6 +16,7 @@ REGISTRY = load_scpi_command_map(ROOT / "configs" / "scpi_command_map.yaml")
 class FakeCmp180:
     def __init__(self, *, malformed_result: bool = False):
         self.rf_state = "OFF"
+        self.arb_state = "OFF"
         self.measurement_state = "RDY"
         self.measurement_queries = 0
         self.malformed_result = malformed_result
@@ -25,8 +26,12 @@ class FakeCmp180:
         self.writes.append(command)
         if command == REGISTRY.require("generator.rf_on"):
             self.rf_state = "ON"
+        elif command == REGISTRY.require("generator.arb_rf_on"):
+            self.arb_state = "ON"
         elif command == REGISTRY.require("generator.rf_off"):
             self.rf_state = "OFF"
+        elif command == REGISTRY.require("generator.arb_rf_off"):
+            self.arb_state = "OFF"
         elif command == REGISTRY.require("wlan_tx.initiate"):
             self.measurement_state = "RUN"
             self.measurement_queries = 0
@@ -36,13 +41,19 @@ class FakeCmp180:
     def query_str(self, command: str) -> str:
         values = {
             REGISTRY.require("generator_query.state"): self.rf_state,
+            REGISTRY.require("generator_query.arb_state"): self.arb_state,
+            REGISTRY.require("generator_query.arb_repetition"): "CONT",
             REGISTRY.require("generator_query.frequency"): "6.105E9",
             REGISTRY.require("generator_query.level"): "-40",
             REGISTRY.require("wlan_tx_query.rf_path"): '"RF1.5"',
+            REGISTRY.require("wlan_tx_query.standard"): "EHT",
+            REGISTRY.require("wlan_tx_query.band"): "B6GH",
             REGISTRY.require("wlan_tx_query.bandwidth"): "BW32",
             REGISTRY.require("wlan_tx_query.center_frequency"): "6.105E9",
             REGISTRY.require("wlan_tx_query.external_attenuation"): "0",
             REGISTRY.require("wlan_tx_query.expected_nominal_power"): "-20",
+            REGISTRY.require("wlan_tx_query.trigger_threshold"): "-45",
+            REGISTRY.require("wlan_tx_query.trigger_source"): '"IF Power"',
             REGISTRY.require("common.operation_complete"): "1",
             REGISTRY.require("common.system_error"): '0,"No error"',
         }
@@ -98,7 +109,9 @@ def test_complete_backend_fetches_new_result_and_cleans_up():
     assert result.values["raw_minimum"].startswith("201,202,")
     assert result.values["raw_maximum"].startswith("301,302,")
     assert result.values["raw_std_dev"].startswith("401,402,")
+    assert backend.last_measurement_states[-1] == "RDY"
     assert io.rf_state == "OFF"
+    assert REGISTRY.require("generator.rf_on") in io.writes
     assert REGISTRY.require("wlan_tx.stop") in io.writes
     assert io.writes[-1] == REGISTRY.require("generator.rf_off")
 
@@ -109,7 +122,24 @@ def test_malformed_result_still_stops_and_turns_rf_off():
     with pytest.raises(ValueError, match="Expected 28 fields"):
         run_single_measurement(backend, plan())
     assert io.rf_state == "OFF"
-    assert io.writes[-2:] == [
+    assert io.writes[-3:] == [
         REGISTRY.require("wlan_tx.stop"),
+        REGISTRY.require("generator.arb_rf_off"),
         REGISTRY.require("generator.rf_off"),
     ]
+
+
+def test_unknown_rf_on_state_is_reported_and_rf_is_turned_off():
+    io = FakeCmp180()
+    original_write = io.write_str
+
+    def write_with_adjusting_state(command: str) -> None:
+        original_write(command)
+        if command == REGISTRY.require("generator.rf_on"):
+            io.rf_state = "ADJ"
+
+    io.write_str = write_with_adjusting_state  # type: ignore[method-assign]
+    backend = Cmp180SingleMeasurementBackend(io, REGISTRY, poll_interval_s=0)
+    with pytest.raises(RuntimeError, match="'ADJ'"):
+        run_single_measurement(backend, plan())
+    assert io.rf_state == "OFF"
