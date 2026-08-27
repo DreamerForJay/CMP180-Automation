@@ -1,10 +1,9 @@
 import pytest
 
-from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 
 
-def test_frequency_preview_accepts_bounded_user_inputs_but_keeps_rf_locked():
+def test_frequency_preview_marks_approved_user_inputs_executable():
     preview = build_custom_sweep_preview(
         {
             "axis": "frequency",
@@ -23,7 +22,7 @@ def test_frequency_preview_accepts_bounded_user_inputs_but_keeps_rf_locked():
         6_115_000_000,
         6_125_000_000,
     )
-    assert preview.public()["execution_allowed"] is False
+    assert preview.public()["execution_allowed"] is True
     assert preview.required_confirmation.startswith("EXECUTE-CUSTOM-")
 
 
@@ -43,7 +42,7 @@ def test_plan_fingerprint_is_stable_and_changes_with_any_rf_parameter():
     assert changed.plan_fingerprint != first.plan_fingerprint
 
 
-def test_preview_reuses_hard_bandwidth_power_span_point_and_dwell_guards():
+def test_preview_accepts_catalog_planning_but_keeps_unapproved_rf_locked():
     base = {
         "axis": "frequency",
         "start_hz": 6_085_000_000,
@@ -60,8 +59,7 @@ def test_preview_reuses_hard_bandwidth_power_span_point_and_dwell_guards():
         {"stop_hz": 6_305_000_000},
         {"step_hz": 1_000_000},
     ):
-        with pytest.raises(SafetyGuardError):
-            build_custom_sweep_preview(base | change)
+        assert build_custom_sweep_preview(base | change).execution_allowed is False
 
 
 def test_power_preview_accepts_bounded_values_and_blocks_wrong_frequency():
@@ -77,8 +75,7 @@ def test_power_preview_accepts_bounded_values_and_blocks_wrong_frequency():
         }
     )
     assert preview.points == (-55, -52, -49, -46, -43, -40)
-    with pytest.raises(SafetyGuardError, match="6105"):
-        build_custom_sweep_preview(
+    assert build_custom_sweep_preview(
             {
                 "axis": "power",
                 "center_frequency_hz": 6_100_000_000,
@@ -88,4 +85,4 @@ def test_power_preview_accepts_bounded_values_and_blocks_wrong_frequency():
                 "bandwidth_hz": 320_000_000,
                 "dwell_ms": 100,
             }
-        )
+        ).execution_allowed is False

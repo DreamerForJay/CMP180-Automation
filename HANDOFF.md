@@ -4,6 +4,8 @@
 
 ### 狀態（2026-08-27）
 
+- 2026-08-27 建立 `feature/hardware-console-productization`：一般本機啟動直接提供受保護的實機控制，`--demo-only` 才停用儀器；移除實機頁裝飾性積木與模式下拉選單，改由單點／頻率／功率分頁直接設定。規劃層接受 CMP180 型錄 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz，但 RF 執行仍只允許 Approved Profile／HIL 組合。本批未連線儀器、未送 RF。
+
 - 2026-08-27 實機量測改為與示範訓練一致的單點／頻率掃描／功率掃描分頁；切換會同步後端 action，單點隱藏掃描欄位。圖表改為固定座標，滾輪只縮放 X 軸、拖曳只水平平移且有邊界，hover 顯示十字游標與完整工程值。說明頁新增 Git clone、Python 3.11 安裝、Demo、YAML validation、唯讀連線、離線 SVG 與 HTML report 指令。完整基準為 `155 passed`；本批未連線儀器、未送 RF。
 
 - 2026-08-27 收斂 Web 操作層級：隱藏重複的頁面 Hero／控制狀態卡，將「自訂量測計畫」改名為「掃描設定」，並以三步快速操作取代重複的 Operator Playbook 卡片。PowerShell 指南現在先切到專案目錄，且複製內容不再包含錯誤的 `PS` 提示符。新增 `docs/next-hil-campaign.md`，把下一次機台時段整理成 90 分鐘能力快照、RF-Off 回讀、參考點、邊界點、短掃描與稽核批次。完整基準為 `153 passed`；本批未連線儀器、未送 RF。
@@ -98,6 +100,8 @@
 - On 2026-08-27, the Web hierarchy was reduced: duplicate page heroes/control-state cards are hidden, "Custom Measurement Plan" is renamed "Sweep Setup," and a three-step quick-start replaces the repeated Operator Playbook cards. PowerShell guidance now changes to the project directory first and copied commands no longer include the invalid `PS` prompt. `docs/next-hil-campaign.md` defines a ninety-minute capability snapshot, RF-Off readback, reference-point, boundary-point, short-sweep, and audit campaign for the next instrument slot. The complete baseline is `153 passed`; this batch did not connect to the instrument or transmit RF.
 
 ### Status (2026-08-27)
+
+- On 2026-08-27, `feature/hardware-console-productization` changed normal local startup to expose guarded hardware control; `--demo-only` disables instrument access. Decorative blocks and the measurement-mode dropdown were removed in favor of direct Single/Frequency/Power tabs. Planning accepts the 400 MHz–8 GHz catalog range and WLAN 20/40/80/160/320 MHz bandwidths, while RF execution remains limited to Approved Profile/HIL combinations. This batch did not connect to the instrument or transmit RF.
 
 - The new hardware blocker was resolved on 2026-08-27. The original lib8/GI32 waveform
   is still present; the root cause was profile drift plus mixing the Baseband ARB and ARB

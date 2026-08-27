@@ -16,8 +16,8 @@ Object.assign(translations.zh, {
   ,hardwareBadge: '實機模式'
   ,hardwareControlState: '已啟用實機控制'
   ,hardwareControlHint: '待執行前安全確認'
-  ,serverLockedTitle: '實機控制未啟用'
-  ,serverLockedText: '請以 `python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware` 重新啟動服務。'
+  ,serverLockedTitle: '目前為純示範模式'
+  ,serverLockedText: '移除 `--demo-only` 後重新啟動，即可使用本機實機控制。'
 });
 
 Object.assign(translations.en, {
@@ -38,8 +38,8 @@ Object.assign(translations.en, {
   ,hardwareBadge: 'Hardware Mode'
   ,hardwareControlState: 'Hardware control enabled'
   ,hardwareControlHint: 'Preflight required before execution'
-  ,serverLockedTitle: 'Hardware control is disabled'
-  ,serverLockedText: 'Restart with `python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware`.'
+  ,serverLockedTitle: 'Demo-only mode is active'
+  ,serverLockedText: 'Restart without `--demo-only` to use local hardware control.'
 });
 
 let hardwareEnabled = false;
@@ -64,7 +64,6 @@ function updatePreflight() {
   $('#operatorCheck').classList.toggle('ok', operatorPresent);
   const blocked = !hardwareEnabled || !routeVerified || !operatorPresent || hardwareRequestRunning;
   $('#hardwareButton').disabled = blocked;
-  $('#blockRunButton').disabled = blocked;
 }
 
 async function loadHardwareStatus() {

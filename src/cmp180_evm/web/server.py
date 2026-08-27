@@ -185,17 +185,18 @@ def validate_hardware_bind(host: str, hardware_enabled: bool) -> None:
 def validate_custom_hardware_startup(
     host: str, hardware_enabled: bool, custom_hardware_enabled: bool
 ) -> None:
-    """Require both startup gates and a loopback bind for custom RF execution."""
+    """Require hardware control and a loopback bind for custom RF execution."""
     if custom_hardware_enabled and not hardware_enabled:
-        raise ValueError("--enable-custom-hardware requires --enable-hardware")
+        raise ValueError("Custom hardware execution requires hardware control")
     validate_hardware_bind(host, hardware_enabled or custom_hardware_enabled)
 
 
 class Cmp180WebHandler(SimpleHTTPRequestHandler):
     """Serve static GUI assets and explicitly scoped mock endpoints."""
 
-    hardware_enabled = False
-    custom_hardware_enabled = False
+    # 本機工作站預設提供實機控制；真正 RF 仍必須通過每次 request 的路徑與安全檢查。
+    hardware_enabled = True
+    custom_hardware_enabled = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
@@ -376,6 +377,17 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 if data.get("direct_cable_no_attenuator") is not True:
                     raise ValueError("Direct-cable/no-attenuator confirmation is required")
                 preview = build_custom_sweep_preview(data)
+                if not preview.execution_allowed:
+                    self._json_response(
+                        {
+                            "error": (
+                                "Plan is within the CMP180 planning range but is not yet in an "
+                                "approved HIL execution profile"
+                            )
+                        },
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
                 if data.get("execution_confirmation") != preview.required_confirmation:
                     raise ValueError("Custom plan confirmation does not match revalidated plan")
                 from cmp180_evm.web.real_service import run_custom_real_sweep
@@ -622,32 +634,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument(
-        "--enable-hardware",
+        "--demo-only",
         action="store_true",
-        help="Enable the guarded fixed-profile real SingleShot endpoint.",
-    )
-    parser.add_argument(
-        "--enable-custom-hardware",
-        action="store_true",
-        help="Enable HIL-gated user-defined sweep execution in addition to fixed profiles.",
+        help="Disable all real-hardware endpoints and run with demonstration data only.",
     )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    validate_custom_hardware_startup(
-        args.host, args.enable_hardware, args.enable_custom_hardware
-    )
-    Cmp180WebHandler.hardware_enabled = args.enable_hardware
-    Cmp180WebHandler.custom_hardware_enabled = args.enable_custom_hardware
+    hardware_enabled = not args.demo_only
+    custom_hardware_enabled = not args.demo_only
+    validate_custom_hardware_startup(args.host, hardware_enabled, custom_hardware_enabled)
+    Cmp180WebHandler.hardware_enabled = hardware_enabled
+    Cmp180WebHandler.custom_hardware_enabled = custom_hardware_enabled
     server = ExclusiveThreadingHTTPServer((args.host, args.port), Cmp180WebHandler)
     print(f"CMP180 Web GUI: http://{args.host}:{args.port}")
     print(
         "Mode: hardware endpoint enabled (custom enabled)."
-        if args.enable_custom_hardware
+        if custom_hardware_enabled
         else "Mode: hardware endpoint enabled (fixed profiles only)."
-        if args.enable_hardware
+        if hardware_enabled
         else "Mode: MOCK only; real-hardware controls are locked."
     )
     try:

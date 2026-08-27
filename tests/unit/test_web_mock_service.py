@@ -128,9 +128,10 @@ def test_run_history_recovers_legacy_demo_timestamp_without_rewriting_artifacts(
     assert "created_at" not in json.loads(metadata_path.read_text(encoding="utf-8"))
 
 
-def test_web_hardware_endpoint_is_locked_by_default():
-    # 只有明確 --enable-hardware 啟動時，server.main 才能改變此旗標。
-    assert Cmp180WebHandler.hardware_enabled is False
+def test_web_hardware_endpoint_is_enabled_for_local_workstation_by_default():
+    # 啟動服務本身不會送 RF；每個執行 request 仍需通過接線與安全檢查。
+    assert Cmp180WebHandler.hardware_enabled is True
+    assert Cmp180WebHandler.custom_hardware_enabled is True
 
 
 def test_cable_route_accepts_verified_variants_and_blocks_custom_route():
@@ -146,9 +147,9 @@ def test_hardware_mode_must_not_bind_to_network_interfaces():
         validate_hardware_bind("0.0.0.0", True)
 
 
-def test_custom_hardware_requires_both_flags_and_loopback():
+def test_custom_hardware_requires_hardware_control_and_loopback():
     validate_custom_hardware_startup("127.0.0.1", True, True)
-    with pytest.raises(ValueError, match="requires --enable-hardware"):
+    with pytest.raises(ValueError, match="requires hardware control"):
         validate_custom_hardware_startup("127.0.0.1", False, True)
     with pytest.raises(ValueError, match="loopback"):
         validate_custom_hardware_startup("0.0.0.0", True, True)

@@ -25,7 +25,7 @@ Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 lo
 - Demo 結果在畫面顯示 `示範資料`／`DEMO DATA`，artifact 仍保存
   `simulated=true`，不得視為 CMP180 實機量測。
 
-實機 SingleShot 已完成 HIL，可用 `--enable-hardware` 在本機啟用；固定三點頻率與四點有效功率掃描已完成 CLI HIL，但 Web progress／cancel／emergency cleanup 尚未驗證，因此 Web 實機 Sweep 仍保持鎖定。硬體模式沒有登入／RBAC，目前禁止綁定非 loopback 位址。模式集中顯示於右上角與量測工作區狀態，不使用遮擋內容的底部常駐列。
+實機 SingleShot 已完成 HIL；一般本機啟動會直接提供受保護的實機控制，`--demo-only` 則停用儀器連線。固定三點頻率與四點有效功率掃描已完成 CLI HIL，但新的自訂 Profile 仍須逐一 HIL。硬體模式沒有登入／RBAC，目前禁止綁定非 loopback 位址。模式集中顯示於右上角與量測工作區狀態，不使用遮擋內容的底部常駐列。
 
 Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／running／stopping／complete／cancelled／failed 狀態、逐點進度、單一 active-job 鎖與 cooperative cancel。2026-08-20 瀏覽器驗收確認 11 點頻率掃描可在第 3 點取消並只保存 3 點 partial result；四點功率掃描顯示 4/4 complete，CSV／JSON／HTML 為可點連結，窄版 viewport 無水平溢出。這只驗證 Mock Job 與 UI；尚未授權實機 Web sweep。
 
@@ -33,8 +33,8 @@ Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／runnin
 
 前三個量測頁籤刻意保留為「示範單點／示範頻掃／示範功掃」：它們供教學、UI
 驗證、CI 與沒有儀器時開發，永遠不送出 SCPI 或 RF。真正的 SingleShot、三點頻掃與
-四點功掃集中在「實機量測」頁。若顯示 `LOCKED`，代表本次 server 未以
-`--enable-hardware` 啟動，不代表實機功能尚未完成；只有本機 loopback 模式可顯示
+四點功掃集中在「實機量測」頁。若顯示 `LOCKED`，代表本次 server 使用
+`--demo-only` 啟動，不代表實機功能尚未完成；只有本機 loopback 模式可顯示
 `ARMED`。狀態 badge、安全檢查燈與模式選單都有雙語滑鼠提示。
 
 每次結果在 artifact 按鈕上方顯示相對輸出位置，例如
@@ -101,7 +101,7 @@ output/<timestamp>_<test-name>_<run-id>/
 完整 Python SingleShot 已通過後，Web GUI 新增固定 profile 的實機頁面。預設啟動仍鎖定；只有操作員在場且確認接線時才使用：
 
 ```powershell
-python -m cmp180_evm.web --enable-hardware
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765
 ```
 
 GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控制」，實機頁顯示
@@ -125,14 +125,14 @@ GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控�
 
 ### 2026-08-25 介面與實機啟動更新
 
-- 實機與自訂安全掃描必須由使用者的 Windows 工作階段啟動 Web 伺服器：`python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware --enable-custom-hardware`。啟動伺服器本身不會送出 RF；仍需在 Web 頁面完成接線、操作員與最終摘要確認。
+- 實機與自訂安全掃描由使用者的 Windows 工作階段以 `python -m cmp180_evm.web --host 127.0.0.1 --port 8765` 啟動；需要純示範時加入 `--demo-only`。啟動伺服器本身不會送出 RF；仍需在 Web 頁面完成接線、操作員與最終摘要確認。
 - 首頁提供互動 RF 系統架構，說明量測計畫、安全閘門、CMP180、結果正規化與 artifacts 的資料流。
 - 結果圖表支援滾輪縮放、拖曳平移、Reset，以及 A/B 測點游標。這些功能只改變瀏覽器檢視，不會修改原始結果或重新量測。
 - 實機與首頁採響應式安全邊距；亮色模式的刪除按鈕維持紅色破壞性操作語意。
 
-### CMsquares 啟發的積木控制
+### 直接式實機控制
 
-實機頁以 Generator、Analyzer 與 Measurement Flow 三個積木顯示資源狀態。Run 仍走既有 route／操作員／Profile／最終 RF 摘要確認。多點掃描的 Pause 只在目前點完成 STOP 與 RF Off 後生效；Resume 從下一點繼續，Stop 執行 cooperative cancellation 並保留 partial artifacts。SingleShot 不支援中途 Pause，Generator 方塊也不能獨立 RF On。
+實機頁以單點、頻率掃描與功率掃描三個分頁直接設定工作，不再顯示 Generator／Analyzer／Measurement Flow 裝飾積木，也不使用量測模式下拉選單。Run 仍走既有 route／操作員／Profile／最終 RF 摘要確認。多點掃描的 Pause 只在目前點完成 STOP 與 RF Off 後生效；Resume 從下一點繼續，Stop 執行 cooperative cancellation 並保留 partial artifacts。SingleShot 不支援中途 Pause。
 
 ## English Version
 
@@ -159,7 +159,7 @@ The Web GUI currently provides a complete mock workflow. It does not control the
 - Demo results display `DEMO DATA`; artifacts retain `simulated=true` and must not be
   treated as real CMP180 measurements.
 
-Real hardware SingleShot has completed HIL and can be enabled locally with `--enable-hardware`. The fixed three-point frequency and four-point numeric power sweeps have completed CLI HIL, but Web progress, cancellation, and emergency cleanup remain unverified, so Web hardware Sweep stays locked. Mode is shown in the top-right status and workspace control-state card without a content-obscuring persistent bottom bar.
+Real hardware SingleShot has completed HIL. Normal local startup exposes guarded hardware control, while `--demo-only` disables instrument access. The fixed three-point frequency and four-point numeric power sweeps completed HIL, but each new custom profile still requires controlled HIL. Mode is shown in the top-right status and workspace control-state card without a content-obscuring persistent bottom bar.
 
 Mock frequency and power sweeps now use an asynchronous Job API with queued/running/stopping/complete/cancelled/failed states, per-point progress, a single-active-job lock, and cooperative cancellation. Browser acceptance on 2026-08-20 cancelled an 11-point frequency sweep at point 3 and preserved only three partial points. A four-point power sweep displayed 4/4 complete, CSV/JSON/HTML were clickable, and a narrow viewport had no horizontal overflow. This validates only the Mock Job/UI path; it does not authorize Web hardware sweeps.
 
@@ -169,7 +169,7 @@ The first three measurement tabs intentionally remain Demo Single, Demo Frequenc
 Sweep, and Demo Power Sweep. They support training, UI validation, CI, and development
 without an instrument; they never send SCPI or RF. Real SingleShot, three-point
 frequency sweep, and four-point power sweep are grouped under Hardware Measurement.
-`LOCKED` means the current server was not started with `--enable-hardware`; it does not
+`LOCKED` means the current server was started with `--demo-only`; it does not
 mean hardware scanning is unfinished. Only local loopback mode may show `ARMED`. Status
 badges, preflight lights, and the mode selector provide bilingual hover explanations.
 
@@ -240,7 +240,7 @@ These files contain simulated data only. The real-hardware version will retain t
 After the complete Python SingleShot passed, the Web GUI gained a fixed-profile hardware screen. Normal startup remains locked. Use hardware mode only with an operator present and confirmed cabling:
 
 ```powershell
-python -m cmp180_evm.web --enable-hardware
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765
 ```
 
 The top-right status displays `Hardware Mode`, the workspace displays
@@ -265,11 +265,11 @@ End-to-end Web API HIL acceptance passed on 2026-08-19. Invalid confirmation dat
 The second UI pass uses the company TMXLAB KIT Demo as an information-hierarchy reference: cyan represents actionable/measurement state and red represents RF risk. Cable confirmation is now an editable suggestion list. Users can type a custom route, but only the verified `RF1.1-RF1.5` route can unlock RF. Results use clickable CSV, JSON, Metadata, Raw SCPI, and HTML Report buttons. The separate Fault Tests screen has been removed; the normal workflow now warns about an empty route, an unverified route, missing operator presence, duplicate submission, and locked hardware mode.
 ### 2026-08-25 UI and hardware-startup update
 
-- Real and custom safe sweeps must be served from the user's Windows session with `python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware --enable-custom-hardware`. Starting the server does not transmit RF. Route, operator-presence, and final summary confirmation are still required in the Web UI.
+- Real and custom safe sweeps are served from the user's Windows session with `python -m cmp180_evm.web --host 127.0.0.1 --port 8765`; add `--demo-only` for training. Starting the server does not transmit RF. Route, operator-presence, and final summary confirmation are still required in the Web UI.
 - The home page includes an interactive RF system architecture that explains the flow through planning, the safety gate, CMP180 control, result normalization, and artifacts.
 - Result charts support wheel zoom, drag pan, reset, and A/B point cursors. These controls only change the browser view; they do not modify source results or start a measurement.
 - The hardware workspace and home page use responsive safe margins. Destructive Delete actions remain red in the light theme.
 
-### CMsquares-inspired block controls
+### Direct hardware controls
 
-The hardware page displays Generator, Analyzer, and Measurement Flow as separate resource blocks. Run still follows the existing route/operator/profile/final-RF-summary confirmations. For a multi-point sweep, Pause takes effect only after the current point completes STOP and RF Off; Resume continues with the next point, while Stop performs cooperative cancellation and preserves partial artifacts. SingleShot cannot pause mid-transaction, and the Generator block cannot enable RF independently.
+The hardware page uses direct Single, Frequency Sweep, and Power Sweep tabs. Decorative Generator, Analyzer, and Measurement Flow blocks and the measurement-mode dropdown have been removed. Run still follows the existing route/operator/profile/final-RF-summary confirmations. For a multi-point sweep, Pause takes effect only after the current point completes STOP and RF Off; Resume continues with the next point, while Stop performs cooperative cancellation and preserves partial artifacts. SingleShot cannot pause mid-transaction.

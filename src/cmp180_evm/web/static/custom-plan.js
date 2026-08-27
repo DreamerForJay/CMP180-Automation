@@ -17,7 +17,7 @@ function updateCustomExecuteState() {
   const directConfirmed = customExecutionPanel.querySelector('[data-role="direct"]').checked;
   const hardwareForm = $('#hardwareForm').elements;
   const preflightReady = normalizeRoute(hardwareForm.cable_confirmation.value) === 'RF1.1-RF1.5' && hardwareForm.operator_present.checked;
-  customExecutionPanel.querySelector('[data-role="execute"]').disabled = !customHardwareEnabled || !confirmationMatches || !directConfirmed || !preflightReady;
+  customExecutionPanel.querySelector('[data-role="execute"]').disabled = !customHardwareEnabled || customPlanResult?.execution_allowed !== true || !confirmationMatches || !directConfirmed || !preflightReady;
 }
 
 $('#customPlanForm').onsubmit = async event => {
@@ -56,9 +56,11 @@ $('#customPlanForm').onsubmit = async event => {
     customExecutionPanel.hidden = false;
     customExecutionPanel.querySelector('[data-role="confirmation"]').value = '';
     customExecutionPanel.querySelector('[data-role="direct"]').checked = false;
-    customExecutionPanel.querySelector('[data-role="gate"]').textContent = customHardwareEnabled
-      ? `輸入 ${data.required_confirmation} 並確認接線後才可執行。`
-      : '伺服器未以 --enable-custom-hardware 啟動；目前只能預覽，不會送 RF。';
+    customExecutionPanel.querySelector('[data-role="gate"]').textContent = !customHardwareEnabled
+      ? '目前為 --demo-only；移除此旗標後即可進行受保護的實機執行。'
+      : data.execution_allowed
+        ? `此組合位於核准範圍。輸入 ${data.required_confirmation} 並確認接線後執行。`
+        : '計畫已建立，但此組合尚未納入 Approved／HIL Profile，因此不會送出 RF。';
     updateCustomExecuteState();
   } catch (error) {
     toast(error.message, 'error');

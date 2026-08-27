@@ -72,17 +72,15 @@ def test_web_preflight_and_chart_hover_are_operator_visible() -> None:
     javascript = (STATIC / "app.js").read_text(encoding="utf-8")
     hardware = (STATIC / "hardware.js").read_text(encoding="utf-8")
 
-    assert "instrument-block-board" in html
-    assert 'id="blockRunButton"' in html
-    assert 'id="blockPauseButton"' in html
-    assert 'id="blockStopButton"' in html
+    assert "instrument-block-board" not in html
+    assert 'id="blockRunButton"' not in html
     assert "chart-hover-tooltip" in javascript
     assert "data-chart-point" in javascript
     assert "profileSummary" in hardware
     assert "即將送出真實 RF" in hardware
     assert "confirm(" in hardware
     # 積木 Run 必須轉送既有受保護表單，不可直接呼叫 RF endpoint。
-    assert "$('#blockRunButton').onclick=()=>$('#hardwareButton').click()" in javascript
+    assert "積木介面已移除" in javascript
 
 
 def test_product_home_is_safe_bilingual_navigation() -> None:

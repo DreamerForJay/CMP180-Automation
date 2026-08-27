@@ -19,11 +19,11 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
 - 雙語響應式橫向量測工作區：Dark／Light、依分頁切換的專業工作區標題、整合式 Demo／實機量測、量測紀錄、多 Run 疊圖比較、可自訂 Trace 名稱／顏色／顯示、Draft 校正 SOP，以及完整 artifacts 與可復原紀錄管理。歷史分析會預先讀取既有 CSV／JSON，不會送出 RF。
 - 首頁提供產品定位、功能介紹、量測能力、安全邊界、五步標準流程與操作手冊入口；首頁 CTA 只切換工作區，不呼叫任何量測或 RF API。動畫使用本機 CSS，無外部影音依賴。
-- 導覽明確區分示範與實機量測；實機掃描已通過 HIL，`LOCKED` 只表示本次 server 未明確啟用硬體。結果頁顯示安全的相對輸出位置。
+- 導覽明確區分示範與實機量測；一般本機啟動直接提供受保護的實機控制，`--demo-only` 才會停用儀器連線。結果頁顯示安全的相對輸出位置。
 - 實機與示範量測共用單點／頻率掃描／功率掃描分頁；結果圖表提供固定座標、受限水平 Zoom／Pan、十字游標與完整點位標值。說明頁涵蓋 GitHub clone、安裝、CLI、Web 與離線報告流程。
 - 實機執行確認可完全在 Web 完成：Route、操作員在場與安全 profile 通過後，最後摘要會列出實際頻率／功率／頻寬；取消不送 RF，後端限制與 cleanup 不可繞過。
 - Runs Table 支援全文搜尋、日期／來源／狀態篩選與時間／頻率／功率／點數／Worst EVM 排序；詳情在原列下方展開，輸出直接由瀏覽器開啟，刪除需 Run ID 二次確認並移至可復原 Trash。
-- 實機量測頁採用 CMsquares 啟發的 Generator／Analyzer／Measurement Flow 積木；Run 仍走完整安全確認，掃描 Pause 只在 RF Off 點位邊界生效，Stop 保留 cooperative cancellation 與 emergency cleanup。
+- 實機量測頁改為單點／頻率／功率三個直接操作分頁，不再顯示裝飾性積木或量測模式下拉選單；Run 仍走完整安全確認，掃描 Pause 只在 RF Off 點位邊界生效，Stop 保留 cooperative cancellation 與 emergency cleanup。
 - 多 Run 分析提供 Trace 名稱、顏色鎖、線型、點型、Hide／Solo／移除、拖曳排序、相容性警告與 SVG／PNG／比較 CSV 匯出。EVM 不使用一般升降箭頭，INVALID 點不連線。
 - Mock Sweep 使用非同步 Job API，支援逐點進度、取消、partial artifacts 與單一 active-job 鎖。
 - 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；CLI HIL 與 Web 實機三點頻率／功率取消驗收均已通過。Web 實機模式仍只允許 loopback 本機啟用與固定安全 profile。
@@ -37,7 +37,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 | 實機 SingleShot | HIL 已通過 | RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm |
 | 固定頻率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 受固定安全 Profile 與 Web 最終確認保護 |
 | 固定功率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 已驗證四點掃描與取消／cleanup；最新 waveform 仍需排除 `INV` |
-| 自訂安全掃描 | 軟體完成、HIL 待驗收 | 需同時啟用兩個 hardware flags，不能超過安全包絡 |
+| 自訂量測規劃 | 型錄範圍可輸入；實機執行依 Profile | 規劃介面支援 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz；只有已核准且 HIL 驗證的組合可送 RF |
 | Path Loss 校正 | Draft workflow | 可建立、載入與審查 Profile；正式外部校正儀器 adapter 尚待 HIL |
 | 歷史分析 | 可用、唯讀 | 搜尋／篩選 Runs、2–8 Run 比較、Hover、Zoom、Pan、A/B 游標與匯出 |
 | 多圖同步 | 規劃中 | 下一階段同步 EVM、Power 與 Frequency Error 的 X 軸及游標 |
@@ -57,15 +57,11 @@ python -m cmp180_evm validate-calibration configs\calibration.example.yaml
 ```
 
 ```powershell
-# Mock Web
-python -m cmp180_evm.web
+# 本機受保護實機控制；啟動服務本身不會送 RF
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765
 
-# 本機受保護實機 SingleShot；硬體模式禁止綁定非 loopback 位址
-python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
-
-# 自訂安全掃描；只開啟權限，不會在啟動時送 RF
-python -m cmp180_evm.web --host 127.0.0.1 --port 8765 `
-  --enable-hardware --enable-custom-hardware
+# 純示範／訓練模式；不連接 CMP180、不送 RF
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only
 ```
 
 實機前必須閱讀 [硬體 SOP](docs/hardware-test-sop.md)，並確認操作員在場、routing、頻率、頻寬、功率與線路損耗。
@@ -77,7 +73,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765 `
 | [使用者指南](docs/user-guide.md) | 安裝、CLI、GUI、Mock 與實機操作 |
 | [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
 | [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
-| [CMsquares Workspace 借鑑](docs/cmsquares-workspace-lessons.md) | 積木控制、安全 Pause 與 `RDY,ADJ,INV` 診斷 |
+| [CMsquares Workspace 借鑑](docs/cmsquares-workspace-lessons.md) | 安全 Pause、狀態回饋與 `RDY,ADJ,INV` 診斷；不複製其積木排版 |
 | [Google Apps Script 分享版](docs/google-apps-script-deployment.md) | 固定網址部署、更新與去識別化歷史分析 |
 | [Web V2 設計（封存參考）](docs/web-v2-design.md) | 未採用版型與可回用互動的設計紀錄 |
 | [RF 工作站 UX 規格](docs/rf-workstation-ux-plan.md) | Runs Table、多 Run 比較、Trace、主題與 RF 安全設計 |
@@ -131,11 +127,11 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - The product home explains capabilities, safety boundaries, the five-step standard workflow, and operator-manual entry points. Home-page CTAs only navigate between workspaces and call no measurement or RF API. Motion uses local CSS with no external media dependency.
 - Dependency-free offline `results.csv` to SVG charts and a self-contained bilingual HTML report; Web comparisons support drag-to-reorder, rename/style controls, and SVG/PNG/CSV export.
 - The operator-approved horizontal workspace in `static/` is the served frontend. It supports read-only comparison of 2–8 saved runs with editable trace names, colours, visibility, and discontinuities at invalid points; this analysis never transmits RF.
-- Navigation clearly separates demo and hardware measurements. Hardware sweeps passed HIL; `LOCKED` only means hardware was not enabled for the current server. Results show a safe relative output location.
+- Navigation clearly separates demo and hardware measurements. Normal local startup exposes guarded hardware control; `--demo-only` disables instrument access. Results show a safe relative output location.
 - Hardware and Demo share Single/Frequency Sweep/Power Sweep tabs. Result charts provide fixed coordinates, bounded horizontal zoom/pan, crosshairs, and complete point values. Help covers GitHub clone, installation, CLI, Web, and offline-report workflows.
 - Hardware execution confirmation is fully in-Web: after route, operator-presence, and safe-profile checks, a final summary lists the actual frequency, power, and bandwidth. Cancellation transmits no RF, while backend limits and cleanup remain non-bypassable.
 - The Runs Table supports full-text search, date/source/status filters, and time/frequency/power/point-count/worst-EVM sorting. Details expand below their source row, outputs open in the browser, and deletion requires exact Run-ID confirmation before moving to recoverable Trash.
-- The hardware page uses CMsquares-inspired Generator, Analyzer, and Measurement Flow blocks. Run retains the complete safety confirmation, sweep Pause takes effect only at an RF-Off point boundary, and Stop preserves cooperative cancellation plus emergency cleanup.
+- The hardware page uses direct Single/Frequency/Power tabs with no decorative blocks or measurement-mode dropdown. Run retains complete safety confirmation, sweep Pause takes effect only at an RF-Off point boundary, and Stop preserves cooperative cancellation plus emergency cleanup.
 - Multi-run analysis provides trace naming, colour lock, line/point styles, Hide/Solo/remove, drag ordering, compatibility warnings, and SVG/PNG/comparison-CSV export. EVM avoids generic up/down arrows, and INVALID points never connect to valid data.
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
 - Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. CLI HIL and Web hardware three-point frequency/cancellation acceptance have passed. Hardware Web mode remains loopback-only and limited to fixed safe profiles.
@@ -149,7 +145,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 | Hardware SingleShot | HIL passed | RF1.1 to RF1.5, 6105 MHz, 320 MHz, -40 dBm |
 | Fixed frequency sweep | Historical HIL passed; current profile needs revalidation | Protected by a fixed safe profile and final Web confirmation |
 | Fixed power sweep | Historical HIL passed; current profile needs revalidation | Four-point execution/cancellation passed historically; the latest waveform still produces `INV` |
-| Custom safe sweep | Software complete; HIL pending | Requires both hardware flags and remains inside the safety envelope |
+| Custom measurement planning | Catalog range available; RF execution is profile-gated | Planning accepts 400 MHz–8 GHz and WLAN 20/40/80/160/320 MHz; only approved HIL combinations may transmit RF |
 | Path-loss calibration | Draft workflow | Profile generation/review exists; external-instrument adapter still needs HIL |
 | Historical analysis | Available, read-only | Run filters, 2–8 run comparison, hover, zoom, pan, A/B cursors, and exports |
 | Synchronized multi-chart view | Planned | Next stage synchronizes EVM, Power, and Frequency Error X axes and cursors |
@@ -158,9 +154,7 @@ Do not describe mock, dry-run, manual CMsquares operation, or a standalone store
 
 ### Quick start
 
-Use the commands in the Chinese section above. Start mock Web with `python -m cmp180_evm.web`; guarded hardware SingleShot uses `python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware`. Hardware mode is loopback-only until authentication and RBAC exist.
-
-Enabling custom safe sweeps requires both `--enable-hardware` and `--enable-custom-hardware`. Starting the server only enables the guarded endpoint; it does not transmit RF. The operator must still complete the route, presence, safety-profile, and final summary confirmations in the Web UI.
+Use the commands in the Chinese section above. Normal local startup enables guarded hardware control; add `--demo-only` for training without instrument access. Starting the server never transmits RF. Hardware execution still requires the route, operator-presence, approved-profile, and final-summary confirmations in the Web UI.
 
 ### Documentation
 

@@ -1,4 +1,4 @@
-# CMsquares Workspace 借鑑與安全積木控制
+# CMsquares Workspace 借鑑與安全控制（歷史設計研究）
 
 ## 中文版本
 
@@ -36,7 +36,9 @@
 5. 執行單點低功率 HIL；只有完整 state 不含 `INV`、三個關鍵欄位有效、error queue empty、最終 RF Off 時才算通過。
 6. 單點通過後才恢復兩點或固定掃描，不用掃描掩蓋單點同步問題。
 
-### 目前 Web 積木
+### 已移除的 Web 積木
+
+> 2026-08-27：產品化介面已移除裝飾性積木與模式下拉選單，改用單點／頻率／功率直接分頁。以下內容保留為狀態回饋、Pause 邊界與 cleanup 的歷史設計依據，不代表目前畫面。
 
 - **GPRF Generator**：顯示 RF1.1、ARB、頻率與受 workflow 管理狀態。
 - **WLAN TX Analyzer**：顯示 RF1.5、320 MHz、Multi Evaluation 與 IDLE／ACTIVE／PAUSED。
@@ -47,6 +49,8 @@
 從此版本起，新的實機 SingleShot 與掃描 artifact 會保存量測狀態轉換、WLAN standard／band、ARB waveform、trigger source／threshold、expected nominal power、external attenuation 與 ranging strategy。這些欄位來自 RF On 前已驗證的設定與量測期間觀察到的狀態，不會為了寫紀錄再送一次控制命令。舊有 artifact 不會被回填，因此缺少欄位不代表當時沒有設定。
 
 ## English Version
+
+> Product update on 2026-08-27: decorative blocks and the measurement-mode dropdown were removed in favor of direct Single/Frequency/Power tabs. The following material remains as historical design research for state feedback, safe Pause boundaries, and deterministic cleanup; it does not describe the current layout.
 
 ### Purpose
 
@@ -82,11 +86,9 @@ Official references:
 5. Run a low-power single-point HIL. Pass only when the full state excludes `INV`, all three critical fields are valid, the error queue is empty, and final RF is Off.
 6. Restore two-point or fixed sweeps only after SingleShot passes; do not use a sweep to hide a single-point synchronization fault.
 
-### Current Web blocks
+### Removed Web blocks
 
-- **GPRF Generator** shows RF1.1, ARB, frequency, and workflow-managed state.
-- **WLAN TX Analyzer** shows RF1.5, 320 MHz, Multi Evaluation, and IDLE/ACTIVE/PAUSED.
-- **Measurement Flow** provides Run, Pause/Resume, and Stop. Run uses the guarded form, while Pause only takes effect at an RF-Off point boundary.
+Earlier revisions displayed GPRF Generator, WLAN TX Analyzer, and Measurement Flow blocks. The production interface now exposes the same safe Run, Pause/Resume, and Stop behavior directly in Single/Frequency/Power tabs. Pause still takes effect only at an RF-Off point boundary.
 
 ### Added diagnostic traceability
 

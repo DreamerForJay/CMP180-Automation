@@ -170,7 +170,7 @@
       </div>
     <section id="hardware" class="measurement-view active">
       <div class="panel-head"><div><h2 data-i18n="hardwareTitle">CMP180 實機量測</h2><p data-i18n="hardwareHelp">提供已驗證的 SingleShot、頻率掃描與功率掃描固定 profile。</p></div><span id="hardwareBadge" class="pill danger" tabindex="0" title="LOCKED：伺服器未開放實機控制；ARMED：完成安全確認後可送出 RF / LOCKED: control disabled; ARMED: RF available after preflight">LOCKED</span></div>
-      <div id="serverLockedNotice" class="locked-notice" hidden><strong data-i18n="serverLockedTitle">此頁面目前無法使用</strong><p data-i18n="serverLockedText">伺服器未以 --enable-hardware 啟動，目前是唯讀 Mock 模式。要開放這個頁面，需要在本機用 `python -m cmp180_evm.web --enable-hardware` 重新啟動伺服器，且只能綁定 loopback 位址。</p></div>
+      <div id="serverLockedNotice" class="locked-notice" hidden><strong data-i18n="serverLockedTitle">目前為示範模式</strong><p data-i18n="serverLockedText">移除 `--demo-only` 並重新啟動本機服務，即可使用受保護的實機控制。</p></div>
       <div class="warning-card"><strong data-i18n="rfWarning">此動作會產生真實 RF</strong><p data-i18n="rfWarningText">只有在線材已確認且操作員位於儀器旁時才能執行。錯誤或取消時會 STOP/ABORT 並 RF Off。</p></div>
       <div id="hardwareAlert" class="inline-alert" role="alert" aria-live="assertive" hidden></div>
       <div class="subtabs hardware-subtabs" role="tablist" aria-label="實機量測類型">
@@ -178,13 +178,8 @@
         <button type="button" class="subtab" data-hardware-action="frequency">頻率掃描</button>
         <button type="button" class="subtab" data-hardware-action="power">功率掃描</button>
       </div>
-      <section class="instrument-block-board" aria-label="CMsquares-inspired instrument blocks">
-        <article class="instrument-block" data-instrument-block="generator"><div class="block-head"><span class="block-icon">GEN</span><span class="block-state" id="generatorBlockState">RF OFF</span></div><h3>GPRF Generator</h3><p>RF1.1 · ARB · 6105 MHz</p><small>只能由完整量測流程開啟 RF，不提供獨立 RF On。</small></article>
-        <article class="instrument-block" data-instrument-block="analyzer"><div class="block-head"><span class="block-icon">VSA</span><span class="block-state" id="analyzerBlockState">IDLE</span></div><h3>WLAN TX Analyzer</h3><p>RF1.5 · 320 MHz · Multi Evaluation</p><small>狀態包含 RDY／ADJ／INV；INV 會立即停止整批。</small></article>
-        <article class="instrument-block workflow-block" data-instrument-block="workflow"><div class="block-head"><span class="block-icon">FLOW</span><span class="block-state" id="workflowBlockState">READY</span></div><h3>Measurement Flow</h3><p>Preflight → Run → Fetch → Cleanup</p><div class="block-actions"><button id="blockRunButton" class="primary" type="button">Run</button><button id="blockPauseButton" class="ghost" type="button" disabled>Pause</button><button id="blockStopButton" class="danger-button" type="button" disabled>Stop</button></div><small>Pause 僅在點與點之間、RF Off 後生效。</small></article>
-      </section>
       <form id="hardwareForm" class="form-grid">
-        <label class="hardware-action-field"><span>量測模式 / Measurement</span><select name="hardware_action" title="由上方實機量測分頁選擇"><option value="single">SingleShot · 6105 MHz · -40 dBm</option><option value="frequency">Frequency Sweep · 6085/6105/6125 MHz</option><option value="power">Power Sweep · -55/-50/-45/-40 dBm</option></select></label>
+        <input name="hardware_action" type="hidden" value="single">
         <div id="hardwareProfileSummary" class="hardware-profile-summary"><small>目前設定</small><strong>SingleShot</strong><span>6105 MHz · 320 MHz · -40 dBm</span></div>
         <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" data-i18n-placeholder="cablePlaceholder" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5" data-i18n="cableVerifiedOption">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">可輸入自訂路徑；未驗證路徑會顯示警示且禁止 RF 輸出。</small></label>
         <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="operatorPresent">我人在 CMP180 旁並能觀察儀器</span></label>
@@ -200,9 +195,9 @@
         <p class="field-help">設定掃描軸、範圍、步進與停留時間；送出前會顯示點位、預估時間與安全檢查結果。</p>
         <form id="customPlanForm" class="form-grid">
           <label><span>Axis / 掃描軸</span><select name="axis"><option value="frequency">Frequency</option><option value="power">Power</option></select></label>
-          <label><span>Bandwidth</span><select name="bandwidth_mhz"><option value="320">320 MHz (HIL verified)</option></select></label>
-          <label><span>Start</span><input name="start" type="number" value="6085" required><small class="field-help">Frequency: MHz；Power: dBm</small></label>
-          <label><span>Stop</span><input name="stop" type="number" value="6125" required></label>
+          <label><span>Bandwidth</span><select name="bandwidth_mhz"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80">80 MHz</option><option value="160">160 MHz</option><option value="320" selected>320 MHz</option></select></label>
+          <label><span>Start</span><input name="start" type="number" value="6085" min="400" max="8000" required><small class="field-help">Frequency: 400–8000 MHz；Power: dBm</small></label>
+          <label><span>Stop</span><input name="stop" type="number" value="6125" min="400" max="8000" required></label>
           <label><span>Step</span><input name="step" type="number" value="10" min="0.001" required></label>
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="100" max="2000" step="100" required><b>ms</b></div></label>
           <label><span>Fixed generator power</span><div class="input-unit"><input name="generator_power_dbm" type="number" value="-45" max="-40" required><b>dBm</b></div></label>
@@ -270,7 +265,7 @@
         </div>
         <div class="command-strip"><header><span>PowerShell · Demo</span><button type="button" data-copy-target="cmd-quick-demo" data-i18n="copyCommand">複製</button></header><pre id="cmd-quick-demo"><code><span class="prompt">Set-Location</span> "C:\path\to\CMP180-Automation"
 <span class="prompt">.\.venv\Scripts\Activate.ps1</span>
-<span class="prompt">python</span> -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
+<span class="prompt">python</span> -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only</code></pre></div>
         <div class="command-outcome"><strong>網址</strong><code>http://127.0.0.1:8765</code><span>　輸出：<code>output\&lt;timestamp&gt;_&lt;run&gt;\</code></span></div>
         <div class="guide-command-list">
           <details><summary data-i18n="guideInstallTitle">第一次安裝</summary><div class="command-strip"><header><span>PowerShell</span><button type="button" data-copy-target="cmd-install" data-i18n="copyCommand">複製</button></header><pre id="cmd-install"><code><span class="prompt">git clone</span> https://github.com/DreamerForJay/CMP180-Automation.git
@@ -284,7 +279,7 @@
           <details><summary data-i18n="guideDataTitle">取得與分析資料</summary><div class="command-strip"><header><span>PowerShell · Offline analysis</span><button type="button" data-copy-target="cmd-data" data-i18n="copyCommand">複製</button></header><pre id="cmd-data"><code><span class="prompt">python</span> scripts\plot_results.py output\&lt;run-folder&gt;\results.csv
 <span class="prompt">python</span> scripts\build_report.py output\&lt;run-folder&gt;</code></pre></div><p data-i18n="guideDataHelp">也可在「量測紀錄」開啟詳情，再到「結果與圖表」比較 2–8 筆 Run。</p></details>
         </div>
-        <details class="hardware-launch"><summary>實機服務啟動方式</summary><p>啟動服務不會立即發 RF；RF 只會在量測頁完成接線、安全範圍與操作員確認後送出。</p><div class="command-strip"><pre><code><span class="prompt">python</span> -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware</code></pre></div></details>
+        <details class="hardware-launch"><summary>實機服務啟動方式</summary><p>本機預設啟用實機控制，但啟動服務不會立即發 RF；RF 只會在量測頁完成接線、安全範圍與操作員確認後送出。</p><div class="command-strip"><pre><code><span class="prompt">python</span> -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div></details>
       </section>
       <div class="guide-hero">
         <div><p class="workspace-kicker">OPERATOR PLAYBOOK</p><h2 data-i18n="guideTitle">從啟動到取得報告</h2><p data-i18n="guideIntro">每張卡片都是可直接執行的標準操作。先確認要使用示範資料、唯讀查詢，或經授權的實機模式。</p></div>
@@ -301,7 +296,7 @@
           <div class="command-copy"><span class="command-icon">01</span><div><h3 data-i18n="demoCommandTitle">啟動 Demo 控制台</h3><p data-i18n="demoCommandHelp">不連線 CMP180、不送 SCPI、不產生 RF；適合現在查看與練習。</p></div></div>
           <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b><button type="button" data-copy-target="cmd-demo" data-i18n="copyCommand">複製</button></div><pre id="cmd-demo"><code>Set-Location "C:\path\to\CMP180-Automation"
 .\.venv\Scripts\Activate.ps1
-python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only</code></pre></div>
           <div class="command-outcome"><strong data-i18n="openBrowser">開啟瀏覽器</strong><code>http://127.0.0.1:8765</code></div>
         </article>
         <article class="command-card">
@@ -318,7 +313,7 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</code></
         <article class="command-card locked-command">
           <div class="command-copy"><span class="command-icon">04</span><div><h3 data-i18n="hardwareCommandTitle">實機模式（暫停）</h3><p data-i18n="hardwareCommandHelp">只有供電穩定、接線確認、操作員在場且完成授權後才能使用。</p></div></div>
           <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>PowerShell</b></div><pre><code><i># 暫停使用 / HOLD</i>
-python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --enable-hardware</code></pre></div>
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
           <div class="command-outcome danger"><strong>RF HOLD</strong><span data-i18n="hardwareHold">目前儀器供電不穩，禁止執行。</span></div>
         </article>
       </div>
