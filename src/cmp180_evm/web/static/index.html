@@ -191,21 +191,26 @@
         </div>
         <button id="hardwareButton" class="danger-button submit" type="submit" disabled data-i18n="runHardware">執行實機量測</button>
       </form>
-      <details id="hardwareSweepSetup" class="custom-plan-card" hidden><summary>掃描設定 / Sweep Setup</summary>
-        <p class="field-help">設定掃描軸、範圍、步進與停留時間；送出前會顯示點位、預估時間與安全檢查結果。</p>
+      <div id="hardwareSweepSetup" class="custom-plan-card" hidden>
+        <h3>掃描設定 / Sweep Setup</h3>
+        <p class="field-help">設定掃描軸、範圍、步進與停留時間；送出前會顯示點位、預估時間與安全檢查結果。範圍涵蓋 CMP180 完整型錄能力（400 MHz–8 GHz），實際送 RF 仍受已驗證安全包絡把關。</p>
         <form id="customPlanForm" class="form-grid">
-          <label><span>Axis / 掃描軸</span><select name="axis"><option value="frequency">Frequency</option><option value="power">Power</option></select></label>
+          <input name="axis" type="hidden" value="frequency">
           <label><span>Bandwidth</span><select name="bandwidth_mhz"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80">80 MHz</option><option value="160">160 MHz</option><option value="320" selected>320 MHz</option></select></label>
-          <label><span>Start</span><input name="start" type="number" value="6085" min="400" max="8000" required><small class="field-help">Frequency: 400–8000 MHz；Power: dBm</small></label>
-          <label><span>Stop</span><input name="stop" type="number" value="6125" min="400" max="8000" required></label>
-          <label><span>Step</span><input name="step" type="number" value="10" min="0.001" required></label>
+          <label><span>Start</span><div class="input-unit"><input name="start" type="number" value="6085" min="400" max="8000" step="any" required><select name="start_unit" class="field-unit" aria-label="Start frequency unit"><option>MHz</option><option>GHz</option></select></div><small class="field-help">Frequency: 400 MHz–8 GHz；Power: dBm</small></label>
+          <label><span>Stop</span><div class="input-unit"><input name="stop" type="number" value="6125" min="400" max="8000" step="any" required><select name="stop_unit" class="field-unit" aria-label="Stop frequency unit"><option>MHz</option><option>GHz</option></select></div></label>
+          <label><span>Step</span><div class="input-unit"><input name="step" type="number" value="10" min="0.001" step="any" required><select name="step_unit" class="field-unit" aria-label="Step frequency unit"><option>MHz</option><option>GHz</option></select></div></label>
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="100" max="2000" step="100" required><b>ms</b></div></label>
           <label><span>Fixed generator power</span><div class="input-unit"><input name="generator_power_dbm" type="number" value="-45" max="-40" required><b>dBm</b></div></label>
-          <label><span>Fixed center frequency</span><div class="input-unit"><input name="center_frequency_mhz" type="number" value="6105" required><b>MHz</b></div></label>
+          <label><span>Fixed center frequency</span><div class="input-unit"><input name="center_frequency_mhz" type="number" value="6105" min="400" max="8000" step="any" required><select name="center_unit" class="field-unit" aria-label="Center frequency unit"><option>MHz</option><option>GHz</option></select></div></label>
           <button class="primary submit" type="submit">檢查量測計畫 / Review Plan</button>
         </form>
         <pre id="customPlanPreview" hidden></pre>
-      </details>
+      </div>
+      <section id="liveMeasurementPanel" class="live-measurement" hidden aria-live="polite">
+        <div class="panel-head"><div><h3>即時量測 / Live Measurement</h3><p id="liveMeasurementValue">等待第一個量測點</p></div><span id="liveMeasurementCount" class="pill neutral">0 / 0</span></div>
+        <svg id="liveMeasurementChart" viewBox="0 0 900 220" role="img" aria-label="Live measurement trend"></svg>
+      </section>
     </section>
     </section>
 

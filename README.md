@@ -24,6 +24,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 實機執行確認可完全在 Web 完成：Route、操作員在場與安全 profile 通過後，最後摘要會列出實際頻率／功率／頻寬；取消不送 RF，後端限制與 cleanup 不可繞過。
 - Runs Table 支援全文搜尋、日期／來源／狀態篩選與時間／頻率／功率／點數／Worst EVM 排序；詳情在原列下方展開，輸出直接由瀏覽器開啟，刪除需 Run ID 二次確認並移至可復原 Trash。
 - 實機量測頁改為單點／頻率／功率三個直接操作分頁，不再顯示裝飾性積木或量測模式下拉選單；Run 仍走完整安全確認，掃描 Pause 只在 RF Off 點位邊界生效，Stop 保留 cooperative cancellation 與 emergency cleanup。
+- 掃描設定永久展開；頻率 Start／Stop／Step／Center 欄位各自提供 MHz／GHz 等值切換。執行期間顯示逐點進度、最新 EVM 與即時趨勢圖，資料只取自已完成的 RF-Off 點位。
 - 多 Run 分析提供 Trace 名稱、顏色鎖、線型、點型、Hide／Solo／移除、拖曳排序、相容性警告與 SVG／PNG／比較 CSV 匯出。EVM 不使用一般升降箭頭，INVALID 點不連線。
 - Mock Sweep 使用非同步 Job API，支援逐點進度、取消、partial artifacts 與單一 active-job 鎖。
 - 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；CLI HIL 與 Web 實機三點頻率／功率取消驗收均已通過。Web 實機模式仍只允許 loopback 本機啟用與固定安全 profile。
@@ -132,6 +133,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - Hardware execution confirmation is fully in-Web: after route, operator-presence, and safe-profile checks, a final summary lists the actual frequency, power, and bandwidth. Cancellation transmits no RF, while backend limits and cleanup remain non-bypassable.
 - The Runs Table supports full-text search, date/source/status filters, and time/frequency/power/point-count/worst-EVM sorting. Details expand below their source row, outputs open in the browser, and deletion requires exact Run-ID confirmation before moving to recoverable Trash.
 - The hardware page uses direct Single/Frequency/Power tabs with no decorative blocks or measurement-mode dropdown. Run retains complete safety confirmation, sweep Pause takes effect only at an RF-Off point boundary, and Stop preserves cooperative cancellation plus emergency cleanup.
+- Sweep settings stay expanded. Frequency Start/Stop/Step/Center fields each provide an adjacent MHz/GHz selector with value-preserving conversion. During execution, the page shows point progress, latest EVM, and a live trend built only from completed RF-Off points.
 - Multi-run analysis provides trace naming, colour lock, line/point styles, Hide/Solo/remove, drag ordering, compatibility warnings, and SVG/PNG/comparison-CSV export. EVM avoids generic up/down arrows, and INVALID points never connect to valid data.
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
 - Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. CLI HIL and Web hardware three-point frequency/cancellation acceptance have passed. Hardware Web mode remains loopback-only and limited to fixed safe profiles.

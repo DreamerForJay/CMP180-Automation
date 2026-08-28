@@ -134,6 +134,8 @@ GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控�
 
 實機頁以單點、頻率掃描與功率掃描三個分頁直接設定工作，不再顯示 Generator／Analyzer／Measurement Flow 裝飾積木，也不使用量測模式下拉選單。Run 仍走既有 route／操作員／Profile／最終 RF 摘要確認。多點掃描的 Pause 只在目前點完成 STOP 與 RF Off 後生效；Resume 從下一點繼續，Stop 執行 cooperative cancellation 並保留 partial artifacts。SingleShot 不支援中途 Pause。
 
+掃描設定固定顯示，不使用可收合選單。頻率 Start、Stop、Step 與 Center Frequency 各自有緊鄰欄位的 MHz／GHz 選單；切換會先換算為 Hz 再顯示等值數字。量測 Job 每完成一點且完成 cleanup／RF Off 後，API 才發布該點快照，頁面同步更新進度、最新 EVM 與即時趨勢，不會為了畫圖額外送 SCPI。
+
 ## English Version
 
 ### Current interface hierarchy
@@ -273,3 +275,5 @@ The second UI pass uses the company TMXLAB KIT Demo as an information-hierarchy 
 ### Direct hardware controls
 
 The hardware page uses direct Single, Frequency Sweep, and Power Sweep tabs. Decorative Generator, Analyzer, and Measurement Flow blocks and the measurement-mode dropdown have been removed. Run still follows the existing route/operator/profile/final-RF-summary confirmations. For a multi-point sweep, Pause takes effect only after the current point completes STOP and RF Off; Resume continues with the next point, while Stop performs cooperative cancellation and preserves partial artifacts. SingleShot cannot pause mid-transaction.
+
+Sweep Setup stays visible rather than using a collapsible control. Start, Stop, Step, and Center Frequency each have an adjacent MHz/GHz selector; switching normalizes through Hz and preserves the physical value. A job publishes each point snapshot only after cleanup/RF Off, allowing the page to update progress, latest EVM, and a live trend without issuing extra SCPI for plotting.

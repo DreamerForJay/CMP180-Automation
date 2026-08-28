@@ -106,9 +106,8 @@ function selectHardwareAction(action) {
   $('#hardwareProfileSummary').innerHTML = `<small>${language === 'zh' ? '目前設定' : 'Profile'}</small><strong>${profile.title}</strong><span>${profile.detail}</span>`;
   const setup = $('#hardwareSweepSetup');
   setup.hidden = action === 'single';
-  setup.open = action !== 'single';
   // 實機分頁與自訂掃描共用同一個安全驗證模型，切換時同步掃描軸但不送出 RF。
-  if (action !== 'single') $('#customPlanForm').elements.axis.value = action;
+  if (action !== 'single') setCustomPlanAxis(action);
 }
 
 document.querySelectorAll('[data-hardware-action]').forEach(button => {

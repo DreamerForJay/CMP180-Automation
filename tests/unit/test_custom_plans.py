@@ -1,6 +1,9 @@
 import pytest
 
-from cmp180_evm.web.custom_plans import build_custom_sweep_preview
+from cmp180_evm.web.custom_plans import (
+    MAXIMUM_PLANNING_PREVIEW_POINTS,
+    build_custom_sweep_preview,
+)
 
 
 def test_frequency_preview_marks_approved_user_inputs_executable():
@@ -60,6 +63,35 @@ def test_preview_accepts_catalog_planning_but_keeps_unapproved_rf_locked():
         {"step_hz": 1_000_000},
     ):
         assert build_custom_sweep_preview(base | change).execution_allowed is False
+
+
+def test_preview_allows_full_catalog_range_but_rejects_runaway_point_counts():
+    # 頻率規劃可涵蓋整個 CMP180 型錄範圍；這個上限只防止誤填極小 step 讓瀏覽器/
+    # 伺服器卡死，不是 RF 安全包絡（RF 安全仍由 FrequencySweepPlan 把關）。
+    build_custom_sweep_preview(
+        {
+            "axis": "frequency",
+            "start_hz": 400_000_000,
+            "stop_hz": 8_000_000_000,
+            "step_hz": 100_000,
+            "bandwidth_hz": 320_000_000,
+            "generator_power_dbm": -40,
+            "dwell_ms": 100,
+        }
+    )
+    assert MAXIMUM_PLANNING_PREVIEW_POINTS < 7_600_000_000 / 1_000
+    with pytest.raises(ValueError, match="exceeds"):
+        build_custom_sweep_preview(
+            {
+                "axis": "frequency",
+                "start_hz": 400_000_000,
+                "stop_hz": 8_000_000_000,
+                "step_hz": 1_000,
+                "bandwidth_hz": 320_000_000,
+                "generator_power_dbm": -40,
+                "dwell_ms": 100,
+            }
+        )
 
 
 def test_power_preview_accepts_bounded_values_and_blocks_wrong_frequency():

@@ -51,12 +51,19 @@ def _fingerprint(payload: dict[str, object]) -> tuple[str, str]:
     return digest, f"EXECUTE-CUSTOM-{digest}"
 
 
+# 只保護瀏覽器／伺服器不被誤填的極小 step 卡死，不是 RF 安全上限；
+# 真正能送 RF 的點數仍由 FrequencySweepPlan／PowerSweepPlan 的硬性包絡把關。
+MAXIMUM_PLANNING_PREVIEW_POINTS = 100_000
+
+
 def _inclusive_points(start: float, stop: float, step: float) -> tuple[float, ...]:
     if step <= 0 or stop < start:
         raise ValueError("Sweep stop must follow start and step must be positive")
     count = int((stop - start) // step) + 1
-    if count > 1001:
-        raise ValueError("Planning preview exceeds 1001 points")
+    if count > MAXIMUM_PLANNING_PREVIEW_POINTS:
+        raise ValueError(
+            f"Planning preview exceeds {MAXIMUM_PLANNING_PREVIEW_POINTS} points"
+        )
     return tuple(start + index * step for index in range(count))
 
 

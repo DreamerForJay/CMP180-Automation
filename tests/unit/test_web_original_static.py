@@ -81,6 +81,11 @@ def test_web_preflight_and_chart_hover_are_operator_visible() -> None:
     assert "confirm(" in hardware
     # 積木 Run 必須轉送既有受保護表單，不可直接呼叫 RF endpoint。
     assert "積木介面已移除" in javascript
+    assert '<input name="axis" type="hidden"' in html
+    assert 'name="start_unit"' in html
+    assert 'name="center_unit"' in html
+    assert 'id="liveMeasurementChart"' in html
+    assert "renderLiveMeasurement" in javascript
 
 
 def test_product_home_is_safe_bilingual_navigation() -> None:

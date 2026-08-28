@@ -99,13 +99,14 @@ def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> d
         single = SingleMeasurementPlan(
             "RF1.1", "RF1.5", 6_105_000_000, 320_000_000, -40, -20, 0, True, -40
         )
-        def callback(count, _point):
-            job.point_completed(count)
-
         if axis == "frequency":
             plan = FrequencySweepPlan(
                 single, 6_085_000_000, 6_125_000_000, 20_000_000, maximum_points=3
             )
+            def callback(count, point):
+                # callback 發生在單點 cleanup 完成後；即時圖只讀已完成點，不延長 RF On。
+                value = 6_085_000_000 + (count - 1) * 20_000_000
+                job.point_completed(count, _web_point(count - 1, value, point.values, axis))
             result = run_frequency_sweep(
                 backend,
                 plan,
@@ -137,6 +138,10 @@ def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> d
             ]
         elif axis == "power":
             plan = PowerSweepPlan(single, -55, -40, 5, maximum_points=4, minimum_power_dbm=-55)
+            def callback(count, point):
+                # 功率點同樣只在 RF Off 邊界發布，INVALID 會保留而不偽造為有效數值。
+                value = -55 + (count - 1) * 5
+                job.point_completed(count, _web_point(count - 1, value, point.values, axis))
             result = run_power_sweep(
                 backend,
                 plan,
@@ -242,9 +247,6 @@ def run_custom_real_sweep(
             maximum_generator_power_dbm=-40.0,
         )
 
-        def callback(count, _point):
-            job.point_completed(count)
-
         metadata = {
             "source": "web_custom_hardware_sweep",
             "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
@@ -262,6 +264,12 @@ def run_custom_real_sweep(
                 preview.points[1] - preview.points[0],
                 dwell_time_s=preview.dwell_time_s,
             )
+            def callback(count, point):
+                # 預覽點位已在 request 重新驗證；只發布完成後的正規化資料供 Web 即時顯示。
+                value = preview.points[count - 1]
+                web_point = _web_point(count - 1, value, point.values, "frequency")
+                web_point["generator_power_dbm"] = preview.generator_power_dbm
+                job.point_completed(count, web_point)
             result = run_frequency_sweep(
                 backend,
                 plan,
@@ -299,6 +307,11 @@ def run_custom_real_sweep(
                 preview.points[1] - preview.points[0],
                 dwell_time_s=preview.dwell_time_s,
             )
+            def callback(count, point):
+                value = preview.points[count - 1]
+                web_point = _web_point(count - 1, value, point.values, "power")
+                web_point["frequency_hz"] = preview.center_frequency_hz
+                job.point_completed(count, web_point)
             result = run_power_sweep(
                 backend,
                 plan,
