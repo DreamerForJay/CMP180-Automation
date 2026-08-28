@@ -23,7 +23,7 @@ Waveform:               802.11be EHT MU, MCS11, 4xLTF, GI 3.2 us
 使用硬體模式啟動：
 
 ```powershell
-python -m cmp180_evm.web --enable-hardware
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765
 ```
 
 開啟 `http://127.0.0.1:8765`，進入「實機單點」：
@@ -118,7 +118,7 @@ Signal direction is RF1.1 output to RF1.5 input. Without a DUT, the result must 
 Start hardware mode:
 
 ```powershell
-python -m cmp180_evm.web --enable-hardware
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765
 ```
 
 Open `http://127.0.0.1:8765` and select Hardware Single:

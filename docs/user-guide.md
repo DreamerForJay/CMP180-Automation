@@ -146,11 +146,11 @@ SVG、PNG 與整理後 CSV。
 
 ## 9. 目前不能做的操作
 
-固定安全 profile（RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm）的 RF ON、Generator／Analyzer setter、Initiate/Stop/Abort 與 EVM／Burst Power／Frequency Error 讀值已完成實機驗證，可透過 CLI SingleShot 或 `--enable-hardware` Web GUI 使用。以下項目仍未完成：
+固定安全 profile（RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm）的 RF ON、Generator／Analyzer setter、Initiate/Stop/Abort 與 EVM／Burst Power／Frequency Error 讀值已完成實機驗證，可透過 CLI SingleShot 或一般本機 Web 啟動使用；`--demo-only` 會停用儀器控制。以下項目仍未完成：
 
 - 固定 profile 的 frequency／power sweep 已完成 CLI 與 Web HIL；自訂實機掃描仍待針對 `INV` finding 完成 trigger／ranging 複查與重新 HIL。
 - 正式 WLAN Pass/Fail 判定（尚無正式 limit、path-loss／calibration table，目前只能顯示 workflow health 或示範 threshold）。
-- 超出已驗證安全包絡的任意頻率／功率／DUT 輸入；自訂值只能在後端硬限制內預覽，正式送 RF 仍受雙重啟動閘門與 HIL 狀態限制。
+- 超出已驗證安全包絡的任意頻率／功率／DUT 輸入；Web 可在 400 MHz–8 GHz 型錄頻率與 WLAN 頻寬內建立計畫，但正式送 RF 仍受 Approved Profile 與 HIL 狀態限制。
 - 內網 deployment 所需 authentication、RBAC 與 audit log。
 
 上述功能必須先完成對應的 CMP180 HIL 驗證、命令審核與安全檢查。
@@ -186,9 +186,9 @@ git status
 
 # CMP180 EVM Automation User Guide
 
-### 積木式實機控制
+### 直接式實機控制
 
-實機頁面的 GPRF Generator、WLAN TX Analyzer 與 Measurement Flow 方塊用來顯示各資源狀態。Run 仍會觸發既有安全表單與最終 RF 摘要確認；不能從 Generator 方塊單獨 RF On。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。
+實機頁面使用單點、頻率掃描與功率掃描三個直接分頁，不再顯示裝飾性 Generator／Analyzer／Flow 積木，也不要求從下拉選單選擇模式。Run 仍會觸發既有安全表單與最終 RF 摘要確認。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。
 
 ## English Version
 
@@ -233,7 +233,17 @@ identity, options, and an empty error queue. No CMP180 is required.
 
 Run `python -m cmp180_evm.web`, then open `http://127.0.0.1:8765`. The served frontend is
 the horizontal workspace in `src/cmp180_evm/web/static/`; `static_v2/` is an archived
-design reference. The old Tkinter GUI has been removed.
+design reference. Normal startup enables guarded local hardware control; add `--demo-only`
+for training without instrument access. Starting the service does not transmit RF. The old
+Tkinter GUI has been removed.
+
+### Direct hardware controls
+
+Hardware uses direct Single, Frequency Sweep, and Power Sweep tabs. Decorative Generator,
+Analyzer, and Flow blocks and the measurement-mode dropdown have been removed. Run still
+requires the existing safety form and final RF summary. Sweep Pause takes effect only after
+the current point has stopped and RF is off; Resume continues at the next point, while Stop
+preserves partial artifacts. SingleShot cannot pause mid-transaction.
 
 ### 7. Run tests
 

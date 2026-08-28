@@ -50,6 +50,22 @@ def test_cancel_stops_before_remaining_points_and_preserves_partial():
     assert done.result["partial"] is True
 
 
+def test_running_job_exposes_completed_points_for_read_only_live_plot():
+    manager = JobManager()
+    points = [simulate_point(6_105e6, 320e6, -40, index) for index in range(2)]
+    job = manager.start(
+        "live-preview",
+        len(points),
+        lambda active: manager.run_mock_points(active, points, lambda rows: {}, 0.02),
+    )
+    while manager.get(job.job_id).completed_points == 0:
+        time.sleep(0.005)
+    public = manager.get(job.job_id).public()
+    # 即時資料來自已完成點，不會觸發額外量測或 SCPI 查詢。
+    assert len(public["live_points"]) >= 1
+    assert public["live_points"][0]["point_index"] == 0
+
+
 def test_pause_waits_at_point_boundary_then_resumes() -> None:
     manager = JobManager()
     points = [simulate_point(6_105e6, 320e6, -40, index) for index in range(5)]

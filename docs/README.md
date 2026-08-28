@@ -13,7 +13,7 @@
 | [使用者指南](user-guide.md) | 安裝、CLI、Web、Mock 與實機操作 |
 | [硬體量測 SOP](hardware-test-sop.md) | 接線、RF 安全、執行順序與異常處理 |
 | [Web GUI 指南](web-gui-guide.md) | 模式、確認流程、結果與 artifacts |
-| [CMsquares Workspace 借鑑](cmsquares-workspace-lessons.md) | 積木控制、安全 Pause 與 `RDY,ADJ,INV` 診斷 |
+| [CMsquares Workspace 借鑑](cmsquares-workspace-lessons.md) | 歷史設計研究：安全 Pause 與 `RDY,ADJ,INV` 診斷；積木 UI 已移除 |
 | [量測範例與欄位](measurement-example-and-fields.md) | EVM、Power、Frequency Error 與正確輸出解讀 |
 
 ### 安全、校正與實機驗證

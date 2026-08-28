@@ -19,25 +19,24 @@ partial artifacts 與 emergency cleanup。目前仍是 **HIL pending**；在完�
 - 每批結束再次執行 STOP／ABORT、RF Off 並讀回 RF `OFF` 與 measurement `OFF/RDY`。
 - 尚未提供 Approved Calibration Profile，因此目前 metadata 明確記錄 `calibration_applied=false`。
 
-### 雙重啟動閘門
+### 啟動與執行閘門
 
-一般硬體模式只開放固定 HIL profile：
-
-```powershell
-python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
-```
-
-只有在現場準備執行自訂 HIL 時才使用：
+一般本機啟動會提供受保護的實機控制：
 
 ```powershell
-python -m cmp180_evm.web --host 127.0.0.1 `
-  --enable-hardware `
-  --enable-custom-hardware
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765
 ```
 
-`--enable-custom-hardware` 不能單獨使用，也不能綁定非 loopback 位址。Web 預覽會產生
-計畫 fingerprint 與 `EXECUTE-CUSTOM-...` 確認字串；執行 API 會重新驗證所有輸入並重新計算
-字串，避免使用者預覽後再修改 request。
+純示範模式使用：
+
+```powershell
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only
+```
+
+啟動服務不會送 RF。規劃介面可輸入 400 MHz–8 GHz 與 WLAN
+20／40／80／160／320 MHz 頻寬，但超出 Approved Profile 的計畫只能預覽。Web 預覽會產生
+計畫 fingerprint 與確認字串；執行 API 會重新驗證所有輸入並重新計算字串，避免使用者
+預覽後再修改 request。實機服務目前仍只允許 loopback 綁定。
 
 ### HIL 驗收順序
 
@@ -86,25 +85,25 @@ on-site acceptance is complete.
 - No Approved Calibration Profile is supplied yet, so metadata explicitly records
   `calibration_applied=false`.
 
-### Dual startup gate
+### Startup and execution gates
 
-Normal hardware mode exposes only fixed HIL profiles:
-
-```powershell
-python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware
-```
-
-Use both flags only during an on-site custom HIL:
+Normal local startup exposes guarded hardware control:
 
 ```powershell
-python -m cmp180_evm.web --host 127.0.0.1 `
-  --enable-hardware `
-  --enable-custom-hardware
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765
 ```
 
-The custom flag cannot be used alone or on a non-loopback bind. Preview produces a plan
-fingerprint and `EXECUTE-CUSTOM-...` confirmation. Execution revalidates all inputs and
-recomputes the confirmation so a request cannot be changed after preview.
+Use Demo-only mode for training without instrument access:
+
+```powershell
+python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only
+```
+
+Starting the service does not transmit RF. Planning accepts 400 MHz–8 GHz and WLAN
+20/40/80/160/320 MHz bandwidths, while plans outside an Approved Profile remain preview-only.
+Preview produces a plan fingerprint and confirmation. Execution revalidates all inputs and
+recomputes the confirmation so a request cannot be changed after preview. Hardware service
+binding remains loopback-only.
 
 ### HIL acceptance order
 

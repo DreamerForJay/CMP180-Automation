@@ -18,7 +18,7 @@ def test_v2_contains_measurement_workflow_and_rf_hold_guidance():
     assert 'data-axis="single"' in html
     assert 'data-axis="frequency"' in html
     assert 'data-axis="power"' in html
-    assert "--enable-hardware" in html
+    assert "--enable-hardware" not in html
     assert "RF 暫停" in html
 
 

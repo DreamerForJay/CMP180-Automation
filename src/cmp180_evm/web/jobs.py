@@ -21,6 +21,7 @@ class SweepJob:
     error: str | None = None
     cancel_requested: bool = False
     pause_requested: bool = False
+    live_points: list[dict[str, object]] = field(default_factory=list)
     _cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
     _resume_event: threading.Event = field(default_factory=threading.Event, repr=False)
 
@@ -40,6 +41,8 @@ class SweepJob:
             "error": self.error,
             "cancel_requested": self.cancel_requested,
             "pause_requested": self.pause_requested,
+            # 只公開已完成點的正規化快照；前端可即時畫圖，但不會因此多送任何 SCPI。
+            "live_points": list(self.live_points),
         }
         payload["progress_percent"] = round(
             self.completed_points / self.total_points * 100 if self.total_points else 0, 1
@@ -57,9 +60,11 @@ class SweepJob:
             self.message = f"Resuming at point {self.completed_points + 1}/{self.total_points}"
         return self._cancel_event.is_set()
 
-    def point_completed(self, count: int) -> None:
+    def point_completed(self, count: int, point: dict[str, object] | None = None) -> None:
         self.completed_points = count
         self.message = f"Point {count}/{self.total_points}"
+        if point is not None:
+            self.live_points.append(point)
 
 
 class JobManager:
@@ -152,6 +157,9 @@ class JobManager:
             captured.append(point)
             job.completed_points = index + 1
             job.message = f"Point {index + 1}/{job.total_points}"
+            point_payload = asdict(point)
+            point_payload.setdefault("point_index", index)
+            job.live_points.append(point_payload)
             if index < len(points) - 1:
                 time.sleep(dwell_s)
         artifacts = save(captured)
