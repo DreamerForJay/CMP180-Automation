@@ -169,10 +169,20 @@ Notes:
 | Abort | `ABORt:WLAN:MEAS<i>:MEValuation` | Abort workflow | Verified 2026-08-19: `RUN -> OFF` |
 | State | `FETCh:WLAN:MEAS<i>:MEValuation:STATe?` | Expected `RDY` after READ | Verified idle: `OFF` |
 | All states | `FETCh:WLAN:MEAS<i>:MEValuation:STATe:ALL?` | Detailed status | Verified idle: `OFF,ADJ,INV` |
+| Repetition | `CONFigure:WLAN:MEAS<i>:MEValuation:REPetition` | `SINGleshot` for remote fixed-condition results | WebHelp + HIL verified 2026-09-01 |
+| Modulation statistic count | `CONFigure:WLAN:MEAS<i>:MEValuation:SCOunt:MODulation` | 10 intervals per SingleShot | WebHelp + HIL verified 2026-09-01 |
 
 `INITiate` was verified twice with Generator RF off: `INITiate -> STOP` and
 `INITiate -> ABORt` both returned `0,"No error"`. `FETCh...` returns the previous
 result without initiating a new measurement.
+
+2026-09-01 中文：CMsquares 的 `Continuous` + Stop Condition `None` 會使遠端 INIT
+持續為 `RUN`。backend 現在於 RF Off 強制設定並 read-back `SINGleshot` 與
+Statistic Count 10。黃金點、49 點頻率與 26 點功率 campaign 均通過。
+
+English: CMsquares `Continuous` with Stop Condition `None` keeps a remote INIT in `RUN`.
+The backend now sets and reads back `SINGleshot` and Statistic Count 10 while RF is off.
+The golden point, 49-point frequency sweep, and 26-point power campaign all passed.
 
 ## OFDM SISO scalar results
 

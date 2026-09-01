@@ -57,6 +57,8 @@ class WlanTxCommands(BaseModel):
     set_band: str | None = None
     set_trigger_threshold: str | None = None
     set_trigger_source: str | None = None
+    set_repetition: str | None = None
+    set_modulation_statistic_count: str | None = None
     set_expected_power: str | None = None
     set_external_attenuation: str | None = None
     adjust_level: str | None = None
@@ -84,6 +86,8 @@ class WlanTxQueryCommands(BaseModel):
     trigger_min_gap: str
     trigger_slope: str
     trigger_timeout: str
+    repetition: str
+    modulation_statistic_count: str
     measurement_state: str
     measurement_states: str
 

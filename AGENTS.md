@@ -32,6 +32,7 @@ All new or rewritten project documentation must contain a complete Traditional C
 
 ### Agent 導航與冗餘邊界
 
+- 長任務與實機作業期間，每次中間回報必須同時說明「目前進度」與「下一步」；不得讓操作員在無狀態說明下等待。
 - 本文件是專案 Agent 規則的唯一來源；`CLAUDE.md` 僅作相容性入口，不得視為第二套規則。
 - 現行需求與安全邊界以 `SPEC.MD` 為準；文件分類、權威順序與封存狀態以 `docs/README.md` 為準。
 - 正式 Web 前端是 `src/cmp180_evm/web/static/`；`static_v2/` 與 `docs/web-v2-design.md` 僅供封存參考。
@@ -95,6 +96,9 @@ stored hardware results, or a new live RF measurement.
 
 ## Agent navigation and clutter boundaries
 
+- During long-running tasks and live-hardware work, every intermediate update must state
+  both the current progress and the next step; do not leave the operator waiting without
+  a status explanation.
 - This file is the single source of project rules; `CLAUDE.md` is a compatibility entry point, not a second rule set.
 - Treat `SPEC.MD` as the authority for current requirements and safety boundaries. Use `docs/README.md` for document classification, authority order, and archive status.
 - The supported Web frontend is `src/cmp180_evm/web/static/`; `static_v2/` and `docs/web-v2-design.md` are archived references only.

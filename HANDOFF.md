@@ -4,6 +4,15 @@
 
 ### 狀態（2026-08-27）
 
+- 2026-09-01 使用 Chrome 唯讀檢查 CMsquares 確認長時間 `RUN` 的根因是
+  Measurement Repetition 漂移為 `Continuous`、Stop Condition 為 `None`。CMP180
+  內建 WebHelp 確認 `CONFigure:WLAN:MEAS:MEValuation:REPetition SINGleshot`
+  與 `...:SCOunt:MODulation 10`。backend 現在於 RF Off 設定並 read-back 這兩項，
+  且未操作 ARB Sequencer state tree。單一 campaign tool 重驗通過：黃金點
+  run `49441e526a`、49 點 5925–7125 MHz 頻掃 run `956dbedc4a`、26 點
+  -55 至 -30 dBm 功掃 run `2c85d90e4d`。獨立收尾為 RF `OFF`、measurement
+  `RDY`、error queue empty。這是新實機 RF 量測，不是 Mock 或 stored-only `FETCh`。
+
 - 2026-09-01 重新載入後以 RF1.1 → RF1.5 直連、0 dB 衰減、320 MHz、6105 MHz、
   Generator -40 dBm 進行黃金點重驗。修正後的 cleanup 只操作 GPRF Baseband ARB
   的通用 Generator state，沒有再送 ARB Sequencer state-tree command。兩次 INIT
@@ -108,6 +117,17 @@
 實機前先跑連線與 query-only Generator discovery，確認 RF OFF、measurement RDY、error queue empty，再依 [hardware SOP](docs/hardware-test-sop.md) 操作。
 
 ## English Version
+
+- On 2026-09-01, read-only Chrome inspection of CMsquares identified the persistent `RUN`
+  root cause: Measurement Repetition had drifted to `Continuous` with Stop Condition
+  `None`. CMP180 built-in WebHelp confirmed
+  `CONFigure:WLAN:MEAS:MEValuation:REPetition SINGleshot` and
+  `...:SCOunt:MODulation 10`. The backend now sets and reads back both values while RF is
+  off and does not operate the ARB Sequencer state tree. One full campaign tool passed the
+  golden point (run `49441e526a`), the 49-point 5925–7125 MHz frequency sweep (run
+  `956dbedc4a`), and the 26-point -55 to -30 dBm power sweep (run `2c85d90e4d`). Independent
+  final checks showed RF `OFF`, measurement `RDY`, and an empty error queue. This was a new
+  live RF measurement, not Mock data or a stored-only `FETCh`.
 
 - On 2026-09-01, the golden point was retried after reload with the direct RF1.1-to-RF1.5
   path, 0 dB attenuation, 320 MHz, 6105 MHz, and -40 dBm Generator power. The corrected

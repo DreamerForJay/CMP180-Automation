@@ -54,6 +54,9 @@ wlan_tx:
   # IF Power trigger threshold setter 由韌體 6.0.50.23 內建 Help 確認。
   set_trigger_threshold: "TRIGger:WLAN:MEAS:MEValuation:THReshold {threshold_db}"
   set_trigger_source: "TRIGger:WLAN:MEAS:MEValuation:SOURce {source}"
+  # 韌體 6.0.50.23 內建 WLAN WebHelp 確認；遠端單次量測必須使用 SINGleshot。
+  set_repetition: "CONFigure:WLAN:MEAS:MEValuation:REPetition {repetition}"
+  set_modulation_statistic_count: "CONFigure:WLAN:MEAS:MEValuation:SCOunt:MODulation {count}"
   adjust_level: null
   clear_statistics: null
   # 量測 lifecycle 命令由 CMP180 內建 Help 確認；驗證時 Generator 必須 OFF。
@@ -80,6 +83,8 @@ wlan_tx_query:
   trigger_min_gap: "TRIG:WLAN:MEAS:MEV:MGAP?"
   trigger_slope: "TRIG:WLAN:MEAS:MEV:SLOP?"
   trigger_timeout: "TRIG:WLAN:MEAS:MEV:TOUT?"
+  repetition: "CONFigure:WLAN:MEAS:MEValuation:REPetition?"
+  modulation_statistic_count: "CONFigure:WLAN:MEAS:MEValuation:SCOunt:MODulation?"
   measurement_state: "FETC:WLAN:MEAS:MEV:STAT?"
   measurement_states: "FETC:WLAN:MEAS:MEV:STAT:ALL?"
 

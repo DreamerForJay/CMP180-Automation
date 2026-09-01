@@ -717,3 +717,43 @@ after STOP returned finite EVM, burst-power, and frequency-error values, but the
 did not reach `RDY` on its own, so neither attempt qualifies as a new complete Python
 SingleShot. The 320 MHz frequency and power batches were not started because the golden
 point gate did not pass.
+
+## 中文：2026-09-01 SingleShot 根因與完整 320 MHz campaign
+
+Chrome 唯讀檢查 CMsquares 顯示 Measurement Repetition 為 `Continuous`、Stop
+Condition 為 `None`、Statistic Count 為 10。CMP180 內建 WebHelp 明確說明
+Continuous 必須顯式停止，遠端固定條件的單次結果應使用 SingleShot。內建
+command reference 確認 `CONFigure:WLAN:MEAS:MEValuation:REPetition SINGleshot`
+與 `CONFigure:WLAN:MEAS:MEValuation:SCOunt:MODulation 10`。這解釋了為何
+INIT 持續 `RUN`，STOP 後卻能取得有效 stored result。
+
+backend 新增在 RF Off 下寫入並 read-back `SING` 與 10，不碰 ARB Sequencer
+state tree。單一 `cmp180_full_320mhz_campaign_validate.py` 實機入口依序完成：
+
+- 黃金點 run `49441e526a`：6105 MHz、320 MHz、-40 dBm，EVM -36.89864 dB。
+- 頻率 run `956dbedc4a`：5925–7125 MHz、25 MHz step、49/49 有效點。
+- 功率 run `2c85d90e4d`：6105 MHz、-55 至 -30 dBm、1 dB step、26/26 有效點。
+
+獨立收尾查詢確認 RF `OFF`、measurement `RDY`、error queue empty。這三筆是新的
+完整 Python 實機 RF 量測，不是 Mock 或 stored-only `FETCh`。
+
+## English: 2026-09-01 SingleShot root cause and full 320 MHz campaign
+
+Read-only Chrome inspection of CMsquares showed Measurement Repetition `Continuous`, Stop
+Condition `None`, and Statistic Count 10. CMP180 built-in WebHelp states that Continuous
+must be stopped explicitly and that remote-controlled single results under fixed conditions
+should use SingleShot. The built-in command reference confirmed
+`CONFigure:WLAN:MEAS:MEValuation:REPetition SINGleshot` and
+`CONFigure:WLAN:MEAS:MEValuation:SCOunt:MODulation 10`. This explains why INIT remained in
+`RUN` while STOP produced a valid stored result.
+
+The backend now writes and reads back `SING` and 10 while RF is off, without touching the
+ARB Sequencer state tree. One `cmp180_full_320mhz_campaign_validate.py` hardware entry point
+completed all stages:
+
+- Golden run `49441e526a`: 6105 MHz, 320 MHz, -40 dBm, EVM -36.89864 dB.
+- Frequency run `956dbedc4a`: 5925–7125 MHz, 25 MHz steps, 49/49 valid points.
+- Power run `2c85d90e4d`: 6105 MHz, -55 to -30 dBm, 1 dB steps, 26/26 valid points.
+
+Independent final queries confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
+These are new complete Python live RF measurements, not Mock data or stored-only `FETCh`.

@@ -54,6 +54,8 @@ class FakeCmp180:
             REGISTRY.require("wlan_tx_query.expected_nominal_power"): "-20",
             REGISTRY.require("wlan_tx_query.trigger_threshold"): "-45",
             REGISTRY.require("wlan_tx_query.trigger_source"): '"IF Power"',
+            REGISTRY.require("wlan_tx_query.repetition"): "SING",
+            REGISTRY.require("wlan_tx_query.modulation_statistic_count"): "10",
             REGISTRY.require("common.operation_complete"): "1",
             REGISTRY.require("common.system_error"): '0,"No error"',
         }
@@ -113,6 +115,10 @@ def test_complete_backend_fetches_new_result_and_cleans_up():
     assert io.rf_state == "OFF"
     assert REGISTRY.require("generator.rf_on") in io.writes
     assert REGISTRY.require("wlan_tx.stop") in io.writes
+    assert REGISTRY.render("wlan_tx.set_repetition", repetition="SINGleshot") in io.writes
+    assert (
+        REGISTRY.render("wlan_tx.set_modulation_statistic_count", count=10) in io.writes
+    )
     assert io.writes[-1] == REGISTRY.require("generator.rf_off")
 
 

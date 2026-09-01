@@ -79,6 +79,12 @@ def test_help_confirmed_analyzer_setters_render_named_values():
         "wlan_tx.set_trigger_source", source='"GPRF Gen1: Restart Marker"'
     ).endswith('SOURce "GPRF Gen1: Restart Marker"')
     assert registry.render("wlan_tx.set_band", band="B6GHz").endswith("BAND B6GHz")
+    assert registry.render("wlan_tx.set_repetition", repetition="SINGleshot").endswith(
+        "REPetition SINGleshot"
+    )
+    assert registry.render("wlan_tx.set_modulation_statistic_count", count=10).endswith(
+        "SCOunt:MODulation 10"
+    )
 
 
 def test_help_confirmed_measurement_lifecycle_commands_are_configured():

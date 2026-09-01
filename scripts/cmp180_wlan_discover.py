@@ -27,6 +27,7 @@ QUERY_NAMES: tuple[str, ...] = (
     "center_frequency", "channels", "trigger_source_catalog",
     "trigger_source", "trigger_threshold", "trigger_offset",
     "trigger_min_gap", "trigger_slope", "trigger_timeout",
+    "repetition", "modulation_statistic_count",
     "measurement_state", "measurement_states",
 )
 

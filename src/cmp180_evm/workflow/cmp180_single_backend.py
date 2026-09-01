@@ -28,6 +28,9 @@ VERIFIED_WLAN_BAND_READBACK = "B6GH"
 # -40 dBm 直連短封包在預設 -30 dB threshold 曾觸發逾時；-45 dB 仍在 Help 規定的 -50..0 dB 範圍。
 VERIFIED_TRIGGER_THRESHOLD_DB = -45.0
 VERIFIED_TRIGGER_SOURCE = "IF Power"
+VERIFIED_REPETITION = "SINGleshot"
+VERIFIED_REPETITION_READBACK = "SING"
+VERIFIED_MODULATION_STATISTIC_COUNT = 10
 
 
 class Cmp180SingleMeasurementBackend:
@@ -115,6 +118,13 @@ class Cmp180SingleMeasurementBackend:
         self._write_checked(
             "wlan_tx.set_trigger_source", source=f'"{VERIFIED_TRIGGER_SOURCE}"'
         )
+        # Continuous + Stop Condition None 會讓 INIT 永遠維持 RUN；遠端固定條件
+        # 量測依 CMP180 WebHelp 強制 SingleShot，並明確設定每次 10 個 interval。
+        self._write_checked("wlan_tx.set_repetition", repetition=VERIFIED_REPETITION)
+        self._write_checked(
+            "wlan_tx.set_modulation_statistic_count",
+            count=VERIFIED_MODULATION_STATISTIC_COUNT,
+        )
         # 所有 setter 完成後逐項 read-back，避免在錯誤設定下繼續 RF On。
         self._require_readback("generator_query.frequency", plan.center_frequency_hz)
         self._require_readback("generator_query.level", plan.generator_power_dbm)
@@ -133,6 +143,11 @@ class Cmp180SingleMeasurementBackend:
             "wlan_tx_query.trigger_threshold", VERIFIED_TRIGGER_THRESHOLD_DB
         )
         self._require_readback("wlan_tx_query.trigger_source", VERIFIED_TRIGGER_SOURCE)
+        self._require_readback("wlan_tx_query.repetition", VERIFIED_REPETITION_READBACK)
+        self._require_readback(
+            "wlan_tx_query.modulation_statistic_count",
+            VERIFIED_MODULATION_STATISTIC_COUNT,
+        )
 
     def rf_on(self) -> None:
         # 此 profile 是 GPRF Baseband ARB，不是 ARB Sequencer；狀態樹不可混用。
