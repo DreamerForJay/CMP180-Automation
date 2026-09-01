@@ -14,6 +14,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from cmp180_evm.calibration import load_calibration_profile
 from cmp180_evm.calibration_adapters import (
     capture_calibration_readings,
     create_calibration_adapter,
@@ -21,7 +22,9 @@ from cmp180_evm.calibration_adapters import (
 )
 from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_profile
 from cmp180_evm.web.capabilities import load_capability_profile
+from cmp180_evm.workflow.rf_routes import validate_route
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
+from cmp180_evm.web.hil_campaign import HilCampaignStore
 from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
     DEMO_LIMIT_PROFILE,
@@ -35,10 +38,10 @@ from cmp180_evm.web.run_records import load_run_record, move_run_to_trash, open_
 # 原版橫向量測工作區已由操作員確認較符合實驗室流程；新版分析能力回填此介面。
 STATIC_DIR = Path(__file__).with_name("static")
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-VERIFIED_CABLE_ROUTE = "RF1.1-RF1.5"
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 JOB_MANAGER = JobManager()
 CAPABILITY_PROFILE_PATH = PROJECT_ROOT / "configs" / "instrument_capabilities.example.yaml"
+HIL_CAMPAIGN = HilCampaignStore(PROJECT_ROOT / "output" / "hil-campaign" / "state.json")
 
 
 class ExclusiveThreadingHTTPServer(ThreadingHTTPServer):
@@ -162,15 +165,14 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
 
 def validate_cable_route(value: object) -> str:
     """Normalize a user-entered route and allow only hardware-verified wiring."""
-    normalized = str(value or "").strip().upper().replace("→", "-").replace(" ", "")
-    if not normalized:
-        raise ValueError("Select or enter a cable route")
-    # 自訂文字可供介面輸入，但未完成 routing／功率安全驗證前不得開啟 RF。
-    if normalized != VERIFIED_CABLE_ROUTE:
-        raise ValueError(
-            f"Cable route {normalized!r} is not hardware-verified; RF output is blocked"
-        )
-    return normalized
+    # 核准清單改由 capability profile 驅動：新增一條已完成 HIL 的 route 只需改
+    # approved_profile.routes，不必改程式；未列入者仍一律拒絕開啟 RF。
+    profile = load_capability_profile(CAPABILITY_PROFILE_PATH)
+    return validate_route(
+        value,
+        approved_routes=profile.approved_profile.routes,
+        installed_ports=profile.installed.rf_ports,
+    ).label
 
 
 def validate_hardware_bind(host: str, hardware_enabled: bool) -> None:
@@ -218,6 +220,17 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
             raise ValueError("JSON body must be an object")
         return value
 
+    def _resolve_config_path(self, requested: str) -> Path:
+        """Resolve a request-supplied config file strictly inside configs/."""
+        # 路徑來自請求，屬於不可信輸入；解析後必須仍位於 configs/ 才允許讀取。
+        config_root = (PROJECT_ROOT / "configs").resolve()
+        candidate = (config_root / requested).resolve()
+        if candidate != config_root and config_root not in candidate.parents:
+            raise ValueError("Config path must stay inside configs/")
+        if not candidate.is_file():
+            raise ValueError(f"Config file not found: {requested}")
+        return candidate
+
     def _is_local_client(self) -> bool:
         """Return whether this request originates from the local workstation."""
         try:
@@ -236,6 +249,10 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
         if parsed_path == "/api/capabilities":
             # 此端點只公開能力分層，不會查詢儀器、送 SCPI 或授予 RF 權限。
             self._json_response(load_capability_profile(CAPABILITY_PROFILE_PATH).public())
+            return
+        if parsed_path == "/api/hil-campaign":
+            # Campaign 狀態來自本機 JSON；查詢頁面不連線儀器，也不送出 SCPI。
+            self._json_response(HIL_CAMPAIGN.load())
             return
         if parsed_path == "/api/runs":
             self._json_response({"runs": list_run_history(PROJECT_ROOT / "output")})
@@ -258,9 +275,10 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     # 只回傳 output/ 下的受控 URL，不把本機絕對路徑當成瀏覽器連結。
                     result["artifact_urls"] = self._artifact_urls(result["artifacts"])
                     result["output_location"] = self._output_location(result["artifacts"])
-                    if result.get("simulated") is True:
-                        result["limit_profile"] = DEMO_LIMIT_PROFILE.snapshot()
-                        result["compliance_claim"] = False
+                    # 實機與模擬都套用同一份 draft profile，並且都明確標示非 compliance；
+                    # 先前只有模擬結果附帶 profile，導致實機頁面無法顯示 PASS/FAIL。
+                    result["limit_profile"] = DEMO_LIMIT_PROFILE.snapshot()
+                    result["compliance_claim"] = False
                 self._json_response(payload)
             except KeyError as exc:
                 self._json_response({"error": str(exc)}, HTTPStatus.NOT_FOUND)
@@ -343,6 +361,82 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 self._json_response(JOB_MANAGER.cancel(job_id).public())
                 return
             data = self._read_json()
+            if path == "/api/hil-campaign/prepare":
+                # Prepare 只套用現行 safety/profile gate，blocked case 不會進 RF workflow。
+                self._json_response(HIL_CAMPAIGN.prepare())
+                return
+            if path == "/api/hil-campaign/reset":
+                self._json_response(HIL_CAMPAIGN.reset())
+                return
+            if path.startswith("/api/hil-campaign/cases/") and path.endswith("/retry"):
+                case_id = unquote(
+                    path.removeprefix("/api/hil-campaign/cases/").removesuffix("/retry")
+                )
+                HIL_CAMPAIGN.retry(case_id)
+                self._json_response(HIL_CAMPAIGN.prepare())
+                return
+            if path.startswith("/api/hil-campaign/cases/") and path.endswith("/start"):
+                if not self.hardware_enabled or not self.custom_hardware_enabled:
+                    self._json_response(
+                        {"error": "Hardware campaign execution is locked at server startup"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                if data.get("operator_present") is not True:
+                    raise ValueError("Operator presence confirmation is required")
+                if data.get("route_connected") is not True:
+                    raise ValueError("Current route connection confirmation is required")
+                case_id = unquote(
+                    path.removeprefix("/api/hil-campaign/cases/").removesuffix("/start")
+                )
+                case = HIL_CAMPAIGN.case(case_id)
+                preview = build_custom_sweep_preview(case["request"])
+                if not preview.execution_allowed:
+                    HIL_CAMPAIGN.update_case(
+                        case_id, state="blocked", reason=preview.rejection_reason or "Blocked"
+                    )
+                    self._json_response(
+                        {"error": preview.rejection_reason or "Campaign case is blocked"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                validate_cable_route(case["route"])
+                from cmp180_evm.web.real_service import run_custom_real_sweep
+
+                execution_request = dict(case["request"])
+
+                def campaign_worker(active_job):
+                    try:
+                        result = run_custom_real_sweep(
+                            active_job,
+                            request=execution_request,
+                            output_root=PROJECT_ROOT / "output",
+                        )
+                        failed = result.get("measurement_failed") is True
+                        HIL_CAMPAIGN.update_case(
+                            case_id,
+                            state="failed" if failed else "complete",
+                            reason=str(result.get("error") or ""),
+                            artifacts=result.get("artifacts") or {},
+                        )
+                        return result
+                    except Exception as exc:
+                        # 例外 cleanup 由 real_service finally 執行；此處另存失敗以便重啟後續跑。
+                        HIL_CAMPAIGN.update_case(
+                            case_id,
+                            state="failed",
+                            reason=f"{type(exc).__name__}: {exc}",
+                        )
+                        raise
+
+                job = JOB_MANAGER.start(
+                    f"hil-campaign-{case_id}", len(preview.points), campaign_worker
+                )
+                HIL_CAMPAIGN.update_case(
+                    case_id, state="running", reason="", job_id=job.job_id
+                )
+                self._json_response(job.public(), HTTPStatus.ACCEPTED)
+                return
             if path == "/api/calibration/capture":
                 adapter_id = str(data.get("adapter_id") or "")
                 adapter = create_calibration_adapter(adapter_id)
@@ -381,8 +475,8 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     self._json_response(
                         {
                             "error": (
-                                "Plan is within the CMP180 planning range but is not yet in an "
-                                "approved HIL execution profile"
+                                "Plan is within the CMP180 planning range but cannot enter the "
+                                f"current RF workflow: {preview.rejection_reason}"
                             )
                         },
                         HTTPStatus.FORBIDDEN,
@@ -394,6 +488,14 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
 
                 # 複製 request，避免背景 thread 讀到 handler 後續變動的 request 物件。
                 execution_request = dict(data)
+                # 校正為選用；未指定時完全維持未修正行為。Draft／過期／路徑不符或
+                # 頻率超出校正範圍，都會在此拋錯而不是靜默送出未修正的量測。
+                calibration_profile = None
+                requested_profile = data.get("calibration_profile_path")
+                if requested_profile:
+                    calibration_profile = load_calibration_profile(
+                        self._resolve_config_path(str(requested_profile))
+                    )
                 job = JOB_MANAGER.start(
                     f"hardware-custom-{preview.axis}-sweep",
                     len(preview.points),
@@ -401,6 +503,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                         active_job,
                         request=execution_request,
                         output_root=PROJECT_ROOT / "output",
+                        calibration_profile=calibration_profile,
                     ),
                 )
                 self._json_response(job.public(), HTTPStatus.ACCEPTED)

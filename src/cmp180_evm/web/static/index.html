@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
-  <link rel="stylesheet" href="/design-system.css?v=console8">
+  <link rel="stylesheet" href="/design-system.css?v=console10">
 </head>
 <body>
   <header class="topbar">
@@ -27,6 +27,7 @@
     <nav class="tabs" aria-label="Workspace">
       <button class="tab active" data-tab="home" data-i18n="homeTab">首頁</button>
       <button class="tab" data-tab="measurement">量測</button>
+      <button class="tab" data-tab="campaign" data-i18n="campaignTab">HIL 批次</button>
       <button class="tab" data-tab="calibration">校正</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
       <button class="tab" data-tab="history" data-i18n="historyTab">量測紀錄</button>
@@ -197,12 +198,12 @@
         <form id="customPlanForm" class="form-grid">
           <input name="axis" type="hidden" value="frequency">
           <label><span>Bandwidth</span><select name="bandwidth_mhz"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80">80 MHz</option><option value="160">160 MHz</option><option value="320" selected>320 MHz</option></select></label>
-          <label><span>Start</span><div class="input-unit"><input name="start" type="number" value="6085" min="400" max="8000" step="any" required><select name="start_unit" class="field-unit" aria-label="Start frequency unit"><option>MHz</option><option>GHz</option></select></div><small class="field-help">Frequency: 400 MHz–8 GHz；Power: dBm</small></label>
-          <label><span>Stop</span><div class="input-unit"><input name="stop" type="number" value="6125" min="400" max="8000" step="any" required><select name="stop_unit" class="field-unit" aria-label="Stop frequency unit"><option>MHz</option><option>GHz</option></select></div></label>
-          <label><span>Step</span><div class="input-unit"><input name="step" type="number" value="10" min="0.001" step="any" required><select name="step_unit" class="field-unit" aria-label="Step frequency unit"><option>MHz</option><option>GHz</option></select></div></label>
+          <label><span>Start</span><div class="input-unit"><input name="start" type="number" value="6085" min="400" max="8000" step="any" required><input type="hidden" name="start_unit" value="MHz"><button type="button" class="field-unit" data-unit-for="start_unit" aria-label="Start frequency unit（點擊切換 MHz／GHz）">MHz</button></div><small class="field-help">Frequency: 400 MHz–8 GHz；Power: dBm</small></label>
+          <label><span>Stop</span><div class="input-unit"><input name="stop" type="number" value="6125" min="400" max="8000" step="any" required><input type="hidden" name="stop_unit" value="MHz"><button type="button" class="field-unit" data-unit-for="stop_unit" aria-label="Stop frequency unit（點擊切換 MHz／GHz）">MHz</button></div></label>
+          <label><span>Step</span><div class="input-unit"><input name="step" type="number" value="10" min="0.001" step="any" required><input type="hidden" name="step_unit" value="MHz"><button type="button" class="field-unit" data-unit-for="step_unit" aria-label="Step frequency unit（點擊切換 MHz／GHz）">MHz</button></div></label>
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="100" max="2000" step="100" required><b>ms</b></div></label>
           <label><span>Fixed generator power</span><div class="input-unit"><input name="generator_power_dbm" type="number" value="-45" max="-40" required><b>dBm</b></div></label>
-          <label><span>Fixed center frequency</span><div class="input-unit"><input name="center_frequency_mhz" type="number" value="6105" min="400" max="8000" step="any" required><select name="center_unit" class="field-unit" aria-label="Center frequency unit"><option>MHz</option><option>GHz</option></select></div></label>
+          <label><span>Fixed center frequency</span><div class="input-unit"><input name="center_frequency_mhz" type="number" value="6105" min="400" max="8000" step="any" required><input type="hidden" name="center_unit" value="MHz"><button type="button" class="field-unit" data-unit-for="center_unit" aria-label="Center frequency unit（點擊切換 MHz／GHz）">MHz</button></div></label>
           <button class="primary submit" type="submit">檢查量測計畫 / Review Plan</button>
         </form>
         <pre id="customPlanPreview" hidden></pre>
@@ -212,6 +213,14 @@
         <svg id="liveMeasurementChart" viewBox="0 0 900 220" role="img" aria-label="Live measurement trend"></svg>
       </section>
     </section>
+    </section>
+
+    <section id="campaign" class="panel campaign-panel">
+      <div class="panel-head"><div><h2>HIL Campaign Runner</h2><p>分類矩陣會保存到 output/hil-campaign/state.json；關閉瀏覽器或對話後仍可繼續。</p></div><span id="campaignSummary" class="pill">NOT PREPARED</span></div>
+      <div class="inline-alert"><strong>執行規則</strong><span>Prepare 只檢查目前 profile；只有 READY 案例可送 RF。BLOCKED 不會改跑其他 profile。Pause／Stop 只會在單點 cleanup 與 RF Off 邊界生效。</span></div>
+      <div class="campaign-toolbar"><button id="prepareCampaign" class="primary" type="button">準備／重新檢查矩陣</button><button id="runNextCampaign" class="danger-button" type="button">執行下一個 READY</button><button id="refreshCampaign" class="ghost" type="button">重新載入</button><button id="resetCampaign" class="ghost" type="button">重設進度</button></div>
+      <div class="campaign-confirmations"><label><input id="campaignOperator" type="checkbox"> 操作員在機台旁</label><label><input id="campaignRoute" type="checkbox"> 畫面所列 route 已完成接線</label></div>
+      <div class="table-wrap campaign-table-wrap"><table class="campaign-table"><colgroup><col class="campaign-col-state"><col class="campaign-col-category"><col class="campaign-col-case"><col class="campaign-col-route"><col class="campaign-col-points"><col class="campaign-col-evidence"><col class="campaign-col-action"></colgroup><thead><tr><th>狀態</th><th>類別</th><th>案例</th><th>Route</th><th>點數</th><th>原因／證據</th><th>操作</th></tr></thead><tbody id="campaignRows"></tbody></table></div>
     </section>
 
     <section id="calibration" class="panel">
@@ -238,7 +247,7 @@
       <div id="metrics" class="metrics"></div>
       <div id="limitProfileCard" class="limit-profile-card" hidden></div>
       <section id="comparisonPanel" class="comparison-panel" hidden><div><strong>歷史資料比較 / Historical comparison</strong><p id="comparisonHint">可調整曲線名稱、顏色與顯示狀態。</p></div><div id="traceList" class="trace-list"></div></section>
-      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small>EVM dB 越負通常越好；INVALID 不與有效點連線</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button">PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
+      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button">PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
       <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
     </section>
@@ -328,6 +337,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
   <div id="toast" role="status"></div>
   <script src="/app.js?v=console9"></script>
   <script src="/hardware.js?v=workspace3"></script>
+  <script src="/campaign.js?v=3"></script>
   <script src="/calibration.js?v=1"></script>
   <script src="/custom-plan.js?v=1"></script>
 </body>

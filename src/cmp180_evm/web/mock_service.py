@@ -10,18 +10,11 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from cmp180_evm.limits import LimitProfile, evaluate_limits
+from cmp180_evm.limits import DRAFT_LOOPBACK_LIMIT_PROFILE, evaluate_limits
 
 MAXIMUM_DEMO_SWEEP_POINTS = 11
-DEMO_LIMIT_PROFILE = LimitProfile(
-    profile_id="draft-eht-mcs11-bw320-loopback",
-    revision="0.1-draft",
-    lifecycle="draft",
-    description="Development-only example; not DUT compliance",
-    maximum_evm_db=-32.0,
-    maximum_absolute_frequency_error_hz=1000.0,
-    maximum_absolute_power_error_db=3.0,
-)
+# Profile 現在集中定義於 cmp180_evm.limits，實機與模擬共用；此處僅保留既有匯入名稱。
+DEMO_LIMIT_PROFILE = DRAFT_LOOPBACK_LIMIT_PROFILE
 
 
 @dataclass(frozen=True)

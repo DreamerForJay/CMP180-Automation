@@ -14,6 +14,8 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 
 ### 目前能力
 
+- Web 新增可恢復的 `HIL Campaign Runner`：按「準備」可把頻段／頻寬、代表功率、其他 RF route、500 MHz、雙 VSA／VSG 與長 waveform 分類成 READY／BLOCKED；READY 可逐列或按「執行下一個」啟動，進度保存於 `output/hil-campaign/state.json`。BLOCKED 案例不會偷換成既有 profile 執行。
+
 - YAML 驗證、Mock／實機連線、Generator／Analyzer setter、measurement lifecycle 與 RF On／Off。
 - 已完成 RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm 的 Python 實機 SingleShot。
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
@@ -24,7 +26,8 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 實機執行確認可完全在 Web 完成：Route、操作員在場與安全 profile 通過後，最後摘要會列出實際頻率／功率／頻寬；取消不送 RF，後端限制與 cleanup 不可繞過。
 - Runs Table 支援全文搜尋、日期／來源／狀態篩選與時間／頻率／功率／點數／Worst EVM 排序；詳情在原列下方展開，輸出直接由瀏覽器開啟，刪除需 Run ID 二次確認並移至可復原 Trash。
 - 實機量測頁改為單點／頻率／功率三個直接操作分頁，不再顯示裝飾性積木或量測模式下拉選單；Run 仍走完整安全確認，掃描 Pause 只在 RF Off 點位邊界生效，Stop 保留 cooperative cancellation 與 emergency cleanup。
-- 掃描設定永久展開；頻率 Start／Stop／Step／Center 欄位各自提供 MHz／GHz 等值切換。執行期間顯示逐點進度、最新 EVM 與即時趨勢圖，資料只取自已完成的 RF-Off 點位。
+- 掃描設定永久展開；頻率 Start／Stop／Step／Center 欄位各自提供 MHz／GHz 等值切換。實機頻率／功率掃描會使用畫面上的同一份自訂計畫，不再落回固定 6085／6105／6125 MHz profile；若計畫尚未被 RF workflow 接受，Web 會顯示拒絕原因且不送 RF。執行期間顯示逐點進度、最新 EVM 與即時趨勢圖，資料只取自已完成的 RF-Off 點位。
+- Limit 判定明確採用 EVM dB 越負越好的規則：量測 EVM 必須小於或等於 `maximum_evm_db` 才能通過；沒有正式 limit profile 的實機結果只顯示 `MEASURED`，不宣稱 PASS。Power Reference Plane 尚未套用正式 +5 dB compensation；metadata 會記錄 `calibration_applied=false`。
 - 多 Run 分析提供 Trace 名稱、顏色鎖、線型、點型、Hide／Solo／移除、拖曳排序、相容性警告與 SVG／PNG／比較 CSV 匯出。EVM 不使用一般升降箭頭，INVALID 點不連線。
 - Mock Sweep 使用非同步 Job API，支援逐點進度、取消、partial artifacts 與單一 active-job 鎖。
 - 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；CLI HIL 與 Web 實機三點頻率／功率取消驗收均已通過。Web 實機模式仍只允許 loopback 本機啟用與固定安全 profile。
@@ -38,7 +41,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 | 實機 SingleShot | HIL 已通過 | RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm |
 | 固定頻率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 受固定安全 Profile 與 Web 最終確認保護 |
 | 固定功率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 已驗證四點掃描與取消／cleanup；最新 waveform 仍需排除 `INV` |
-| 自訂量測規劃 | 型錄範圍可輸入；實機執行依 Profile | 規劃介面支援 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz；只有已核准且 HIL 驗證的組合可送 RF |
+| 自訂量測規劃 | 型錄範圍可輸入；實機執行依 RF workflow | 規劃介面支援 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz；Web 不再把自訂輸入改跑固定 profile，未通過 workflow 的計畫會顯示拒絕原因且不送 RF |
 | Path Loss 校正 | Draft workflow | 可建立、載入與審查 Profile；正式外部校正儀器 adapter 尚待 HIL |
 | 歷史分析 | 可用、唯讀 | 搜尋／篩選 Runs、2–8 Run 比較、Hover、Zoom、Pan、A/B 游標與匯出 |
 | 多圖同步 | 規劃中 | 下一階段同步 EVM、Power 與 Frequency Error 的 X 軸及游標 |
@@ -121,6 +124,8 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 
 ### Current capabilities
 
+- The Web UI includes a resumable `HIL Campaign Runner`. Prepare classifies band/bandwidth, representative power, alternate RF routes, 500 MHz, dual VSA/VSG, and long-waveform cases as READY or BLOCKED. READY cases can run by row or through Run Next, while progress persists in `output/hil-campaign/state.json`. BLOCKED cases are never substituted with an existing profile.
+
 - YAML validation, mock/real connection, hardware-verified setters, measurement lifecycle, and RF On/Off.
 - Complete Python hardware SingleShot at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
@@ -133,7 +138,8 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - Hardware execution confirmation is fully in-Web: after route, operator-presence, and safe-profile checks, a final summary lists the actual frequency, power, and bandwidth. Cancellation transmits no RF, while backend limits and cleanup remain non-bypassable.
 - The Runs Table supports full-text search, date/source/status filters, and time/frequency/power/point-count/worst-EVM sorting. Details expand below their source row, outputs open in the browser, and deletion requires exact Run-ID confirmation before moving to recoverable Trash.
 - The hardware page uses direct Single/Frequency/Power tabs with no decorative blocks or measurement-mode dropdown. Run retains complete safety confirmation, sweep Pause takes effect only at an RF-Off point boundary, and Stop preserves cooperative cancellation plus emergency cleanup.
-- Sweep settings stay expanded. Frequency Start/Stop/Step/Center fields each provide an adjacent MHz/GHz selector with value-preserving conversion. During execution, the page shows point progress, latest EVM, and a live trend built only from completed RF-Off points.
+- Sweep settings stay expanded. Frequency Start/Stop/Step/Center fields each provide an adjacent MHz/GHz selector with value-preserving conversion. Hardware frequency/power sweeps now use the exact custom plan shown on screen instead of falling back to the fixed 6085/6105/6125 MHz profile. If the current RF workflow rejects the plan, the UI shows the reason and transmits no RF. During execution, the page shows point progress, latest EVM, and a live trend built only from completed RF-Off points.
+- Limit evaluation explicitly treats more-negative EVM dB as better: measured EVM must be less than or equal to `maximum_evm_db`. Hardware results without an approved limit profile are shown as `MEASURED`, not PASS. Power Reference Plane compensation is not yet applied; metadata records `calibration_applied=false`.
 - Multi-run analysis provides trace naming, colour lock, line/point styles, Hide/Solo/remove, drag ordering, compatibility warnings, and SVG/PNG/comparison-CSV export. EVM avoids generic up/down arrows, and INVALID points never connect to valid data.
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
 - Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. CLI HIL and Web hardware three-point frequency/cancellation acceptance have passed. Hardware Web mode remains loopback-only and limited to fixed safe profiles.

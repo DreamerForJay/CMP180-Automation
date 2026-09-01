@@ -30,6 +30,17 @@ All new or rewritten project documentation must contain a complete Traditional C
 6. 每次功能修改都要更新測試與相關文件，文件必須中文在前、英文在後。
 7. 執行 pytest、兩份 YAML validation 與 `git diff --check`，並標示使用 Mock、stored result 或新實機 RF 量測。
 
+### Agent 導航與冗餘邊界
+
+- 本文件是專案 Agent 規則的唯一來源；`CLAUDE.md` 僅作相容性入口，不得視為第二套規則。
+- 現行需求與安全邊界以 `SPEC.MD` 為準；文件分類、權威順序與封存狀態以 `docs/README.md` 為準。
+- 正式 Web 前端是 `src/cmp180_evm/web/static/`；`static_v2/` 與 `docs/web-v2-design.md` 僅供封存參考。
+- `CMP180_DEVELOPMENT_SPEC_AND_PLAN.md` 是早期 CMP180 計畫，`DEVELOPMENT_SPEC_AND_PLAN.md` 是 SMW200A／FSW85 歷史資料；兩者都不取代 `SPEC.MD`。
+- `HANDOFF.md` 是累積的變更與硬體證據日誌；能力判定要交叉核對 `README.md`、`docs/README.md` 與最新證據，不只看舊的下一步清單。
+- `output/` 是本機資料根目錄：被文件或 metadata 引用的 real／stored artifacts 是證據；`pytest-*`、cache、`__pycache__`、`*.egg-info`、`.venv` 與 `.tools` 是可重建產物，不是原始碼或規範。
+- `workflow/*_validation.py`、對應的 `scripts/*_validate.py` 與測試是刻意的驗證分層，不得只因名稱相近就刪除或合併。
+- 修改前先確認正式實作路徑、相鄰測試與 `docs/development-workflow.md`；不要自行刪除封存資料、量測證據或驗證入口。
+
 ---
 
 ## English Version
@@ -81,6 +92,17 @@ stored hardware results, or a new live RF measurement.
 - Keep safety validation independent and unit-testable.
 - Store raw instrument responses together with normalized results.
 - The future web UI must support Traditional Chinese and English, responsive layouts, progress, cancellation, audit logs and role-based access for RF-changing actions.
+
+## Agent navigation and clutter boundaries
+
+- This file is the single source of project rules; `CLAUDE.md` is a compatibility entry point, not a second rule set.
+- Treat `SPEC.MD` as the authority for current requirements and safety boundaries. Use `docs/README.md` for document classification, authority order, and archive status.
+- The supported Web frontend is `src/cmp180_evm/web/static/`; `static_v2/` and `docs/web-v2-design.md` are archived references only.
+- `CMP180_DEVELOPMENT_SPEC_AND_PLAN.md` is an early CMP180 plan, while `DEVELOPMENT_SPEC_AND_PLAN.md` is archived SMW200A/FSW85 history. Neither supersedes `SPEC.MD`.
+- `HANDOFF.md` is a cumulative change and hardware-evidence log. Cross-check capability claims against `README.md`, `docs/README.md`, and the latest evidence instead of trusting old next-step lists alone.
+- `output/` is local data: real/stored artifacts referenced by documentation are evidence; `pytest-*`, caches, `__pycache__`, `*.egg-info`, `.venv`, and `.tools` are rebuildable outputs, not source or policy.
+- `workflow/*_validation.py`, matching `scripts/*_validate.py`, and their tests are intentional validation layers; do not remove or merge them merely because their names are similar.
+- Before editing, confirm the supported implementation path, neighboring tests, and `docs/development-workflow.md`; do not delete archived material, measurement evidence, or validation entry points on your own.
 
 ## Important references
 

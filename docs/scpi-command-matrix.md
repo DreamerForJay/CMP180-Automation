@@ -104,6 +104,37 @@ must be checked against the long-form command documented here.
 | External attenuation | `CONFigure:WLAN:MEAS<i>:RFSettings:EATTenuation<antenna>` | dB; negative means gain | 0 dB | Verified: `0.0` |
 | Expected nominal power | `CONFigure:WLAN:MEAS<i>:RFSettings:ENPower<antenna>` | dBm | 0 dBm | Verified: `0.0` |
 | Band | `CONFigure:WLAN:MEAS<i>:RFSettings:FREQuency:BAND` | band enum | 5 GHz | Verified: `B5GH` |
+
+### WLAN band enum 實機探索 / WLAN band enum hardware discovery
+
+2026-09-01 以 `scripts/cmp180_band_discovery.py` 在 CMP180 韌體 `6.0.50.23` 上探索。
+全程 Generator RF `OFF`、量測 idle，僅寫入 Analyzer band 後立即讀回，結束後還原為
+`B6GH` 並確認 RF 仍為 `OFF`。此探索未發射 RF。
+
+| 候選字串 | 儀器回應 | Readback | 結論 |
+|---|---|---|---|
+| `B24Ghz` | 接受，error queue 空 | `B24G` | 2.4 GHz 可用 |
+| `B24GHz` | 接受，error queue 空 | `B24G` | 2.4 GHz 可用（採用此拼法） |
+| `B2G4` | `-141,"Invalid character data"` | — | 不支援 |
+| `B5GHz` | 接受，error queue 空 | `B5GH` | 5 GHz 可用（採用此拼法） |
+| `B5GH` | 接受，error queue 空 | `B5GH` | 5 GHz 可用 |
+| `B5Ghz` | 接受，error queue 空 | `B5GH` | 5 GHz 可用 |
+| `B6GHz` | 接受，error queue 空 | `B6GH` | 6 GHz，先前已驗證 |
+
+副作用：改變 Analyzer 的 WLAN band 設定（不影響 RF 輸出、routing 或 workspace）。
+已填入 `src/cmp180_evm/workflow/wlan_bands.py`。
+
+**band setter 可用不等於該 band 已可量測**：2.4／5 GHz 仍缺該 band 專屬的 ARB
+waveform 與完整 HIL，且 `configs/instrument_capabilities.example.yaml` 的
+approved profile 仍只授權 5925–7125 MHz，因此這兩個 band 目前不會送出 RF。
+
+English: on 2026-09-01 `scripts/cmp180_band_discovery.py` probed firmware `6.0.50.23`
+with generator RF `OFF` and the measurement idle, writing each candidate to the analyzer
+band, reading it back, then restoring `B6GH` and confirming RF stayed `OFF`. No RF was
+transmitted. `B2G4` was rejected with `-141,"Invalid character data"`; every other
+candidate was accepted with an empty error queue. A working band setter does **not**
+authorize measurement in that band: 2.4/5 GHz still lack a band-specific ARB waveform and
+full HIL, and the approved profile still limits RF to 5925-7125 MHz.
 | Center frequency | `CONFigure:WLAN:MEAS<i>:RFSettings:FREQuency` | Hz | 5.18 GHz | Verified: `5.18E9` |
 | Channel list | `CONFigure:WLAN:MEAS<i>:RFSettings:FREQuency:CHANnels` | channel(s) | 36 | Verified: `36` |
 | Channel item | `CONFigure:WLAN:MEAS<i>:RFSettings:FREQuency:CHANnels<Ch>` | channel | 36 | Pending |

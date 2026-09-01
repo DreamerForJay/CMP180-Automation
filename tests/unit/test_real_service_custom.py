@@ -23,6 +23,8 @@ class CleanupInstrument:
             return "OFF"
         if command == REGISTRY.require("wlan_tx_query.measurement_state"):
             return "RDY"
+        if command == REGISTRY.require("generator_query.rf_path"):
+            return '"RF1.1"'
         return "1"
 
     def close(self):
@@ -30,11 +32,14 @@ class CleanupInstrument:
 
 
 class CustomBackend:
+    configured_plans = []
+
     def __init__(self, _instrument, _registry, timeout_s):
         self.plan = None
 
     def configure(self, plan):
         self.plan = plan
+        self.__class__.configured_plans.append(plan)
 
     def rf_on(self):
         pass
@@ -47,6 +52,7 @@ class CustomBackend:
 
     def fetch_result(self):
         return {
+            "reliability": "0",
             "evm_all_carriers_db": -36,
             "evm_data_carriers_db": -35,
             "evm_pilot_carriers_db": -37,
@@ -78,6 +84,7 @@ class InvalidSecondPointBackend(CustomBackend):
 
 def test_custom_real_service_revalidates_runs_saves_and_cleans_up(monkeypatch, tmp_path):
     instrument = CleanupInstrument()
+    CustomBackend.configured_plans = []
     monkeypatch.setitem(
         sys.modules,
         "RsInstrument",
@@ -99,8 +106,45 @@ def test_custom_real_service_revalidates_runs_saves_and_cleans_up(monkeypatch, t
     assert len(result["points"]) == 3
     assert result["measurement_failed"] is False
     assert job.completed_points == 3
+    assert [plan.center_frequency_hz for plan in CustomBackend.configured_plans] == [
+        6_085_000_000,
+        6_105_000_000,
+        6_125_000_000,
+    ]
+    assert {plan.generator_power_dbm for plan in CustomBackend.configured_plans} == {-45}
+    # expected nominal power 固定為已驗證的 -20 dBm；跟隨 generator 功率會讓實機回傳 INV
+    # （2026-08-28 實機驗收證實）。
+    assert {plan.expected_nominal_power_dbm for plan in CustomBackend.configured_plans} == {-20}
     assert instrument.closed is True
     assert REGISTRY.require("generator.rf_off") in instrument.writes
+
+
+def test_custom_real_service_runs_full_user_frequency_plan(monkeypatch, tmp_path):
+    instrument = CleanupInstrument()
+    CustomBackend.configured_plans = []
+    monkeypatch.setitem(
+        sys.modules,
+        "RsInstrument",
+        SimpleNamespace(RsInstrument=lambda *args, **kwargs: instrument),
+    )
+    monkeypatch.setattr(real_service, "Cmp180SingleMeasurementBackend", CustomBackend)
+    request = {
+        "axis": "frequency",
+        "start_hz": 5_085_000_000,
+        "stop_hz": 6_125_000_000,
+        "step_hz": 20_000_000,
+        "bandwidth_hz": 320_000_000,
+        "generator_power_dbm": -45,
+        "dwell_ms": 10,
+    }
+    job = SweepJob("job-full", "hardware-custom-frequency", 53)
+    result = real_service.run_custom_real_sweep(job, request=request, output_root=tmp_path)
+    assert result["measurement_failed"] is False
+    assert len(result["points"]) == 53
+    assert job.total_points == 53
+    assert job.completed_points == 53
+    assert CustomBackend.configured_plans[0].center_frequency_hz == 5_085_000_000
+    assert CustomBackend.configured_plans[-1].center_frequency_hz == 6_125_000_000
 
 
 def test_custom_real_service_preserves_invalid_partial_result(monkeypatch, tmp_path):

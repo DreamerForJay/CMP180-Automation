@@ -581,3 +581,139 @@ Frequency Error -18.1467 Hz, and empty instrument/cleanup errors. Frequency swee
 `e0a40c3bab` completed 6085/6105/6125 MHz, and power sweep `5cbb6c37a7` completed
 -55/-50/-45/-40 dBm. Both batches ended with RF off, measurement ready, and an empty
 error queue.
+
+## 中文：2026-08-28 全 6 GHz band 掃描與 Web Pause／Resume／Stop 驗收
+
+操作員確認 RF1.1 → RF1.5 直連、無衰減器且人在儀器旁後，透過本機 Web 實機服務
+（loopback）完成四批量測。全部批次結束時 RF `OFF`、measurement `RDY`、error queue 為空。
+
+### 發現並修正的迴歸：expected nominal power 不可跟隨 generator 功率
+
+第一次兩點驗收（-55／-50 dBm）在第一點即失敗，28 個欄位全部回傳 `INV`。根因是
+`power_sweep.run_power_sweep()` 與 `real_service.run_custom_real_sweep()` 都把
+analyzer 的 expected nominal power 設成當下的 generator 功率（-55 dBm）。改回
+2026-08-20 已驗證的固定 -20 dBm 後，同一組計畫立即取得有效結果。此值現由
+`real_service.VERIFIED_EXPECTED_NOMINAL_POWER_DBM` 定義。Mock 測試無法發現這個問題，
+只有實機量測才會顯現。
+
+### 批次結果
+
+| 批次 | 內容 | 結果 |
+|---|---|---|
+| Run `98bd5ca855` | 功率 -55／-50 dBm，2 點 | 全部有效：-30.54895 dB／-32.29438 dB |
+| Run `f7a7f70fe8` | Pause／Resume／Stop 驗收，6 點計畫 | `cancelled` 於 2/6，partial 結果完整保留 |
+| Run `f0e961bf77` | 頻率 5925–7125 MHz，25 MHz 步進，49 點 | 49/49 有效，153 秒 |
+| Run `5964f567f2` | 功率 -55 至 -30 dBm，1 dB 步進，26 點 | 26/26 有效，82 秒 |
+
+頻率掃描 EVM 由 5925 MHz 的 -36.59215 dB 平滑劣化至 7125 MHz 的 -35.56354 dB。
+功率掃描 EVM 由 -55 dBm 的 -30.50118 dB 單調改善至 -30 dBm 的 -46.21632 dB，
+Burst power 與設定值誤差在 0.1 dB 內。
+
+這批證據把已驗證範圍從先前的 11 點／200 MHz span／-55 至 -40 dBm，擴大到
+**整個 6 GHz band（1200 MHz span、49 點）與 -55 至 -30 dBm（26 點）**。
+`DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM = -30 dBm` 是目前實測過的最高功率。
+
+### Web Pause／Resume／Stop 驗收細節
+
+Pause 在執行中送出後，狀態訊息為 `Paused safely after point 1/6`，且維持暫停 3 秒期間
+完成點數沒有增加，證實暫停發生在點位邊界（該點已完成 STOP 與 RF Off）而非 RF On 中途。
+Resume 後恢復 running 並繼續下一點；Stop 先進入 `stopping` 再結束為 `cancelled`，
+已完成的 2 點結果與 artifacts 都完整保存。
+
+### 診斷快照
+
+Run `98bd5ca855` 的 `metadata.json` 完整保存了 measurement state trace `['RUN', 'RDY']`、
+ARB waveform 檔名、WLAN standard `EHT`、band `B6GH`、trigger source `IF Power`、
+trigger threshold `-45.0` dB、expected nominal power `-20.0` dBm、external attenuation
+`0.0` dB 與 ranging strategy `expected_nominal_power_fixed`。
+
+### 尚未驗證
+
+400 MHz–8 GHz 全型錄範圍仍未驗證。`cmp180_single_backend.VERIFIED_WLAN_BAND` 目前寫死
+為 `B6GHz` 並強制 readback `B6GH`，因此 6 GHz band 以外的頻率無法取得有效 WLAN 量測；
+要涵蓋 2.4／5 GHz 必須先完成 band setter 的 SCPI 驗證與獨立 HIL。
+
+## English: 2026-08-28 full 6 GHz band sweeps and Web Pause/Resume/Stop acceptance
+
+After operator confirmation of the direct RF1.1-to-RF1.5 cable with no attenuator and
+on-site presence, four batches ran through the local loopback Web hardware service. Every
+batch ended with RF `OFF`, measurement `RDY`, and an empty error queue.
+
+### Regression found and fixed: expected nominal power must not follow generator power
+
+The first two-point acceptance (-55/-50 dBm) failed at the first point with all 28 fields
+returning `INV`. The cause was that both `power_sweep.run_power_sweep()` and
+`real_service.run_custom_real_sweep()` set the analyzer's expected nominal power to the
+current generator power (-55 dBm). Restoring the 2026-08-20 verified fixed -20 dBm made the
+same plan return valid results immediately. The value now lives in
+`real_service.VERIFIED_EXPECTED_NOMINAL_POWER_DBM`. Mock tests cannot detect this; only a
+live measurement exposes it.
+
+### Batch results
+
+| Batch | Content | Result |
+|---|---|---|
+| Run `98bd5ca855` | Power -55/-50 dBm, 2 points | All valid: -30.54895 dB / -32.29438 dB |
+| Run `f7a7f70fe8` | Pause/Resume/Stop acceptance, 6-point plan | `cancelled` at 2/6, partial results preserved |
+| Run `f0e961bf77` | Frequency 5925–7125 MHz, 25 MHz step, 49 points | 49/49 valid, 153 s |
+| Run `5964f567f2` | Power -55 to -30 dBm, 1 dB step, 26 points | 26/26 valid, 82 s |
+
+Frequency-sweep EVM degrades smoothly from -36.59215 dB at 5925 MHz to -35.56354 dB at
+7125 MHz. Power-sweep EVM improves monotonically from -30.50118 dB at -55 dBm to
+-46.21632 dB at -30 dBm, with burst power tracking the setting within 0.1 dB.
+
+This evidence widens the verified envelope from the previous 11 points / 200 MHz span /
+-55 to -40 dBm to **the whole 6 GHz band (1200 MHz span, 49 points) and -55 to -30 dBm
+(26 points)**. `DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM = -30 dBm` is the highest power
+measured so far.
+
+### Web Pause/Resume/Stop acceptance detail
+
+A pause requested mid-run reported `Paused safely after point 1/6`, and the completed-point
+count did not advance during three seconds of pause, confirming the pause takes effect at a
+point boundary (after that point's STOP and RF Off) rather than mid-RF-On. Resume returned
+the job to running and continued; Stop moved through `stopping` to `cancelled`, preserving
+the two completed points and their artifacts.
+
+### Diagnostic snapshot
+
+`metadata.json` for run `98bd5ca855` stored the measurement state trace `['RUN', 'RDY']`,
+ARB waveform filename, WLAN standard `EHT`, band `B6GH`, trigger source `IF Power`, trigger
+threshold `-45.0` dB, expected nominal power `-20.0` dBm, external attenuation `0.0` dB, and
+ranging strategy `expected_nominal_power_fixed`.
+
+### Not yet verified
+
+The full 400 MHz–8 GHz catalog range remains unverified.
+`cmp180_single_backend.VERIFIED_WLAN_BAND` is hard-coded to `B6GHz` with an enforced `B6GH`
+read-back, so frequencies outside the 6 GHz band cannot produce a valid WLAN measurement.
+Covering 2.4/5 GHz requires SCPI verification of the band setter plus its own HIL run.
+
+## 中文：2026-09-01 重新載入後黃金點重驗
+
+現場重新確認 RF1.1 → RF1.5 直連、無衰減器且操作員在場。唯讀 preflight
+顯示 Generator `OFF`、WLAN measurement `RDY`、error queue empty，並回讀 EHT、
+B6GH、BW320、6105 MHz、RF1.5、expected -20 dBm、Generator -40 dBm 與 0 dB
+attenuation。新的 Baseband ARB cleanup 不再送 ARB Sequencer state-tree command。
+
+兩次新的 Python INIT 都只觀察到 `RUN`，分別於 60 與 120 秒逾時。
+兩次均依 finally 路徑 STOP 並 RF Off；獨立收尾查詢確認 RF `OFF`、
+measurement `RDY` 與 error queue empty。STOP 後的唯讀 stored `FETCh` 回傳有限
+EVM／burst power／frequency error，但 workflow 未自行到達 `RDY`，所以不計為新的
+完整 Python SingleShot。依安全門檻未繼續 320 MHz 頻率或功率批次。
+
+## English: 2026-09-01 post-reload golden-point retry
+
+The operator reconfirmed the direct RF1.1-to-RF1.5 cable, no attenuator, and on-site
+presence. Query-only preflight showed Generator `OFF`, WLAN measurement `RDY`, and an empty
+error queue, with read-back of EHT, B6GH, BW320, 6105 MHz, RF1.5, -20 dBm expected power,
+-40 dBm Generator power, and 0 dB attenuation. The corrected Baseband ARB cleanup no longer
+issued an ARB Sequencer state-tree command.
+
+Two new Python INIT attempts observed only `RUN` and timed out after 60 and 120 seconds.
+Both took the finally cleanup path through STOP and RF Off; independent final queries
+confirmed RF `OFF`, measurement `RDY`, and an empty error queue. Query-only stored `FETCh`
+after STOP returned finite EVM, burst-power, and frequency-error values, but the workflow
+did not reach `RDY` on its own, so neither attempt qualifies as a new complete Python
+SingleShot. The 320 MHz frequency and power batches were not started because the golden
+point gate did not pass.

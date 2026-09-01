@@ -11,6 +11,7 @@ from cmp180_evm.workflow.analyzer_setter_validation import (
 )
 from cmp180_evm.workflow.generator_setter_validation import ScpiIo
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
+from cmp180_evm.workflow.wlan_bands import executable_band_for
 
 BANDWIDTH_ENUMS = {
     20_000_000: "BW20",
@@ -88,7 +89,13 @@ class Cmp180SingleMeasurementBackend:
         self._write_checked("generator.set_power", power_dbm=plan.generator_power_dbm)
         # 儀器重啟後可能回到 LOFD/B24G，必須在頻寬與頻率前恢復 EHT/6 GHz。
         self._write_checked("wlan_tx.set_standard", standard=VERIFIED_WLAN_STANDARD)
-        self._write_checked("wlan_tx.set_band", band=VERIFIED_WLAN_BAND)
+        # Band 依中心頻率選取，不再寫死 6 GHz；未驗證 enum 的 band 會在此拒絕。
+        band = executable_band_for(plan.center_frequency_hz)
+        if plan.bandwidth_hz > band.maximum_bandwidth_hz:
+            raise ValueError(
+                f"{plan.bandwidth_hz / 1e6:.0f} MHz exceeds the {band.name} band maximum"
+            )
+        self._write_checked("wlan_tx.set_band", band=band.band_enum)
         self._write_checked("wlan_tx.set_rf_path", rf_path=f'"{plan.analyzer_port}"')
         self._write_checked("wlan_tx.set_bandwidth", bandwidth=bandwidth)
         self._write_checked("wlan_tx.set_frequency", frequency_hz=plan.center_frequency_hz)
@@ -112,7 +119,7 @@ class Cmp180SingleMeasurementBackend:
         self._require_readback("generator_query.frequency", plan.center_frequency_hz)
         self._require_readback("generator_query.level", plan.generator_power_dbm)
         self._require_readback("wlan_tx_query.standard", VERIFIED_WLAN_STANDARD_READBACK)
-        self._require_readback("wlan_tx_query.band", VERIFIED_WLAN_BAND_READBACK)
+        self._require_readback("wlan_tx_query.band", band.band_readback)
         self._require_readback("wlan_tx_query.rf_path", plan.analyzer_port)
         self._require_readback("wlan_tx_query.bandwidth", bandwidth)
         self._require_readback("wlan_tx_query.center_frequency", plan.center_frequency_hz)
@@ -181,15 +188,12 @@ class Cmp180SingleMeasurementBackend:
         self._write_checked("wlan_tx.stop")
 
     def rf_off(self) -> None:
-        # 雙層關閉可處理 ARB 與通用 Generator 狀態，例外清理不得只關其中一層。
-        self._write_checked("generator.arb_rf_off")
+        # 此 profile 使用 Baseband ARB；ARB Sequencer 是另一個 state tree。
+        # 混送 Sequencer Off 會造成 workspace/profile 漂移，因此只關通用 Generator。
         self._write_checked("generator.rf_off")
-        arb_state = self._query("generator_query.arb_state")
         rf_state = self._query("generator_query.state")
-        if arb_state not in {"OFF", "RDY"} or rf_state != "OFF":
-            raise RuntimeError(
-                f"Generator RF Off readback failed: arb={arb_state!r}, rf={rf_state!r}"
-            )
+        if rf_state != "OFF":
+            raise RuntimeError(f"Generator RF Off readback failed: rf={rf_state!r}")
 
     def drain_error_queue(self) -> list[str]:
         errors: list[str] = []

@@ -87,6 +87,38 @@ CSV／JSON 現在保存全部 5 組已驗證統計查詢，不只 average：`evm
 
 目前 loopback 結果的 `PASS` 只能代表流程健康或示範 threshold，不代表 DUT compliance。正式 GUI 會把「Workflow PASS」與「RF Limit PASS」分開顯示。
 
+### 5.1 三層結果模型（2026-08-28 起）
+
+「CMP180 有回傳數字」不等於「這個數字有物理意義」，因此結果分成三個互不取代的層級：
+
+| 層級 | 負責模組 | 輸出 |
+|---|---|---|
+| Measurement validity | `results/validity.py` | `valid` 與 `invalid_reasons`（`INVALID_RELIABILITY`／`INVALID_EVM`／`INVALID_POWER`／`INVALID_FREQ_ERROR`） |
+| Spec compliance | `limits.py` | `measured_evm_db`、`spec_limit_db`、`margin_db`、`limit_status` |
+| Estimator confidence | `results/validity.py` | `estimator.estimate_valid` 與 `reason` |
+
+規則：
+
+- **Margin 符號約定全專案一致**：`margin = spec_limit − measured`，正值代表優於限值。
+  例如 limit `-35 dB`、EVM `-36 dB` → margin `+1 dB` → PASS；EVM `-33.4 dB` → margin `-1.6 dB` → FAIL。
+- 實機與模擬**共用同一份 profile 與 `evaluate_limits()`**，`real_service` 不得自建 PASS／FAIL 邏輯。
+- `reliability != 0` 即為無效點，即使各欄位都有數字。
+- 儀器回傳的 `instrument_out_of_tolerance_percent` 與 app 的 `limit_status` 是**獨立欄位**，不可互相覆蓋。
+- Gain Imbalance 與 Quadrature Error 需要至少 16 個 data OFDM symbol 與 20 個 PPDU 才會收斂
+  （來源：儀器內建 Help）。不足時這兩個欄位回傳 `null` 並標記
+  `reason = insufficient_symbols`，不得當成可靠 RF 結果顯示。
+
+### 5.2 有效 WLAN 掃描範圍與儀器 RF 能力不同
+
+`workflow/wlan_bands.py` 明確分離兩者：
+
+- **Instrument RF capability**：400 MHz–8 GHz，僅代表可調諧範圍。
+- **Valid WLAN sweep range**：由 Standard + Band + Channel Bandwidth + ARB waveform 共同決定。
+
+目前 backend 寫死 6 GHz band（`B6GHz`），因此有效範圍是 5925–7125 MHz、最大 320 MHz。
+超出此範圍的組合會在 Review Plan 階段就被拒絕並說明原因，不會送到 CMP180 才失敗。
+2.4／5 GHz band 的 SCPI enum 尚未驗證，於程式中保持 `None`。
+
 ### 6. 使用者異常操作與警示
 
 GUI 不再提供獨立的 fault injection 頁面。警示直接整合到正常操作流程：接線空白、未驗證自訂接線、操作員未在場、重複送出，以及伺服器未啟用硬體模式時，頁面會顯示紅色警示並禁止 RF 輸出。
@@ -181,6 +213,43 @@ The GUI must not classify DUT compliance using an arbitrary -32 dB or similar th
 5. Packet count, statistical method, and worst/average decision rule.
 
 Current loopback `PASS` can only indicate workflow health or a demonstration threshold, not DUT compliance. The final GUI will separate Workflow PASS from RF Limit PASS.
+
+### 5.1 Three-layer result model (from 2026-08-28)
+
+"The CMP180 returned a number" does not mean "the number is physically meaningful", so results
+are split into three layers that never substitute for one another:
+
+| Layer | Module | Output |
+|---|---|---|
+| Measurement validity | `results/validity.py` | `valid` and `invalid_reasons` (`INVALID_RELIABILITY`/`INVALID_EVM`/`INVALID_POWER`/`INVALID_FREQ_ERROR`) |
+| Spec compliance | `limits.py` | `measured_evm_db`, `spec_limit_db`, `margin_db`, `limit_status` |
+| Estimator confidence | `results/validity.py` | `estimator.estimate_valid` and `reason` |
+
+Rules:
+
+- **One margin sign convention project-wide**: `margin = spec_limit - measured`; positive means
+  better than the limit. With a `-35 dB` limit, EVM `-36 dB` gives margin `+1 dB` (PASS) and EVM
+  `-33.4 dB` gives margin `-1.6 dB` (FAIL).
+- Hardware and simulation **share one profile and one `evaluate_limits()`**; `real_service` must
+  never implement its own PASS/FAIL logic.
+- `reliability != 0` invalidates the point even when every field carries a number.
+- The instrument's `instrument_out_of_tolerance_percent` and the app's `limit_status` are
+  **separate fields** and must not overwrite each other.
+- Gain Imbalance and Quadrature Error need at least 16 data OFDM symbols and 20 PPDUs to converge
+  (source: instrument built-in help). Below that they return `null` with
+  `reason = insufficient_symbols` and must not be shown as reliable RF results.
+
+### 5.2 Valid WLAN sweep range differs from instrument RF capability
+
+`workflow/wlan_bands.py` separates the two explicitly:
+
+- **Instrument RF capability**: 400 MHz-8 GHz, tuning range only.
+- **Valid WLAN sweep range**: determined jointly by Standard + Band + Channel Bandwidth + ARB waveform.
+
+The backend currently hard-codes the 6 GHz band (`B6GHz`), so the valid range is 5925-7125 MHz with
+a 320 MHz maximum. Combinations outside it are rejected at the Review Plan stage with a stated
+reason instead of failing at the CMP180. The 2.4/5 GHz band SCPI enums are unverified and stay
+`None` in code.
 
 ### 6. Abnormal user actions and warnings
 

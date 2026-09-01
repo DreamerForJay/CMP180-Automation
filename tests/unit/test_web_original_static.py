@@ -67,6 +67,20 @@ def test_runs_filters_inline_details_and_rf_trace_controls() -> None:
     assert ".measurement-view,.demo-panel{display:none}" in design
 
 
+def test_frequency_unit_switch_is_one_click_not_a_dropdown() -> None:
+    """操作員要求單鍵切換 MHz／GHz，不可退回需要展開的下拉選單。"""
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    plan = (STATIC / "custom-plan.js").read_text(encoding="utf-8")
+
+    for field in ("start_unit", "stop_unit", "step_unit", "center_unit"):
+        assert f'data-unit-for="{field}"' in html
+        # 單位值仍需進入 FormData，但選擇介面必須是按鈕而非 <select>。
+        assert f'<input type="hidden" name="{field}" value="MHz">' in html
+        assert f'<select name="{field}"' not in html
+    assert "[data-unit-for]" in plan
+    assert "addEventListener('click'" in plan
+
+
 def test_web_preflight_and_chart_hover_are_operator_visible() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     javascript = (STATIC / "app.js").read_text(encoding="utf-8")
@@ -76,9 +90,14 @@ def test_web_preflight_and_chart_hover_are_operator_visible() -> None:
     assert 'id="blockRunButton"' not in html
     assert "chart-hover-tooltip" in javascript
     assert "data-chart-point" in javascript
-    assert "profileSummary" in hardware
+    # 摘要改為即時反映使用者輸入的計畫，不再是寫死的固定 profile 對照表。
+    assert "hardwareProfileSummary" in hardware
+    assert "updateHardwareSummary" in hardware
     assert "即將送出真實 RF" in hardware
     assert "confirm(" in hardware
+    assert "reviewAndExecuteCustomHardwarePlan" in hardware
+    assert "/api/jobs/hardware/${action}-sweep" not in hardware
+    assert "不會改跑固定" in (STATIC / "custom-plan.js").read_text(encoding="utf-8")
     # 積木 Run 必須轉送既有受保護表單，不可直接呼叫 RF endpoint。
     assert "積木介面已移除" in javascript
     assert '<input name="axis" type="hidden"' in html
@@ -131,6 +150,21 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
     assert "Math.min(900-chartView.width" in javascript
     assert "chartView.y=0" in javascript
     assert "chart-crosshair" in javascript
+
+
+def test_hil_campaign_is_persistent_and_operator_driven() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    campaign = (STATIC / "campaign.js").read_text(encoding="utf-8")
+    assert 'data-tab="campaign"' in html
+    assert 'id="campaignRows"' in html
+    assert 'id="campaignOperator"' in html
+    assert 'id="campaignRoute"' in html
+    assert 'class="table-wrap campaign-table-wrap"' in html
+    assert 'class="campaign-col-evidence"' in html
+    assert "/api/hil-campaign/prepare" in campaign
+    assert "/api/hil-campaign/cases/" in campaign
+    assert "/api/jobs/" in campaign
+    assert "campaign-detail" in campaign
 
 
 def test_operator_guide_covers_clone_cli_and_artifacts() -> None:

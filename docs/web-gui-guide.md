@@ -29,7 +29,7 @@ Web GUI 同時提供完整 Mock 操作，以及預設鎖定、只允許本機 lo
 
 Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／running／stopping／complete／cancelled／failed 狀態、逐點進度、單一 active-job 鎖與 cooperative cancel。2026-08-20 瀏覽器驗收確認 11 點頻率掃描可在第 3 點取消並只保存 3 點 partial result；四點功率掃描顯示 4/4 complete，CSV／JSON／HTML 為可點連結，窄版 viewport 無水平溢出。這只驗證 Mock Job 與 UI；尚未授權實機 Web sweep。
 
-實機 Web Sweep 只接上 CLI-HIL 核准的固定 profile：頻率 6085／6105／6125 MHz，以及功率 -55／-50／-45／-40 dBm。取消只在每點完成 STOP／RF Off 的邊界生效，並由最外層再次 STOP／ABORt、RF Off 與 read-back。2026-08-20 現場 Web HIL 已完成：頻率掃描 3/3 正常完成；功率掃描於第一點後送出取消，安全邊界於 2/4 停止並保存 partial artifacts。獨立查詢確認 RF `OFF`、measurement `RDY`、error queue empty。
+實機 Web Sweep 會使用畫面上「掃描設定」建立的同一份自訂計畫，不再把使用者輸入改跑固定 6085／6105／6125 MHz profile。送出前 Web 會先呼叫 preview API 產生點位、fingerprint 與 RF workflow 檢查結果；若目前 workflow 不接受該組合，畫面會顯示拒絕原因且不送出 RF。取消只在每點完成 STOP／RF Off 的邊界生效，並由最外層再次 STOP／ABORt、RF Off 與 read-back。2026-08-20 現場 Web HIL 已完成：頻率掃描 3/3 正常完成；功率掃描於第一點後送出取消，安全邊界於 2/4 停止並保存 partial artifacts。獨立查詢確認 RF `OFF`、measurement `RDY`、error queue empty。
 
 前三個量測頁籤刻意保留為「示範單點／示範頻掃／示範功掃」：它們供教學、UI
 驗證、CI 與沒有儀器時開發，永遠不送出 SCPI 或 RF。真正的 SingleShot、三點頻掃與
@@ -110,12 +110,14 @@ GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控�
 1. 確認 RF1.1 → RF1.5 cable。
 2. 確認操作員位於 CMP180 旁。
 3. 在確認欄輸入完全相同的 `RF1.1-RF1.5`。
-4. 選擇量測 profile 並按下執行；Web 會顯示即將送出的頻率、功率、頻寬與 Route 摘要。只有再次確認後才會送出 RF，取消則不送出任何 RF。
+4. 選擇單點、頻率掃描或功率掃描。掃描會直接使用畫面上的 Start／Stop／Step／Dwell／Bandwidth／Power 設定，不會改跑固定 profile。只有再次確認後才會送出 RF，取消則不送出任何 RF。
 
 上述操作員確認可直接在 Web 完成，不需要每次回到對話工具重新輸入授權文字；但後端安全包絡、接線路徑檢查與錯誤 cleanup 不可停用。
 4. 勾選操作員在場。
 
-目前實機頁面只允許已驗證的 6105 MHz、320 MHz、-40 dBm、expected power -20 dBm profile；不能從網頁任意提高功率或變更頻段。每次 run 保存非模擬 CSV、JSON、metadata 與 raw response。錯誤時 service 會執行 workflow cleanup，並額外進行 emergency STOP／ABORt、RF Off 與最終 state read-back。
+目前規劃介面可輸入 400 MHz–8 GHz，但真正送 RF 仍須通過目前 workflow 的 routing、bandwidth、power、dwell、point-count 與 cleanup 驗證。Web 不會隱藏替換參數；若輸入 400 MHz 這類超出目前 RF workflow 的組合，會回報拒絕原因，不會偷跑已驗證的 6 GHz profile。每次 run 保存非模擬 CSV、JSON、metadata 與 raw response。錯誤時 service 會執行 workflow cleanup，並額外進行 emergency STOP／ABORt、RF Off 與最終 state read-back。
+
+EVM limit 判定使用「dB 越負通常越好」的方向：量測 EVM 必須小於或等於 `maximum_evm_db` 才能通過。例如 limit 為 -32 dB 時，-36 dB 通過、-28 dB 失敗。沒有正式 approved limit profile 的實機結果只顯示 `MEASURED`，不宣稱 PASS。Power Reference Plane 尚未套用正式 Path Loss／Calibration Profile；metadata 會標示 `calibration_applied=false`，因此目前不能把 -45 dBm 設定值解讀成已補償後的正式參考面功率。
 
 2026-08-19 已完成 Web API 端到端 HIL 驗收。錯誤確認資料先被 HTTP 400 拒絕；正確確認後完成新實機 SingleShot，結果為 EVM All -36.51843 dB、Burst Power -40.18850 dBm、Frequency Error 6.986657 Hz，run ID `2d099714ee`。回傳 `simulated=false`，CSV 與 raw artifact 均存在；獨立收尾稽核確認 RF `OFF`、measurement `RDY` 且 error queue 為空。
 
@@ -135,6 +137,19 @@ GUI 右上角會顯示「實機模式」，工作區顯示「已啟用實機控�
 實機頁以單點、頻率掃描與功率掃描三個分頁直接設定工作，不再顯示 Generator／Analyzer／Measurement Flow 裝飾積木，也不使用量測模式下拉選單。Run 仍走既有 route／操作員／Profile／最終 RF 摘要確認。多點掃描的 Pause 只在目前點完成 STOP 與 RF Off 後生效；Resume 從下一點繼續，Stop 執行 cooperative cancellation 並保留 partial artifacts。SingleShot 不支援中途 Pause。
 
 掃描設定固定顯示，不使用可收合選單。頻率 Start、Stop、Step 與 Center Frequency 各自有緊鄰欄位的 MHz／GHz 選單；切換會先換算為 Hz 再顯示等值數字。量測 Job 每完成一點且完成 cleanup／RF Off 後，API 才發布該點快照，頁面同步更新進度、最新 EVM 與即時趨勢，不會為了畫圖額外送 SCPI。
+
+頻率／功率掃描按下「執行實機量測」時，會先用目前欄位建立 preview，再以同一份計畫送出 custom-sweep；前端不再呼叫固定三點／四點 profile endpoint。若 preview 顯示不可執行，按鈕會停在規劃狀態並顯示後端拒絕原因，不會改跑其他 profile。
+
+### HIL 批次工具
+
+1. 以本機實機模式啟動 Web，開啟「HIL 批次」。
+2. 按「準備／重新檢查矩陣」。工具只執行設定與既有 profile gate，不會在這一步送 RF。
+3. `READY` 表示現有 workflow 可執行；`BLOCKED` 會顯示缺少的 band setter、waveform、route profile 或專用 backend，不會改跑 RF1.1→RF1.5 的既有案例。
+4. 確認操作員在場與畫面 route 接線，再按單列 `Run` 或「執行下一個 READY」。
+5. Pause／Stop 經 Job API 在點位 cleanup／RF Off 邊界生效；成功、失敗與 artifact 路徑保存於 `output/hil-campaign/state.json`。
+6. 關閉瀏覽器不會清除進度。若 Web server 在執行中重啟，該列轉為 `INTERRUPTED`；重新 Prepare 後才能再跑，避免把消失的背景 thread 誤標成執行中。
+
+重設 Campaign 只重設矩陣狀態，不刪除既有量測 artifacts。新增 route、bandwidth 或 waveform 的 RF 權限仍須先補入正式 command registry、workflow 與 capability profile；介面按鈕本身不會繞過後端限制。
 
 ## English Version
 
@@ -165,12 +180,12 @@ Real hardware SingleShot has completed HIL. Normal local startup exposes guarded
 
 Mock frequency and power sweeps now use an asynchronous Job API with queued/running/stopping/complete/cancelled/failed states, per-point progress, a single-active-job lock, and cooperative cancellation. Browser acceptance on 2026-08-20 cancelled an 11-point frequency sweep at point 3 and preserved only three partial points. A four-point power sweep displayed 4/4 complete, CSV/JSON/HTML were clickable, and a narrow viewport had no horizontal overflow. This validates only the Mock Job/UI path; it does not authorize Web hardware sweeps.
 
-The Web hardware Sweep path is limited to CLI-HIL-approved fixed profiles: 6085/6105/6125 MHz frequency and -55/-50/-45/-40 dBm power. Cancellation takes effect only at a point boundary after STOP/RF Off, followed by outer STOP/ABORt, RF Off, and read-back. On-site Web HIL passed on 2026-08-20: frequency completed 3/3; power cancellation was requested after the first point and safely stopped at the next boundary with 2/4 partial artifacts. Independent queries confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
+The Web hardware Sweep path now uses the exact custom plan shown in Sweep Setup instead of silently falling back to the fixed 6085/6105/6125 MHz profile. Before execution, the Web UI calls the preview API to build points, compute the fingerprint, and revalidate the current RF workflow. If the workflow rejects the plan, the UI shows the rejection reason and transmits no RF. Cancellation takes effect only at a point boundary after STOP/RF Off, followed by outer STOP/ABORt, RF Off, and read-back. On-site Web HIL passed on 2026-08-20: frequency completed 3/3; power cancellation was requested after the first point and safely stopped at the next boundary with 2/4 partial artifacts. Independent queries confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
 
 The first three measurement tabs intentionally remain Demo Single, Demo Frequency
 Sweep, and Demo Power Sweep. They support training, UI validation, CI, and development
-without an instrument; they never send SCPI or RF. Real SingleShot, three-point
-frequency sweep, and four-point power sweep are grouped under Hardware Measurement.
+without an instrument; they never send SCPI or RF. Real SingleShot and the custom-plan
+frequency/power sweep entry points are grouped under Hardware Measurement.
 `LOCKED` means the current server was started with `--demo-only`; it does not
 mean hardware scanning is unfinished. Only local loopback mode may show `ARMED`. Status
 badges, preflight lights, and the mode selector provide bilingual hover explanations.
@@ -239,7 +254,7 @@ These files contain simulated data only. The real-hardware version will retain t
 
 ### Guarded hardware single mode
 
-After the complete Python SingleShot passed, the Web GUI gained a fixed-profile hardware screen. Normal startup remains locked. Use hardware mode only with an operator present and confirmed cabling:
+After the complete Python SingleShot passed, the Web GUI gained a guarded hardware screen. Use hardware mode only with an operator present and confirmed cabling:
 
 ```powershell
 python -m cmp180_evm.web --host 127.0.0.1 --port 8765
@@ -250,17 +265,16 @@ The top-right status displays `Hardware Mode`, the workspace displays
 
 1. Confirm the RF1.1-to-RF1.5 cable.
 2. Confirm that an operator is beside the CMP180.
-3. Enter the exact confirmation text `RF1.1-RF1.5`.
-4. Select the measurement profile and execute it. The Web UI shows the exact frequency,
-   power, bandwidth, and route that will be transmitted. RF starts only after the final
-   browser confirmation; cancelling transmits no RF.
+3. Select or enter the route `RF1.1-RF1.5`.
+4. Choose Single, Frequency Sweep, or Power Sweep. Sweeps use the Start/Stop/Step/Dwell/Bandwidth/Power values currently shown on the page and never substitute a fixed profile. RF starts only after the final browser confirmation; cancelling transmits no RF.
 
 The operator can complete these confirmations entirely in the Web UI and does not need
 to repeat an authorization phrase in a chat tool. Backend safety envelopes, route checks,
 and deterministic error cleanup remain mandatory.
-4. Select the operator-present checkbox.
 
-The hardware screen currently permits only the verified 6105 MHz, 320 MHz, -40 dBm, -20 dBm expected-power profile. The page cannot arbitrarily increase power or change bands. Every run saves non-simulated CSV, JSON, metadata, and raw response artifacts. On error, the service runs workflow cleanup followed by independent emergency STOP/ABORt, RF Off, and final-state read-back.
+The planning UI accepts 400 MHz to 8 GHz, but RF transmission must still pass the current workflow checks for routing, bandwidth, power, dwell, point count, and cleanup. The Web UI does not hide or replace parameters: if a 400 MHz plan is outside the current RF workflow, the page reports the rejection reason and does not run a verified 6 GHz profile instead. Every run saves non-simulated CSV, JSON, metadata, and raw response artifacts. On error, the service runs workflow cleanup followed by independent emergency STOP/ABORt, RF Off, and final-state read-back.
+
+EVM limit evaluation uses the correct "more negative is normally better" dB direction: measured EVM must be less than or equal to `maximum_evm_db` to pass. For example, with a -32 dB limit, -36 dB passes and -28 dB fails. Hardware results without an approved limit profile are shown as `MEASURED`, not PASS. Power Reference Plane compensation is not yet applied; metadata reports `calibration_applied=false`, so a -45 dBm setting must not be interpreted as a formally compensated reference-plane power.
 
 End-to-end Web API HIL acceptance passed on 2026-08-19. Invalid confirmation data was first rejected with HTTP 400. Correct confirmation then completed a new hardware SingleShot with EVM All -36.51843 dB, Burst Power -40.18850 dBm, Frequency Error 6.986657 Hz, and run ID `2d099714ee`. The response reported `simulated=false`; CSV and raw artifacts existed. Independent final auditing confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
 
@@ -277,3 +291,15 @@ The second UI pass uses the company TMXLAB KIT Demo as an information-hierarchy 
 The hardware page uses direct Single, Frequency Sweep, and Power Sweep tabs. Decorative Generator, Analyzer, and Measurement Flow blocks and the measurement-mode dropdown have been removed. Run still follows the existing route/operator/profile/final-RF-summary confirmations. For a multi-point sweep, Pause takes effect only after the current point completes STOP and RF Off; Resume continues with the next point, while Stop performs cooperative cancellation and preserves partial artifacts. SingleShot cannot pause mid-transaction.
 
 Sweep Setup stays visible rather than using a collapsible control. Start, Stop, Step, and Center Frequency each have an adjacent MHz/GHz selector; switching normalizes through Hz and preserves the physical value. A job publishes each point snapshot only after cleanup/RF Off, allowing the page to update progress, latest EVM, and a live trend without issuing extra SCPI for plotting.
+
+When Frequency Sweep or Power Sweep is executed, the UI first builds a preview from the current fields and then starts `custom-sweep` with the same plan. The frontend no longer calls the fixed three-point or four-point hardware endpoints from the main hardware sweep controls. If preview says the plan is not executable, the page remains in planning state, displays the backend rejection reason, and transmits no RF.
+### HIL campaign tool
+
+1. Start the Web application locally in hardware mode and open **HIL Campaign**.
+2. Select **Prepare / Recheck Matrix**. This applies configuration and the existing profile gate only; it transmits no RF.
+3. `READY` means the current workflow can execute the case. `BLOCKED` identifies a missing band setter, waveform, route profile, or dedicated backend and never substitutes the existing RF1.1-to-RF1.5 case.
+4. Confirm operator presence and the route shown on screen, then select a row's **Run** button or **Run Next READY**.
+5. Pause and Stop use the Job API and take effect at point cleanup/RF-Off boundaries. Success, failure, and artifact locations persist in `output/hil-campaign/state.json`.
+6. Closing the browser preserves progress. If the Web server restarts during execution, the row becomes `INTERRUPTED`; Prepare it again before rerunning so a vanished worker is never presented as active.
+
+Reset Campaign clears matrix progress but does not delete measurement artifacts. A new route, bandwidth, or waveform still requires a supported command-registry entry, workflow, and capability profile before RF execution; the UI cannot bypass the backend gate.

@@ -4,6 +4,18 @@
 
 ### 狀態（2026-08-27）
 
+- 2026-09-01 重新載入後以 RF1.1 → RF1.5 直連、0 dB 衰減、320 MHz、6105 MHz、
+  Generator -40 dBm 進行黃金點重驗。修正後的 cleanup 只操作 GPRF Baseband ARB
+  的通用 Generator state，沒有再送 ARB Sequencer state-tree command。兩次 INIT
+  都只觀察到 `RUN`，分別在 60 與 120 秒後逾時；STOP 後的獨立唯讀
+  `FETCh` 有有限數值，但不得當成完整自動 SingleShot PASS。兩次最終皆為
+  RF `OFF`、measurement `RDY`、error queue empty。因黃金點 workflow 未通過，
+  未執行 320 MHz 頻率或功率批次。
+
+- 2026-09-01 新增可恢復的 Web `HIL Campaign Runner`，將 2.4／5／6 GHz 頻寬、代表功率、其他 RF routes、500 MHz analysis bandwidth、雙 VSA／VSG 與 LEN≥32768 waveform 分類為 READY／BLOCKED，並以 `output/hil-campaign/state.json` 保存跨瀏覽器／server session 進度。只有現行 backend 與 Approved Profile 可執行的案例能按 Run；blocked 案例不會偷換成既有 RF1.1→RF1.5 profile。Pause／Stop 沿用點位 cleanup／RF-Off 邊界。驗證為 183 tests、兩份 YAML validation、JavaScript syntax 與 `git diff --check` 通過；本批只使用 Unit／Mock，未連線儀器、未送 RF。
+
+- 2026-08-28 修正實機掃描控制的正確性問題：頻率／功率掃描按鈕現在使用畫面上的自訂 Sweep Plan，不再呼叫固定三點／四點 profile endpoint，因此不會出現輸入 400 MHz 卻實際跑 6085／6105／6125 MHz 的隱性覆蓋。Preview 會回傳 `rejection_reason`，未通過目前 RF workflow 的組合會顯示原因且不送 RF。EVM limit 方向已加測：EVM dB 越負越好，量測值必須 `<= maximum_evm_db`；沒有 approved limit profile 時實機結果顯示 `MEASURED` 而非 PASS。Power Reference Plane 尚未套用正式 +5 dB compensation，metadata 仍標示 `calibration_applied=false`。本批只使用 unit／Mock 驗證，未連線儀器、未送 RF。
+
 - 2026-08-28 掃描設定改為永久展開，移除 Axis 下拉選單；實機單點／頻率／功率分頁直接決定 workflow。Start／Stop／Step／Center 各自提供 MHz／GHz 選單並等值換算。Job API 公開已完成點的唯讀快照，Web 執行中顯示進度、最新 EVM 與即時趨勢；資料只在單點 cleanup／RF Off 後發布。本批使用 Mock／unit 驗證，未連線儀器、未送 RF。
 
 - 2026-08-27 建立 `feature/hardware-console-productization`：一般本機啟動直接提供受保護的實機控制，`--demo-only` 才停用儀器；移除實機頁裝飾性積木與模式下拉選單，改由單點／頻率／功率分頁直接設定。規劃層接受 CMP180 型錄 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz，但 RF 執行仍只允許 Approved Profile／HIL 組合。本批未連線儀器、未送 RF。
@@ -97,11 +109,24 @@
 
 ## English Version
 
+- On 2026-09-01, the golden point was retried after reload with the direct RF1.1-to-RF1.5
+  path, 0 dB attenuation, 320 MHz, 6105 MHz, and -40 dBm Generator power. The corrected
+  cleanup only used the common GPRF Baseband ARB Generator state and did not issue an ARB
+  Sequencer state-tree command. Both INIT attempts remained in `RUN` and timed out after
+  60 and 120 seconds respectively. A separate query-only `FETCh` after STOP returned finite
+  values, but it does not qualify as a complete automated SingleShot pass. Both attempts
+  ended with RF `OFF`, measurement `RDY`, and an empty error queue. Because the golden-point
+  workflow did not pass, no 320 MHz frequency or power batch was executed.
+
+- On 2026-09-01, a resumable Web `HIL Campaign Runner` was added. It classifies 2.4/5/6 GHz bandwidths, representative power, alternate RF routes, 500 MHz analysis bandwidth, dual VSA/VSG, and LEN≥32768 waveform cases as READY or BLOCKED and persists progress across browser/server sessions in `output/hil-campaign/state.json`. Run is enabled only when the current backend and Approved Profile support the case; blocked cases are never substituted with the existing RF1.1-to-RF1.5 profile. Pause and Stop retain point-cleanup/RF-Off boundaries. Validation passed 183 tests, both YAML validations, JavaScript syntax, and `git diff --check`; this batch used Unit/Mock only and did not connect to the instrument or transmit RF.
+
 - On 2026-08-27, Hardware Measurement adopted the same Single/Frequency Sweep/Power Sweep tabs as Demo Training. Tab changes synchronize the backend action and Single hides sweep-only fields. Charts now use fixed coordinates: the wheel zooms only X, drag pans horizontally within bounds, and hover shows a crosshair plus complete engineering values. Help now covers Git clone, Python 3.11 installation, Demo startup, YAML validation, query-only connection checks, offline SVG generation, and HTML report rebuilding. The complete baseline is `155 passed`; this batch did not connect to the instrument or transmit RF.
 
 - On 2026-08-27, the Web hierarchy was reduced: duplicate page heroes/control-state cards are hidden, "Custom Measurement Plan" is renamed "Sweep Setup," and a three-step quick-start replaces the repeated Operator Playbook cards. PowerShell guidance now changes to the project directory first and copied commands no longer include the invalid `PS` prompt. `docs/next-hil-campaign.md` defines a ninety-minute capability snapshot, RF-Off readback, reference-point, boundary-point, short-sweep, and audit campaign for the next instrument slot. The complete baseline is `153 passed`; this batch did not connect to the instrument or transmit RF.
 
 ### Status (2026-08-27)
+
+- On 2026-08-28, hardware sweep correctness was fixed: Frequency/Power Sweep now executes the custom Sweep Plan shown on screen instead of calling the fixed three-point/four-point profile endpoints, so a 400 MHz input cannot be silently replaced by 6085/6105/6125 MHz. Preview now returns `rejection_reason`; plans rejected by the current RF workflow display the reason and transmit no RF. EVM limit direction is covered by tests: more-negative EVM dB is better, and the measured value must be `<= maximum_evm_db`. Hardware results without an approved limit profile display `MEASURED`, not PASS. Power Reference Plane does not yet apply formal +5 dB compensation; metadata still reports `calibration_applied=false`. This batch used unit/mock validation only and did not connect to the instrument or transmit RF.
 
 - On 2026-08-28, Sweep Setup became permanently expanded and the Axis dropdown was removed; direct Single/Frequency/Power tabs select the workflow. Start/Stop/Step/Center fields each have an adjacent MHz/GHz selector with value-preserving conversion. The Job API exposes read-only snapshots of completed points so the Web page can show progress, latest EVM, and a live trend only after point cleanup/RF Off. This batch used Mock/unit validation and did not connect to the instrument or transmit RF.
 

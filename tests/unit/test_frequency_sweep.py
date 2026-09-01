@@ -30,6 +30,7 @@ class SweepBackend:
     def fetch_result(self):
         return {
             "frequency_hz": self.frequency,
+            "reliability": "0",
             "evm_all_carriers_db": -36.0,
             "burst_power_dbm": -45.0,
             "frequency_error_hz": 1.0,
@@ -70,6 +71,20 @@ def test_short_sweep_runs_cleanup_for_every_point():
     assert waits == [0.1, 0.1]
 
 
+def test_catalog_frequency_sweep_generates_all_requested_points():
+    single = SingleMeasurementPlan("RF1.1", "RF1.5", 5_085e6, 320e6, -45, -45, 0, True, -30)
+    plan = sweep_plan(
+        single=single,
+        start_frequency_hz=5_085e6,
+        stop_frequency_hz=6_125e6,
+        step_frequency_hz=20e6,
+    )
+    points = plan.frequencies()
+    assert len(points) == 53
+    assert points[0] == 5_085e6
+    assert points[-1] == 6_125e6
+
+
 def test_failure_stops_sweep_and_preserves_completed_points():
     backend = SweepBackend(fail_frequency_hz=6_105e6)
     result = run_frequency_sweep(backend, sweep_plan(), sleeper=lambda _: None)
@@ -108,6 +123,24 @@ def test_invalid_critical_result_stops_before_next_frequency():
     assert ("configure", 6_125e6) not in backend.calls
 
 
+def test_nonzero_reliability_stops_before_next_frequency():
+    backend = SweepBackend()
+    original_fetch = backend.fetch_result
+
+    def fetch_result():
+        values = original_fetch()
+        if backend.frequency == 6_105e6:
+            values["reliability"] = "6"
+        return values
+
+    backend.fetch_result = fetch_result
+    result = run_frequency_sweep(backend, sweep_plan(), sleeper=lambda _: None)
+    assert result.completed is False
+    assert result.failed_frequency_hz == 6_105e6
+    assert result.error == "Invalid critical result fields: reliability"
+    assert ("configure", 6_125e6) not in backend.calls
+
+
 def test_cancel_stops_at_rf_off_point_boundary():
     backend = SweepBackend()
     completed = []
@@ -126,7 +159,8 @@ def test_cancel_stops_at_rf_off_point_boundary():
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"stop_frequency_hz": 6_405e6},
+        {"start_frequency_hz": 399e6},
+        {"stop_frequency_hz": 8_001e6},
         {"step_frequency_hz": 1e6, "maximum_points": 3},
         {"dwell_time_s": 0},
     ],
@@ -138,35 +172,30 @@ def test_unsafe_sweep_is_rejected_before_rf(overrides):
     assert backend.calls == []
 
 
-def test_caller_cannot_expand_hard_frequency_span_or_point_limits():
+def test_caller_can_narrow_but_not_exceed_cmp180_catalog_range():
     backend = SweepBackend()
-    plan = sweep_plan(
+    # 呼叫端以 profile/校正資料設定的較窄下限必須被遵守。
+    narrowed = sweep_plan(
         start_frequency_hz=5_800e6,
         stop_frequency_hz=5_900e6,
-        minimum_frequency_hz=5_000e6,
+        minimum_frequency_hz=6_000e6,
     )
     with pytest.raises(SafetyGuardError):
-        run_frequency_sweep(backend, plan, sleeper=lambda _: None)
+        run_frequency_sweep(backend, narrowed, sleeper=lambda _: None)
 
-    too_many = sweep_plan(
-        start_frequency_hz=6_000e6,
-        stop_frequency_hz=6_120e6,
-        step_frequency_hz=10e6,
-        maximum_points=100,
-    )
+    too_many = sweep_plan(start_frequency_hz=400e6, stop_frequency_hz=8e9, step_frequency_hz=1)
     with pytest.raises(SafetyGuardError):
         run_frequency_sweep(backend, too_many, sleeper=lambda _: None)
     assert backend.calls == []
 
 
-def test_unverified_sweep_bandwidth_is_rejected_before_rf():
+def test_supported_wlan_bandwidths_are_allowed_before_rf():
     backend = SweepBackend()
     plan = sweep_plan()
     single = SingleMeasurementPlan(**(vars(plan.single) | {"bandwidth_hz": 160e6}))
-    with pytest.raises(SafetyGuardError):
-        run_frequency_sweep(
-            backend,
-            FrequencySweepPlan(**(vars(plan) | {"single": single})),
-            sleeper=lambda _: None,
-        )
-    assert backend.calls == []
+    result = run_frequency_sweep(
+        backend,
+        FrequencySweepPlan(**(vars(plan) | {"single": single})),
+        sleeper=lambda _: None,
+    )
+    assert result.completed is True

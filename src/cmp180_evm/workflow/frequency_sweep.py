@@ -1,12 +1,14 @@
-"""Safety-bounded frequency sweep built from verified SingleShot cycles."""
+"""Frequency sweep built from cleanup-protected SingleShot cycles."""
 
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from math import isfinite
 
+from cmp180_evm.results.validity import (
+    invalid_critical_fields as _invalid_critical_fields,
+)
 from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.workflow.single_measurement import (
     MeasurementBackend,
@@ -15,28 +17,22 @@ from cmp180_evm.workflow.single_measurement import (
     run_single_measurement,
 )
 
-# HIL 前先把可變頻率 workflow 鎖在核准包絡；Plan 欄位不得用來放寬這些硬性限制。
-VERIFIED_MINIMUM_FREQUENCY_HZ = 5_925_000_000.0
-VERIFIED_MAXIMUM_FREQUENCY_HZ = 7_125_000_000.0
-VERIFIED_MAXIMUM_SPAN_HZ = 200_000_000.0
-VERIFIED_SWEEP_BANDWIDTH_HZ = 320_000_000.0
-VERIFIED_MAXIMUM_GENERATOR_POWER_DBM = -40.0
-VERIFIED_MAXIMUM_POINTS = 11
-CRITICAL_RESULT_FIELDS = ("evm_all_carriers_db", "burst_power_dbm", "frequency_error_hz")
+# 掃描規劃採 CMP180 WLAN 測試可規劃的型錄頻率範圍；逐點是否真的可量測，
+# 仍由 SCPI readback、measurement state 與 error queue 決定。
+CMP180_MINIMUM_FREQUENCY_HZ = 400_000_000.0
+CMP180_MAXIMUM_FREQUENCY_HZ = 8_000_000_000.0
+SUPPORTED_WLAN_BANDWIDTHS_HZ = {
+    20_000_000.0,
+    40_000_000.0,
+    80_000_000.0,
+    160_000_000.0,
+    320_000_000.0,
+}
+# 直接 loopback 無外部衰減器時保留輸入保護上限；這不是頻率掃描範圍限制。
+DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM = -30.0
+MAXIMUM_SWEEP_POINTS = 100_000
 
 
-def _invalid_critical_fields(values: dict[str, object]) -> tuple[str, ...]:
-    """Return critical fields that cannot represent a valid measurement point."""
-    invalid: list[str] = []
-    for field in CRITICAL_RESULT_FIELDS:
-        try:
-            numeric_value = float(values[field])
-        except (KeyError, TypeError, ValueError):
-            invalid.append(field)
-        else:
-            if not isfinite(numeric_value):
-                invalid.append(field)
-    return tuple(invalid)
 
 
 @dataclass(frozen=True)
@@ -46,45 +42,45 @@ class FrequencySweepPlan:
     stop_frequency_hz: float
     step_frequency_hz: float
     dwell_time_s: float = 0.1
-    maximum_points: int = 11
-    minimum_frequency_hz: float = 5_925_000_000
-    maximum_frequency_hz: float = 7_125_000_000
-    maximum_span_hz: float = 200_000_000
+    maximum_points: int = MAXIMUM_SWEEP_POINTS
+    minimum_frequency_hz: float = CMP180_MINIMUM_FREQUENCY_HZ
+    maximum_frequency_hz: float = CMP180_MAXIMUM_FREQUENCY_HZ
+    maximum_span_hz: float | None = None
 
     def frequencies(self) -> tuple[float, ...]:
-        """Return an inclusive point list after all RF safety checks pass."""
+        """Return an inclusive point list after RF planning checks pass."""
         self.single.validate_safety()
-        if self.single.generator_port != "RF1.1" or self.single.analyzer_port != "RF1.5":
-            raise SafetyGuardError("Short sweep currently permits only RF1.1 to RF1.5.")
-        if self.single.bandwidth_hz != VERIFIED_SWEEP_BANDWIDTH_HZ:
-            raise SafetyGuardError(
-                "Short sweep currently permits only the verified 320 MHz bandwidth."
-            )
-        if self.single.generator_power_dbm > VERIFIED_MAXIMUM_GENERATOR_POWER_DBM:
-            raise SafetyGuardError("Short sweep generator power must not exceed -40 dBm.")
-        if not 0.1 <= self.dwell_time_s <= 2.0:
-            raise SafetyGuardError("Dwell time must be between 0.1 and 2.0 seconds.")
+        if self.single.generator_port == self.single.analyzer_port:
+            raise SafetyGuardError("Generator and analyzer ports must be different.")
+        if self.single.bandwidth_hz not in SUPPORTED_WLAN_BANDWIDTHS_HZ:
+            raise SafetyGuardError("WLAN bandwidth must be 20, 40, 80, 160, or 320 MHz.")
+        if self.single.generator_power_dbm > DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM:
+            raise SafetyGuardError("Direct-loopback generator power must not exceed -30 dBm.")
+        if not 0.01 <= self.dwell_time_s <= 10.0:
+            raise SafetyGuardError("Dwell time must be between 0.01 and 10.0 seconds.")
         if self.step_frequency_hz <= 0 or self.stop_frequency_hz < self.start_frequency_hz:
             raise SafetyGuardError("Sweep stop must follow start and step must be positive.")
-        # 自訂上下限只能比硬性 6 GHz 包絡更窄，不能把未驗證頻率帶進實機 backend。
-        effective_minimum = max(self.minimum_frequency_hz, VERIFIED_MINIMUM_FREQUENCY_HZ)
-        effective_maximum = min(self.maximum_frequency_hz, VERIFIED_MAXIMUM_FREQUENCY_HZ)
+        # 呼叫端可以用 capability/profile 縮小範圍，但不能超出 CMP180 型錄規劃範圍。
+        effective_minimum = max(self.minimum_frequency_hz, CMP180_MINIMUM_FREQUENCY_HZ)
+        effective_maximum = min(self.maximum_frequency_hz, CMP180_MAXIMUM_FREQUENCY_HZ)
         if not (
             effective_minimum
             <= self.start_frequency_hz
             <= self.stop_frequency_hz
             <= effective_maximum
         ):
-            raise SafetyGuardError("Sweep frequencies exceed the approved 6 GHz lab range.")
-        effective_maximum_span = min(self.maximum_span_hz, VERIFIED_MAXIMUM_SPAN_HZ)
-        if self.stop_frequency_hz - self.start_frequency_hz > effective_maximum_span:
-            raise SafetyGuardError("Short sweep span exceeds 200 MHz.")
+            raise SafetyGuardError("Sweep frequencies exceed the CMP180 400 MHz..8 GHz range.")
+        if (
+            self.maximum_span_hz is not None
+            and self.stop_frequency_hz - self.start_frequency_hz > self.maximum_span_hz
+        ):
+            raise SafetyGuardError(f"Sweep span exceeds {self.maximum_span_hz} Hz.")
         count = (
             int((self.stop_frequency_hz - self.start_frequency_hz) // self.step_frequency_hz) + 1
         )
-        effective_maximum_points = min(self.maximum_points, VERIFIED_MAXIMUM_POINTS)
-        if count > effective_maximum_points:
-            raise SafetyGuardError(f"Short sweep exceeds {effective_maximum_points} points.")
+        # 軟體仍保留很高的防呆上限，避免極小 step 讓 Web job 或瀏覽器記憶體爆掉。
+        if count > self.maximum_points:
+            raise SafetyGuardError(f"Sweep exceeds {self.maximum_points} points.")
         return tuple(
             self.start_frequency_hz + index * self.step_frequency_hz for index in range(count)
         )
@@ -106,22 +102,31 @@ def run_frequency_sweep(
     sleeper: Callable[[float], None] = time.sleep,
     should_cancel: Callable[[], bool] = lambda: False,
     on_point_complete: Callable[[int, SingleMeasurementResult], None] = lambda _i, _r: None,
+    external_attenuation_for: Callable[[float], float] | None = None,
 ) -> FrequencySweepResult:
-    """Run one cleanup-protected SingleShot per frequency and stop on first failure."""
+    """Run one cleanup-protected SingleShot per frequency and stop on first failure.
+
+    ``external_attenuation_for`` supplies the approved path loss for each frequency so
+    results refer to the DUT reference plane. Omitting it keeps the plan's own value.
+    """
     frequencies = plan.frequencies()
     results: list[SingleMeasurementResult] = []
     for index, frequency_hz in enumerate(frequencies):
         if should_cancel():
-            # 僅在點與點之間接受取消；上一點已完成 STOP/RF Off，故不會留下 RF On。
+            # 取消只在點與點之間生效；單點內仍由 SingleShot 的 finally 關閉 RF。
             return FrequencySweepResult(frequencies, tuple(results), False, error="Cancelled")
-        point_plan = replace(plan.single, center_frequency_hz=frequency_hz)
+        # Path loss 隨頻率變化，因此每點各自套用已核准的 external attenuation。
+        overrides: dict[str, float] = {"center_frequency_hz": frequency_hz}
+        if external_attenuation_for is not None:
+            overrides["external_attenuation_db"] = external_attenuation_for(frequency_hz)
+        point_plan = replace(plan.single, **overrides)
         try:
-            # 每一點都走完整 SingleShot，確保點與點之間 STOP 且 RF Off。
+            # 每個頻點都是完整 SingleShot，確保每點結束都會 STOP 與 RF Off。
             point_result = run_single_measurement(backend, point_plan)
             results.append(point_result)
             on_point_complete(index + 1, point_result)
         except Exception as exc:
-            # 保留先前成功點，讓 CSV/JSON 可標示 partial run，而非遺失整批資料。
+            # 失敗時保留已完成點，讓 CSV/JSON 能追溯 partial run。
             return FrequencySweepResult(
                 requested_frequencies_hz=frequencies,
                 points=tuple(results),
@@ -130,7 +135,7 @@ def run_frequency_sweep(
                 error=f"{type(exc).__name__}: {exc}",
             )
         if point_result.cleanup_errors or point_result.instrument_errors:
-            # 清理或 error queue 異常代表儀器狀態不可信，禁止換到下一個頻點。
+            # 儀器 error queue 或 cleanup 異常代表此點不可再往後掃。
             return FrequencySweepResult(
                 requested_frequencies_hz=frequencies,
                 points=tuple(results),
@@ -143,7 +148,7 @@ def run_frequency_sweep(
             )
         invalid_fields = _invalid_critical_fields(point_result.values)
         if invalid_fields:
-            # CMP180 可能以 INV 表示未觸發；error queue 為空仍不得把該點視為有效量測。
+            # INV/null 不與正常點連線；立即停止，避免把無效量測當趨勢。
             return FrequencySweepResult(
                 requested_frequencies_hz=frequencies,
                 points=tuple(results),

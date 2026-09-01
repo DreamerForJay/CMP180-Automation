@@ -1,19 +1,22 @@
-"""Safety-bounded power sweep built from verified SingleShot cycles.
-
-Mirrors workflow/frequency_sweep.py exactly, but varies generator power at a
-fixed frequency instead of varying frequency at a fixed power. This backs
-the Web GUI's mock Power Sweep tab only — there is no hardware execution
-path yet, matching frequency sweep's own HIL-pending status.
-"""
+"""Power sweep built from cleanup-protected SingleShot cycles."""
 
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from math import isfinite
 
+from cmp180_evm.results.validity import (
+    invalid_critical_fields as _invalid_critical_fields,
+)
 from cmp180_evm.utils.exceptions import SafetyGuardError
+from cmp180_evm.workflow.frequency_sweep import (
+    CMP180_MAXIMUM_FREQUENCY_HZ,
+    CMP180_MINIMUM_FREQUENCY_HZ,
+    DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM,
+    MAXIMUM_SWEEP_POINTS,
+    SUPPORTED_WLAN_BANDWIDTHS_HZ,
+)
 from cmp180_evm.workflow.single_measurement import (
     MeasurementBackend,
     SingleMeasurementPlan,
@@ -21,26 +24,10 @@ from cmp180_evm.workflow.single_measurement import (
     run_single_measurement,
 )
 
-# 這些常數是目前唯一允許進入 HIL 的實機安全包絡；呼叫端參數只能縮小範圍，不能放寬。
-VERIFIED_POWER_SWEEP_FREQUENCY_HZ = 6_105_000_000.0
-VERIFIED_POWER_SWEEP_BANDWIDTH_HZ = 320_000_000.0
-VERIFIED_MINIMUM_POWER_DBM = -60.0
-VERIFIED_MAXIMUM_POWER_DBM = -40.0
-VERIFIED_MAXIMUM_POINTS = 11
-CRITICAL_RESULT_FIELDS = ("evm_all_carriers_db", "burst_power_dbm", "frequency_error_hz")
+# 功率下限以儀器常用低功率掃描保守值開放；上限仍由 direct-loopback input protection 控制。
+CMP180_PLANNING_MINIMUM_POWER_DBM = -100.0
 
 
-def _invalid_critical_fields(values: dict[str, object]) -> tuple[str, ...]:
-    invalid: list[str] = []
-    for field in CRITICAL_RESULT_FIELDS:
-        try:
-            numeric_value = float(values[field])
-        except (KeyError, TypeError, ValueError):
-            invalid.append(field)
-        else:
-            if not isfinite(numeric_value):
-                invalid.append(field)
-    return tuple(invalid)
 
 
 @dataclass(frozen=True)
@@ -50,40 +37,38 @@ class PowerSweepPlan:
     stop_power_dbm: float
     step_power_dbm: float
     dwell_time_s: float = 0.1
-    maximum_points: int = 11
-    minimum_power_dbm: float = -60.0
-    maximum_power_dbm: float = -40.0
+    maximum_points: int = MAXIMUM_SWEEP_POINTS
+    minimum_power_dbm: float = CMP180_PLANNING_MINIMUM_POWER_DBM
+    maximum_power_dbm: float = DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM
 
     def powers(self) -> tuple[float, ...]:
-        """Return an inclusive power-level list after all RF safety checks pass."""
+        """Return an inclusive power-level list after RF planning checks pass."""
         self.single.validate_safety()
-        if self.single.generator_port != "RF1.1" or self.single.analyzer_port != "RF1.5":
-            raise SafetyGuardError("Power sweep currently permits only RF1.1 to RF1.5.")
-        if self.single.center_frequency_hz != VERIFIED_POWER_SWEEP_FREQUENCY_HZ:
-            raise SafetyGuardError(
-                "Power sweep currently permits only the verified 6105 MHz profile."
-            )
-        if self.single.bandwidth_hz != VERIFIED_POWER_SWEEP_BANDWIDTH_HZ:
-            raise SafetyGuardError(
-                "Power sweep currently permits only the verified 320 MHz bandwidth."
-            )
-        if not 0.1 <= self.dwell_time_s <= 2.0:
-            raise SafetyGuardError("Dwell time must be between 0.1 and 2.0 seconds.")
+        if self.single.generator_port == self.single.analyzer_port:
+            raise SafetyGuardError("Generator and analyzer ports must be different.")
+        if not CMP180_MINIMUM_FREQUENCY_HZ <= self.single.center_frequency_hz <= CMP180_MAXIMUM_FREQUENCY_HZ:
+            raise SafetyGuardError("Center frequency exceeds the CMP180 400 MHz..8 GHz range.")
+        if self.single.bandwidth_hz not in SUPPORTED_WLAN_BANDWIDTHS_HZ:
+            raise SafetyGuardError("WLAN bandwidth must be 20, 40, 80, 160, or 320 MHz.")
+        if not 0.01 <= self.dwell_time_s <= 10.0:
+            raise SafetyGuardError("Dwell time must be between 0.01 and 10.0 seconds.")
         if self.step_power_dbm <= 0 or self.stop_power_dbm < self.start_power_dbm:
             raise SafetyGuardError("Sweep stop must follow start and step must be positive.")
-        # 同時套用硬性包絡與呼叫端較嚴格的限制，避免以自訂欄位繞過 -60 至 -40 dBm。
-        effective_minimum = max(self.minimum_power_dbm, VERIFIED_MINIMUM_POWER_DBM)
-        effective_maximum = min(self.maximum_power_dbm, VERIFIED_MAXIMUM_POWER_DBM)
+        # 可用 profile/校正資料縮小功率範圍，但 direct-loopback 輸入保護上限不可由
+        # 呼叫端欄位放寬；此處與 frequency_sweep 的硬檢查保持一致。
+        effective_maximum = min(
+            self.maximum_power_dbm, DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM
+        )
         if not (
-            effective_minimum <= self.start_power_dbm <= self.stop_power_dbm <= effective_maximum
+            self.minimum_power_dbm <= self.start_power_dbm <= self.stop_power_dbm <= effective_maximum
         ):
             raise SafetyGuardError(
-                f"Sweep power must stay within {effective_minimum}..{effective_maximum} dBm."
+                f"Sweep power must stay within {self.minimum_power_dbm}..{effective_maximum} dBm."
             )
         count = int((self.stop_power_dbm - self.start_power_dbm) // self.step_power_dbm) + 1
-        effective_maximum_points = min(self.maximum_points, VERIFIED_MAXIMUM_POINTS)
-        if count > effective_maximum_points:
-            raise SafetyGuardError(f"Power sweep exceeds {effective_maximum_points} points.")
+        # 防止極小 step 造成超大 job；這是軟體資源防呆，不是 CMP180 能力限制。
+        if count > self.maximum_points:
+            raise SafetyGuardError(f"Power sweep exceeds {self.maximum_points} points.")
         return tuple(self.start_power_dbm + index * self.step_power_dbm for index in range(count))
 
 
@@ -109,16 +94,19 @@ def run_power_sweep(
     results: list[SingleMeasurementResult] = []
     for index, power_dbm in enumerate(powers):
         if should_cancel():
-            # 取消只在 RF Off 的點邊界生效，避免換到下一個較高功率。
+            # 取消只在點與點之間生效，確保不會在 RF On 中途硬切狀態。
             return PowerSweepResult(powers, tuple(results), False, error="Cancelled")
+        # expected nominal power 必須維持呼叫端設定值，不可跟隨 generator 功率。
+        # 2026-08-28 實機驗收證實：-55 dBm 搭配 expected -55 dBm 會讓 28 個欄位全部
+        # 回傳 INV；同樣 -55 dBm 搭配已驗證的 expected -20 dBm 則可量到有效結果。
         point_plan = replace(plan.single, generator_power_dbm=power_dbm)
         try:
-            # 每一點都走完整 SingleShot，確保點與點之間 STOP 且 RF Off。
+            # 每個功率點完整走 configure/RF On/INIT/FETCh/STOP/RF Off。
             point_result = run_single_measurement(backend, point_plan)
             results.append(point_result)
             on_point_complete(index + 1, point_result)
         except Exception as exc:
-            # 保留先前成功點，讓 CSV/JSON 可標示 partial run，而非遺失整批資料。
+            # 保留 partial run，避免失敗後看不到已量到的點。
             return PowerSweepResult(
                 requested_powers_dbm=powers,
                 points=tuple(results),
@@ -127,7 +115,7 @@ def run_power_sweep(
                 error=f"{type(exc).__name__}: {exc}",
             )
         if point_result.cleanup_errors or point_result.instrument_errors:
-            # 清理或 error queue 異常代表儀器狀態不可信，禁止提高到下一個功率點。
+            # 儀器回報錯誤或 cleanup 失敗時，不繼續送下一個 RF 點。
             return PowerSweepResult(
                 requested_powers_dbm=powers,
                 points=tuple(results),
@@ -140,7 +128,7 @@ def run_power_sweep(
             )
         invalid_fields = _invalid_critical_fields(point_result.values)
         if invalid_fields:
-            # CMP180 可能以 INV 表示未觸發；即使 error queue 為空也不得視為有效量測。
+            # INVALID 點必須中斷掃描，不可和正常點相連造成趨勢誤判。
             return PowerSweepResult(
                 requested_powers_dbm=powers,
                 points=tuple(results),

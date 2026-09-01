@@ -122,9 +122,8 @@ def test_malformed_result_still_stops_and_turns_rf_off():
     with pytest.raises(ValueError, match="Expected 28 fields"):
         run_single_measurement(backend, plan())
     assert io.rf_state == "OFF"
-    assert io.writes[-3:] == [
+    assert io.writes[-2:] == [
         REGISTRY.require("wlan_tx.stop"),
-        REGISTRY.require("generator.arb_rf_off"),
         REGISTRY.require("generator.rf_off"),
     ]
 

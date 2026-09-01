@@ -4,10 +4,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from cmp180_evm.limits import DRAFT_LOOPBACK_LIMIT_PROFILE, LimitProfile, evaluate_limits
 from cmp180_evm.results.artifacts import (
     save_frequency_sweep_result,
     save_power_sweep_result,
     save_single_result,
+)
+from cmp180_evm.calibration import CalibrationProfile
+from cmp180_evm.workflow.calibration_application import (
+    resolve_calibration,
+    uncalibrated_metadata,
+)
+from cmp180_evm.results.validity import (
+    IQ_ESTIMATE_FIELDS,
+    evaluate_estimator_confidence,
+    evaluate_point_validity,
 )
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
@@ -26,6 +37,8 @@ from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_si
 VERIFIED_ARB_WAVEFORM = (
     "KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv"
 )
+# 2026-08-20 HIL 已驗證的 analyzer 接收參考面；讓它跟隨 generator 功率會導致 INV。
+VERIFIED_EXPECTED_NOMINAL_POWER_DBM = -20.0
 
 
 def _measurement_diagnostics(
@@ -50,7 +63,16 @@ def _measurement_diagnostics(
 
 
 def _web_point(
-    index: int, axis_value: float, values: dict[str, object], axis: str
+    index: int,
+    axis_value: float,
+    values: dict[str, object],
+    axis: str,
+    *,
+    bandwidth_hz: float = 320_000_000.0,
+    fixed_frequency_hz: float = 6_105_000_000.0,
+    fixed_power_dbm: float = -40.0,
+    profile: LimitProfile = DRAFT_LOOPBACK_LIMIT_PROFILE,
+    statistic_count: int | None = None,
 ) -> dict[str, object]:
     def optional_float(field: str) -> float | None:
         try:
@@ -67,18 +89,49 @@ def _web_point(
         "frequency_error_hz": optional_float("frequency_error_hz"),
         "clock_error_ppm": optional_float("clock_error_ppm"),
     }
-    critical_valid = all(
-        normalized[field] is not None
-        for field in ("evm_all_db", "burst_power_dbm", "frequency_error_hz")
-    )
+    # Layer 1：量測有效性，集中定義於 results.validity，reason 完整保留而非只留 boolean。
+    validity = evaluate_point_validity(values)
+    generator_power_dbm = axis_value if axis == "power" else fixed_power_dbm
+
+    # Layer 2：規格判定與模擬路徑共用同一個 profile 與 evaluate_limits，不另外複製邏輯。
+    # margin = limit - measured，正值代表優於限值；此符號約定全專案一致。
+    spec_limit_db = profile.maximum_evm_db
+    if validity.valid:
+        limit_result = evaluate_limits(
+            profile,
+            evm_db=float(normalized["evm_all_db"]),
+            frequency_error_hz=float(normalized["frequency_error_hz"]),
+            measured_power_dbm=float(normalized["burst_power_dbm"]),
+            expected_power_dbm=generator_power_dbm,
+        )
+        limit_status = limit_result.overall_status
+        margin_db = limit_result.evm_margin_db
+    else:
+        limit_status = "INVALID"
+        margin_db = None
+
+    # Layer 3：估計器信心。symbol 數不足時 IQ 類欄位不得當成可靠 RF 結果顯示。
+    confidence = evaluate_estimator_confidence(values, statistic_count=statistic_count)
+    iq_fields: dict[str, object] = {field: None for field in IQ_ESTIMATE_FIELDS}
+    if confidence.estimate_valid:
+        for field in IQ_ESTIMATE_FIELDS:
+            iq_fields[field] = optional_float(field)
+
     return {
         "point_index": index,
-        "frequency_hz": axis_value if axis == "frequency" else 6_105_000_000.0,
-        "generator_power_dbm": axis_value if axis == "power" else -40.0,
-        "bandwidth_hz": 320_000_000.0,
+        "frequency_hz": axis_value if axis == "frequency" else fixed_frequency_hz,
+        "generator_power_dbm": generator_power_dbm,
+        "bandwidth_hz": bandwidth_hz,
         **normalized,
-        "valid": critical_valid,
-        "limit_status": "MEASURED" if critical_valid else "INVALID",
+        **validity.public(),
+        "measured_evm_db": normalized["evm_all_db"],
+        "spec_limit_db": spec_limit_db,
+        "margin_db": margin_db,
+        "limit_status": limit_status,
+        # 儀器自己的判定，與 app 的 spec 判定分開呈現，避免雙重判定互相覆蓋。
+        "instrument_out_of_tolerance_percent": optional_float("out_of_tolerance_percent"),
+        **iq_fields,
+        "estimator": confidence.public(),
     }
 
 
@@ -95,7 +148,9 @@ def run_verified_real_sweep(job: SweepJob, *, axis: str, output_root: Path) -> d
     )
     instrument.visa_timeout = 15_000
     try:
-        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=15.0)
+        # 實機統計量測可能超過 VISA 的單次 I/O timeout；此處只延長狀態輪詢，
+        # 例外與取消仍會在 finally 執行 STOP／ABORT 與 RF Off。
+        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=60.0)
         single = SingleMeasurementPlan(
             "RF1.1", "RF1.5", 6_105_000_000, 320_000_000, -40, -20, 0, True, -40
         )
@@ -211,6 +266,7 @@ def run_custom_real_sweep(
     *,
     request: dict[str, object],
     output_root: Path,
+    calibration_profile: CalibrationProfile | None = None,
 ) -> dict[str, object]:
     """Execute one revalidated custom plan inside the hard workflow safety envelope."""
     from RsInstrument import RsInstrument
@@ -225,7 +281,8 @@ def run_custom_real_sweep(
     )
     instrument.visa_timeout = 15_000
     try:
-        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=15.0)
+        # 掃描每點保留 60 秒 acquisition 窗口，不放寬任何 RF 安全限制。
+        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=60.0)
         single = SingleMeasurementPlan(
             generator_port="RF1.1",
             analyzer_port="RF1.5",
@@ -240,21 +297,40 @@ def run_custom_real_sweep(
                 if preview.axis == "frequency"
                 else preview.points[0]
             ),
-            # -20 dBm 是既有 CMP180 ranging 設定；Path Loss 核准前不得自行改寫。
-            expected_nominal_power_dbm=-20.0,
+            # expected nominal power 必須沿用已驗證的 -20 dBm，不可跟隨 generator 功率。
+            # 2026-08-28 實機驗收：-55 dBm 搭配 expected -55 dBm，28 個欄位全部回傳 INV；
+            # 2026-08-20 HIL 則以同樣 -55 dBm 搭配 expected -20 dBm 取得有效 EVM。
+            expected_nominal_power_dbm=VERIFIED_EXPECTED_NOMINAL_POWER_DBM,
             external_attenuation_db=0.0,
             operator_confirmed=True,
-            maximum_generator_power_dbm=-40.0,
+            maximum_generator_power_dbm=-30.0,
         )
 
+        # 校正只在提供已核准且涵蓋本次頻率的 profile 時生效；否則維持未修正行為。
+        calibration_frequencies = (
+            preview.points
+            if preview.axis == "frequency"
+            else (float(preview.center_frequency_hz),)
+        )
+        calibration = resolve_calibration(
+            calibration_profile,
+            route=f"{single.generator_port}-{single.analyzer_port}",
+            frequencies_hz=tuple(float(value) for value in calibration_frequencies),
+        )
         metadata = {
             "source": "web_custom_hardware_sweep",
             "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
             "custom_plan_fingerprint": preview.plan_fingerprint,
             "custom_plan": preview.public(),
             "operator_authorization": "confirmed_at_request",
-            "calibration_applied": False,
-            "calibration_reason": "No approved calibration profile supplied",
+            **(
+                calibration.metadata()
+                if calibration
+                else uncalibrated_metadata(
+                    "No approved calibration profile supplied; analyzer expected power "
+                    "uses the HIL-verified fixed -20 dBm ranging value"
+                )
+            ),
         }
         if preview.axis == "frequency":
             plan = FrequencySweepPlan(
@@ -267,14 +343,23 @@ def run_custom_real_sweep(
             def callback(count, point):
                 # 預覽點位已在 request 重新驗證；只發布完成後的正規化資料供 Web 即時顯示。
                 value = preview.points[count - 1]
-                web_point = _web_point(count - 1, value, point.values, "frequency")
-                web_point["generator_power_dbm"] = preview.generator_power_dbm
+                web_point = _web_point(
+                    count - 1,
+                    value,
+                    point.values,
+                    "frequency",
+                    bandwidth_hz=preview.bandwidth_hz,
+                    fixed_power_dbm=float(preview.generator_power_dbm),
+                )
                 job.point_completed(count, web_point)
             result = run_frequency_sweep(
                 backend,
                 plan,
                 should_cancel=job.is_cancel_requested,
                 on_point_complete=callback,
+                external_attenuation_for=(
+                    calibration.loss_for if calibration else None
+                ),
             )
             metadata.update(_measurement_diagnostics(backend, single))
             raw_points = [
@@ -292,8 +377,14 @@ def run_custom_real_sweep(
             )
             web_points = [
                 {
-                    **_web_point(index, value, point.values, "frequency"),
-                    "generator_power_dbm": preview.generator_power_dbm,
+                    **_web_point(
+                        index,
+                        value,
+                        point.values,
+                        "frequency",
+                        bandwidth_hz=preview.bandwidth_hz,
+                        fixed_power_dbm=float(preview.generator_power_dbm),
+                    ),
                 }
                 for index, (value, point) in enumerate(
                     zip(result.requested_frequencies_hz, result.points)
@@ -309,8 +400,14 @@ def run_custom_real_sweep(
             )
             def callback(count, point):
                 value = preview.points[count - 1]
-                web_point = _web_point(count - 1, value, point.values, "power")
-                web_point["frequency_hz"] = preview.center_frequency_hz
+                web_point = _web_point(
+                    count - 1,
+                    value,
+                    point.values,
+                    "power",
+                    bandwidth_hz=preview.bandwidth_hz,
+                    fixed_frequency_hz=float(preview.center_frequency_hz),
+                )
                 job.point_completed(count, web_point)
             result = run_power_sweep(
                 backend,
@@ -334,8 +431,14 @@ def run_custom_real_sweep(
             )
             web_points = [
                 {
-                    **_web_point(index, value, point.values, "power"),
-                    "frequency_hz": preview.center_frequency_hz,
+                    **_web_point(
+                        index,
+                        value,
+                        point.values,
+                        "power",
+                        bandwidth_hz=preview.bandwidth_hz,
+                        fixed_frequency_hz=float(preview.center_frequency_hz),
+                    ),
                 }
                 for index, (value, point) in enumerate(
                     zip(result.requested_powers_dbm, result.points)
@@ -393,7 +496,8 @@ def run_verified_real_single(
     final_rf_state = "UNKNOWN"
     final_measurement_state = "UNKNOWN"
     try:
-        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=15.0)
+        # 自訂掃描僅延長等待時間；cleanup 與功率上限維持不變。
+        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=60.0)
         # Web 實機模式先鎖定已驗證 profile，不接受任意頻率或功率輸入。
         plan = SingleMeasurementPlan(
             generator_port="RF1.1",
@@ -430,24 +534,18 @@ def run_verified_real_single(
             },
         )
         values = result.values
+        point = _web_point(
+            0,
+            plan.center_frequency_hz,
+            values,
+            "frequency",
+            bandwidth_hz=plan.bandwidth_hz,
+            fixed_power_dbm=plan.generator_power_dbm,
+        )
         return {
             "simulated": False,
-            "points": [
-                {
-                    "point_index": 0,
-                    "frequency_hz": plan.center_frequency_hz,
-                    "bandwidth_hz": plan.bandwidth_hz,
-                    "generator_power_dbm": plan.generator_power_dbm,
-                    "evm_all_db": float(values["evm_all_carriers_db"]),
-                    "evm_data_db": float(values["evm_data_carriers_db"]),
-                    "evm_pilot_db": float(values["evm_pilot_carriers_db"]),
-                    "burst_power_dbm": float(values["burst_power_dbm"]),
-                    "frequency_error_hz": float(values["frequency_error_hz"]),
-                    "clock_error_ppm": float(values["clock_error_ppm"]),
-                    "valid": True,
-                    "limit_status": "MEASURED",
-                }
-            ],
+            # SingleShot 與 sweep 共用相同 validity／limit／estimator 合約，避免結果頁兩套語意。
+            "points": [point],
             "artifacts": artifacts,
         }
     finally:

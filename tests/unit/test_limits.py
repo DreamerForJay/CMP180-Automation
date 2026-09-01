@@ -42,6 +42,28 @@ def test_any_failed_metric_fails_the_draft_profile():
     assert result.evm_status == "FAIL"
 
 
+def test_evm_db_limit_treats_more_negative_as_better():
+    good = evaluate_limits(
+        profile(),
+        evm_db=-36.0,
+        frequency_error_hz=0.0,
+        measured_power_dbm=-40.0,
+        expected_power_dbm=-40.0,
+    )
+    bad = evaluate_limits(
+        profile(),
+        evm_db=-28.0,
+        frequency_error_hz=0.0,
+        measured_power_dbm=-40.0,
+        expected_power_dbm=-40.0,
+    )
+
+    assert good.evm_status == "PASS"
+    assert good.evm_margin_db == 4.0
+    assert bad.evm_status == "FAIL"
+    assert bad.evm_margin_db == -4.0
+
+
 def test_non_finite_metric_is_invalid_not_pass():
     result = evaluate_limits(
         profile(),

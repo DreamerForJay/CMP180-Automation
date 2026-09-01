@@ -45,7 +45,9 @@ def main() -> int:
         )
         instrument.visa_timeout = 15_000
         print(f"IDN: {instrument.query_str(registry.require('common.identify')).strip()}")
-        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=15.0)
+        # Statistic Count 10 的實機 SingleShot 可能超過 15 秒；只延長等待，
+        # 不改功率、路徑或 trigger，逾時仍由 workflow 執行 STOP 與 RF Off。
+        backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=60.0)
         plan = SingleMeasurementPlan(
             generator_port="RF1.1",
             analyzer_port="RF1.5",

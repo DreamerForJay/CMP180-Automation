@@ -46,6 +46,19 @@ class LimitEvaluation:
     power_error_margin_db: float | None
 
 
+# 實機與模擬共用同一份 profile；任何路徑都不得自行複製一套 PASS/FAIL 判定。
+# lifecycle 為 draft，因此結果只會標示 DRAFT_PASS／DRAFT_FAIL，不可當成 DUT compliance。
+DRAFT_LOOPBACK_LIMIT_PROFILE = LimitProfile(
+    profile_id="draft-eht-mcs11-bw320-loopback",
+    revision="0.1-draft",
+    lifecycle="draft",
+    description="Development-only example; not DUT compliance",
+    maximum_evm_db=-32.0,
+    maximum_absolute_frequency_error_hz=1000.0,
+    maximum_absolute_power_error_db=3.0,
+)
+
+
 def load_limit_profile(path: Path) -> LimitProfile:
     data: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):

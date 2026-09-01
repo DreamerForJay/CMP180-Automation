@@ -19,21 +19,23 @@ installed:
   generator_count: 1
   rf_ports: [RF1.1, RF1.2, RF1.3, RF1.4, RF1.5, RF1.6, RF1.7, RF1.8, RF2.1, RF2.2, RF2.3, RF2.4, RF2.5, RF2.6, RF2.7, RF2.8]
 approved_profile:
-  profile_id: rf1.1-rf1.5-direct-cable-v1
+  profile_id: rf1.1-rf1.5-6ghz-bw320-v2
   lifecycle: approved
   frequency_min_hz: 5925000000
   frequency_max_hz: 7125000000
-  maximum_span_hz: 200000000
+  # 2026-08-28 Web HIL 已完成 5925–7125 MHz／49 點與 -55–-30 dBm，
+  # 此層只授權已有實機證據的組合，不繼承 catalog 上限。
+  maximum_span_hz: 1200000000
   bandwidths_hz: [320000000]
-  generator_power_min_dbm: -60
-  generator_power_max_dbm: -40
+  generator_power_min_dbm: -55
+  generator_power_max_dbm: -30
   dwell_min_ms: 100
   dwell_max_ms: 2000
-  maximum_points: 11
+  maximum_points: 49
   routes: [RF1.1-RF1.5]
 verified_hil:
-  frequencies_hz: [6085000000, 6105000000, 6125000000]
+  frequencies_hz: [5925000000, 6105000000, 7125000000]
   bandwidths_hz: [320000000]
-  generator_powers_dbm: [-55, -50, -45, -40]
-  dwell_ms: [100]
+  generator_powers_dbm: [-55, -50, -45, -40, -30]
+  dwell_ms: [100, 200]
   routes: [RF1.1-RF1.5]

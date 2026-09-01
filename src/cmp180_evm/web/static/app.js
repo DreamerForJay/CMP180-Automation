@@ -2,6 +2,7 @@ const translations={zh:{subtitle:'WLAN TX EVM 自動化量測',mockBadge:'DEMO',
 // 導覽名稱明確區分 Demo 與實機，避免相同量測類型看起來像重複功能。
 translations.zh.singleTab='示範單點';translations.zh.sweepTab='示範頻掃';translations.zh.powerSweepTab='示範功掃';
 translations.en.singleTab='Demo Single';translations.en.sweepTab='Demo Freq Sweep';translations.en.powerSweepTab='Demo Power Sweep';
+translations.zh.campaignTab='HIL 批次';translations.en.campaignTab='HIL Campaign';
 Object.assign(translations.zh,{homeTab:'首頁',guideTab:'說明',guideTitle:'快速操作',guideIntro:'啟動服務、執行量測、查看結果。',guideSafeTitle:'Demo 模式',guideSafeText:'不發送 RF',guideStep1:'啟動',guideStep2:'量測',guideStep3:'結果',guideStep4:'報告',demoCommandTitle:'啟動 Demo',demoCommandHelp:'不連線 CMP180、不送 SCPI。',copyCommand:'複製',openBrowser:'網址',configCommandTitle:'檢查設定',configCommandHelp:'驗證 YAML 與安全設定。',expectedOutput:'預期結果',connectionCommandTitle:'連線檢查',connectionCommandHelp:'讀取 IDN、Options 與 Error Queue。',powerWarning:'注意',queryOnlyAdvice:'此動作不啟動量測或 RF。',hardwareCommandTitle:'啟動實機服務',hardwareCommandHelp:'啟動後仍需在量測頁完成安全確認。',hardwareHold:'未通過安全確認時不會送出 RF。',whereResultsTitle:'輸出位置',whereResultsText:'output\\<timestamp>_<run>\\',whenStopTitle:'停止條件',whenStopText:'INV、逾時、SCPI Error、接線異動或 RF 狀態不明。'});
 Object.assign(translations.zh,{guideInstallTitle:'第一次安裝',guideCliTitle:'CLI：檢查連線與設定',guideDataTitle:'取得與分析資料',guideDataHelp:'也可在「量測紀錄」開啟詳情，再到「結果與圖表」比較 2–8 筆 Run。'});
 Object.assign(translations.en,{guideInstallTitle:'First-time installation',guideCliTitle:'CLI: connection and configuration',guideDataTitle:'Get and analyze data',guideDataHelp:'You can also open details in Runs, then compare 2–8 runs in Results & Analysis.'});
@@ -10,7 +11,7 @@ let language='zh';let latest=[];let runHistory=[];let analysisTraces=[];const se
 let expandedRunKey=null;
 const $=selector=>document.querySelector(selector);
 const homeCopy={zh:{heroTitle:'讓 RF 量測成為<br><span>可重現的工程流程</span>',heroIntro:'從安全檢查、SingleShot、頻率／功率掃描，到 EVM 分析、歷史比較與可稽核報告，集中在同一個本機 Web 工作站。',enterConsole:'進入量測控制台',openManual:'查看操作手冊',capabilityTitle:'工程師真正需要的功能',capabilityIntro:'保留 CMsquares 作為探索與除錯參考，把重複操作轉成可驗證、可比較、可交接的自動化流程。',f1t:'安全實機量測',f1p:'Route、操作員、頻率、頻寬與功率通過檢查後，Web 顯示最終發射摘要。',f2t:'頻率與功率掃描',f2p:'逐點進度、取消、partial artifacts，以及任何異常立即停止整批。',f3t:'EVM 結果分析',f3p:'EVM All／Data／Pilot、Burst Power、Frequency Error 與 INVALID 中斷規則。',f4t:'歷史 Run 比較',f4p:'搜尋、篩選、排序並比較 2–8 筆量測，調整 Trace 樣式與匯出圖表。',f5t:'Path Loss 校正',f5p:'器材識別、參考面讀值、線損檢查、Draft Profile 與核准流程。',f6t:'可稽核與可交接',f6p:'原始回應、設定快照、cleanup 狀態、報告與中英操作文件一起保存。',workflowTitle:'五步完成一次可靠量測',manualTitle:'從這裡開始操作',manualIntro:'首頁只說明與導覽；只有進入量測頁並完成最後確認才可能送出 RF。'},en:{heroTitle:'Turn RF measurement into<br><span>a reproducible engineering workflow</span>',heroIntro:'Bring safety checks, SingleShot, frequency and power sweeps, EVM analysis, historical comparison, and auditable reports into one local Web workstation.',enterConsole:'Open measurement console',openManual:'Open operator manual',capabilityTitle:'The capabilities RF engineers need',capabilityIntro:'Keep CMsquares for discovery and troubleshooting while turning repetitive actions into verifiable, comparable, and transferable automation.',f1t:'Safe hardware measurement',f1p:'The Web UI shows the final RF summary only after route, operator, frequency, bandwidth, and power checks pass.',f2t:'Frequency and power sweeps',f2p:'Per-point progress, cancellation, partial artifacts, and immediate batch stop on abnormal results.',f3t:'EVM result analysis',f3p:'EVM All/Data/Pilot, Burst Power, Frequency Error, and strict INVALID trace breaks.',f4t:'Historical run comparison',f4p:'Search, filter, sort, and compare 2–8 runs with editable trace styles and chart export.',f5t:'Path Loss calibration',f5p:'Equipment identity, reference-plane readings, loss review, Draft Profiles, and approval workflow.',f6t:'Auditable and transferable',f6p:'Preserve raw responses, setting snapshots, cleanup state, reports, and bilingual operator documentation.',workflowTitle:'Five steps to a reliable measurement',manualTitle:'Start here',manualIntro:'The home page only explains and navigates. RF is possible only after entering Measurement and completing final confirmation.'}};
-const pageCopy={zh:{home:['RF AUTOMATION PLATFORM','CMP180 自動化量測','安全、可重現、可分析的 WLAN TX EVM 工程工作站'],measurement:['WLAN TX MEASUREMENT','量測控制台','RF1.1 → RF1.5 · 6105 MHz · 320 MHz · -40 dBm'],calibration:['PATH LOSS & CALIBRATION','路徑損耗校正','建立可追溯的線材、轉接頭與參考面補償資料'],results:['RESULT ANALYSIS','結果分析台','檢視 EVM、功率與頻率誤差，或比較多筆歷史量測'],history:['RUN ARCHIVE','量測紀錄庫','搜尋、開啟、比較與管理本機保存的量測成果'],guide:['OPERATOR PLAYBOOK','操作指南','從啟動服務、安全檢查到取得報告的標準流程']},en:{home:['RF AUTOMATION PLATFORM','CMP180 Automation','A safe, reproducible, and analyzable WLAN TX EVM engineering workstation'],measurement:['WLAN TX MEASUREMENT','Measurement Console','RF1.1 → RF1.5 · 6105 MHz · 320 MHz · -40 dBm'],calibration:['PATH LOSS & CALIBRATION','Path Loss Calibration','Build traceable compensation data for cables, adapters, and reference planes'],results:['RESULT ANALYSIS','Results & Analysis','Review EVM, power, and frequency error or compare historical runs'],history:['RUN ARCHIVE','Run Archive','Search, open, compare, and manage locally stored measurement results'],guide:['OPERATOR PLAYBOOK','Operator Guide','Standard workflow from service startup and safety checks to reports']}};
+const pageCopy={zh:{home:['RF AUTOMATION PLATFORM','CMP180 自動化量測','安全、可重現、可分析的 WLAN TX EVM 工程工作站'],measurement:['WLAN TX MEASUREMENT','量測控制台','RF1.1 → RF1.5 · 6105 MHz · 320 MHz · -40 dBm'],campaign:['HIL CAMPAIGN','分類實機驗收','持久化頻段、頻寬、功率、Route 與能力驗收進度'],calibration:['PATH LOSS & CALIBRATION','路徑損耗校正','建立可追溯的線材、轉接頭與參考面補償資料'],results:['RESULT ANALYSIS','結果分析台','檢視 EVM、功率與頻率誤差，或比較多筆歷史量測'],history:['RUN ARCHIVE','量測紀錄庫','搜尋、開啟、比較與管理本機保存的量測成果'],guide:['OPERATOR PLAYBOOK','操作指南','從啟動服務、安全檢查到取得報告的標準流程']},en:{home:['RF AUTOMATION PLATFORM','CMP180 Automation','A safe, reproducible, and analyzable WLAN TX EVM engineering workstation'],measurement:['WLAN TX MEASUREMENT','Measurement Console','RF1.1 → RF1.5 · 6105 MHz · 320 MHz · -40 dBm'],campaign:['HIL CAMPAIGN','Categorized Hardware Acceptance','Persistent band, bandwidth, power, route, and capability acceptance progress'],calibration:['PATH LOSS & CALIBRATION','Path Loss Calibration','Build traceable compensation data for cables, adapters, and reference planes'],results:['RESULT ANALYSIS','Results & Analysis','Review EVM, power, and frequency error or compare historical runs'],history:['RUN ARCHIVE','Run Archive','Search, open, compare, and manage locally stored measurement results'],guide:['OPERATOR PLAYBOOK','Operator Guide','Standard workflow from service startup and safety checks to reports']}};
 let activeTopTab='home';
 function updatePageHeading(){const copy=pageCopy[language][activeTopTab];$('#pageKicker').textContent=copy[0];$('#pageTitle').textContent=copy[1];$('#pageContext').textContent=copy[2]}
 function applyLanguage(){document.documentElement.lang=language==='zh'?'zh-Hant':'en';document.querySelectorAll('[data-i18n]').forEach(el=>{const value=translations[language][el.dataset.i18n];if(value)el.textContent=value});document.querySelectorAll('[data-home]').forEach(el=>{const value=homeCopy[language][el.dataset.home];if(value){if(el.dataset.home==='heroTitle')el.innerHTML=value;else el.textContent=value}});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const value=translations[language][el.dataset.i18nPlaceholder];if(value)el.placeholder=value});$('#languageButton').textContent=language==='zh'?'EN':'中文';updatePageHeading();if(runHistory.length)renderRunHistory()}
@@ -60,6 +61,8 @@ $('#sweepForm').onsubmit=event=>{event.preventDefault();const form=new FormData(
 // 表單顯示 MHz，但 API 與 workflow 一律使用 Hz；此處集中做 1e6 單位轉換。
 $('#powerSweepForm').onsubmit=event=>{event.preventDefault();const form=new FormData(event.target);startJob('/api/jobs/mock/power-sweep',{frequency_hz:+form.get('frequency_mhz')*1e6,bandwidth_hz:+form.get('bandwidth_mhz')*1e6,start_dbm:+form.get('start_dbm'),stop_dbm:+form.get('stop_dbm'),step_dbm:+form.get('step_dbm'),dwell_ms:+form.get('dwell_ms'),test_name:form.get('test_name')},event.submitter,'power')};
 let latestAxis='frequency';
+// 目前結果套用的 EVM spec limit（dB）；null 代表本次沒有套用 limit profile。
+let latestSpecLimitDb=null;
 function xFieldFor(axis){return axis==='power'?'generator_power_dbm':'frequency_hz'}
 function xUnitFor(axis){return axis==='power'?'dBm':'MHz'}
 function xDisplayFor(axis,value){return axis==='power'?value.toFixed(1):(value/1e6).toFixed(1)}
@@ -75,14 +78,38 @@ function render(data){
   const avg=validEvm.length?validEvm.reduce((sum,value)=>sum+value,0)/validEvm.length:null;
   const worst=validEvm.length?Math.max(...validEvm):null;
   const pass=latest.filter(point=>['PASS','DRAFT_PASS'].includes(point.limit_status)).length;
+  const measured=latest.filter(point=>point.valid&&point.limit_status==='MEASURED').length;
   const fixedLabel=latestAxis==='power'?'Frequency':'Power';
   const fixedValue=latestAxis==='power'?(latest[0].frequency_hz/1e6).toFixed(1)+' MHz':latest[0].generator_power_dbm+' dBm';
   const sourceLabel=data.simulated?(language==='zh'?'示範資料':'DEMO DATA'):'HARDWARE';
   $('#runMeta').textContent=`Run ${data.artifacts.run_id} · ${latest.length} points · ${sourceLabel}`;
   $('#resultBadge').textContent=sourceLabel;
   $('#xAxisHeader').textContent=xUnitFor(latestAxis);
-  const passLabel=data.limit_profile?.lifecycle==='draft'?'DRAFT PASS':'PASS';
-  $('#metrics').innerHTML=metric('Avg EVM',avg===null?'—':avg.toFixed(2)+' dB')+metric('Worst EVM',worst===null?'—':worst.toFixed(2)+' dB')+metric(passLabel,`${pass}/${latest.length}`)+metric(fixedLabel,fixedValue);
+  const statusLabel=data.limit_profile?.lifecycle==='draft'?'DRAFT PASS':data.limit_profile?'PASS':'Measured';
+  // PASS 分母是「有效點數」而非全部點數：無效點沒有做過規格判定，不該被算進去。
+  const validCount=latest.filter(point=>point.valid).length;
+  const invalidCount=latest.length-validCount;
+  const statusCount=data.limit_profile?pass:measured;
+  const statusTotal=data.limit_profile?validCount:latest.length;
+  latestSpecLimitDb=data.limit_profile?data.limit_profile.maximum_evm_db:null;
+  // margin = limit - measured，正值代表優於限值；此符號約定與 backend 的 margin_db 相同。
+  const margins=latest.filter(point=>point.valid&&Number.isFinite(point.margin_db)).map(point=>point.margin_db);
+  const avgMargin=margins.length?margins.reduce((sum,value)=>sum+value,0)/margins.length:null;
+  const worstMargin=margins.length?Math.min(...margins):null;
+  const signed=value=>(value>0?'+':'')+value.toFixed(2)+' dB';
+  $('#metrics').innerHTML=metric('Avg EVM',avg===null?'—':avg.toFixed(2)+' dB')
+    +metric('Worst EVM',worst===null?'—':worst.toFixed(2)+' dB')
+    +metric('Spec Limit',latestSpecLimitDb===null?'—':latestSpecLimitDb.toFixed(2)+' dB')
+    +metric('Avg Margin',avgMargin===null?'—':signed(avgMargin))
+    +metric('Worst Margin',worstMargin===null?'—':signed(worstMargin))
+    +metric(statusLabel,`${statusCount}/${statusTotal}`)
+    +metric('Invalid',`${invalidCount}`)
+    +metric(fixedLabel,fixedValue);
+  // 只有真的存在 INVALID 點才提示，避免讓操作員誤以為本次量測含無效資料。
+  const hint=$('#chartHint');
+  if(hint)hint.textContent=invalidCount
+    ?(language==='zh'?'EVM dB 越負通常越好；PASS 區在 limit line 下方；INVALID 不與有效點連線':'Lower (more negative) EVM is better; PASS zone is below the limit line; INVALID points are not connected')
+    :(language==='zh'?'EVM dB 越負通常越好；PASS 區在 limit line 下方':'Lower (more negative) EVM is better; PASS zone is below the limit line');
   renderLimitProfile(data.limit_profile,data.compliance_claim);
   // INV／null 是量測無效訊號，表格以破折號呈現，不得補零或讓前端拋出例外。
   $('#resultRows').innerHTML=latest.map(point=>`<tr><td>${point.point_index+1}</td><td>${xDisplayFor(latestAxis,point[xField])}</td><td>${formatMeasured(point.evm_all_db)}</td><td>${formatMeasured(point.burst_power_dbm)}</td><td>${formatMeasured(point.frequency_error_hz)}</td><td class="${point.limit_status.toLowerCase()}">${point.limit_status}</td></tr>`).join('');
@@ -98,16 +125,26 @@ function drawChart(points,axis='frequency'){
   const validPoints=points.filter(point=>point.valid&&Number.isFinite(point[metric]));
   const ys=validPoints.map(point=>point[metric]);
   if(!xs.length||!ys.length){svg.innerHTML='<text class="axis-label" x="450" y="150" text-anchor="middle">No valid numeric data</text>';return}
-  const xmin=Math.min(...xs),xmax=Math.max(...xs),margin=Math.max((Math.max(...ys)-Math.min(...ys))*.15,.5),ymin=Math.min(...ys)-margin,ymax=Math.max(...ys)+margin;
+  // EVM 圖需要把 spec limit 一起納入 Y 範圍，否則 limit line 會被裁切在圖外。
+  const specLimit=metric==='evm_all_db'&&Number.isFinite(latestSpecLimitDb)?latestSpecLimitDb:null;
+  const spread=[...ys,...(specLimit===null?[]:[specLimit])];
+  const xmin=Math.min(...xs),xmax=Math.max(...xs),margin=Math.max((Math.max(...spread)-Math.min(...spread))*.15,.5),ymin=Math.min(...spread)-margin,ymax=Math.max(...spread)+margin;
   const x=value=>pad+(value-xmin)/(xmax-xmin||1)*(w-pad*2),y=value=>h-pad-(value-ymin)/(ymax-ymin||1)*(h-pad*2);
   let html='';
+  if(specLimit!==null){
+    // EVM dB 越負越好，因此 PASS 區在 limit line 下方；以陰影標示避免誤讀。
+    const yLimit=y(specLimit);
+    html+=`<rect class="spec-pass-zone" x="${pad}" y="${yLimit}" width="${w-pad*2}" height="${Math.max(0,h-pad-yLimit)}"/>`;
+    html+=`<line class="spec-limit-line" x1="${pad}" y1="${yLimit}" x2="${w-pad}" y2="${yLimit}"/>`;
+    html+=`<text class="spec-limit-label" x="${w-pad-4}" y="${yLimit-6}" text-anchor="end">Limit ${specLimit.toFixed(2)} dB</text>`;
+  }
   for(let index=0;index<5;index++){const yy=pad+index*(h-pad*2)/4;html+=`<line class="grid-line" x1="${pad}" y1="${yy}" x2="${w-pad}" y2="${yy}"/><text class="axis-label" x="5" y="${yy+4}">${(ymax-index*(ymax-ymin)/4).toFixed(1)}</text>`}
   // 無效點不得跨越連線：先依 valid 與數值完整性切成獨立線段。
   const segments=[];let segment=[];
   points.forEach(point=>{if(point.valid&&Number.isFinite(point[metric])){segment.push(point)}else{if(segment.length)segments.push(segment);segment=[]}});
   if(segment.length)segments.push(segment);
   html+=segments.map(values=>`<polyline class="plot-line" points="${values.map(point=>`${x(point[xField])},${y(point[metric])}`).join(' ')}"/>`).join('');
-  html+=validPoints.map(point=>`<circle class="plot-dot" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${xDisplayFor(axis,point[xField])} ${xUnit} · ${point[metric].toFixed(3)}</title></circle>`).join('');
+  html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
   // 無效點固定畫在圖底並標示叉號，保留其頻率／功率位置且不偽造 Y 值。
   html+=points.filter(point=>!point.valid||!Number.isFinite(point[metric])).map(point=>`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-pad})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${xDisplayFor(axis,point[xField])} ${xUnit} · INVALID</title></g>`).join('');
   html+=`<text class="axis-label" x="${pad}" y="${h-8}">${xDisplayFor(axis,xmin)} ${xUnit}</text><text class="axis-label" x="${w-pad-60}" y="${h-8}">${xDisplayFor(axis,xmax)} ${xUnit}</text>`;
