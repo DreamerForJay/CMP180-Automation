@@ -362,3 +362,20 @@ python scripts\cmp180_power_sweep_validate.py `
 ```
 
 If a low-power point cannot trigger, or any cleanup/error-queue error occurs, the tool stops and preserves partial artifacts. It never raises power or changes expected power automatically. The final line must show RF `OFF`, measurement `OFF` or `RDY`, and error queue `[]`.
+
+## 中文：多頻寬完整批次補充
+
+只有在 RF1.1 → RF1.5 直連、無衰減器、操作員在場均已確認時，才能執行
+`scripts/cmp180_full_wlan_campaign_validate.py`。工具固定 -45 dBm，依序選擇匹配的
+20／40／80／160／320 MHz waveform；每區段必須先通過黃金點。若需續跑，使用
+`--section <band>-bw<bandwidth>`，不得重跑已完成區段來掩蓋失敗。最後必須確認
+RF `OFF`、measurement `OFF`／`RDY`、error queue `[]`。
+
+## English: full multi-bandwidth campaign supplement
+
+Run `scripts/cmp180_full_wlan_campaign_validate.py` only after confirming the RF1.1-to-RF1.5
+direct loopback, no attenuator, and operator presence. The tool holds generator power at
+-45 dBm and selects matching 20/40/80/160/320 MHz waveforms. Each section must pass its
+golden point first. Resume with `--section <band>-bw<bandwidth>` and do not rerun completed
+sections to hide a failure. Final state must be RF `OFF`, measurement `OFF`/`RDY`, and error
+queue `[]`.

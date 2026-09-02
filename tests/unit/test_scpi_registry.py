@@ -41,6 +41,15 @@ def test_help_confirmed_generator_queries_are_configured():
     assert registry.require("generator_query.level").endswith("LEVel?")
     assert registry.require("generator_query.state").endswith("STATe?")
     assert registry.require("generator_query.rf_path").endswith("SPATh?")
+    assert registry.require("generator_query.arb_file_absolute").endswith("FILE? ABSPath")
+
+
+def test_help_confirmed_waveform_catalog_queries_are_configured():
+    registry = load_scpi_command_map(SCPI_MAP_PATH)
+    assert registry.require("mass_memory_query.aliases") == "MMEMory:ALIases?"
+    assert registry.render(
+        "mass_memory_query.catalog", path_pattern="@WAVEFORM/*.wv"
+    ) == 'MMEMory:CATalog? "@WAVEFORM/*.wv"'
 
 
 def test_help_confirmed_generator_setters_render_named_values():
@@ -49,6 +58,9 @@ def test_help_confirmed_generator_setters_render_named_values():
         "FREQuency 6105000000"
     )
     assert registry.render("generator.set_power", power_dbm=-40).endswith("LEVel -40")
+    assert registry.render(
+        "generator.set_arb_file", arb_file="@WAVEFORM/WLAN/test.wv"
+    ).endswith('ARB:FILE "@WAVEFORM/WLAN/test.wv"')
     assert registry.require("generator.rf_on").endswith("STATe ON")
     assert registry.require("generator.rf_off").endswith("STATe OFF")
     assert registry.require("generator.arb_rf_on").endswith("SEQuencer:STATe ON")

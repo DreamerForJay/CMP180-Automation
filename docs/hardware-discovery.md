@@ -757,3 +757,39 @@ completed all stages:
 
 Independent final queries confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
 These are new complete Python live RF measurements, not Mock data or stored-only `FETCh`.
+
+## 中文：2026-09-02 全 WLAN 頻寬與頻段批次
+
+query-only waveform 工具一次盤點 CMP180 WLAN 目錄，找到 2,766 個 `.wv`，且
+20／40／80／160／320 MHz 都有匹配的 lib8／EHT／MCS11／LEN4096 檔案。完整批次
+在 RF1.1 → RF1.5、0 dB attenuation、-45 dBm 下，先跑每區段黃金點，再掃標準
+channel center。
+
+11 個合法區段全部通過，共 176/176 點：2.4 GHz（20、40 MHz）、5 GHz（20、40、
+80、160 MHz）與 6 GHz（20、40、80、160、320 MHz）。Sweep run IDs：
+`3e959f951d`、`41c436e755`、`3f538691d6`、`b1aaccdfb4`、`c5aedcc10a`、
+`b39d24bf51`、`6e41f6402c`、`60d922aa68`、`2e6cb42189`、`1f6f97c65d`、
+`3f88b6d8b9`。每點都是完整 Python `INITiate` → `RDY` → `FETCh`，逐點 Stop／
+RF Off；最後確認 RF `OFF`、measurement `RDY`、error queue empty。
+
+這不代表 400 MHz–8 GHz 每個頻率都能做 WLAN EVM；頻段空白與 7.125–8 GHz 沒有
+WLAN channel。HIL 證據也不自動擴大 Web approved profile，仍須 RF owner 核准。
+
+## English: 2026-09-02 full WLAN bandwidth and band campaign
+
+The query-only waveform tool inventoried the CMP180 WLAN directory in one operation and
+found 2,766 `.wv` files, including matching lib8/EHT/MCS11/LEN4096 files for 20, 40, 80,
+160, and 320 MHz. The full campaign used RF1.1 to RF1.5, 0 dB attenuation, and -45 dBm,
+running a golden point before the standard channel centers in every section.
+
+All 11 legal sections passed for 176/176 points: 2.4 GHz (20/40 MHz), 5 GHz
+(20/40/80/160 MHz), and 6 GHz (20/40/80/160/320 MHz). Sweep run IDs are
+`3e959f951d`, `41c436e755`, `3f538691d6`, `b1aaccdfb4`, `c5aedcc10a`, `b39d24bf51`,
+`6e41f6402c`, `60d922aa68`, `2e6cb42189`, `1f6f97c65d`, and `3f88b6d8b9`.
+Every point used the complete Python `INITiate` → `RDY` → `FETCh` lifecycle with
+per-point Stop/RF Off. Final auditing confirmed RF `OFF`, measurement `RDY`, and an empty
+error queue.
+
+This does not make every frequency from 400 MHz to 8 GHz a WLAN EVM point. WLAN band gaps
+and 7.125–8 GHz have no WLAN channels. HIL evidence also does not automatically widen the
+Web approved profile; an RF owner must authorize that change.

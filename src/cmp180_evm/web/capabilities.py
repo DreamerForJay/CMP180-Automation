@@ -68,6 +68,7 @@ class VerifiedHil(BaseModel):
     generator_powers_dbm: list[float]
     dwell_ms: list[int]
     routes: list[str]
+    sections: list[str] = Field(default_factory=list)
 
 
 class InstrumentCapabilityProfile(BaseModel):

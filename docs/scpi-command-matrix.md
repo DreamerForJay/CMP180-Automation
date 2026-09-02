@@ -323,3 +323,21 @@ The fixed profile uses GPRF Baseband ARB, so its RF workflow must use
 to ARB Sequencer mode and must not start a waveform selected through Baseband ARB. The
 correction is hardware-verified by a valid SingleShot, three-point frequency sweep, and
 four-point power sweep.
+
+## 中文：2026-09-02 ARB waveform 盤點與選擇
+
+| 功能 | Query／Setter | 實機結果 | 副作用 |
+|---|---|---|---|
+| ARB 絕對路徑 | `SOURce:GPRF:GEN:ARB:FILE? ABSPath` | Help 確認；回傳選取檔，error queue empty | 唯讀 |
+| 路徑 alias | `MMEMory:ALIases?` | Base Help 確認；回傳 `@WAVEFORM` 等 alias | 唯讀 |
+| 目錄盤點 | `MMEMory:CATalog? "{path_pattern}"` | Base Help 確認；WLAN 目錄回傳 2,766 個 `.wv` | 唯讀 |
+| 選擇 ARB | `SOURce:GPRF:GEN:ARB:FILE "{arb_file}"` | GPRF Help 確認；五種頻寬皆通過 setter、OPC、error 與 readback | 改變 baseband 檔案；只可在 RF OFF／measurement idle 執行 |
+
+## English: 2026-09-02 ARB waveform inventory and selection
+
+| Function | Query/setter | Hardware result | Side effect |
+|---|---|---|---|
+| ARB absolute path | `SOURce:GPRF:GEN:ARB:FILE? ABSPath` | Help-confirmed; returned the selected file with an empty error queue | Query-only |
+| Path aliases | `MMEMory:ALIases?` | Base Help-confirmed; returned aliases including `@WAVEFORM` | Query-only |
+| Directory inventory | `MMEMory:CATalog? "{path_pattern}"` | Base Help-confirmed; WLAN directory returned 2,766 `.wv` files | Query-only |
+| Select ARB | `SOURce:GPRF:GEN:ARB:FILE "{arb_file}"` | GPRF Help-confirmed; all five bandwidths passed setter, OPC, error, and readback checks | Changes the baseband file; RF must be OFF and measurement idle |

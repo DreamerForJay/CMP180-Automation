@@ -18,6 +18,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 
 - YAML 驗證、Mock／實機連線、Generator／Analyzer setter、measurement lifecycle 與 RF On／Off。
 - 已完成 RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm 的 Python 實機 SingleShot。
+- 已用同一支 Python 工具完成 11 個 WLAN 區段：2.4／5／6 GHz 搭配合法的 20／40／80／160／320 MHz 組合，共 176/176 個 channel center 有效；完整 400 MHz–8 GHz 仍不是 WLAN 頻段。
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
 - 雙語響應式橫向量測工作區：Dark／Light、依分頁切換的專業工作區標題、整合式 Demo／實機量測、量測紀錄、多 Run 疊圖比較、可自訂 Trace 名稱／顏色／顯示、Draft 校正 SOP，以及完整 artifacts 與可復原紀錄管理。歷史分析會預先讀取既有 CSV／JSON，不會送出 RF。
 - 首頁提供產品定位、功能介紹、量測能力、安全邊界、五步標準流程與操作手冊入口；首頁 CTA 只切換工作區，不呼叫任何量測或 RF API。動畫使用本機 CSS，無外部影音依賴。
@@ -39,7 +40,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 |---|---|---|
 | Mock／Demo | 可用 | 不連接 CMP180、不送 RF，適合介面與流程訓練 |
 | 實機 SingleShot | HIL 已通過 | RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm |
-| 固定頻率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 受固定安全 Profile 與 Web 最終確認保護 |
+| 頻率／頻寬矩陣 | HIL 已通過 | 11 個合法 band／bandwidth 區段、176/176 點；Web 核准權限仍維持 6 GHz／320 MHz，待 RF owner 擴大 profile |
 | 固定功率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 已驗證四點掃描與取消／cleanup；最新 waveform 仍需排除 `INV` |
 | 自訂量測規劃 | 型錄範圍可輸入；實機執行依 RF workflow | 規劃介面支援 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz；Web 不再把自訂輸入改跑固定 profile，未通過 workflow 的計畫會顯示拒絕原因且不送 RF |
 | Path Loss 校正 | Draft workflow | 可建立、載入與審查 Profile；正式外部校正儀器 adapter 尚待 HIL |
@@ -128,6 +129,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 
 - YAML validation, mock/real connection, hardware-verified setters, measurement lifecycle, and RF On/Off.
 - Complete Python hardware SingleShot at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and -40 dBm.
+- One Python tool completed 11 legal WLAN band/bandwidth sections across 2.4, 5, and 6 GHz, with 176/176 valid channel centers for 20/40/80/160/320 MHz. The non-WLAN gaps in the 400 MHz–8 GHz tuning range remain out of scope.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
 - Bilingual responsive horizontal workspace with working Dark/Light themes, contextual workspace headings, integrated demo/guarded-hardware measurement, eagerly loaded run history, multi-run overlays, editable trace names/colours/visibility, a Draft calibration SOP, artifacts, and recoverable run management.
 - The product home explains capabilities, safety boundaries, the five-step standard workflow, and operator-manual entry points. Home-page CTAs only navigate between workspaces and call no measurement or RF API. Motion uses local CSS with no external media dependency.
@@ -151,7 +153,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 |---|---|---|
 | Mock/Demo | Available | Does not connect to CMP180 or transmit RF |
 | Hardware SingleShot | HIL passed | RF1.1 to RF1.5, 6105 MHz, 320 MHz, -40 dBm |
-| Fixed frequency sweep | Historical HIL passed; current profile needs revalidation | Protected by a fixed safe profile and final Web confirmation |
+| Frequency/bandwidth matrix | HIL passed | 11 legal band/bandwidth sections and 176/176 points; Web approval remains 6 GHz/320 MHz until an RF owner widens the profile |
 | Fixed power sweep | Historical HIL passed; current profile needs revalidation | Four-point execution/cancellation passed historically; the latest waveform still produces `INV` |
 | Custom measurement planning | Catalog range available; RF execution is profile-gated | Planning accepts 400 MHz–8 GHz and WLAN 20/40/80/160/320 MHz; only approved HIL combinations may transmit RF |
 | Path-loss calibration | Draft workflow | Profile generation/review exists; external-instrument adapter still needs HIL |

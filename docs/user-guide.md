@@ -281,3 +281,35 @@ project path with `git config --global --add safe.directory <project-root>`. Nev
 ### 11. Block-based hardware control
 
 The GPRF Generator, WLAN TX Analyzer, and Measurement Flow blocks on the hardware page expose per-resource state. Run still delegates to the guarded form and final RF-summary confirmation; the Generator block cannot enable RF independently. For multi-point sweeps, Pause waits until the current point has completed STOP and RF Off before reporting `PAUSED`; Resume continues at the next point, and Stop terminates while preserving partial artifacts. SingleShot cannot pause mid-transaction.
+
+## 中文：全 WLAN waveform 與頻段工具
+
+先用 query-only 工具一次盤點儀器 waveform，再用單一 HIL 工具跑 11 個合法區段：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\cmp180_waveform_catalog.py
+.\.venv\Scripts\python.exe scripts\cmp180_full_wlan_campaign_validate.py `
+  --confirm-direct-cable --confirm-no-attenuator `
+  --confirm-operator-present --confirm-full-wlan-campaign
+```
+
+中斷後可重複 `--section 2.4GHz-bw20` 只補指定區段。每次切換 waveform 前都要求
+RF OFF／measurement idle；每個 channel center 都是完整 SingleShot 並在 finally
+Stop／Abort／RF Off。這是 HIL 驗證入口，不會自行擴大 Web approved profile。
+
+## English: full WLAN waveform and band tools
+
+First inventory the instrument waveform directory with the query-only tool, then use one
+HIL tool for all 11 legal sections:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\cmp180_waveform_catalog.py
+.\.venv\Scripts\python.exe scripts\cmp180_full_wlan_campaign_validate.py `
+  --confirm-direct-cable --confirm-no-attenuator `
+  --confirm-operator-present --confirm-full-wlan-campaign
+```
+
+After interruption, repeat `--section 2.4GHz-bw20` to resume only a named section. Every
+waveform switch requires RF OFF and an idle measurement. Every channel center is a complete
+SingleShot with Stop/Abort/RF Off in `finally`. This is a HIL validation entry point and
+does not widen the Web approved profile by itself.

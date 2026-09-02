@@ -14,7 +14,8 @@ installed:
   # Confirm with *OPT?, CMsquares, and option records; unknown is not installed.
   frequency_min_hz: 400000000
   frequency_max_hz: 8000000000
-  analysis_bandwidths_hz: [320000000]
+  # 2026-09-02 Python HIL 已使用匹配 waveform 驗證所有 WLAN 頻寬。
+  analysis_bandwidths_hz: [20000000, 40000000, 80000000, 160000000, 320000000]
   analyzer_count: 1
   generator_count: 1
   rf_ports: [RF1.1, RF1.2, RF1.3, RF1.4, RF1.5, RF1.6, RF1.7, RF1.8, RF2.1, RF2.2, RF2.3, RF2.4, RF2.5, RF2.6, RF2.7, RF2.8]
@@ -34,8 +35,10 @@ approved_profile:
   maximum_points: 49
   routes: [RF1.1-RF1.5]
 verified_hil:
-  frequencies_hz: [5925000000, 6105000000, 7125000000]
-  bandwidths_hz: [320000000]
+  frequencies_hz: [2412000000, 2472000000, 5180000000, 5825000000, 5955000000, 7115000000]
+  bandwidths_hz: [20000000, 40000000, 80000000, 160000000, 320000000]
   generator_powers_dbm: [-55, -50, -45, -40, -30]
   dwell_ms: [100, 200]
   routes: [RF1.1-RF1.5]
+  # 實機證據不會自動擴大 approved_profile；正式 Web RF 權限仍需 RF owner 核准。
+  sections: [2.4GHz-bw20, 2.4GHz-bw40, 5GHz-bw20, 5GHz-bw40, 5GHz-bw80, 5GHz-bw160, 6GHz-bw20, 6GHz-bw40, 6GHz-bw80, 6GHz-bw160, 6GHz-bw320]

@@ -31,6 +31,7 @@ class CommonCommands(BaseModel):
 class GeneratorCommands(BaseModel):
     set_frequency: str | None = None
     set_power: str | None = None
+    set_arb_file: str | None = None
     rf_on: str | None = None
     rf_off: str | None = None
     arb_rf_on: str | None = None
@@ -47,6 +48,12 @@ class GeneratorQueryCommands(BaseModel):
     arb_repetition: str
     states: str
     rf_path: str
+    arb_file_absolute: str
+
+
+class MassMemoryQueryCommands(BaseModel):
+    aliases: str | None = None
+    catalog: str | None = None
 
 
 class WlanTxCommands(BaseModel):
@@ -114,6 +121,7 @@ class ScpiCommandRegistry(BaseModel):
     common: CommonCommands = CommonCommands()
     generator: GeneratorCommands = GeneratorCommands()
     generator_query: GeneratorQueryCommands
+    mass_memory_query: MassMemoryQueryCommands = MassMemoryQueryCommands()
     wlan_tx: WlanTxCommands = WlanTxCommands()
     wlan_tx_query: WlanTxQueryCommands
     results: ResultCommands = ResultCommands()

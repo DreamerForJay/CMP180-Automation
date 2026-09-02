@@ -17,6 +17,14 @@ def test_example_separates_catalog_from_rf_execution_profile():
     assert public["approved_profile"]["maximum_points"] == 49
     assert public["catalog_grants_execution"] is False
     assert public["rf_execution_source"] == "approved_profile"
+    assert len(public["verified_hil"]["sections"]) == 11
+    assert public["verified_hil"]["bandwidths_hz"] == [
+        20_000_000,
+        40_000_000,
+        80_000_000,
+        160_000_000,
+        320_000_000,
+    ]
 
 
 def test_unapproved_profile_cannot_be_loaded_for_execution():

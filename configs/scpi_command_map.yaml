@@ -20,6 +20,8 @@ generator:
   # script writes the already-read value back while RF is OFF.
   set_frequency: "SOURce:GPRF:GEN:RFSettings:FREQuency {frequency_hz}"
   set_power: "SOURce:GPRF:GEN:RFSettings:LEVel {power_dbm}"
+  # 內建 GPRF Help 確認；只允許在 RF OFF、量測 idle 時切換 baseband ARB 檔案。
+  set_arb_file: 'SOURce:GPRF:GEN:ARB:FILE "{arb_file}"'
   # RF state tree 已由內建 Help 確認；實機 pulse 驗證前仍須人工確認線材。
   rf_on: "SOURce:GPRF:GEN:STATe ON"
   rf_off: "SOURce:GPRF:GEN:STATe OFF"
@@ -39,6 +41,13 @@ generator_query:
   arb_repetition: "SOURce:GPRF:GEN:SEQuencer:REPetition?"
   states: "SOURce:GPRF:GEN:STATe:ALL?"
   rf_path: "ROUTe:GPRF:GEN:SPATh?"
+  # 內建 GPRF Help 確認；ABSPath 讓目錄盤點不依賴目前 alias 顯示方式。
+  arb_file_absolute: "SOURce:GPRF:GEN:ARB:FILE? ABSPath"
+
+mass_memory_query:
+  # CMP180 base Help 的 Mass memory command reference；兩者皆為 query-only。
+  aliases: "MMEMory:ALIases?"
+  catalog: 'MMEMory:CATalog? "{path_pattern}"'
 
 wlan_tx:
   # 內建 Help 已確認以下 setter tree；實機驗證工具只在 Generator 與
