@@ -179,6 +179,7 @@ def test_hil_campaign_is_persistent_and_operator_driven() -> None:
     assert "campaign-detail" in campaign
     assert "priorityForCase" in campaign
     assert "sortedCampaignCases" in campaign
+    assert "campaignCaseOrder" in campaign
     assert "connectionInstruction" in campaign
 
 

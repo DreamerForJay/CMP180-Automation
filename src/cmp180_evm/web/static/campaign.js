@@ -11,6 +11,24 @@
     if (item.category === 'route') return {rank:3,label:'P3',text:'Route 待核准'};
     return {rank:4,label:'HOLD',text:'能力待核准'};
   }
+  function campaignCaseOrder(item) {
+    const order = {
+      'b6-bw320': 0,
+      'b24-bw20': 10,
+      'b24-bw40': 11,
+      'b5-bw20': 20,
+      'b5-bw40': 21,
+      'b5-bw80': 22,
+      'b5-bw160': 23,
+      'b6-bw20': 30,
+      'b6-bw40': 31,
+      'b6-bw80': 32,
+      'b6-bw160': 33,
+      'b6-power': 40
+    };
+    // 同一 Priority 內採現場常用順序：2.4G→5G→6G、頻寬由小到大、功率最後。
+    return order[item.case_id] ?? 900;
+  }
   function sortedCampaignCases() {
     const order = {ready:0,running:1,failed:2,interrupted:3,blocked:4,complete:5};
     // HIL 操作依安全重要度排序；未核准能力留在後面，避免現場誤先改接或誤啟用 RF。
@@ -19,6 +37,7 @@
       const rightPriority = priorityForCase(right).rank;
       return leftPriority - rightPriority
         || (order[left.state] ?? 9) - (order[right.state] ?? 9)
+        || campaignCaseOrder(left) - campaignCaseOrder(right)
         || String(left.case_id).localeCompare(String(right.case_id));
     });
   }

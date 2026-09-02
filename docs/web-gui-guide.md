@@ -148,7 +148,7 @@ EVM limit 判定使用「dB 越負通常越好」的方向：量測 EVM 必須�
 
 1. 以本機實機模式啟動 Web，開啟「HIL 批次」。
 2. 按「準備／重新檢查矩陣」。工具只執行設定與既有 profile gate，不會在這一步送 RF。
-3. 頁面會依重要度排序：P0 黃金點最優先，P1 為已核准的 11 個 WLAN EVM section，P2 為功率邊界，P3／HOLD 為尚未核准的 route、analysis bandwidth、waveform 或雙 VSA/VSG 能力。
+3. 頁面會依重要度排序：P0 黃金點最優先，P1 為已核准的 11 個 WLAN EVM section，P2 為功率邊界，P3／HOLD 為尚未核准的 route、analysis bandwidth、waveform 或雙 VSA/VSG 能力；同一重要度內採 2.4G→5G→6G、頻寬由小到大的現場常用順序。
 4. `READY` 表示現有 workflow 可執行；`BLOCKED` 會顯示缺少的 band setter、waveform、route profile 或專用 backend，不會改跑 RF1.1→RF1.5 的既有案例。
 5. 依畫面「目前接線指示」確認 RF1.1 Generator output → RF1.5 Analyzer input，確認操作員在場，再按單列 `Run` 或「執行下一個 READY」。
 6. Pause／Stop 經 Job API 在點位 cleanup／RF Off 邊界生效；成功、失敗與 artifact 路徑保存於 `output/hil-campaign/state.json`。
@@ -306,7 +306,7 @@ When Frequency Sweep or Power Sweep is executed, the UI first builds a preview f
 
 1. Start the Web application locally in hardware mode and open **HIL Campaign**.
 2. Select **Prepare / Recheck Matrix**. This applies configuration and the existing profile gate only; it transmits no RF.
-3. The page sorts cases by importance: P0 is the golden point, P1 covers the approved 11 WLAN EVM sections, P2 covers the power boundary, and P3/HOLD covers unapproved routes, analysis bandwidth, waveform, or dual VSA/VSG capabilities.
+3. The page sorts cases by importance: P0 is the golden point, P1 covers the approved 11 WLAN EVM sections, P2 covers the power boundary, and P3/HOLD covers unapproved routes, analysis bandwidth, waveform, or dual VSA/VSG capabilities. Within the same priority, cases follow the common operator order: 2.4G, 5G, 6G, and lower bandwidth before higher bandwidth.
 4. `READY` means the current workflow can execute the case. `BLOCKED` identifies a missing band setter, waveform, route profile, or dedicated backend and never substitutes the existing RF1.1-to-RF1.5 case.
 5. Follow the **Current cabling instruction** on screen, confirm RF1.1 Generator output → RF1.5 Analyzer input and operator presence, then select a row's **Run** button or **Run Next READY**.
 6. Pause and Stop use the Job API and take effect at point cleanup/RF-Off boundaries. Success, failure, and artifact locations persist in `output/hil-campaign/state.json`.
