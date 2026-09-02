@@ -397,17 +397,50 @@ four-point power sweep.
 4. **出處**：query 與 setter 皆由儀器在韌體 `6.0.50.23` 上回答並附 error-queue 證據，
    取代先前不存在的「既有 GPRF Gen/Meas 實測腳本」說法。
 
-仍未解決（**因此 GPRF power 數值目前仍不可用於功率準確度或路徑損耗結論**）：
+5. **突發 ARB 導致的量值偏低與 reliability `3`**：中間 run `d3c259178c` 仍讀到
+   -56.25 dBm 且 reliability `3`。根因是產生器當時播放突發 WLAN ARB 波形
+   （`KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv`），
+   功率計把閒置期一併平均。改用 CW 後兩者同時消失（見下節）。本專案仍**沒有**
+   reliability 數值對照表的正式出處，因此只記錄「CW 下觀察到 `0`」這個事實，
+   不推斷代碼 `3` 的語意。
 
-5. **reliability `3`**：修正後該點仍回傳非 0 reliability，故 `valid=false`、
-   `limit_status=INVALID`。本專案尚無 reliability 數值對照表的正式出處，不得自行推斷其語意。
-6. **產生器播放的是突發 WLAN ARB，不是 CW**：實機讀回
-   `SOURce:GPRF:GEN:ARB:FILE? ABSPath` 為
-   `KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv`。
-   WLAN analyzer 對同一訊號量到的 burst power 約 -40.5 dBm，GPRF 功率計卻讀到
-   -56.25 dBm（約 15.8 dB 差），與「突發訊號被平均進閒置區間」一致。要取得有意義的
-   GPRF power 數值，必須先確認改用 CW 或為 power 量測設定 burst 觸發／gating，
-   兩者都尚未取得出處與驗證。
+## 中文：2026-09-02 GPRF Generator baseband mode（CW）
+
+GPRF power sweep 的用途是量測 WLAN 涵蓋不到的範圍（400 MHz–8 GHz 掃頻、線損校正、
+port 頻率響應），因此必須使用連續波；WLAN EVM 則必須使用 ARB 波形。兩者對訊號的
+要求互斥，所以 workflow 改為進入 GPRF 前切 CW、收尾還原原始 baseband 與 waveform。
+
+| 功能 | 完整命令 | 參數／值 | 回傳 | 狀態副作用 |
+|---|---|---|---|---|
+| 查詢 baseband mode | `SOURce:GPRF:GEN:BBMode?` | 無 | 實測原值 `ARB` | 唯讀 |
+| 設定 baseband mode | `SOURce:GPRF:GEN:BBMode {mode}` | 已驗證值：`CW`、`ARB` | 無 | **改變產生器 baseband**；只可在 RF OFF 時寫入 |
+
+出處：`scripts/cmp180_gprf_bbmode_discovery.py`，韌體 `6.0.50.23`，2026-09-02。
+`CW` 與 `ARB` 皆被接受、readback 一致、error queue 全空。其他候選 header
+（`CATalog:GPRF:GEN:BBMode?`、`SOURce:GPRF:GEN:BBMode:CATalog?`、
+`SOURce:GPRF:GEN:ARB:STATe?`、`...:LIST:STATe?`、`...:DTONe:STATe?`）皆回
+`-113,"Undefined header"`，故未納入 command map。
+
+**重要實機發現**：切換 baseband mode 到 `CW` 再切回 `ARB` **不會清除**已選取的 ARB
+waveform；探索與實測都確認還原後絕對路徑完全相同。即使如此，`gprf_service.py` 仍在
+收尾時比對 waveform，不一致就用已驗證的 setter 重新指定，並把不符記為 `cleanup_errors`。
+
+### CW 修正後的實機證據
+
+- Run `67ccd62048`（`output/20260902T073149Z_gprf-power-sweep_67ccd62048/`），
+  6105 MHz、Generator -40 dBm、`baseband_mode=CW`、量測端 `"RF1.5"`、ENPower -40 dBm。
+- 回應 `0,-3.971061E+01` → **reliability `0`**、-39.7106 dBm。相對 -40 dBm 僅差
+  **0.29 dB**，與直連線的預期損耗一致。`valid=true`、`limit_status=MEASURED`，
+  `error_queue` 與 `cleanup_errors` 皆空。
+- 收尾還原確認：baseband `ARB`、ARB waveform 絕對路徑與原值相同、Generator RF `OFF`、
+  WLAN measurement `RDY`、error queue `0,"No error"`。
+- WLAN 回歸驗證（run `7ccdb50ca1`）：同一條線與 profile 下 EVM data carriers
+  **-36.86 dB**、burst power -39.80 dBm、頻率誤差 4.15 Hz、MCS11／GI32，
+  與 CW 切換前的歷史結果一致，確認 WLAN 能力未受影響。
+
+進度總結：三個量測數值落差（-80.87 → -56.25 → -39.71 dBm）已全部歸因並修正。
+GPRF power 現在可用於其設計用途；但線損校正若要成為正式數據，仍需依
+`docs/development-workflow.md` 完成 Calibration Profile 核准流程。
 
 ## English: 2026-09-02 GPRF power measurement commands
 
@@ -472,17 +505,52 @@ Resolved:
    firmware `6.0.50.23` with error-queue evidence, replacing the earlier reference to a
    non-existent "existing GPRF Gen/Meas hardware script".
 
-Unresolved — **GPRF power values therefore still cannot support a power-accuracy or
-path-loss conclusion**:
+5. **Low readings and reliability `3` caused by the bursted ARB**: the intermediate run
+   `d3c259178c` still read -56.25 dBm with reliability `3`. The cause was the generator
+   playing a bursted WLAN ARB waveform
+   (`KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv`), which the power
+   meter averaged together with the idle periods. Switching to CW cleared both symptoms (see
+   the next section). This project still has **no** sourced reliability-code table, so only
+   the observed fact that CW yields `0` is recorded; the meaning of code `3` is not inferred.
 
-5. **Reliability `3`**: the post-fix point still returns a non-zero reliability, so it is
-   recorded as `valid=false` and `limit_status=INVALID`. This project has no sourced
-   reliability-code table, and the meaning of `3` must not be inferred.
-6. **The generator is playing a bursted WLAN ARB waveform, not CW**: a live read-back of
-   `SOURce:GPRF:GEN:ARB:FILE? ABSPath` returned
-   `KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv`. The WLAN analyzer
-   measures roughly -40.5 dBm burst power on the same signal while the GPRF power meter reads
-   -56.25 dBm (about 15.8 dB lower), which is consistent with a bursted signal averaged over
-   its idle periods. Producing meaningful GPRF power values requires either switching the
-   generator to CW or configuring burst triggering/gating for the power measurement; neither
-   has provenance or verification yet.
+## English: 2026-09-02 GPRF generator baseband mode (CW)
+
+The GPRF power sweep exists to measure what WLAN mode cannot cover (400 MHz–8 GHz sweeps,
+cable-loss calibration, port frequency response), so it needs a continuous wave, while WLAN
+EVM needs the ARB waveform. Those requirements are mutually exclusive, so the workflow now
+selects CW on entry and restores the original baseband mode and waveform during cleanup.
+
+| Function | Full command | Params/values | Returns | State side effect |
+|---|---|---|---|---|
+| Query baseband mode | `SOURce:GPRF:GEN:BBMode?` | None | Original value measured as `ARB` | Query-only |
+| Set baseband mode | `SOURce:GPRF:GEN:BBMode {mode}` | Verified values: `CW`, `ARB` | None | **Changes the generator baseband**; write only while RF is OFF |
+
+Provenance: `scripts/cmp180_gprf_bbmode_discovery.py`, firmware `6.0.50.23`, 2026-09-02.
+Both `CW` and `ARB` were accepted with matching read-backs and an empty error queue. The
+other candidate headers (`CATalog:GPRF:GEN:BBMode?`, `SOURce:GPRF:GEN:BBMode:CATalog?`,
+`SOURce:GPRF:GEN:ARB:STATe?`, `...:LIST:STATe?`, `...:DTONe:STATe?`) all returned
+`-113,"Undefined header"` and were therefore not added to the command map.
+
+**Important hardware finding**: switching the baseband mode to `CW` and back to `ARB` does
+**not** clear the selected ARB waveform; both discovery and the live run confirmed an
+identical absolute path after restore. Even so, `gprf_service.py` still compares the
+waveform during cleanup, reselects it with the verified setter on any mismatch, and records
+a mismatch in `cleanup_errors`.
+
+### Hardware evidence after the CW fix
+
+- Run `67ccd62048` (`output/20260902T073149Z_gprf-power-sweep_67ccd62048/`) at 6105 MHz with
+  -40 dBm generator power, `baseband_mode=CW`, measurement port `"RF1.5"`, ENPower -40 dBm.
+- Response `0,-3.971061E+01` → **reliability `0`**, -39.7106 dBm. That is only **0.29 dB**
+  from the -40 dBm generator level, consistent with a direct cable. The point is
+  `valid=true` and `limit_status=MEASURED`, with empty `error_queue` and `cleanup_errors`.
+- Restore verified: baseband `ARB`, an ARB waveform absolute path identical to the original,
+  generator RF `OFF`, WLAN measurement `RDY`, and an error queue of `0,"No error"`.
+- WLAN regression check (run `7ccdb50ca1`): on the same cable and profile, EVM data carriers
+  measured **-36.86 dB**, burst power -39.80 dBm, frequency error 4.15 Hz, MCS11/GI32 —
+  consistent with results from before the CW change, confirming WLAN capability is intact.
+
+Summary: all three measured-value discrepancies (-80.87 → -56.25 → -39.71 dBm) are now
+explained and corrected. GPRF power is usable for its intended purpose, but cable-loss
+figures still require the Calibration Profile approval flow in
+`docs/development-workflow.md` before they become formal data.

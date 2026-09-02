@@ -37,6 +37,7 @@ class GeneratorCommands(BaseModel):
     arb_rf_on: str | None = None
     arb_rf_off: str | None = None
     arb_set_repetition: str | None = None
+    set_baseband_mode: str | None = None
 
 
 class GeneratorQueryCommands(BaseModel):
@@ -49,6 +50,7 @@ class GeneratorQueryCommands(BaseModel):
     states: str
     rf_path: str
     arb_file_absolute: str
+    baseband_mode: str | None = None
 
 
 class MassMemoryQueryCommands(BaseModel):

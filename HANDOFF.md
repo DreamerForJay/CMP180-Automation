@@ -11,9 +11,20 @@
   `"RF1.5"`、ENPower 與 EATT，不符即中止，且每點量測後與收尾都讀 `SYST:ERR?`，
   error queue 非空一律標為 `INVALID`。修正後 run `d3c259178c` 讀到 -56.25 dBm
   （改善約 24.6 dB），但 reliability 為 `3`，故仍標記 `INVALID`。剩餘約 15.8 dB 落差
-  已定位為**產生器播放突發 WLAN ARB 波形而非 CW**（ARB 為
-  `...11be_EHT_MU_BW320-1_..._MCS11_LEN4096_LDPC.wv`）。GPRF power 數值目前**不可**用於
-  功率準確度或路徑損耗結論。最終 RF `OFF`、error queue 空。這是新實機 RF 量測。
+  定位為**產生器播放突發 WLAN ARB 波形而非 CW**，已於同日以 CW 切換解決（見下一則）。
+  最終 RF `OFF`、error queue 空。這是新實機 RF 量測。
+
+- 2026-09-02 GPRF power sweep 改為自動切換 CW，量值落差全數解決。
+  `scripts/cmp180_gprf_bbmode_discovery.py` 在韌體 `6.0.50.23` 確認
+  `SOURce:GPRF:GEN:BBMode` 接受 `CW` 與 `ARB`（readback 一致、error queue 空），
+  其餘 baseband 候選 header 皆為 `-113`。**實機確認切到 CW 再切回 ARB 不會清除已選
+  waveform**；workflow 仍在收尾比對並於不符時重新指定。CW 下 run `67ccd62048` 讀到
+  **-39.7106 dBm**（Generator -40 dBm，差 **0.29 dB**）、**reliability `0`**、
+  `valid=true`，error queue 與 cleanup 皆空。收尾還原確認 baseband `ARB`、waveform
+  路徑相同、RF `OFF`、WLAN measurement `RDY`。WLAN 回歸驗證 run `7ccdb50ca1` 的
+  EVM data carriers `-36.86 dB`、burst power -39.80 dBm，與先前一致，WLAN 能力未受影響。
+  GPRF power 現可用於 400 MHz–8 GHz 掃頻、線損與 port 響應特性；線損若要成為正式數據，
+  仍須完成 Calibration Profile 核准流程。這是新實機 RF 量測。
 
 - 2026-09-02 RF owner 核准將 11 個已完成 HIL 的 WLAN section 納入 Web approved
   profile。執行閘門改為逐 section 比對 band／bandwidth／frequency envelope，避免整體
@@ -143,10 +154,24 @@
   `cable_confirmation`, aborts on mismatch, and reads `SYST:ERR?` after every point and
   after cleanup, forcing `INVALID` on a non-empty queue. Post-fix run `d3c259178c` measured
   -56.25 dBm (about 24.6 dB better) but returned reliability `3`, so it is still recorded as
-  `INVALID`. The remaining ~15.8 dB gap is attributed to the generator playing a **bursted
-  WLAN ARB waveform rather than CW**. GPRF power values **cannot** yet support a
-  power-accuracy or path-loss conclusion. Final RF was `OFF` with an empty error queue.
-  This was a new live RF measurement.
+  `INVALID`. The remaining ~15.8 dB gap was attributed to the generator playing a **bursted
+  WLAN ARB waveform rather than CW**, which was resolved the same day by the CW switch below.
+  Final RF was `OFF` with an empty error queue. This was a new live RF measurement.
+
+- On 2026-09-02, the GPRF power sweep began selecting CW automatically, resolving every
+  measured-value discrepancy. `scripts/cmp180_gprf_bbmode_discovery.py` confirmed on firmware
+  `6.0.50.23` that `SOURce:GPRF:GEN:BBMode` accepts `CW` and `ARB` with matching read-backs
+  and an empty error queue, while every other baseband candidate header returned `-113`.
+  Switching to CW and back was confirmed **not** to clear the selected waveform; the workflow
+  still compares it during cleanup and reselects it on a mismatch. In CW, run `67ccd62048`
+  measured **-39.7106 dBm** against a -40 dBm generator level (**0.29 dB** difference) with
+  **reliability `0`** and `valid=true`, and empty error and cleanup queues. Restore checks
+  confirmed baseband `ARB`, an identical waveform path, RF `OFF`, and WLAN measurement `RDY`.
+  WLAN regression run `7ccdb50ca1` measured EVM data carriers `-36.86 dB` and burst power
+  -39.80 dBm, consistent with earlier results, so WLAN capability is unaffected. GPRF power is
+  now usable for 400 MHz-8 GHz sweeps, cable loss, and port response; cable-loss figures still
+  need the Calibration Profile approval flow before they count as formal data. This was a new
+  live RF measurement.
 
 - On 2026-09-02, the RF owner approved all 11 HIL-complete WLAN sections for the Web
   approved profile. The execution gate now matches each band/bandwidth/frequency envelope

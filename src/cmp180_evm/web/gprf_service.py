@@ -28,6 +28,8 @@ GPRF_MAX_POWER_DBM = 20.0
 GPRF_MAX_POINTS = 401
 GPRF_MIN_DWELL_MS = 50
 GPRF_MAX_DWELL_MS = 5000
+# GPRF power 量測需要連續波；突發 ARB 波形會被平均進閒置期而無法解讀。
+GPRF_BASEBAND_MODE = "CW"
 
 
 @dataclass(frozen=True)
@@ -148,6 +150,55 @@ def _drain_error_queue(conn: GprfSocket, registry: ScpiCommandRegistry, *, limit
     return entries
 
 
+def _select_cw_baseband(conn: GprfSocket, registry: ScpiCommandRegistry) -> tuple[str, str]:
+    """Switch the generator to CW; returns the original (baseband mode, ARB file)."""
+    # GPRF power 量測必須用 CW：突發 WLAN ARB 波形會讓功率計把閒置期一起平均，
+    # 實測比 WLAN analyzer 的 burst power 低約 15.8 dB。切換只可在 RF OFF 時進行。
+    original_mode = conn.query(registry.require("generator_query.baseband_mode")).strip()
+    original_arb = conn.query(registry.require("generator_query.arb_file_absolute")).strip()
+    if original_mode != GPRF_BASEBAND_MODE:
+        conn.write(registry.render("generator.set_baseband_mode", mode=GPRF_BASEBAND_MODE))
+        conn.query(registry.require("common.operation_complete"))
+        errors = _drain_error_queue(conn, registry)
+        if errors:
+            raise RuntimeError(f"Switching the generator to CW reported {errors}")
+        readback = conn.query(registry.require("generator_query.baseband_mode")).strip()
+        if readback != GPRF_BASEBAND_MODE:
+            raise RuntimeError(f"Generator baseband mode readback {readback!r} is not CW")
+    return original_mode, original_arb
+
+
+def _restore_baseband(
+    conn: GprfSocket,
+    registry: ScpiCommandRegistry,
+    original_mode: str,
+    original_arb: str | None,
+) -> list[str]:
+    """Restore the generator baseband mode and ARB selection; returns any mismatches."""
+    # WLAN campaign 依賴原本選取的 ARB waveform，收尾必須還原並逐項 read-back 確認。
+    problems: list[str] = []
+    if original_mode and original_mode != GPRF_BASEBAND_MODE:
+        conn.write(registry.render("generator.set_baseband_mode", mode=original_mode))
+        conn.query(registry.require("common.operation_complete"))
+        readback = conn.query(registry.require("generator_query.baseband_mode")).strip()
+        if readback != original_mode:
+            problems.append(
+                f"BASEBAND_MODE_RESTORE_MISMATCH: expected {original_mode}, got {readback}"
+            )
+    if original_arb:
+        restored = conn.query(registry.require("generator_query.arb_file_absolute")).strip()
+        if restored != original_arb:
+            # 切換 baseband 可能清除選取；用已驗證的 setter 重新指定同一個檔案。
+            conn.write(
+                registry.render("generator.set_arb_file", arb_file=original_arb.strip('"'))
+            )
+            conn.query(registry.require("common.operation_complete"))
+            restored = conn.query(registry.require("generator_query.arb_file_absolute")).strip()
+        if restored != original_arb:
+            problems.append(f"ARB_RESTORE_MISMATCH: expected {original_arb}, got {restored}")
+    return problems
+
+
 def _parse_power(response: str) -> tuple[int, float | None]:
     try:
         parts = response.strip().split(",")
@@ -234,9 +285,13 @@ def run_gprf_power_sweep(
     rows: list[dict[str, object]] = []
     # 回傳 dict 持有同一個 list 參考，因此 finally 內補上的收尾錯誤仍會被呼叫端看到。
     cleanup_errors: list[str] = []
+    original_baseband_mode: str | None = None
+    original_arb_file: str | None = None
     try:
         conn.connect()
         conn.write(registry.require("common.clear_status"))
+        # 先切 CW 再設定 routing／位準，全部都在 RF Off 下完成。
+        original_baseband_mode, original_arb_file = _select_cw_baseband(conn, registry)
         # 量測端 routing 與位準必須在 RF Off 時先寫入並 read-back：run 252bbbe39a 因為
         # GPRF measurement 停在未接線的 RF1.6，才會在送出 -40 dBm 時讀到雜訊底 -80.87 dBm。
         route = parse_route(request.get("cable_confirmation"))
@@ -300,6 +355,7 @@ def run_gprf_power_sweep(
                 "analyzer_port": route.analyzer_port,
                 "expected_power_dbm": power_dbm,
                 "external_attenuation_db": external_attenuation_db,
+                "baseband_mode": GPRF_BASEBAND_MODE,
                 "measured_power_dbm": measured,
                 "evm_all_db": None,
                 "evm_data_db": None,
@@ -326,6 +382,8 @@ def run_gprf_power_sweep(
                 "cable_route": route.label,
                 "analyzer_port": route.analyzer_port,
                 "external_attenuation_db": external_attenuation_db,
+                "baseband_mode": GPRF_BASEBAND_MODE,
+                "restored_baseband_mode": original_baseband_mode,
             },
         )
         return {
@@ -346,6 +404,16 @@ def run_gprf_power_sweep(
         try:
             conn.write(registry.require("generator.rf_off"))
         finally:
+            # RF 關閉後才還原 baseband；還原失敗必須留成證據，不得靜默吞掉。
+            try:
+                if original_baseband_mode is not None:
+                    cleanup_errors.extend(
+                        _restore_baseband(
+                            conn, registry, original_baseband_mode, original_arb_file
+                        )
+                    )
+            except Exception as exc:
+                cleanup_errors.append(f"BASEBAND_RESTORE_FAILED: {exc}")
             # 收尾後再讀一次 error queue 留存證據；讀取失敗不得遮蔽原始錯誤，也不得跳過 close。
             try:
                 cleanup_errors.extend(_drain_error_queue(conn, registry))

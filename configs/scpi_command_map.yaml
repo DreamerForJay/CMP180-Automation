@@ -22,6 +22,10 @@ generator:
   set_power: "SOURce:GPRF:GEN:RFSettings:LEVel {power_dbm}"
   # 內建 GPRF Help 確認；只允許在 RF OFF、量測 idle 時切換 baseband ARB 檔案。
   set_arb_file: 'SOURce:GPRF:GEN:ARB:FILE "{arb_file}"'
+  # 2026-09-02 由 scripts/cmp180_gprf_bbmode_discovery.py 在韌體 6.0.50.23 上確認：
+  # `CW` 與 `ARB` 皆被接受、readback 一致、error queue 空，且切換後原 ARB 選取仍保留。
+  # 只可在 RF OFF 時寫入；GPRF power 量測需要 CW，WLAN EVM 需要 ARB。
+  set_baseband_mode: "SOURce:GPRF:GEN:BBMode {mode}"
   # RF state tree 已由內建 Help 確認；實機 pulse 驗證前仍須人工確認線材。
   rf_on: "SOURce:GPRF:GEN:STATe ON"
   rf_off: "SOURce:GPRF:GEN:STATe OFF"
@@ -43,6 +47,8 @@ generator_query:
   rf_path: "ROUTe:GPRF:GEN:SPATh?"
   # 內建 GPRF Help 確認；ABSPath 讓目錄盤點不依賴目前 alias 顯示方式。
   arb_file_absolute: "SOURce:GPRF:GEN:ARB:FILE? ABSPath"
+  # 2026-09-02 實機確認：回傳 `ARB`；其餘 baseband 候選 header 皆為 -113。
+  baseband_mode: "SOURce:GPRF:GEN:BBMode?"
 
 mass_memory_query:
   # CMP180 base Help 的 Mass memory command reference；兩者皆為 query-only。
