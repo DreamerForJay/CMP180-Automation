@@ -130,6 +130,23 @@ class GprfSocket:
         return b"".join(chunks).decode("utf-8", errors="ignore").strip()
 
 
+def _drain_error_queue(conn: GprfSocket, registry: ScpiCommandRegistry, *, limit: int = 20) -> list[str]:
+    """Read `SYST:ERR?` until the instrument reports an empty queue."""
+    # SCPI error queue 必須讀到 `0,"No error"` 才算清空；設上限避免儀器異常時無限迴圈。
+    entries: list[str] = []
+    command = registry.require("common.system_error")
+    for _ in range(limit):
+        try:
+            response = conn.query(command).strip()
+        except Exception as exc:  # 讀取失敗本身就是證據，不可靜默吞掉
+            entries.append(f"ERROR_QUEUE_READ_FAILED: {exc}")
+            break
+        if not response or response.startswith("0,"):
+            break
+        entries.append(response)
+    return entries
+
+
 def _parse_power(response: str) -> tuple[int, float | None]:
     try:
         parts = response.strip().split(",")
@@ -214,6 +231,8 @@ def run_gprf_power_sweep(
     registry = load_scpi_command_map(Path("configs/scpi_command_map.yaml"))
     conn = GprfSocket(registry)
     rows: list[dict[str, object]] = []
+    # 回傳 dict 持有同一個 list 參考，因此 finally 內補上的收尾錯誤仍會被呼叫端看到。
+    cleanup_errors: list[str] = []
     try:
         conn.connect()
         conn.write(registry.require("common.clear_status"))
@@ -232,7 +251,15 @@ def run_gprf_power_sweep(
             time.sleep(preview.dwell_ms / 1000)
             raw = conn.query(registry.require("gprf_measurement_query.power_current"))
             reliability, measured = _parse_power(raw)
-            status = "OK" if reliability == 0 else f"RELIABILITY_{reliability}"
+            # 每點都讀 error queue：儀器已回報錯誤時不得標記為有效量測，避免假 PASS。
+            point_errors = _drain_error_queue(conn, registry)
+            if point_errors:
+                status = "SCPI_ERROR"
+            elif reliability != 0:
+                status = f"RELIABILITY_{reliability}"
+            else:
+                status = "OK"
+            valid = reliability == 0 and measured is not None and not point_errors
             row = {
                 "point_index": index,
                 "frequency_hz": frequency_hz,
@@ -243,10 +270,11 @@ def run_gprf_power_sweep(
                 "evm_pilot_db": None,
                 "burst_power_dbm": measured,
                 "frequency_error_hz": None,
-                "valid": reliability == 0 and measured is not None,
-                "limit_status": "MEASURED" if reliability == 0 else "INVALID",
+                "valid": valid,
+                "limit_status": "MEASURED" if valid else "INVALID",
                 "reliability": reliability,
                 "raw_power_current": raw,
+                "error_queue": "; ".join(point_errors),
                 "status": status,
                 "measurement_family": "GPRF_POWER",
             }
@@ -267,6 +295,7 @@ def run_gprf_power_sweep(
             "measurement_family": "GPRF_POWER",
             "points": rows,
             "artifacts": artifacts,
+            "cleanup_errors": cleanup_errors,
             "compliance_claim": False,
         }
     finally:
@@ -278,4 +307,9 @@ def run_gprf_power_sweep(
         try:
             conn.write(registry.require("generator.rf_off"))
         finally:
+            # 收尾後再讀一次 error queue 留存證據；讀取失敗不得遮蔽原始錯誤，也不得跳過 close。
+            try:
+                cleanup_errors.extend(_drain_error_queue(conn, registry))
+            except Exception:
+                pass
             conn.close()

@@ -369,8 +369,11 @@ four-point power sweep.
 
 此節記錄「命令可執行」的證據，**尚不足以支撐功率準確度或路徑損耗結論**：
 
-1. **無 error queue 證據**：`gprf_service.py` 此路徑未查詢 `SYST:ERR?`，因此不符合
-   AGENTS.md 對 SCPI 命令的最低文件要求（success + error-queue 雙證據）。
+1. **error queue 證據待補**：`gprf_service.py` 已在每點量測後與 cleanup 後查詢
+   `SYST:ERR?`（每點記入 `error_queue` 欄，收尾記入 `cleanup_errors`），且 error queue
+   非空時該點一律標為 `INVALID`，不會出現假 PASS。但證據 run `252bbbe39a` 執行於此修改
+   之前，仍**不含** error queue 證據；要滿足 AGENTS.md 的 success + error-queue 雙證據
+   要求，需再跑一次實機單點。
 2. **GPRF measurement 端 RF path 未設定**：command map 只有 Generator 的
    `ROUTe:GPRF:GEN:SPATh?`，沒有對應的 `ROUTe:GPRF:MEASurement<i>:SPATh`。
    量測 instance 因此使用預設 port，未必是實際接線的 RF1.5。
@@ -413,8 +416,12 @@ presented as WLAN demodulation data or a compliance claim. The caller is
 This section records evidence that the commands execute. It is **not sufficient to support
 any power-accuracy or path-loss conclusion**:
 
-1. **No error-queue evidence**: this path in `gprf_service.py` never queries `SYST:ERR?`, so
-   it does not yet meet the AGENTS.md minimum (both success and error-queue evidence).
+1. **Error-queue evidence still pending**: `gprf_service.py` now queries `SYST:ERR?` after
+   every measured point and again after cleanup (recorded per point in `error_queue` and in
+   `cleanup_errors`), and a non-empty queue forces that point to `INVALID` so it cannot
+   report a false pass. Evidence run `252bbbe39a` predates that change and therefore still
+   carries **no** error-queue evidence; meeting the AGENTS.md success-plus-error-queue
+   minimum requires one more live single-point run.
 2. **GPRF measurement RF path is never set**: the command map contains only the generator
    `ROUTe:GPRF:GEN:SPATh?` and no corresponding `ROUTe:GPRF:MEASurement<i>:SPATh`. The
    measurement instance therefore uses its default port, which is not necessarily the
