@@ -149,8 +149,12 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
         encoding="utf-8"
     )
     assert 'id="hardwareProfileSummary"' in html
+    assert 'class="sop-steps measurement-sop"' in html
+    assert 'id="planCheckText"' in html
     assert 'id="hardwareSweepSetup"' in html
     assert "selectHardwareAction" in hardware
+    assert "WLAN Frequency Sweep：先 Review" in hardware
+    assert "GPRF Power：可掃儀器調諧能力" in hardware
     # 圖表平移必須限制在固定畫布內，且不得造成 Y 軸跟著游標漂移。
     assert "Math.min(900-chartView.width" in javascript
     assert "chartView.y=0" in javascript
@@ -162,14 +166,20 @@ def test_hil_campaign_is_persistent_and_operator_driven() -> None:
     campaign = (STATIC / "campaign.js").read_text(encoding="utf-8")
     assert 'data-tab="campaign"' in html
     assert 'id="campaignRows"' in html
+    assert 'id="campaignOperatorHint"' in html
     assert 'id="campaignOperator"' in html
     assert 'id="campaignRoute"' in html
     assert 'class="table-wrap campaign-table-wrap"' in html
+    assert 'class="campaign-col-priority"' in html
     assert 'class="campaign-col-evidence"' in html
+    assert "RF1.1 Generator output" in html
     assert "/api/hil-campaign/prepare" in campaign
     assert "/api/hil-campaign/cases/" in campaign
     assert "/api/jobs/" in campaign
     assert "campaign-detail" in campaign
+    assert "priorityForCase" in campaign
+    assert "sortedCampaignCases" in campaign
+    assert "connectionInstruction" in campaign
 
 
 def test_operator_guide_covers_clone_cli_and_artifacts() -> None:

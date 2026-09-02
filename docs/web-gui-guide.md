@@ -138,6 +138,8 @@ EVM limit 判定使用「dB 越負通常越好」的方向：量測 EVM 必須�
 
 實機頁以單點、頻率掃描與功率掃描三個分頁直接設定工作，不再顯示 Generator／Analyzer／Measurement Flow 裝飾積木，也不使用量測模式下拉選單。Run 仍走既有 route／操作員／Profile／最終 RF 摘要確認。多點掃描的 Pause 只在目前點完成 STOP 與 RF Off 後生效；Resume 從下一點繼續，Stop 執行 cooperative cancellation 並保留 partial artifacts。SingleShot 不支援中途 Pause。
 
+實機頁採用固定 SOP 排版：STEP 1 先選 SingleShot、WLAN frequency sweep、WLAN power sweep 或 GPRF power sweep 並設定數值；STEP 2 才確認 RF1.1 Generator output 到 RF1.5 Analyzer input 的接線與操作員在場；STEP 3 顯示目前計畫 Review；STEP 4 才允許送出實機量測。GPRF power sweep 只用來展示 CMP180 調諧與功率讀值能力，不會被標示成 WLAN EVM。
+
 掃描設定固定顯示，不使用可收合選單。頻率 Start、Stop、Step 與 Center Frequency 各自有緊鄰欄位的 MHz／GHz 選單；切換會先換算為 Hz 再顯示等值數字。量測 Job 每完成一點且完成 cleanup／RF Off 後，API 才發布該點快照，頁面同步更新進度、最新 EVM 與即時趨勢，不會為了畫圖額外送 SCPI。
 
 頻率／功率掃描按下「執行實機量測」時，會先用目前欄位建立 preview，再以同一份計畫送出 custom-sweep；前端不再呼叫固定三點／四點 profile endpoint。若 preview 顯示不可執行，按鈕會停在規劃狀態並顯示後端拒絕原因，不會改跑其他 profile。
@@ -146,10 +148,11 @@ EVM limit 判定使用「dB 越負通常越好」的方向：量測 EVM 必須�
 
 1. 以本機實機模式啟動 Web，開啟「HIL 批次」。
 2. 按「準備／重新檢查矩陣」。工具只執行設定與既有 profile gate，不會在這一步送 RF。
-3. `READY` 表示現有 workflow 可執行；`BLOCKED` 會顯示缺少的 band setter、waveform、route profile 或專用 backend，不會改跑 RF1.1→RF1.5 的既有案例。
-4. 確認操作員在場與畫面 route 接線，再按單列 `Run` 或「執行下一個 READY」。
-5. Pause／Stop 經 Job API 在點位 cleanup／RF Off 邊界生效；成功、失敗與 artifact 路徑保存於 `output/hil-campaign/state.json`。
-6. 關閉瀏覽器不會清除進度。若 Web server 在執行中重啟，該列轉為 `INTERRUPTED`；重新 Prepare 後才能再跑，避免把消失的背景 thread 誤標成執行中。
+3. 頁面會依重要度排序：P0 黃金點最優先，P1 為已核准的 11 個 WLAN EVM section，P2 為功率邊界，P3／HOLD 為尚未核准的 route、analysis bandwidth、waveform 或雙 VSA/VSG 能力。
+4. `READY` 表示現有 workflow 可執行；`BLOCKED` 會顯示缺少的 band setter、waveform、route profile 或專用 backend，不會改跑 RF1.1→RF1.5 的既有案例。
+5. 依畫面「目前接線指示」確認 RF1.1 Generator output → RF1.5 Analyzer input，確認操作員在場，再按單列 `Run` 或「執行下一個 READY」。
+6. Pause／Stop 經 Job API 在點位 cleanup／RF Off 邊界生效；成功、失敗與 artifact 路徑保存於 `output/hil-campaign/state.json`。
+7. 關閉瀏覽器不會清除進度。若 Web server 在執行中重啟，該列轉為 `INTERRUPTED`；重新 Prepare 後才能再跑，避免把消失的背景 thread 誤標成執行中。
 
 重設 Campaign 只重設矩陣狀態，不刪除既有量測 artifacts。新增 route、bandwidth 或 waveform 的 RF 權限仍須先補入正式 command registry、workflow 與 capability profile；介面按鈕本身不會繞過後端限制。
 
@@ -294,6 +297,8 @@ The second UI pass uses the company TMXLAB KIT Demo as an information-hierarchy 
 
 The hardware page uses direct Single, Frequency Sweep, and Power Sweep tabs. Decorative Generator, Analyzer, and Measurement Flow blocks and the measurement-mode dropdown have been removed. Run still follows the existing route/operator/profile/final-RF-summary confirmations. For a multi-point sweep, Pause takes effect only after the current point completes STOP and RF Off; Resume continues with the next point, while Stop performs cooperative cancellation and preserves partial artifacts. SingleShot cannot pause mid-transaction.
 
+The hardware page now follows a fixed SOP layout: STEP 1 selects SingleShot, WLAN frequency sweep, WLAN power sweep, or GPRF power sweep and sets values; STEP 2 confirms the RF1.1 Generator output to RF1.5 Analyzer input cable and operator presence; STEP 3 reviews the active plan; and STEP 4 is the only place where live hardware execution is submitted. GPRF power sweep is presented only as CMP180 tuning and power-readback capability, not as WLAN EVM.
+
 Sweep Setup stays visible rather than using a collapsible control. Start, Stop, Step, and Center Frequency each have an adjacent MHz/GHz selector; switching normalizes through Hz and preserves the physical value. A job publishes each point snapshot only after cleanup/RF Off, allowing the page to update progress, latest EVM, and a live trend without issuing extra SCPI for plotting.
 
 When Frequency Sweep or Power Sweep is executed, the UI first builds a preview from the current fields and then starts `custom-sweep` with the same plan. The frontend no longer calls the fixed three-point or four-point hardware endpoints from the main hardware sweep controls. If preview says the plan is not executable, the page remains in planning state, displays the backend rejection reason, and transmits no RF.
@@ -301,9 +306,10 @@ When Frequency Sweep or Power Sweep is executed, the UI first builds a preview f
 
 1. Start the Web application locally in hardware mode and open **HIL Campaign**.
 2. Select **Prepare / Recheck Matrix**. This applies configuration and the existing profile gate only; it transmits no RF.
-3. `READY` means the current workflow can execute the case. `BLOCKED` identifies a missing band setter, waveform, route profile, or dedicated backend and never substitutes the existing RF1.1-to-RF1.5 case.
-4. Confirm operator presence and the route shown on screen, then select a row's **Run** button or **Run Next READY**.
-5. Pause and Stop use the Job API and take effect at point cleanup/RF-Off boundaries. Success, failure, and artifact locations persist in `output/hil-campaign/state.json`.
-6. Closing the browser preserves progress. If the Web server restarts during execution, the row becomes `INTERRUPTED`; Prepare it again before rerunning so a vanished worker is never presented as active.
+3. The page sorts cases by importance: P0 is the golden point, P1 covers the approved 11 WLAN EVM sections, P2 covers the power boundary, and P3/HOLD covers unapproved routes, analysis bandwidth, waveform, or dual VSA/VSG capabilities.
+4. `READY` means the current workflow can execute the case. `BLOCKED` identifies a missing band setter, waveform, route profile, or dedicated backend and never substitutes the existing RF1.1-to-RF1.5 case.
+5. Follow the **Current cabling instruction** on screen, confirm RF1.1 Generator output → RF1.5 Analyzer input and operator presence, then select a row's **Run** button or **Run Next READY**.
+6. Pause and Stop use the Job API and take effect at point cleanup/RF-Off boundaries. Success, failure, and artifact locations persist in `output/hil-campaign/state.json`.
+7. Closing the browser preserves progress. If the Web server restarts during execution, the row becomes `INTERRUPTED`; Prepare it again before rerunning so a vanished worker is never presented as active.
 
 Reset Campaign clears matrix progress but does not delete measurement artifacts. A new route, bandwidth, or waveform still requires a supported command-registry entry, workflow, and capability profile before RF execution; the UI cannot bypass the backend gate.
