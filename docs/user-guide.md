@@ -295,7 +295,9 @@ The GPRF Generator, WLAN TX Analyzer, and Measurement Flow blocks on the hardwar
 
 中斷後可重複 `--section 2.4GHz-bw20` 只補指定區段。每次切換 waveform 前都要求
 RF OFF／measurement idle；每個 channel center 都是完整 SingleShot 並在 finally
-Stop／Abort／RF Off。這是 HIL 驗證入口，不會自行擴大 Web approved profile。
+Stop／Abort／RF Off。11 個完成 HIL 的 section 已納入 Web approved profile；一般 Web
+自訂掃描會在 RF OFF／measurement idle 時依頻寬自動切換並回讀匹配 waveform。
+400 MHz–8 GHz 仍只是儀器調諧型錄範圍，非 WLAN 空隙不會被核准執行。
 
 ## English: full WLAN waveform and band tools
 
@@ -311,5 +313,7 @@ HIL tool for all 11 legal sections:
 
 After interruption, repeat `--section 2.4GHz-bw20` to resume only a named section. Every
 waveform switch requires RF OFF and an idle measurement. Every channel center is a complete
-SingleShot with Stop/Abort/RF Off in `finally`. This is a HIL validation entry point and
-does not widen the Web approved profile by itself.
+SingleShot with Stop/Abort/RF Off in `finally`. All 11 HIL-complete sections are now in
+the Web approved profile. Normal Web custom sweeps select and read back the matching
+waveform while RF is OFF and measurement is idle. The 400 MHz–8 GHz figure remains an
+instrument tuning catalog range; non-WLAN gaps are not approved for execution.

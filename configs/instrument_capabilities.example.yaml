@@ -20,25 +20,37 @@ installed:
   generator_count: 1
   rf_ports: [RF1.1, RF1.2, RF1.3, RF1.4, RF1.5, RF1.6, RF1.7, RF1.8, RF2.1, RF2.2, RF2.3, RF2.4, RF2.5, RF2.6, RF2.7, RF2.8]
 approved_profile:
-  profile_id: rf1.1-rf1.5-6ghz-bw320-v2
+  profile_id: rf1.1-rf1.5-wlan-all-bands-v3
   lifecycle: approved
-  frequency_min_hz: 5925000000
+  frequency_min_hz: 2412000000
   frequency_max_hz: 7125000000
-  # 2026-08-28 Web HIL 已完成 5925–7125 MHz／49 點與 -55–-30 dBm，
-  # 此層只授權已有實機證據的組合，不繼承 catalog 上限。
+  # 2026-09-02 已完成 11 個 WLAN section／176 點；section 是實際授權單位，
+  # 整體 min/max 只供摘要，絕不授權 2.4／5／6 GHz 之間的非 WLAN 空隙。
   maximum_span_hz: 1200000000
-  bandwidths_hz: [320000000]
+  bandwidths_hz: [20000000, 40000000, 80000000, 160000000, 320000000]
   generator_power_min_dbm: -55
   generator_power_max_dbm: -30
   dwell_min_ms: 100
   dwell_max_ms: 2000
-  maximum_points: 49
+  maximum_points: 59
   routes: [RF1.1-RF1.5]
+  sections:
+    - {key: 2.4GHz-bw20, frequency_min_hz: 2412000000, frequency_max_hz: 2472000000, bandwidth_hz: 20000000, maximum_points: 13}
+    - {key: 2.4GHz-bw40, frequency_min_hz: 2422000000, frequency_max_hz: 2462000000, bandwidth_hz: 40000000, maximum_points: 3}
+    - {key: 5GHz-bw20, frequency_min_hz: 5180000000, frequency_max_hz: 5825000000, bandwidth_hz: 20000000, maximum_points: 25}
+    - {key: 5GHz-bw40, frequency_min_hz: 5190000000, frequency_max_hz: 5795000000, bandwidth_hz: 40000000, maximum_points: 12}
+    - {key: 5GHz-bw80, frequency_min_hz: 5210000000, frequency_max_hz: 5775000000, bandwidth_hz: 80000000, maximum_points: 6}
+    - {key: 5GHz-bw160, frequency_min_hz: 5250000000, frequency_max_hz: 5570000000, bandwidth_hz: 160000000, maximum_points: 2}
+    - {key: 6GHz-bw20, frequency_min_hz: 5955000000, frequency_max_hz: 7115000000, bandwidth_hz: 20000000, maximum_points: 59}
+    - {key: 6GHz-bw40, frequency_min_hz: 5965000000, frequency_max_hz: 7085000000, bandwidth_hz: 40000000, maximum_points: 29}
+    - {key: 6GHz-bw80, frequency_min_hz: 5985000000, frequency_max_hz: 7025000000, bandwidth_hz: 80000000, maximum_points: 14}
+    - {key: 6GHz-bw160, frequency_min_hz: 6025000000, frequency_max_hz: 6985000000, bandwidth_hz: 160000000, maximum_points: 7}
+    - {key: 6GHz-bw320, frequency_min_hz: 5925000000, frequency_max_hz: 7125000000, bandwidth_hz: 320000000, maximum_points: 49}
 verified_hil:
   frequencies_hz: [2412000000, 2472000000, 5180000000, 5825000000, 5955000000, 7115000000]
   bandwidths_hz: [20000000, 40000000, 80000000, 160000000, 320000000]
   generator_powers_dbm: [-55, -50, -45, -40, -30]
   dwell_ms: [100, 200]
   routes: [RF1.1-RF1.5]
-  # 實機證據不會自動擴大 approved_profile；正式 Web RF 權限仍需 RF owner 核准。
+  # 2026-09-02 RF owner 已核准下列 11 個完成 HIL 的 section。
   sections: [2.4GHz-bw20, 2.4GHz-bw40, 5GHz-bw20, 5GHz-bw40, 5GHz-bw80, 5GHz-bw160, 6GHz-bw20, 6GHz-bw40, 6GHz-bw80, 6GHz-bw160, 6GHz-bw320]

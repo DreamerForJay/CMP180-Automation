@@ -11,10 +11,8 @@ def test_campaign_prepare_separates_ready_from_blocked(tmp_path: Path) -> None:
     assert by_id["b6-bw320"]["state"] == "ready"
     assert by_id["b6-power"]["state"] == "blocked"
     assert "Requires successful case" in by_id["b6-power"]["reason"]
-    assert by_id["b24-bw20"]["state"] == "blocked"
-    assert by_id["b24-bw20"]["reason"]  # band setter 已驗證，仍被 approved profile 擋下
-    assert by_id["b6-bw20"]["state"] == "blocked"
-    assert "not HIL-approved" in by_id["b6-bw20"]["reason"]
+    assert by_id["b24-bw20"]["state"] == "ready"
+    assert by_id["b6-bw20"]["state"] == "ready"
 
 
 def test_campaign_progress_persists_and_reset_preserves_external_artifacts(tmp_path: Path) -> None:

@@ -2298,3 +2298,26 @@ GUI 與 Python 結果能互相對照
 ```
 
 這才是符合原始 Plan 中「功能完整度、穩定性、程式碼品質、文件與報告」的交付成果。
+
+---
+
+# 38. 2026-09-02 Web 全 WLAN 核准邊界
+
+Web RF 執行核准 RF1.1 → RF1.5、-55～-30 dBm，以及已完成 HIL 的 11 個
+2.4／5／6 GHz WLAN band／bandwidth section。每個 section 必須同時匹配頻段、
+中心頻率範圍與 20／40／80／160／320 MHz 頻寬；不得用整體 2412–7125 MHz
+外框放行頻段間空隙。後端只能在 RF OFF 且 measurement idle 時選擇匹配 waveform，
+完成 OPC、error queue 與絕對路徑 readback 後才能繼續設定及 RF On。
+
+400 MHz–8 GHz 是 CMP180 調諧型錄範圍，不等於 WLAN 可執行範圍。
+
+## English: 2026-09-02 Web full-WLAN approval boundary
+
+Web RF execution approves the RF1.1-to-RF1.5 route, -55 to -30 dBm, and the 11
+HIL-complete 2.4/5/6 GHz WLAN band/bandwidth sections. Each section must match its band,
+center-frequency range, and 20/40/80/160/320 MHz bandwidth. The overall 2412–7125 MHz
+envelope must never authorize gaps between WLAN bands. The backend may select a matching
+waveform only while RF is OFF and measurement is idle, and must complete OPC, error-queue,
+and absolute-path readback checks before configuration continues or RF is enabled.
+
+The CMP180 400 MHz–8 GHz tuning catalog range is not the executable WLAN range.

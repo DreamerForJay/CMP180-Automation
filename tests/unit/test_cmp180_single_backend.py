@@ -4,6 +4,7 @@ import pytest
 
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.workflow.cmp180_single_backend import Cmp180SingleMeasurementBackend
+from cmp180_evm.workflow.cmp180_single_backend import waveform_for_bandwidth
 from cmp180_evm.workflow.single_measurement import (
     SingleMeasurementPlan,
     run_single_measurement,
@@ -21,6 +22,7 @@ class FakeCmp180:
         self.measurement_queries = 0
         self.malformed_result = malformed_result
         self.writes: list[str] = []
+        self.arb_file = waveform_for_bandwidth(320_000_000)
 
     def write_str(self, command: str) -> None:
         self.writes.append(command)
@@ -37,6 +39,9 @@ class FakeCmp180:
             self.measurement_queries = 0
         elif command in {REGISTRY.require("wlan_tx.stop"), REGISTRY.require("wlan_tx.abort")}:
             self.measurement_state = "RDY"
+        elif command.startswith('SOURce:GPRF:GEN:ARB:FILE "'):
+            # 模擬 ABSPath readback，確認 backend 真的依頻寬切換 waveform。
+            self.arb_file = command.split('"', 2)[1]
 
     def query_str(self, command: str) -> str:
         values = {
@@ -45,6 +50,7 @@ class FakeCmp180:
             REGISTRY.require("generator_query.arb_repetition"): "CONT",
             REGISTRY.require("generator_query.frequency"): "6.105E9",
             REGISTRY.require("generator_query.level"): "-40",
+            REGISTRY.require("generator_query.arb_file_absolute"): f'"{self.arb_file}"',
             REGISTRY.require("wlan_tx_query.rf_path"): '"RF1.5"',
             REGISTRY.require("wlan_tx_query.standard"): "EHT",
             REGISTRY.require("wlan_tx_query.band"): "B6GH",
@@ -114,12 +120,22 @@ def test_complete_backend_fetches_new_result_and_cleans_up():
     assert backend.last_measurement_states[-1] == "RDY"
     assert io.rf_state == "OFF"
     assert REGISTRY.require("generator.rf_on") in io.writes
+    assert REGISTRY.render(
+        "generator.set_arb_file", arb_file=waveform_for_bandwidth(320_000_000)
+    ) in io.writes
     assert REGISTRY.require("wlan_tx.stop") in io.writes
     assert REGISTRY.render("wlan_tx.set_repetition", repetition="SINGleshot") in io.writes
     assert (
         REGISTRY.render("wlan_tx.set_modulation_statistic_count", count=10) in io.writes
     )
     assert io.writes[-1] == REGISTRY.require("generator.rf_off")
+
+
+@pytest.mark.parametrize("bandwidth_hz", [20e6, 40e6, 80e6, 160e6, 320e6])
+def test_each_approved_bandwidth_has_a_matching_hil_waveform(bandwidth_hz):
+    path = waveform_for_bandwidth(bandwidth_hz)
+    assert f"BW{int(bandwidth_hz / 1e6)}" in path
+    assert path.endswith("_LDPC.wv")
 
 
 def test_malformed_result_still_stops_and_turns_rf_off():

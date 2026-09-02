@@ -31,7 +31,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - Limit 判定明確採用 EVM dB 越負越好的規則：量測 EVM 必須小於或等於 `maximum_evm_db` 才能通過；沒有正式 limit profile 的實機結果只顯示 `MEASURED`，不宣稱 PASS。Power Reference Plane 尚未套用正式 +5 dB compensation；metadata 會記錄 `calibration_applied=false`。
 - 多 Run 分析提供 Trace 名稱、顏色鎖、線型、點型、Hide／Solo／移除、拖曳排序、相容性警告與 SVG／PNG／比較 CSV 匯出。EVM 不使用一般升降箭頭，INVALID 點不連線。
 - Mock Sweep 使用非同步 Job API，支援逐點進度、取消、partial artifacts 與單一 active-job 鎖。
-- 安全短掃描核心（頻率與功率）：最大 11 點、-40 dBm 上限與逐點 cleanup；CLI HIL 與 Web 實機三點頻率／功率取消驗收均已通過。Web 實機模式仍只允許 loopback 本機啟用與固定安全 profile。
+- Web 核准 profile 已納入 11 個完成 HIL 的 WLAN band／bandwidth 區段；後端只在 RF OFF／measurement idle 時依 20／40／80／160／320 MHz 自動選取匹配 waveform，並做絕對路徑 readback。仍只允許 RF1.1 → RF1.5 loopback 與 -55～-30 dBm，不授權非 WLAN 空隙。
 - GitHub Actions 執行 Windows／Python 3.11 unit、Mock 與設定驗證；不執行實機 RF。
 
 ### 功能狀態
@@ -40,7 +40,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 |---|---|---|
 | Mock／Demo | 可用 | 不連接 CMP180、不送 RF，適合介面與流程訓練 |
 | 實機 SingleShot | HIL 已通過 | RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm |
-| 頻率／頻寬矩陣 | HIL 已通過 | 11 個合法 band／bandwidth 區段、176/176 點；Web 核准權限仍維持 6 GHz／320 MHz，待 RF owner 擴大 profile |
+| 頻率／頻寬矩陣 | HIL 已通過並納入 Web 核准 | 11 個合法 band／bandwidth 區段、176/176 點；執行時自動匹配 waveform |
 | 固定功率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 已驗證四點掃描與取消／cleanup；最新 waveform 仍需排除 `INV` |
 | 自訂量測規劃 | 型錄範圍可輸入；實機執行依 RF workflow | 規劃介面支援 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz；Web 不再把自訂輸入改跑固定 profile，未通過 workflow 的計畫會顯示拒絕原因且不送 RF |
 | Path Loss 校正 | Draft workflow | 可建立、載入與審查 Profile；正式外部校正儀器 adapter 尚待 HIL |
@@ -144,7 +144,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - Limit evaluation explicitly treats more-negative EVM dB as better: measured EVM must be less than or equal to `maximum_evm_db`. Hardware results without an approved limit profile are shown as `MEASURED`, not PASS. Power Reference Plane compensation is not yet applied; metadata records `calibration_applied=false`.
 - Multi-run analysis provides trace naming, colour lock, line/point styles, Hide/Solo/remove, drag ordering, compatibility warnings, and SVG/PNG/comparison-CSV export. EVM avoids generic up/down arrows, and INVALID points never connect to valid data.
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
-- Safety-bounded short-sweep cores (frequency and power) with 11-point and -40 dBm limits plus per-point cleanup. CLI HIL and Web hardware three-point frequency/cancellation acceptance have passed. Hardware Web mode remains loopback-only and limited to fixed safe profiles.
+- The Web approved profile now includes all 11 HIL-complete WLAN band/bandwidth sections. While RF is OFF and measurement is idle, the backend automatically selects the matching 20/40/80/160/320 MHz waveform and verifies its absolute-path readback. Execution remains limited to the RF1.1-to-RF1.5 loopback and -55 to -30 dBm; non-WLAN gaps are never authorized.
 - Windows/Python 3.11 GitHub Actions for unit, mock, and configuration checks; CI never runs live RF.
 
 ### Capability status
@@ -153,7 +153,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 |---|---|---|
 | Mock/Demo | Available | Does not connect to CMP180 or transmit RF |
 | Hardware SingleShot | HIL passed | RF1.1 to RF1.5, 6105 MHz, 320 MHz, -40 dBm |
-| Frequency/bandwidth matrix | HIL passed | 11 legal band/bandwidth sections and 176/176 points; Web approval remains 6 GHz/320 MHz until an RF owner widens the profile |
+| Frequency/bandwidth matrix | HIL passed and Web-approved | 11 legal band/bandwidth sections and 176/176 points; execution auto-selects the matching waveform |
 | Fixed power sweep | Historical HIL passed; current profile needs revalidation | Four-point execution/cancellation passed historically; the latest waveform still produces `INV` |
 | Custom measurement planning | Catalog range available; RF execution is profile-gated | Planning accepts 400 MHz–8 GHz and WLAN 20/40/80/160/320 MHz; only approved HIL combinations may transmit RF |
 | Path-loss calibration | Draft workflow | Profile generation/review exists; external-instrument adapter still needs HIL |

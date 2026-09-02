@@ -21,22 +21,22 @@ from cmp180_evm.results.validity import (
     evaluate_point_validity,
 )
 from cmp180_evm.scpi.registry import load_scpi_command_map
+from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 from cmp180_evm.web.jobs import SweepJob
 from cmp180_evm.workflow.cmp180_single_backend import (
     VERIFIED_TRIGGER_SOURCE,
     VERIFIED_TRIGGER_THRESHOLD_DB,
-    VERIFIED_WLAN_BAND_READBACK,
     VERIFIED_WLAN_STANDARD_READBACK,
     Cmp180SingleMeasurementBackend,
+    waveform_for_bandwidth,
 )
 from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan, run_frequency_sweep
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
+from cmp180_evm.workflow.wlan_bands import executable_band_for
 
-VERIFIED_ARB_WAVEFORM = (
-    "KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv"
-)
+VERIFIED_ARB_WAVEFORM = waveform_for_bandwidth(320_000_000)
 # 2026-08-20 HIL 已驗證的 analyzer 接收參考面；讓它跟隨 generator 功率會導致 INV。
 VERIFIED_EXPECTED_NOMINAL_POWER_DBM = -20.0
 
@@ -53,7 +53,7 @@ def _measurement_diagnostics(
             getattr(backend, "last_measurement_states", [])
         ),
         "wlan_standard": VERIFIED_WLAN_STANDARD_READBACK,
-        "wlan_band": VERIFIED_WLAN_BAND_READBACK,
+        "wlan_band": executable_band_for(plan.center_frequency_hz).band_readback,
         "trigger_source": VERIFIED_TRIGGER_SOURCE,
         "trigger_threshold_db": VERIFIED_TRIGGER_THRESHOLD_DB,
         "expected_nominal_power_dbm": plan.expected_nominal_power_dbm,
@@ -272,6 +272,9 @@ def run_custom_real_sweep(
     from RsInstrument import RsInstrument
 
     preview = build_custom_sweep_preview(request)
+    if not preview.execution_allowed:
+        # API 可能被直接呼叫；即使前端預覽已擋下，後端仍須在連線儀器前重驗核准 profile。
+        raise SafetyGuardError(preview.rejection_reason or "Custom RF plan is not approved")
     registry = load_scpi_command_map(Path("configs/scpi_command_map.yaml"))
     instrument = RsInstrument(
         "TCPIP::192.168.200.50::5025::SOCKET",
@@ -319,7 +322,7 @@ def run_custom_real_sweep(
         )
         metadata = {
             "source": "web_custom_hardware_sweep",
-            "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
+            "arb_waveform_file": waveform_for_bandwidth(preview.bandwidth_hz),
             "custom_plan_fingerprint": preview.plan_fingerprint,
             "custom_plan": preview.public(),
             "operator_authorization": "confirmed_at_request",

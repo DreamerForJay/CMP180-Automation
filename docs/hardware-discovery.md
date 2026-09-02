@@ -793,3 +793,22 @@ error queue.
 This does not make every frequency from 400 MHz to 8 GHz a WLAN EVM point. WLAN band gaps
 and 7.125–8 GHz have no WLAN channels. HIL evidence also does not automatically widen the
 Web approved profile; an RF owner must authorize that change.
+
+## 中文：2026-09-02 Web 自動 waveform 與 2.4 GHz／20 MHz 重驗
+
+RF owner 核准 11 個已完成 HIL 的 WLAN section 後，以正式
+`Cmp180SingleMeasurementBackend` 重跑 2.4 GHz／20 MHz 全區段。Backend 在每次設定前
+確認 RF `OFF`、measurement idle，選取匹配 BW20 waveform，完成 OPC、error queue 與
+ABSPath readback 後才繼續 RF 流程。黃金點 run `ca02e838b2` 通過；頻率 sweep run
+`67cfc017fd` 的 2412–2472 MHz 共 13/13 點有效，EVM 約 -42.58～-42.69 dB。最終狀態
+為 RF `OFF`、measurement `RDY`，error queue empty。
+
+## English: 2026-09-02 Web auto-waveform and 2.4 GHz/20 MHz revalidation
+
+After the RF owner approved all 11 HIL-complete WLAN sections, the full 2.4 GHz/20 MHz
+section was rerun through the production `Cmp180SingleMeasurementBackend`. Before each
+configuration, the backend confirmed RF `OFF` and an idle measurement, selected the
+matching BW20 waveform, and completed OPC, error-queue, and ABSPath readback checks before
+continuing the RF workflow. Golden run `ca02e838b2` passed. Frequency-sweep run
+`67cfc017fd` returned 13/13 valid points from 2412 to 2472 MHz, with EVM approximately
+-42.58 to -42.69 dB. Final state was RF `OFF`, measurement `RDY`, and an empty error queue.

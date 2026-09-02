@@ -4,6 +4,11 @@
 
 ### 狀態（2026-08-27）
 
+- 2026-09-02 RF owner 核准將 11 個已完成 HIL 的 WLAN section 納入 Web approved
+  profile。執行閘門改為逐 section 比對 band／bandwidth／frequency envelope，避免整體
+  min/max 放行非 WLAN 空隙；SingleMeasurement backend 會在 RF OFF／measurement idle
+  後依頻寬自動選取匹配 waveform，並完成 OPC、error queue 與 ABSPath readback。
+
 - 2026-09-01 使用 Chrome 唯讀檢查 CMsquares 確認長時間 `RUN` 的根因是
   Measurement Repetition 漂移為 `Continuous`、Stop Condition 為 `None`。CMP180
   內建 WebHelp 確認 `CONFigure:WLAN:MEAS:MEValuation:REPetition SINGleshot`
@@ -117,6 +122,12 @@
 實機前先跑連線與 query-only Generator discovery，確認 RF OFF、measurement RDY、error queue empty，再依 [hardware SOP](docs/hardware-test-sop.md) 操作。
 
 ## English Version
+
+- On 2026-09-02, the RF owner approved all 11 HIL-complete WLAN sections for the Web
+  approved profile. The execution gate now matches each band/bandwidth/frequency envelope
+  independently so the overall min/max cannot authorize non-WLAN gaps. While RF is OFF and
+  measurement is idle, the SingleMeasurement backend auto-selects the matching waveform
+  and verifies OPC, the error queue, and its absolute-path readback.
 
 - On 2026-09-01, read-only Chrome inspection of CMsquares identified the persistent `RUN`
   root cause: Measurement Repetition had drifted to `Continuous` with Stop Condition

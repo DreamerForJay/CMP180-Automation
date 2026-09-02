@@ -21,6 +21,24 @@ BANDWIDTH_ENUMS = {
     320_000_000: "BW32",
 }
 
+WLAN_WAVEFORM_ROOT = "/home/instrument/fw/data/waveform/WLAN"
+WLAN_WAVEFORMS = {
+    20_000_000: "KV352_lib8_WLAN_11be_EHT_MU_BW20_4xLTF_GI32_MCS11_LEN4096_LDPC.wv",
+    40_000_000: "KV352_lib8_WLAN_11be_EHT_MU_BW40_4xLTF_GI32_MCS11_LEN4096_LDPC.wv",
+    80_000_000: "KV352_lib8_WLAN_11be_EHT_MU_BW80_4xLTF_GI32_MCS11_LEN4096_LDPC.wv",
+    160_000_000: "KV352_lib8_WLAN_11be_EHT_MU_BW160_4xLTF_GI32_MCS11_LEN4096_LDPC.wv",
+    320_000_000: "KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv",
+}
+
+
+def waveform_for_bandwidth(bandwidth_hz: float) -> str:
+    """Return the HIL-verified instrument waveform path for one WLAN bandwidth."""
+    try:
+        filename = WLAN_WAVEFORMS[int(bandwidth_hz)]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported WLAN bandwidth: {bandwidth_hz}") from exc
+    return f"{WLAN_WAVEFORM_ROOT}/{filename}"
+
 VERIFIED_WLAN_STANDARD = "EHTofdm"
 VERIFIED_WLAN_STANDARD_READBACK = "EHT"
 VERIFIED_WLAN_BAND = "B6GHz"
@@ -50,6 +68,7 @@ class Cmp180SingleMeasurementBackend:
         self.poll_interval_s = poll_interval_s
         self.raw_result: str | None = None
         self.last_measurement_states: list[str] = []
+        self.selected_arb_file: str | None = None
 
     def _query(self, name: str) -> str:
         return self.io.query_str(self.registry.require(name)).strip()
@@ -86,6 +105,13 @@ class Cmp180SingleMeasurementBackend:
         bandwidth = BANDWIDTH_ENUMS.get(int(plan.bandwidth_hz))
         if bandwidth is None:
             raise ValueError(f"Unsupported WLAN bandwidth: {plan.bandwidth_hz}")
+
+        waveform = waveform_for_bandwidth(plan.bandwidth_hz)
+        # FILE setter 會改變 Generator baseband source；只能在 RF OFF 且量測 idle 後執行，
+        # 並以 ABSPath readback 確認沒有誤選相同名稱但不同目錄的檔案。
+        self._write_checked("generator.set_arb_file", arb_file=waveform)
+        self._require_readback("generator_query.arb_file_absolute", waveform)
+        self.selected_arb_file = waveform
 
         # 這些 setter 已逐項通過實機同值驗證；每一項仍獨立 OPC 與查錯。
         self._write_checked("generator.set_frequency", frequency_hz=plan.center_frequency_hz)

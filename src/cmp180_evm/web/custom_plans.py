@@ -106,13 +106,20 @@ def _gate(
     route = f"{plan.single.generator_port}-{plan.single.analyzer_port}"
     if route not in approved.routes:
         return False, f"Route {route} is not included in approved profile {approved.profile_id}"
-    if not all(
-        approved.frequency_min_hz <= value <= approved.frequency_max_hz
-        for value in frequencies_hz
-    ):
+    # band/bandwidth section 才是 RF 授權單位，避免用 2.4–7.1 GHz 外框誤放行中間空隙。
+    section = next(
+        (
+            item
+            for item in approved.sections
+            if item.bandwidth_hz == bandwidth_hz
+            and all(item.frequency_min_hz <= value <= item.frequency_max_hz for value in frequencies_hz)
+        ),
+        None,
+    )
+    if section is None:
         return False, (
-            f"Frequency is outside approved profile {approved.frequency_min_hz / 1e6:.0f}–"
-            f"{approved.frequency_max_hz / 1e6:.0f} MHz"
+            f"Frequency/bandwidth combination is outside the approved WLAN sections "
+            f"for {bandwidth_hz / 1e6:.0f} MHz"
         )
     if max(frequencies_hz) - min(frequencies_hz) > approved.maximum_span_hz:
         return False, f"Sweep span exceeds approved {approved.maximum_span_hz / 1e6:.0f} MHz"
@@ -140,6 +147,8 @@ def _gate(
     point_count = len(frequencies_hz if isinstance(plan, FrequencySweepPlan) else powers)
     if point_count > approved.maximum_points:
         return False, f"Plan exceeds the approved {approved.maximum_points}-point campaign size"
+    if point_count > section.maximum_points:
+        return False, f"Plan exceeds the approved {section.maximum_points}-point size for {section.key}"
     return True, None
 
 

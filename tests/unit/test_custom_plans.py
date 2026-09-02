@@ -92,10 +92,7 @@ def test_preview_allows_full_catalog_range_but_rejects_runaway_point_counts():
     # 受 band 限制，因此不可執行，且必須說明原因。
     assert preview.execution_allowed is False
     assert "WLAN band" in (preview.rejection_reason or "")
-    assert preview.public()["capability"]["valid_wlan_range_hz"] == [
-        5_925_000_000.0,
-        7_125_000_000.0,
-    ]
+    assert len(preview.public()["capability"]["valid_wlan_ranges_hz"]) == 3
     assert MAXIMUM_PLANNING_PREVIEW_POINTS < 7_600_000_000 / 1_000
     with pytest.raises(ValueError, match="exceeds"):
         build_custom_sweep_preview(

@@ -34,8 +34,8 @@ def test_band_without_a_verified_enum_is_still_refused(monkeypatch):
         executable_band_for(5_500_000_000)
 
 
-def test_verified_band_setter_does_not_authorize_rf_by_itself():
-    """band 可設定不等於可發射：approved profile 仍必須另外授權。"""
+def test_hil_approved_24ghz_section_is_authorized():
+    """band setter 與 section HIL 兩者完成後，approved profile 才授權。"""
     from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 
     preview = build_custom_sweep_preview(
@@ -50,8 +50,7 @@ def test_verified_band_setter_does_not_authorize_rf_by_itself():
         }
     )
     assert executable_band_for(2_412_000_000).band_enum == "B24GHz"
-    assert preview.execution_allowed is False
-    assert "approved profile" in (preview.rejection_reason or "")
+    assert preview.execution_allowed is True
 
 
 def test_frequency_outside_every_band_is_refused():
@@ -88,7 +87,11 @@ def test_unsupported_plans_are_rejected_with_a_reason(frequencies_hz, bandwidth_
 def test_capability_separates_instrument_range_from_valid_wlan_range():
     capability = describe_capability()
     assert capability["instrument_rf_range_hz"] == [400_000_000.0, 8_000_000_000.0]
-    assert capability["valid_wlan_range_hz"] == [5_925_000_000.0, 7_125_000_000.0]
+    assert capability["valid_wlan_ranges_hz"] == [
+        [2_400_000_000.0, 2_500_000_000.0],
+        [5_150_000_000.0, 5_895_000_000.0],
+        [5_925_000_000.0, 7_125_000_000.0],
+    ]
     # 只有完成 HIL 的 band 才會出現在 verified 清單。
     assert capability["verified_bands"] == ["2.4GHz", "5GHz", "6GHz"]
 

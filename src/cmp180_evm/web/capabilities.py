@@ -37,6 +37,14 @@ class InstalledCapabilities(RangeLayer):
     rf_ports: list[str]
 
 
+class ApprovedSection(RangeLayer):
+    model_config = ConfigDict(extra="forbid")
+
+    key: str
+    bandwidth_hz: float
+    maximum_points: int = Field(ge=1)
+
+
 class ApprovedProfile(RangeLayer):
     profile_id: str
     lifecycle: str
@@ -48,6 +56,7 @@ class ApprovedProfile(RangeLayer):
     dwell_max_ms: int
     maximum_points: int = Field(ge=1)
     routes: list[str]
+    sections: list[ApprovedSection]
 
     @model_validator(mode="after")
     def validate_envelope(self) -> ApprovedProfile:
@@ -57,6 +66,19 @@ class ApprovedProfile(RangeLayer):
             raise ValueError("generator power minimum must not exceed maximum")
         if self.dwell_min_ms > self.dwell_max_ms:
             raise ValueError("dwell minimum must not exceed maximum")
+        if len({section.key for section in self.sections}) != len(self.sections):
+            raise ValueError("approved section keys must be unique")
+        if any(section.maximum_points > self.maximum_points for section in self.sections):
+            raise ValueError("section maximum_points exceeds approved profile")
+        # section 是實際 RF 授權單位；摘要欄位不得漏列或超出整體包絡。
+        if any(section.bandwidth_hz not in self.bandwidths_hz for section in self.sections):
+            raise ValueError("section bandwidth is missing from bandwidths_hz")
+        if any(
+            section.frequency_min_hz < self.frequency_min_hz
+            or section.frequency_max_hz > self.frequency_max_hz
+            for section in self.sections
+        ):
+            raise ValueError("approved section exceeds profile frequency envelope")
         return self
 
 

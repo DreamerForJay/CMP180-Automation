@@ -41,29 +41,27 @@ WLAN_BANDS: dict[str, WlanBand] = {
     "5GHz": WlanBand(
         "5GHz", "5 GHz", 5_150_000_000.0, 5_895_000_000.0, 160_000_000.0, "B5GHz", "B5GH"
     ),
-    # 目前 cmp180_single_backend 寫死此 band，也是唯一完成 HIL 的 band。
     "6GHz": WlanBand(
         "6GHz", "6 GHz", 5_925_000_000.0, 7_125_000_000.0, 320_000_000.0, "B6GHz", "B6GH"
     ),
 }
 
-# backend 目前只設定 6 GHz band；其他 band 需先完成 band setter 的 SCPI 驗證與 HIL。
-CONFIGURED_BAND = WLAN_BANDS["6GHz"]
-
-
 def describe_capability() -> dict[str, object]:
-    """Expose instrument RF capability and the currently valid WLAN sweep range."""
+    """Expose instrument RF capability and the separate valid WLAN band ranges."""
     return {
         "instrument_rf_range_hz": [
             INSTRUMENT_MINIMUM_FREQUENCY_HZ,
             INSTRUMENT_MAXIMUM_FREQUENCY_HZ,
         ],
-        "configured_band": CONFIGURED_BAND.name,
-        "valid_wlan_range_hz": [
-            CONFIGURED_BAND.minimum_frequency_hz,
-            CONFIGURED_BAND.maximum_frequency_hz,
+        "configured_band": "dynamic per sweep",
+        # 分段回傳才能保留 2.4／5／6 GHz 間的空隙，不可用單一 min/max 誤導操作員。
+        "valid_wlan_ranges_hz": [
+            [band.minimum_frequency_hz, band.maximum_frequency_hz]
+            for band in WLAN_BANDS.values()
         ],
-        "maximum_bandwidth_hz": CONFIGURED_BAND.maximum_bandwidth_hz,
+        "maximum_bandwidth_hz": max(
+            band.maximum_bandwidth_hz for band in WLAN_BANDS.values()
+        ),
         "verified_bands": [band.key for band in WLAN_BANDS.values() if band.band_enum],
     }
 

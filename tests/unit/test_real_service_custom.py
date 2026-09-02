@@ -130,21 +130,21 @@ def test_custom_real_service_runs_full_user_frequency_plan(monkeypatch, tmp_path
     monkeypatch.setattr(real_service, "Cmp180SingleMeasurementBackend", CustomBackend)
     request = {
         "axis": "frequency",
-        "start_hz": 5_085_000_000,
-        "stop_hz": 6_125_000_000,
-        "step_hz": 20_000_000,
+        "start_hz": 5_925_000_000,
+        "stop_hz": 7_125_000_000,
+        "step_hz": 25_000_000,
         "bandwidth_hz": 320_000_000,
         "generator_power_dbm": -45,
-        "dwell_ms": 10,
+        "dwell_ms": 100,
     }
-    job = SweepJob("job-full", "hardware-custom-frequency", 53)
+    job = SweepJob("job-full", "hardware-custom-frequency", 49)
     result = real_service.run_custom_real_sweep(job, request=request, output_root=tmp_path)
     assert result["measurement_failed"] is False
-    assert len(result["points"]) == 53
-    assert job.total_points == 53
-    assert job.completed_points == 53
-    assert CustomBackend.configured_plans[0].center_frequency_hz == 5_085_000_000
-    assert CustomBackend.configured_plans[-1].center_frequency_hz == 6_125_000_000
+    assert len(result["points"]) == 49
+    assert job.total_points == 49
+    assert job.completed_points == 49
+    assert CustomBackend.configured_plans[0].center_frequency_hz == 5_925_000_000
+    assert CustomBackend.configured_plans[-1].center_frequency_hz == 7_125_000_000
 
 
 def test_custom_real_service_preserves_invalid_partial_result(monkeypatch, tmp_path):
