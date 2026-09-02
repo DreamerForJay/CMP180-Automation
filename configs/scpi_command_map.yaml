@@ -106,10 +106,23 @@ gprf_measurement:
   set_frequency: "CONFigure:GPRF:MEASurement1:RFSettings:FREQuency {frequency_hz}"
   initiate_power: "INITiate:GPRF:MEASurement1:POWer"
   stop_power: "STOP:GPRF:MEASurement1:POWer"
+  # 2026-09-02 由 scripts/cmp180_gprf_measurement_discover.py 在韌體 6.0.50.23 上確認
+  # query 形式存在且 error queue 全空；setter 以同值寫回驗證。rf_path 需自行加引號，
+  # 與 wlan_tx.set_rf_path 相同慣例。
+  set_rf_path: "ROUTe:GPRF:MEASurement1:SPATh {rf_path}"
+  set_expected_power: "CONFigure:GPRF:MEASurement1:RFSettings:ENPower {expected_power_dbm}"
+  set_external_attenuation: "CONFigure:GPRF:MEASurement1:RFSettings:EATTenuation {external_attenuation_db}"
 
 gprf_measurement_query:
   # 回傳格式為 reliability,value；parser 必須保留 reliability，不能直接當單一 float。
   power_current: "FETCh:GPRF:MEASurement1:POWer:CURRent?"
+  # 2026-09-02 實機唯讀確認：frequency `6.105000E+09`、rf_path `"RF1.6"`、
+  # expected_power／external_attenuation 皆 `0.000000E+00`，error queue 全空。
+  frequency: "CONFigure:GPRF:MEASurement1:RFSettings:FREQuency?"
+  rf_path: "ROUTe:GPRF:MEASurement1:SPATh?"
+  rf_path_catalog: "CATalog:GPRF:MEASurement1:SPATh?"
+  expected_power: "CONFigure:GPRF:MEASurement1:RFSettings:ENPower?"
+  external_attenuation: "CONFigure:GPRF:MEASurement1:RFSettings:EATTenuation?"
 
 results:
   # Aggregate 28-field OFDM SISO result queries from CMP180 built-in WLAN help.

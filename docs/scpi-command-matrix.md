@@ -344,9 +344,13 @@ four-point power sweep.
 
 ## 中文：2026-09-02 GPRF Power measurement 命令
 
-下列四條命令屬於 CMP180 **GPRF power measurement** application，量測的是 RF 功率，
+下列命令屬於 CMP180 **GPRF power measurement** application，量測的是 RF 功率，
 **不是 WLAN EVM 解調**。其結果不得呈現為 WLAN 解調數據或合規宣告。呼叫端為
 `src/cmp180_evm/web/gprf_service.py` 的 `run_gprf_power_sweep()`。
+
+出處建立方式：`scripts/cmp180_gprf_measurement_discover.py`（純唯讀，逐條發問後讀
+`SYST:ERR?`，由儀器回答支不支援）與 `scripts/cmp180_gprf_measurement_setter_validate.py`
+（RF Off 下同值寫回 + `*OPC?` + error queue + read-back）。
 
 | 功能 | 完整命令 | 參數／單位 | 回傳欄位／單位 | 狀態副作用 |
 |---|---|---|---|---|
@@ -354,43 +358,68 @@ four-point power sweep.
 | 啟動 power 量測 | `INITiate:GPRF:MEASurement1:POWer` | 無 | 無 | **改變 measurement state**（idle → 量測中）；必須搭配 `STOP` 收尾 |
 | 停止 power 量測 | `STOP:GPRF:MEASurement1:POWer` | 無 | 無 | 停止 GPRF power measurement；cleanup 路徑必用 |
 | 讀取目前 power | `FETCh:GPRF:MEASurement1:POWer:CURRent?` | 無 | `reliability,power_dbm`：reliability 為整數指標（`0` 表示有效），power 單位 dBm | 唯讀，只讀已存結果，不啟動量測 |
+| 查詢量測頻率 | `CONFigure:GPRF:MEASurement1:RFSettings:FREQuency?` | 無 | Hz，實測 `6.105000E+09` | 唯讀 |
+| 量測端 RF path | `ROUTe:GPRF:MEASurement1:SPATh?`／`... {rf_path}` | 帶引號 port 字串，如 `"RF1.5"` | 帶引號 port，實測原值 `"RF1.6"` | **改變量測端 routing**；只可在 RF OFF 時寫入 |
+| 量測端可用 port | `CATalog:GPRF:MEASurement1:SPATh?` | 無 | 16 個 port：`"RF1.1"`…`"RF2.8"` | 唯讀 |
+| Expected nominal power | `CONFigure:GPRF:MEASurement1:RFSettings:ENPower?`／`... {expected_power_dbm}` | dBm | dBm，實測原值 `0.000000E+00` | 改變量測端 ranging；只可在 RF OFF 時寫入 |
+| External attenuation | `CONFigure:GPRF:MEASurement1:RFSettings:EATTenuation?`／`... {external_attenuation_db}` | dB | dB，實測原值 `0.000000E+00` | 改變量測端位準修正；只可在 RF OFF 時寫入 |
+| User margin | `CONFigure:GPRF:MEASurement1:RFSettings:UMARgin?` | 無 | dB，實測 `0.000000E+00` | 唯讀（本專案未寫入） |
 
 ### 實機驗證證據
 
 - 驗證日期：2026-09-02。儀器 `Rohde&Schwarz,CMP,1201.0002k18/REDACTED`，Base firmware `6.0.50.23`。
 - 執行路徑：Web `/api/jobs/hardware/gprf-power-sweep`，單點 6105 MHz、Generator -40 dBm、
   dwell 200 ms、RF1.1 → RF1.5 直連、0 dB 衰減、操作員在場。
-- 證據 run：`252bbbe39a`（`output/20260902T040938Z_gprf-power-sweep_252bbbe39a/`），
-  `simulated=false`、`compliance_claim=false`。
-- 原始回應：`0,-8.087470E+01` → reliability `0`、-80.8747 dBm。Job 正常完成，
-  `finally` 已送出 `STOP:GPRF:MEASurement1:POWer` 與 Generator RF Off。
+- Query 探索（唯讀）：7 條候選全部支援，error queue 全空，結束時 Generator RF 仍為 `OFF`。
+- Setter 驗證（同值寫回，RF Off）：`rf_path` `"RF1.6"`、`expected_power`
+  `0.000000E+00`、`external_attenuation` `0.000000E+00` 三項皆 `0,"No error"`
+  且 read-back 一致，RF `OFF → OFF`。
+- 修正前 run：`252bbbe39a`（`output/20260902T040938Z_gprf-power-sweep_252bbbe39a/`），
+  回應 `0,-8.087470E+01` → -80.8747 dBm。當時量測端停在**未接線的 `"RF1.6"`**，
+  此數值實為雜訊底，不是路徑損耗。
+- 修正後 run：`d3c259178c`（`output/20260902T064552Z_gprf-power-sweep_d3c259178c/`）。
+  workflow 已在 RF Off 時寫入並 read-back `"RF1.5"`、ENPower -40 dBm、EATT 0 dB。
+  回應 `3,-5.625053E+01` → **reliability `3`（非 0）**、-56.2505 dBm。
+  `error_queue` 與 `cleanup_errors` 皆為空；獨立查詢確認最終 Generator RF `OFF`、
+  error queue `0,"No error"`。
 
-### 尚未滿足的文件要求與已知落差
+### 落差修正進度與仍未解決的問題
 
-此節記錄「命令可執行」的證據，**尚不足以支撐功率準確度或路徑損耗結論**：
+已解決：
 
-1. **error queue 證據待補**：`gprf_service.py` 已在每點量測後與 cleanup 後查詢
-   `SYST:ERR?`（每點記入 `error_queue` 欄，收尾記入 `cleanup_errors`），且 error queue
-   非空時該點一律標為 `INVALID`，不會出現假 PASS。但證據 run `252bbbe39a` 執行於此修改
-   之前，仍**不含** error queue 證據；要滿足 AGENTS.md 的 success + error-queue 雙證據
-   要求，需再跑一次實機單點。
-2. **GPRF measurement 端 RF path 未設定**：command map 只有 Generator 的
-   `ROUTe:GPRF:GEN:SPATh?`，沒有對應的 `ROUTe:GPRF:MEASurement<i>:SPATh`。
-   量測 instance 因此使用預設 port，未必是實際接線的 RF1.5。
-3. **未設定 expected power 與 external attenuation**：GPRF measurement 的位準設定
-   沿用儀器現值，未由 workflow 明確寫入並 read-back。
-4. 上述 2、3 是 Generator 送出 -40 dBm 卻讀到 -80.8747 dBm（約 41 dB 落差）的最可能原因。
-   在 routing 與位準設定確認前，此數值只能視為 SCPI 路徑可用的證據。
-5. **來源出處未建立**：這四條命令目前沒有 CMP180 Remote Manual、內建 Help 或 SCPI Recorder
-   的引用紀錄；`configs/scpi_command_map.yaml` 註解所稱的「既有 GPRF Gen/Meas 實測腳本」
-   在 `scripts/` 中並不存在。擴大使用前必須補上正式出處。
+1. **error queue 證據**：`gprf_service.py` 每點量測後與 cleanup 後都查詢 `SYST:ERR?`
+   （每點記入 `error_queue` 欄，收尾記入 `cleanup_errors`），非空時該點一律標為
+   `INVALID`。run `d3c259178c` 已具備 error-queue 證據（空佇列）。
+2. **量測端 RF path**：`ROUTe:GPRF:MEASurement1:SPATh` 已取得出處並納入 command map；
+   workflow 現在依 `cable_confirmation` 解析出的 analyzer port 明確寫入並 read-back，
+   不符即中止，不再沿用儀器殘留設定。
+3. **量測端位準**：ENPower 依每點 generator 功率設定、EATTenuation 明確寫入，皆在 RF Off 時完成。
+4. **出處**：query 與 setter 皆由儀器在韌體 `6.0.50.23` 上回答並附 error-queue 證據，
+   取代先前不存在的「既有 GPRF Gen/Meas 實測腳本」說法。
+
+仍未解決（**因此 GPRF power 數值目前仍不可用於功率準確度或路徑損耗結論**）：
+
+5. **reliability `3`**：修正後該點仍回傳非 0 reliability，故 `valid=false`、
+   `limit_status=INVALID`。本專案尚無 reliability 數值對照表的正式出處，不得自行推斷其語意。
+6. **產生器播放的是突發 WLAN ARB，不是 CW**：實機讀回
+   `SOURce:GPRF:GEN:ARB:FILE? ABSPath` 為
+   `KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv`。
+   WLAN analyzer 對同一訊號量到的 burst power 約 -40.5 dBm，GPRF 功率計卻讀到
+   -56.25 dBm（約 15.8 dB 差），與「突發訊號被平均進閒置區間」一致。要取得有意義的
+   GPRF power 數值，必須先確認改用 CW 或為 power 量測設定 burst 觸發／gating，
+   兩者都尚未取得出處與驗證。
 
 ## English: 2026-09-02 GPRF power measurement commands
 
-The four commands below belong to the CMP180 **GPRF power measurement** application. They
+The commands below belong to the CMP180 **GPRF power measurement** application. They
 measure RF power and are **not WLAN EVM demodulation**; their results must never be
 presented as WLAN demodulation data or a compliance claim. The caller is
 `run_gprf_power_sweep()` in `src/cmp180_evm/web/gprf_service.py`.
+
+Provenance was established with `scripts/cmp180_gprf_measurement_discover.py` (query-only:
+each candidate is asked, then `SYST:ERR?` is read, so the instrument itself answers whether
+it supports the header) and `scripts/cmp180_gprf_measurement_setter_validate.py` (same-value
+write-back with RF off, plus `*OPC?`, error queue, and read-back).
 
 | Function | Full command | Params/units | Return fields/units | State side effect |
 |---|---|---|---|---|
@@ -398,6 +427,12 @@ presented as WLAN demodulation data or a compliance claim. The caller is
 | Start power measurement | `INITiate:GPRF:MEASurement1:POWer` | None | None | **Changes measurement state** (idle → measuring); requires a matching `STOP` |
 | Stop power measurement | `STOP:GPRF:MEASurement1:POWer` | None | None | Stops the GPRF power measurement; required on the cleanup path |
 | Read current power | `FETCh:GPRF:MEASurement1:POWer:CURRent?` | None | `reliability,power_dbm`: reliability is an integer indicator (`0` means valid), power in dBm | Query-only; returns the stored result without initiating a measurement |
+| Query measurement frequency | `CONFigure:GPRF:MEASurement1:RFSettings:FREQuency?` | None | Hz; measured `6.105000E+09` | Query-only |
+| Measurement RF path | `ROUTe:GPRF:MEASurement1:SPATh?` / `... {rf_path}` | Quoted port string, e.g. `"RF1.5"` | Quoted port; original value measured as `"RF1.6"` | **Changes measurement-side routing**; write only while RF is OFF |
+| Available measurement ports | `CATalog:GPRF:MEASurement1:SPATh?` | None | 16 ports, `"RF1.1"`…`"RF2.8"` | Query-only |
+| Expected nominal power | `CONFigure:GPRF:MEASurement1:RFSettings:ENPower?` / `... {expected_power_dbm}` | dBm | dBm; original value measured as `0.000000E+00` | Changes measurement-side ranging; write only while RF is OFF |
+| External attenuation | `CONFigure:GPRF:MEASurement1:RFSettings:EATTenuation?` / `... {external_attenuation_db}` | dB | dB; original value measured as `0.000000E+00` | Changes measurement-side level correction; write only while RF is OFF |
+| User margin | `CONFigure:GPRF:MEASurement1:RFSettings:UMARgin?` | None | dB; measured `0.000000E+00` | Query-only (not written by this project) |
 
 ### Hardware verification evidence
 
@@ -406,33 +441,48 @@ presented as WLAN demodulation data or a compliance claim. The caller is
 - Execution path: Web `/api/jobs/hardware/gprf-power-sweep`, one point at 6105 MHz,
   -40 dBm generator power, 200 ms dwell, direct RF1.1 → RF1.5 cable, 0 dB attenuation,
   operator present.
-- Evidence run: `252bbbe39a` (`output/20260902T040938Z_gprf-power-sweep_252bbbe39a/`),
-  with `simulated=false` and `compliance_claim=false`.
-- Raw response: `0,-8.087470E+01` → reliability `0`, -80.8747 dBm. The job completed
-  normally and its `finally` block issued `STOP:GPRF:MEASurement1:POWer` and generator RF off.
+- Query discovery (read-only): all seven candidates were supported with an empty error
+  queue, and generator RF was still `OFF` at the end.
+- Setter validation (same-value write-back, RF off): `rf_path` `"RF1.6"`, `expected_power`
+  `0.000000E+00`, and `external_attenuation` `0.000000E+00` each returned `0,"No error"`
+  with a matching read-back, and RF went `OFF → OFF`.
+- Pre-fix run: `252bbbe39a` (`output/20260902T040938Z_gprf-power-sweep_252bbbe39a/`)
+  returned `0,-8.087470E+01` → -80.8747 dBm. The measurement side was still parked on the
+  **uncabled `"RF1.6"`** port, so that figure is a noise floor, not a path loss.
+- Post-fix run: `d3c259178c` (`output/20260902T064552Z_gprf-power-sweep_d3c259178c/`). The
+  workflow wrote and read back `"RF1.5"`, ENPower -40 dBm, and EATT 0 dB while RF was off.
+  The response was `3,-5.625053E+01` → **reliability `3` (not 0)**, -56.2505 dBm.
+  Both `error_queue` and `cleanup_errors` were empty, and independent queries confirmed a
+  final generator RF of `OFF` with an error queue of `0,"No error"`.
 
-### Outstanding documentation requirements and known gaps
+### Gap remediation status and unresolved issues
 
-This section records evidence that the commands execute. It is **not sufficient to support
-any power-accuracy or path-loss conclusion**:
+Resolved:
 
-1. **Error-queue evidence still pending**: `gprf_service.py` now queries `SYST:ERR?` after
-   every measured point and again after cleanup (recorded per point in `error_queue` and in
-   `cleanup_errors`), and a non-empty queue forces that point to `INVALID` so it cannot
-   report a false pass. Evidence run `252bbbe39a` predates that change and therefore still
-   carries **no** error-queue evidence; meeting the AGENTS.md success-plus-error-queue
-   minimum requires one more live single-point run.
-2. **GPRF measurement RF path is never set**: the command map contains only the generator
-   `ROUTe:GPRF:GEN:SPATh?` and no corresponding `ROUTe:GPRF:MEASurement<i>:SPATh`. The
-   measurement instance therefore uses its default port, which is not necessarily the
-   RF1.5 port that is physically cabled.
-3. **Expected power and external attenuation are never set**: the GPRF measurement level
-   settings inherit whatever the instrument currently holds; the workflow does not write
-   and read them back.
-4. Items 2 and 3 are the most likely cause of reading -80.8747 dBm while the generator
-   transmitted -40 dBm (about a 41 dB discrepancy). Until routing and level settings are
-   confirmed, this value only demonstrates that the SCPI path works.
-5. **Provenance is not established**: these four commands have no recorded citation from the
-   CMP180 Remote Manual, built-in Help, or SCPI Recorder. The `configs/scpi_command_map.yaml`
-   comment refers to an "existing GPRF Gen/Meas hardware script" that does not exist under
-   `scripts/`. A formal source must be recorded before wider use.
+1. **Error-queue evidence**: `gprf_service.py` queries `SYST:ERR?` after every measured
+   point and again after cleanup (per point in `error_queue`, cleanup in `cleanup_errors`),
+   and a non-empty queue forces that point to `INVALID`. Run `d3c259178c` carries
+   error-queue evidence (empty queue).
+2. **Measurement RF path**: `ROUTe:GPRF:MEASurement1:SPATh` now has provenance and is in the
+   command map. The workflow explicitly writes and reads back the analyzer port parsed from
+   `cable_confirmation` and aborts on a mismatch instead of inheriting instrument state.
+3. **Measurement level settings**: ENPower is set from each point's generator power and
+   EATTenuation is written explicitly, both while RF is off.
+4. **Provenance**: the queries and setters were answered by the instrument itself on
+   firmware `6.0.50.23` with error-queue evidence, replacing the earlier reference to a
+   non-existent "existing GPRF Gen/Meas hardware script".
+
+Unresolved — **GPRF power values therefore still cannot support a power-accuracy or
+path-loss conclusion**:
+
+5. **Reliability `3`**: the post-fix point still returns a non-zero reliability, so it is
+   recorded as `valid=false` and `limit_status=INVALID`. This project has no sourced
+   reliability-code table, and the meaning of `3` must not be inferred.
+6. **The generator is playing a bursted WLAN ARB waveform, not CW**: a live read-back of
+   `SOURce:GPRF:GEN:ARB:FILE? ABSPath` returned
+   `KV352_lib8_WLAN_11be_EHT_MU_BW320-1_4xLTF_GI32_MCS11_LEN4096_LDPC.wv`. The WLAN analyzer
+   measures roughly -40.5 dBm burst power on the same signal while the GPRF power meter reads
+   -56.25 dBm (about 15.8 dB lower), which is consistent with a bursted signal averaged over
+   its idle periods. Producing meaningful GPRF power values requires either switching the
+   generator to CW or configuring burst triggering/gating for the power measurement; neither
+   has provenance or verification yet.

@@ -103,10 +103,18 @@ class GprfMeasurementCommands(BaseModel):
     set_frequency: str | None = None
     initiate_power: str | None = None
     stop_power: str | None = None
+    set_rf_path: str | None = None
+    set_expected_power: str | None = None
+    set_external_attenuation: str | None = None
 
 
 class GprfMeasurementQueryCommands(BaseModel):
     power_current: str | None = None
+    frequency: str | None = None
+    rf_path: str | None = None
+    rf_path_catalog: str | None = None
+    expected_power: str | None = None
+    external_attenuation: str | None = None
 
 
 class ResultCommands(BaseModel):

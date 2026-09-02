@@ -19,6 +19,7 @@ from pathlib import Path
 
 from cmp180_evm.scpi.registry import ScpiCommandRegistry, load_scpi_command_map
 from cmp180_evm.web.jobs import SweepJob
+from cmp180_evm.workflow.rf_routes import parse_route
 
 GPRF_MIN_FREQUENCY_HZ = 400_000_000.0
 GPRF_MAX_FREQUENCY_HZ = 8_000_000_000.0
@@ -236,6 +237,29 @@ def run_gprf_power_sweep(
     try:
         conn.connect()
         conn.write(registry.require("common.clear_status"))
+        # 量測端 routing 與位準必須在 RF Off 時先寫入並 read-back：run 252bbbe39a 因為
+        # GPRF measurement 停在未接線的 RF1.6，才會在送出 -40 dBm 時讀到雜訊底 -80.87 dBm。
+        route = parse_route(request.get("cable_confirmation"))
+        external_attenuation_db = float(request.get("external_attenuation_db", 0.0))
+        conn.write(
+            registry.render("gprf_measurement.set_rf_path", rf_path=f'"{route.analyzer_port}"')
+        )
+        conn.write(
+            registry.render(
+                "gprf_measurement.set_external_attenuation",
+                external_attenuation_db=external_attenuation_db,
+            )
+        )
+        conn.query(registry.require("common.operation_complete"))
+        setup_errors = _drain_error_queue(conn, registry)
+        if setup_errors:
+            raise RuntimeError(f"GPRF measurement setup reported {setup_errors}")
+        rf_path_readback = conn.query(registry.require("gprf_measurement_query.rf_path")).strip()
+        if rf_path_readback.strip('"').upper() != route.analyzer_port:
+            raise RuntimeError(
+                f"GPRF measurement RF path readback {rf_path_readback!r} does not match the "
+                f"confirmed cable route analyzer port {route.analyzer_port}"
+            )
         # GPRF 模式會開真實 RF；每個設定點都在 job 邊界檢查取消，finally 仍會關 RF。
         for index, value in enumerate(preview.points):
             if job.is_cancel_requested():
@@ -245,13 +269,22 @@ def run_gprf_power_sweep(
             conn.write(registry.render("generator.set_frequency", frequency_hz=frequency_hz))
             conn.write(registry.render("gprf_measurement.set_frequency", frequency_hz=frequency_hz))
             conn.write(registry.render("generator.set_power", power_dbm=power_dbm))
+            # expected nominal power 決定量測端 ranging，必須在 RF On 前依該點功率設定。
+            conn.write(
+                registry.render(
+                    "gprf_measurement.set_expected_power", expected_power_dbm=power_dbm
+                )
+            )
             conn.write(registry.require("generator.rf_on"))
             time.sleep(preview.dwell_ms / 1000)
             conn.write(registry.require("gprf_measurement.initiate_power"))
             time.sleep(preview.dwell_ms / 1000)
             raw = conn.query(registry.require("gprf_measurement_query.power_current"))
+            # 每點量測完立即收尾：先停量測再關 RF，讓下一點的設定同樣在 RF Off 下完成。
+            conn.write(registry.require("gprf_measurement.stop_power"))
+            conn.write(registry.require("generator.rf_off"))
             reliability, measured = _parse_power(raw)
-            # 每點都讀 error queue：儀器已回報錯誤時不得標記為有效量測，避免假 PASS。
+            # 每點都讀 error queue（涵蓋量測與收尾）：儀器已回報錯誤時不得標記為有效量測。
             point_errors = _drain_error_queue(conn, registry)
             if point_errors:
                 status = "SCPI_ERROR"
@@ -264,6 +297,9 @@ def run_gprf_power_sweep(
                 "point_index": index,
                 "frequency_hz": frequency_hz,
                 "generator_power_dbm": power_dbm,
+                "analyzer_port": route.analyzer_port,
+                "expected_power_dbm": power_dbm,
+                "external_attenuation_db": external_attenuation_db,
                 "measured_power_dbm": measured,
                 "evm_all_db": None,
                 "evm_data_db": None,
@@ -287,6 +323,9 @@ def run_gprf_power_sweep(
                 "axis": preview.axis,
                 "requested_points": preview.points,
                 "dwell_ms": preview.dwell_ms,
+                "cable_route": route.label,
+                "analyzer_port": route.analyzer_port,
+                "external_attenuation_db": external_attenuation_db,
             },
         )
         return {

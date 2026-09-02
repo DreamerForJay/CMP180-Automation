@@ -4,6 +4,17 @@
 
 ### 狀態（2026-08-27）
 
+- 2026-09-02 修正 GPRF power sweep 的量測端設定缺口。唯讀探索確認 GPRF measurement 的
+  routing／ENPower／EATTenuation／catalog 命令（韌體 `6.0.50.23`，error queue 全空），
+  setter 以 RF Off 同值寫回驗證通過。修正前量測端停在**未接線的 `"RF1.6"`**，讀到的
+  -80.87 dBm 其實是雜訊底；workflow 現在依 `cable_confirmation` 明確寫入並 read-back
+  `"RF1.5"`、ENPower 與 EATT，不符即中止，且每點量測後與收尾都讀 `SYST:ERR?`，
+  error queue 非空一律標為 `INVALID`。修正後 run `d3c259178c` 讀到 -56.25 dBm
+  （改善約 24.6 dB），但 reliability 為 `3`，故仍標記 `INVALID`。剩餘約 15.8 dB 落差
+  已定位為**產生器播放突發 WLAN ARB 波形而非 CW**（ARB 為
+  `...11be_EHT_MU_BW320-1_..._MCS11_LEN4096_LDPC.wv`）。GPRF power 數值目前**不可**用於
+  功率準確度或路徑損耗結論。最終 RF `OFF`、error queue 空。這是新實機 RF 量測。
+
 - 2026-09-02 RF owner 核准將 11 個已完成 HIL 的 WLAN section 納入 Web approved
   profile。執行閘門改為逐 section 比對 band／bandwidth／frequency envelope，避免整體
   min/max 放行非 WLAN 空隙；SingleMeasurement backend 會在 RF OFF／measurement idle
@@ -122,6 +133,20 @@
 實機前先跑連線與 query-only Generator discovery，確認 RF OFF、measurement RDY、error queue empty，再依 [hardware SOP](docs/hardware-test-sop.md) 操作。
 
 ## English Version
+
+- On 2026-09-02, the GPRF power sweep's measurement-side configuration gap was fixed.
+  Read-only discovery confirmed the GPRF measurement routing/ENPower/EATTenuation/catalog
+  commands on firmware `6.0.50.23` with an empty error queue, and the setters passed
+  same-value write-back validation with RF off. Before the fix the measurement side was
+  parked on the **uncabled `"RF1.6"`** port, so the -80.87 dBm reading was a noise floor.
+  The workflow now writes and reads back `"RF1.5"`, ENPower, and EATT from
+  `cable_confirmation`, aborts on mismatch, and reads `SYST:ERR?` after every point and
+  after cleanup, forcing `INVALID` on a non-empty queue. Post-fix run `d3c259178c` measured
+  -56.25 dBm (about 24.6 dB better) but returned reliability `3`, so it is still recorded as
+  `INVALID`. The remaining ~15.8 dB gap is attributed to the generator playing a **bursted
+  WLAN ARB waveform rather than CW**. GPRF power values **cannot** yet support a
+  power-accuracy or path-loss conclusion. Final RF was `OFF` with an empty error queue.
+  This was a new live RF measurement.
 
 - On 2026-09-02, the RF owner approved all 11 HIL-complete WLAN sections for the Web
   approved profile. The execution gate now matches each band/bandwidth/frequency envelope
