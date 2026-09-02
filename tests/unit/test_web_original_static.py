@@ -143,6 +143,11 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
 
     for action in ("single", "frequency", "power"):
         assert f'data-hardware-action="{action}"' in html
+    assert 'data-hardware-action="gprf"' in html
+    assert 'id="gprfPowerForm"' in html
+    assert "reviewAndExecuteGprfPowerPlan" in (STATIC / "gprf-power.js").read_text(
+        encoding="utf-8"
+    )
     assert 'id="hardwareProfileSummary"' in html
     assert 'id="hardwareSweepSetup"' in html
     assert "selectHardwareAction" in hardware

@@ -97,6 +97,16 @@ wlan_tx_query:
   measurement_state: "FETC:WLAN:MEAS:MEV:STAT?"
   measurement_states: "FETC:WLAN:MEAS:MEV:STAT:ALL?"
 
+gprf_measurement:
+  # 由既有 GPRF Gen/Meas 實測腳本帶入；此路徑量測 RF power，不是 WLAN EVM 解調。
+  set_frequency: "CONFigure:GPRF:MEASurement1:RFSettings:FREQuency {frequency_hz}"
+  initiate_power: "INITiate:GPRF:MEASurement1:POWer"
+  stop_power: "STOP:GPRF:MEASurement1:POWer"
+
+gprf_measurement_query:
+  # 回傳格式為 reliability,value；parser 必須保留 reliability，不能直接當單一 float。
+  power_current: "FETCh:GPRF:MEASurement1:POWer:CURRent?"
+
 results:
   # Aggregate 28-field OFDM SISO result queries from CMP180 built-in WLAN help.
   # Hardware verification is performed by scripts/cmp180_wlan_result_discover.py.

@@ -99,6 +99,16 @@ class WlanTxQueryCommands(BaseModel):
     measurement_states: str
 
 
+class GprfMeasurementCommands(BaseModel):
+    set_frequency: str | None = None
+    initiate_power: str | None = None
+    stop_power: str | None = None
+
+
+class GprfMeasurementQueryCommands(BaseModel):
+    power_current: str | None = None
+
+
 class ResultCommands(BaseModel):
     modulation_current: str | None = None
     modulation_average: str | None = None
@@ -124,6 +134,8 @@ class ScpiCommandRegistry(BaseModel):
     mass_memory_query: MassMemoryQueryCommands = MassMemoryQueryCommands()
     wlan_tx: WlanTxCommands = WlanTxCommands()
     wlan_tx_query: WlanTxQueryCommands
+    gprf_measurement: GprfMeasurementCommands = GprfMeasurementCommands()
+    gprf_measurement_query: GprfMeasurementQueryCommands = GprfMeasurementQueryCommands()
     results: ResultCommands = ResultCommands()
 
     def require(self, dotted_name: str) -> str:

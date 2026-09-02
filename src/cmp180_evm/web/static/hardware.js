@@ -69,6 +69,13 @@ function updateHardwareSummary() {
     title = 'Power Sweep';
     detail = `${form.start.value} → ${form.stop.value} dBm · Step ${form.step.value} dB · ${form.center_frequency_mhz.value} ${form.center_unit.value} · ${form.bandwidth_mhz.value} MHz`;
   }
+  if (action === 'gprf') {
+    const gprf = $('#gprfPowerForm')?.elements;
+    title = 'GPRF Power Sweep';
+    detail = gprf
+      ? `${gprf.axis.value} · ${gprf.start.value} → ${gprf.stop.value} · Dwell ${gprf.dwell_ms.value} ms`
+      : 'GPRF power only · not WLAN EVM';
+  }
   $('#hardwareProfileSummary').innerHTML = `<small>${language === 'zh' ? '目前設定' : 'Current plan'}</small><strong>${title}</strong><span>${detail}</span>`;
 }
 
@@ -108,13 +115,14 @@ async function loadHardwareStatus() {
 
 function selectHardwareAction(action) {
   const form = $('#hardwareForm');
-  if (!['single', 'frequency', 'power'].includes(action)) return;
+  if (!['single', 'frequency', 'power', 'gprf'].includes(action)) return;
   form.elements.hardware_action.value = action;
   document.querySelectorAll('[data-hardware-action]').forEach(button => {
     button.classList.toggle('active', button.dataset.hardwareAction === action);
   });
-  $('#hardwareSweepSetup').hidden = action === 'single';
-  if (action !== 'single') setCustomPlanAxis(action);
+  $('#hardwareSweepSetup').hidden = action === 'single' || action === 'gprf';
+  $('#gprfPowerSetup').hidden = action !== 'gprf';
+  if (action === 'frequency' || action === 'power') setCustomPlanAxis(action);
   updatePreflight();
 }
 
@@ -159,6 +167,14 @@ $('#hardwareForm').onsubmit = event => {
     });
     return;
   }
+  if (action === 'gprf') {
+    // GPRF 是另一條 RF power workflow，不可送進 WLAN custom-plan gate。
+    window.reviewAndExecuteGprfPowerPlan(event.submitter).finally(() => {
+      hardwareRequestRunning = false;
+      updatePreflight();
+    });
+    return;
+  }
   const approved = confirm(language === 'zh'
     ? `即將送出真實 RF\n\nSingleShot · 6105 MHz · 320 MHz · -40 dBm\nRoute: ${route}\n\n確認接線未變、操作員在場並開始？`
     : `Real RF will be transmitted\n\nSingleShot · 6105 MHz · 320 MHz · -40 dBm\nRoute: ${route}\n\nConfirm unchanged cabling, operator presence, and start?`);
@@ -189,6 +205,7 @@ $('#hardwareForm').addEventListener('input', () => {
 });
 
 $('#customPlanForm').addEventListener('input', updateHardwareSummary);
+$('#gprfPowerForm').addEventListener('input', updateHardwareSummary);
 
 const baseRender = render;
 render = function(data) {

@@ -178,6 +178,7 @@
         <button type="button" class="subtab active" data-hardware-action="single">單點</button>
         <button type="button" class="subtab" data-hardware-action="frequency">頻率掃描</button>
         <button type="button" class="subtab" data-hardware-action="power">功率掃描</button>
+        <button type="button" class="subtab" data-hardware-action="gprf">GPRF 能力掃描</button>
       </div>
       <form id="hardwareForm" class="form-grid">
         <input name="hardware_action" type="hidden" value="single">
@@ -207,6 +208,21 @@
           <button class="primary submit" type="submit">檢查量測計畫 / Review Plan</button>
         </form>
         <pre id="customPlanPreview" hidden></pre>
+      </div>
+      <div id="gprfPowerSetup" class="custom-plan-card" hidden>
+        <h3>GPRF Power Sweep / 儀器能力檢查</h3>
+        <p class="field-help">此模式使用 GPRF Gen/Meas 讀功率，可展示 CMP180 tune 與功率量測能力；不是 WLAN EVM、不是 compliance。</p>
+        <form id="gprfPowerForm" class="form-grid">
+          <label><span>Axis</span><select name="axis"><option value="frequency">Frequency</option><option value="power">Power</option></select></label>
+          <label><span>Start</span><div class="input-unit"><input name="start" type="number" value="400" step="any" required><b id="gprfStartUnit">MHz</b></div></label>
+          <label><span>Stop</span><div class="input-unit"><input name="stop" type="number" value="8000" step="any" required><b id="gprfStopUnit">MHz</b></div></label>
+          <label><span>Step</span><div class="input-unit"><input name="step" type="number" value="100" min="0.001" step="any" required><b id="gprfStepUnit">MHz</b></div></label>
+          <label id="gprfFixedFrequencyField"><span>Fixed frequency</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" min="400" max="8000" step="any" required><b>MHz</b></div></label>
+          <label id="gprfFixedPowerField"><span>Fixed generator power</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" min="-80" max="20" step="any" required><b>dBm</b></div></label>
+          <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="50" max="5000" step="50" required><b>ms</b></div></label>
+          <button class="primary submit" type="submit">檢查 GPRF 計畫 / Review GPRF</button>
+        </form>
+        <pre id="gprfPowerPreview" hidden></pre>
       </div>
       <section id="liveMeasurementPanel" class="live-measurement" hidden aria-live="polite">
         <div class="panel-head"><div><h3>即時量測 / Live Measurement</h3><p id="liveMeasurementValue">等待第一個量測點</p></div><span id="liveMeasurementCount" class="pill neutral">0 / 0</span></div>
@@ -340,5 +356,6 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
   <script src="/campaign.js?v=3"></script>
   <script src="/calibration.js?v=1"></script>
   <script src="/custom-plan.js?v=1"></script>
+  <script src="/gprf-power.js?v=1"></script>
 </body>
 </html>

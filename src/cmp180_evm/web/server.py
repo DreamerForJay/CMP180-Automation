@@ -24,6 +24,7 @@ from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_prof
 from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.workflow.rf_routes import validate_route
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
+from cmp180_evm.web.gprf_service import build_gprf_power_preview
 from cmp180_evm.web.hil_campaign import HilCampaignStore
 from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
@@ -457,6 +458,44 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 # 預覽只建立安全點位，不連線儀器、不送 SCPI，也不開 RF。
                 preview = build_custom_sweep_preview(data)
                 self._json_response(preview.public())
+                return
+            if path == "/api/hardware/gprf-power-preview":
+                # GPRF 預覽只檢查 CMP180 tune/power 規劃範圍；它不是 WLAN EVM 授權。
+                self._json_response(build_gprf_power_preview(data).public())
+                return
+            if path == "/api/jobs/hardware/gprf-power-sweep":
+                if not self.hardware_enabled:
+                    self._json_response(
+                        {"error": "Hardware mode is locked at server startup"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                validate_cable_route(data.get("cable_confirmation"))
+                if data.get("operator_present") is not True:
+                    raise ValueError("Operator presence confirmation is required")
+                if data.get("gprf_confirmation") != "GPRF-POWER-NOT-WLAN-EVM":
+                    raise ValueError("GPRF confirmation is required")
+                preview = build_gprf_power_preview(data)
+                if not preview.execution_allowed:
+                    self._json_response(
+                        {"error": preview.rejection_reason or "GPRF plan is blocked"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                from cmp180_evm.web.gprf_service import run_gprf_power_sweep
+
+                # GPRF 是獨立能力檢查 workflow；背景 thread 收到 request copy 後不再讀 handler 狀態。
+                execution_request = dict(data)
+                job = JOB_MANAGER.start(
+                    f"hardware-gprf-{preview.axis}-power-sweep",
+                    len(preview.points),
+                    lambda active_job: run_gprf_power_sweep(
+                        active_job,
+                        request=execution_request,
+                        output_root=PROJECT_ROOT / "output",
+                    ),
+                )
+                self._json_response(job.public(), HTTPStatus.ACCEPTED)
                 return
             if path == "/api/jobs/hardware/custom-sweep":
                 if not self.hardware_enabled or not self.custom_hardware_enabled:
