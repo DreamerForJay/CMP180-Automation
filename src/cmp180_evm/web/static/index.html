@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
-  <link rel="stylesheet" href="/design-system.css?v=console11">
+  <link rel="stylesheet" href="/design-system.css?v=console12">
 </head>
 <body>
   <header class="topbar">
@@ -26,9 +26,9 @@
 
     <nav class="tabs" aria-label="Workspace">
       <button class="tab active" data-tab="home" data-i18n="homeTab">首頁</button>
-      <button class="tab" data-tab="measurement">量測</button>
+      <button class="tab" data-tab="measurement" data-i18n="measurementTab">量測</button>
       <button class="tab" data-tab="campaign" data-i18n="campaignTab">HIL 批次</button>
-      <button class="tab" data-tab="calibration">校正</button>
+      <button class="tab" data-tab="calibration" data-i18n="calibrationTab">校正</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
       <button class="tab" data-tab="history" data-i18n="historyTab">量測紀錄</button>
       <button class="tab" data-tab="guide" data-i18n="guideTab">操作指南</button>
@@ -276,8 +276,8 @@
       <div id="metrics" class="metrics"></div>
       <div id="limitProfileCard" class="limit-profile-card" hidden></div>
       <section id="comparisonPanel" class="comparison-panel" hidden><div><strong>歷史資料比較 / Historical comparison</strong><p id="comparisonHint">可調整曲線名稱、顏色與顯示狀態。</p></div><div id="traceList" class="trace-list"></div></section>
-      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button">PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
-      <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
+      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="power_error_db">Power Error (dB)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button">PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Power Error (dB)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
     </section>
 
@@ -364,7 +364,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=console9"></script>
+  <script src="/app.js?v=console10"></script>
   <script src="/hardware.js?v=workspace4"></script>
   <script src="/campaign.js?v=4"></script>
   <script src="/calibration.js?v=1"></script>

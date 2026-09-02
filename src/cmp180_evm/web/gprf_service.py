@@ -133,7 +133,12 @@ class GprfSocket:
         return b"".join(chunks).decode("utf-8", errors="ignore").strip()
 
 
-def _drain_error_queue(conn: GprfSocket, registry: ScpiCommandRegistry, *, limit: int = 20) -> list[str]:
+def _drain_error_queue(
+    conn: GprfSocket,
+    registry: ScpiCommandRegistry,
+    *,
+    limit: int = 20,
+) -> list[str]:
     """Read `SYST:ERR?` until the instrument reports an empty queue."""
     # SCPI error queue 必須讀到 `0,"No error"` 才算清空；設上限避免儀器異常時無限迴圈。
     entries: list[str] = []
@@ -233,6 +238,10 @@ def _save_gprf_result(
         "created_at": now.isoformat(),
         "simulated": False,
         "status": "complete",
+        # Run History 只讀 metadata 摘要；GPRF 沒有 EVM completed counter，
+        # 因此在保存時直接寫入點數，避免畫面誤顯示 0 點。
+        "completed_points": len(points),
+        "point_count": len(points),
         "source": "web_gprf_power_sweep",
         "measurement_family": "GPRF_POWER",
         "compliance_claim": False,

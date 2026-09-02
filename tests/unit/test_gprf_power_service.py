@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -6,6 +7,7 @@ from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.web.gprf_service import (
     _drain_error_queue,
     _restore_baseband,
+    _save_gprf_result,
     _select_cw_baseband,
     build_gprf_power_preview,
 )
@@ -207,3 +209,33 @@ def test_restore_reports_mismatch_when_baseband_mode_will_not_return():
     problems = _restore_baseband(conn, _registry(), "ARB", WLAN_ARB)
 
     assert problems and problems[0].startswith("BASEBAND_MODE_RESTORE_MISMATCH")
+
+
+def test_gprf_artifacts_record_completed_point_count(tmp_path: Path):
+    artifacts = _save_gprf_result(
+        points=[
+            {
+                "point_index": 0,
+                "frequency_hz": 4_000_000_000,
+                "generator_power_dbm": -40,
+                "expected_power_dbm": -40,
+                "burst_power_dbm": -40.1,
+                "valid": True,
+            },
+            {
+                "point_index": 1,
+                "frequency_hz": 4_100_000_000,
+                "generator_power_dbm": -40,
+                "expected_power_dbm": -40,
+                "burst_power_dbm": -39.9,
+                "valid": True,
+            },
+        ],
+        output_root=tmp_path,
+        metadata={"sweep_axis": "frequency"},
+    )
+
+    metadata = json.loads(Path(artifacts["metadata"]).read_text(encoding="utf-8"))
+
+    assert metadata["completed_points"] == 2
+    assert metadata["point_count"] == 2

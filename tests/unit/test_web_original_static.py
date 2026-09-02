@@ -161,6 +161,28 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
     assert "chart-crosshair" in javascript
 
 
+def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    javascript = (STATIC / "app.js").read_text(encoding="utf-8")
+    design = (STATIC / "design-system.css").read_text(encoding="utf-8")
+
+    assert 'data-i18n="measurementTab"' in html
+    assert 'data-i18n="calibrationTab"' in html
+    assert "measurementTab:'Measure'" in javascript
+    assert "calibrationTab:'Calibration'" in javascript
+    assert 'value="power_error_db"' in html
+    assert "<th>Power Error (dB)</th>" in html
+    assert "powerFlatnessStats" in javascript
+    assert "expected_power_dbm:expectedPower" in javascript
+    assert "formatMeasured(point.power_error_db,3)" in javascript
+    assert "Power Error 是 GPRF flatness" in javascript
+    assert "Peak-to-Peak Ripple" in javascript
+    assert "Expected error 0 dB" in javascript
+    assert "expected-power-line" in javascript
+    assert ".plot-line{fill:none;stroke:#1e88ff" in design
+    assert "[data-theme=\"light\"] .plot-line{stroke:#0877ff" in design
+
+
 def test_hil_campaign_is_persistent_and_operator_driven() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     campaign = (STATIC / "campaign.js").read_text(encoding="utf-8")

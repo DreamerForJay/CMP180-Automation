@@ -33,6 +33,15 @@ Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／runnin
 
 實機頁另新增 `GPRF 能力掃描`，使用 CMP180 的 GPRF Generator／Measurement power workflow 展示儀器 tune 與功率量測能力。此模式可在 400 MHz–8 GHz 規劃頻率掃描，或在固定頻率下規劃功率掃描，並保存 CSV／JSON／metadata／HTML artifacts；但結果欄位是 `measured_power_dbm` 與 `reliability`，不是 WLAN EVM、不是 OFDM 解調，也不得作為 compliance claim。GPRF 執行仍需 `RF1.1-RF1.5` route、操作員在場、最後確認與 RF Off cleanup。
 
+GPRF 結果圖表會以高對比藍色曲線顯示實測功率，並以橘色虛線標出 Expected Power。`Power Error (dB)` 指標定義為 `measured - expected`；切換到該指標時，0 dB 參考線代表完全貼齊設定功率。Summary 會直接顯示 Average Power、Expected Power、Mean Error、Max |Error|、Peak-to-Peak Ripple、Std Dev 與 Valid 點數，適合用於說明 RF1.1-RF1.5 loopback 下的儀器功率平坦度。亮色與暗色主題都使用高對比線條，避免深色背景上曲線與圓點不可讀。
+
+### 下一步規格範圍量測規劃
+
+1. **GPRF 儀器能力範圍**：以 RF1.1 Generator output → RF1.5 Analyzer input 先跑 4–8 GHz／100 MHz step／-40 dBm 的 flatness 基準；若現場時間允許，再補 400 MHz–8 GHz 的粗掃。這只宣稱 CMP180 tune 與 power measurement 能力，不宣稱 WLAN EVM 或 DUT compliance。
+2. **WLAN EVM 已核准範圍**：重跑 P0 6 GHz／320 MHz golden baseline 與 2.4/5/6 GHz 已列入 HIL Campaign 的 WLAN sections，保存每個 section 的 CSV／JSON／HTML／metadata。這些才是 WLAN EVM workflow 的展示主體。
+3. **重複性與追溯性**：對 P0 golden baseline 做 N=3 repeatability，確認 artifacts、RF Off cleanup、measurement `RDY` 與 error queue empty 都一致。
+4. **暫不宣稱項目**：其他 RF routes、500 MHz analysis bandwidth、雙 VSA/VSG 需先 query-only discovery 與安全審核；未完成前只列為待核准能力，不放進主管展示結論。
+
 前三個量測頁籤刻意保留為「示範單點／示範頻掃／示範功掃」：它們供教學、UI
 驗證、CI 與沒有儀器時開發，永遠不送出 SCPI 或 RF。真正的 SingleShot、三點頻掃與
 四點功掃集中在「實機量測」頁。若顯示 `LOCKED`，代表本次 server 使用
@@ -188,6 +197,15 @@ Mock frequency and power sweeps now use an asynchronous Job API with queued/runn
 The Web hardware Sweep path now uses the exact custom plan shown in Sweep Setup instead of silently falling back to the fixed 6085/6105/6125 MHz profile. Before execution, the Web UI calls the preview API to build points, compute the fingerprint, and revalidate the current RF workflow. If the workflow rejects the plan, the UI shows the rejection reason and transmits no RF. Cancellation takes effect only at a point boundary after STOP/RF Off, followed by outer STOP/ABORt, RF Off, and read-back. On-site Web HIL passed on 2026-08-20: frequency completed 3/3; power cancellation was requested after the first point and safely stopped at the next boundary with 2/4 partial artifacts. Independent queries confirmed RF `OFF`, measurement `RDY`, and an empty error queue.
 
 The hardware page also adds `GPRF Capability Sweep`, which uses the CMP180 GPRF Generator/Measurement power workflow to demonstrate instrument tune and power-measurement capability. This mode can plan frequency sweeps across 400 MHz to 8 GHz, or power sweeps at a fixed frequency, and saves CSV, JSON, metadata, and HTML artifacts. Its result fields are `measured_power_dbm` and `reliability`; it is not WLAN EVM, not OFDM demodulation, and must not be used as a compliance claim. GPRF execution still requires the `RF1.1-RF1.5` route, operator presence, final confirmation, and RF Off cleanup.
+
+GPRF result charts show measured power as a high-contrast blue trace and draw an orange dashed Expected Power reference line. The `Power Error (dB)` metric is defined as `measured - expected`; when selected, a 0 dB reference line represents perfect agreement with the configured power. The Summary displays Average Power, Expected Power, Mean Error, Max |Error|, Peak-to-Peak Ripple, Std Dev, and Valid points so the RF1.1-RF1.5 loopback flatness can be explained directly. Both light and dark themes use high-contrast trace colors so curves and markers remain readable.
+
+### Next spec-range measurement plan
+
+1. **GPRF instrument-capability range**: first run the RF1.1 Generator output to RF1.5 Analyzer input flatness baseline at 4–8 GHz, 100 MHz step, and -40 dBm. If on-site time allows, add a coarse 400 MHz–8 GHz sweep. This claims CMP180 tune and power-measurement capability only, not WLAN EVM or DUT compliance.
+2. **Approved WLAN EVM range**: rerun the P0 6 GHz / 320 MHz golden baseline and the 2.4/5/6 GHz WLAN sections listed in HIL Campaign, preserving CSV, JSON, HTML, and metadata artifacts for each section. These are the main WLAN EVM workflow demonstrations.
+3. **Repeatability and traceability**: run N=3 repeatability on the P0 golden baseline and confirm artifacts, RF Off cleanup, measurement `RDY`, and an empty error queue are consistent.
+4. **Do not claim yet**: other RF routes, 500 MHz analysis bandwidth, and dual VSA/VSG require query-only discovery and safety approval first. Until then they remain unapproved capabilities and must not be used in supervisor-facing conclusions.
 
 The first three measurement tabs intentionally remain Demo Single, Demo Frequency
 Sweep, and Demo Power Sweep. They support training, UI validation, CI, and development
