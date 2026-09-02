@@ -23,6 +23,8 @@ Generator 設定功率與 Analyzer 預期輸入功率之間的關係。被動路
 python -m cmp180_evm validate-calibration configs\calibration.example.yaml
 ```
 
+`lifecycle: approved` 除了有效日期與器材識別外，現在強制要求 `source_evidence`、`approved_by` 與 `approved_at`。這些欄位必須引用真實校正讀值／證書並由 RF owner 填寫；不得把 CMP180 自身 GPRF characterization 或範例 0 dB 值直接改名為正式校正。
+
 正式 Profile 應另建不含機密的 YAML，填入 profile ID、revision、路由、校正與到期日、
 線材／轉接頭或校正設備參考編號，以及實測頻率／線損點。資料須由 RF／測試負責人審核後，
 才能將 lifecycle 改為 `approved`。每次量測須在 metadata 保存完整 Profile snapshot；
@@ -85,6 +87,8 @@ traceable. Passive-path `loss_db` is positive and the calculation is
 ```powershell
 python -m cmp180_evm validate-calibration configs\calibration.example.yaml
 ```
+
+An `approved` lifecycle now also requires `source_evidence`, `approved_by`, and `approved_at`, in addition to valid dates and equipment identity. These fields must reference real calibration readings or a certificate and be completed by the RF owner. CMP180 self-characterization data and example 0 dB values must not be relabeled as formal calibration.
 
 A production profile must be stored in a separate non-sensitive YAML and include its ID,
 revision, route, calibration/expiry dates, cable/adapter or calibration-equipment reference,

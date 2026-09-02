@@ -2321,3 +2321,35 @@ waveform only while RF is OFF and measurement is idle, and must complete OPC, er
 and absolute-path readback checks before configuration continues or RF is enabled.
 
 The CMP180 400 MHz–8 GHz tuning catalog range is not the executable WLAN range.
+
+---
+
+# 39. V1 正式驗收閘門
+
+V1 Acceptance 必須把「量測流程 HIL」與「正式 compliance 核准」分開。完整實機
+SingleShot／Sweep artifacts 可證明自動化流程，但正式 `ACCEPTED` 還必須同時具備：
+
+1. 未過期的 Approved Calibration Profile，含真實 `source_evidence`、`approved_by`、
+   `approved_at` 與器材識別。
+2. Approved Limit Profile，含適用規格 `source_reference`、`approved_by` 與
+   `approved_at`。
+3. 指定 artifacts 全部為非 Mock、`status=complete`、至少一點且所有點有效。
+
+Acceptance builder 僅能離線讀取上述資料，不得連線儀器或送 RF。任何 gate 未通過時，
+總狀態必須是 `BLOCKED` 且 `compliance_claim=false`。
+
+## English: V1 formal acceptance gates
+
+V1 acceptance must separate measurement-workflow HIL from formal compliance approval.
+Complete live-hardware SingleShot/Sweep artifacts prove the automation workflow, but
+formal `ACCEPTED` status also requires all of the following:
+
+1. A current Approved Calibration Profile with real `source_evidence`, `approved_by`,
+   `approved_at`, and equipment identity.
+2. An Approved Limit Profile with an applicable `source_reference`, `approved_by`, and
+   `approved_at`.
+3. Selected artifacts that are non-Mock, `status=complete`, non-empty, and valid at every point.
+
+The acceptance builder may only read these inputs offline; it must never connect to the
+instrument or transmit RF. If any gate fails, overall status must be `BLOCKED` and
+`compliance_claim=false`.

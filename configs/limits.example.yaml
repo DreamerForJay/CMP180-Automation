@@ -12,3 +12,6 @@ description: "Development-only EHT MCS11 BW320 loopback example; not DUT complia
 maximum_evm_db: -32.0
 maximum_absolute_frequency_error_hz: 1000.0
 maximum_absolute_power_error_db: 3.0
+source_reference: null
+approved_by: null
+approved_at: null

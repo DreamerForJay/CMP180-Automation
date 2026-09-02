@@ -21,6 +21,11 @@ function configureGprfFields() {
   form.start.value = frequencyAxis ? 400 : -80;
   form.stop.value = frequencyAxis ? 8000 : 20;
   form.step.value = frequencyAxis ? 100 : 5;
+  $('#gprfModeTitle').textContent = frequencyAxis
+    ? 'GPRF Frequency Sweep – Power Flatness / 頻率掃描－功率平坦度'
+    : 'GPRF Power Sweep – Linearity / 功率掃描－線性度';
+  // Axis 改變後同步頁首與執行摘要，避免仍顯示上一種掃描名稱。
+  updateHardwareSummary();
 }
 
 function buildGprfPayload() {
@@ -53,13 +58,13 @@ function renderGprfPreview(data) {
     : `Frequency: ${gprfFormatFrequency(data.frequency_hz)}`;
   preview.hidden = false;
   preview.textContent = [
-    'GPRF power sweep',
+    data.axis === 'frequency' ? 'GPRF Frequency Sweep – Power Flatness' : 'GPRF Power Sweep – Linearity',
     `Points: ${data.point_count}`,
     `Range: ${range}`,
     fixed,
     `Dwell: ${data.dwell_ms} ms`,
     data.execution_allowed
-      ? '可執行：GPRF power only，不是 WLAN EVM。'
+      ? '可執行：GPRF power measurement，不是 WLAN EVM。'
       : `不可執行：${data.rejection_reason || 'GPRF workflow rejected the plan'}`
   ].join('\n');
 }
@@ -116,8 +121,8 @@ window.reviewAndExecuteGprfPowerPlan = async function(button) {
   }
   // GPRF 會開真實 RF，但不使用 WLAN measurement；確認文字必須把能力邊界講清楚。
   const approved = confirm(language === 'zh'
-    ? `即將送出真實 RF 進行 GPRF Power Sweep\n\n${$('#gprfPowerPreview').textContent}\n\n確認這不是 WLAN EVM，接線未變、人在儀器旁並開始？`
-    : `Real RF will be transmitted for a GPRF Power Sweep\n\n${$('#gprfPowerPreview').textContent}\n\nConfirm this is not WLAN EVM, cabling is unchanged, and an operator is present?`);
+    ? `即將送出真實 RF 進行 ${data.axis === 'frequency' ? 'GPRF Frequency Sweep – Power Flatness' : 'GPRF Power Sweep – Linearity'}\n\n${$('#gprfPowerPreview').textContent}\n\n確認這不是 WLAN EVM，接線未變、人在儀器旁並開始？`
+    : `Real RF will be transmitted for ${data.axis === 'frequency' ? 'GPRF Frequency Sweep – Power Flatness' : 'GPRF Power Sweep – Linearity'}\n\n${$('#gprfPowerPreview').textContent}\n\nConfirm this is not WLAN EVM, cabling is unchanged, and an operator is present?`);
   if (!approved) {
     toast(language === 'zh' ? '已取消，未送出 RF。' : 'Cancelled; no RF was transmitted.');
     return;

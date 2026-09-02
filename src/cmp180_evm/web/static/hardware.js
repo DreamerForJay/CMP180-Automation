@@ -63,18 +63,20 @@ function updateHardwareSummary() {
   let planCheck = 'SingleShot：RF1.1 → RF1.5 · 6105 MHz · 320 MHz · -40 dBm';
   let title = 'SingleShot';
   if (form && action === 'frequency') {
-    title = 'Frequency Sweep';
+    title = 'WLAN Frequency Sweep';
     detail = `${form.start.value} ${form.start_unit.value} → ${form.stop.value} ${form.stop_unit.value} · Step ${form.step.value} ${form.step_unit.value} · ${form.bandwidth_mhz.value} MHz · ${form.generator_power_dbm.value} dBm`;
     planCheck = 'WLAN Frequency Sweep：先 Review；只允許通過 approved section 的中心頻率';
   }
   if (form && action === 'power') {
-    title = 'Power Sweep';
+    title = 'WLAN Power Sweep – Linearity';
     detail = `${form.start.value} → ${form.stop.value} dBm · Step ${form.step.value} dB · ${form.center_frequency_mhz.value} ${form.center_unit.value} · ${form.bandwidth_mhz.value} MHz`;
     planCheck = 'WLAN Power Sweep：先 Review；使用已核准 WLAN section 與安全功率';
   }
   if (action === 'gprf') {
     const gprf = $('#gprfPowerForm')?.elements;
-    title = 'GPRF Power Sweep';
+    title = gprf?.axis.value === 'frequency'
+      ? 'GPRF Frequency Sweep – Power Flatness'
+      : 'GPRF Power Sweep – Linearity';
     detail = gprf
       ? `${gprf.axis.value} · ${gprf.start.value} → ${gprf.stop.value} · Dwell ${gprf.dwell_ms.value} ms`
       : 'GPRF power only · not WLAN EVM';
@@ -83,6 +85,7 @@ function updateHardwareSummary() {
   $('#hardwareProfileSummary').innerHTML = `<small>${language === 'zh' ? '目前設定' : 'Current plan'}</small><strong>${title}</strong><span>${detail}</span>`;
   // Review 文案跟著量測模式更新，避免操作員誤把 GPRF 掃描當成 WLAN EVM。
   $('#planCheckText').textContent = planCheck;
+  updatePageHeading();
 }
 
 function updatePreflight() {

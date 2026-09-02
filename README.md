@@ -44,7 +44,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 | 固定功率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 已驗證四點掃描與取消／cleanup；最新 waveform 仍需排除 `INV` |
 | 自訂量測規劃 | 型錄範圍可輸入；實機執行依 RF workflow | 規劃介面支援 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz；Web 不再把自訂輸入改跑固定 profile，未通過 workflow 的計畫會顯示拒絕原因且不送 RF |
 | Path Loss 校正 | Draft workflow | 可建立、載入與審查 Profile；正式外部校正儀器 adapter 尚待 HIL |
-| 歷史分析 | 可用、唯讀 | 搜尋／篩選 Runs、2–8 Run 比較、Hover、Zoom、Pan、A/B 游標與匯出 |
+| 歷史分析 | 可用、唯讀 | 單一 Run 圖表、2–8 Run 比較、Hover、Zoom、Pan、A/B 游標與匯出 |
 | 多圖同步 | 規劃中 | 下一階段同步 EVM、Power 與 Frequency Error 的 X 軸及游標 |
 
 Mock、dry-run、CMsquares 手動量測或單獨 stored `FETCh` 不得描述成新的完整 Python 實機量測。
@@ -59,6 +59,8 @@ python -m pytest -m "not hardware"
 python -m cmp180_evm validate-config configs\instrument.example.yaml
 python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
 python -m cmp180_evm validate-calibration configs\calibration.example.yaml
+python -m cmp180_evm validate-limits configs\limits.example.yaml
+python scripts\build_v1_acceptance.py --evidence output\<real-run-folder>
 ```
 
 ```powershell
@@ -157,7 +159,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 | Fixed power sweep | Historical HIL passed; current profile needs revalidation | Four-point execution/cancellation passed historically; the latest waveform still produces `INV` |
 | Custom measurement planning | Catalog range available; RF execution is profile-gated | Planning accepts 400 MHz–8 GHz and WLAN 20/40/80/160/320 MHz; only approved HIL combinations may transmit RF |
 | Path-loss calibration | Draft workflow | Profile generation/review exists; external-instrument adapter still needs HIL |
-| Historical analysis | Available, read-only | Run filters, 2–8 run comparison, hover, zoom, pan, A/B cursors, and exports |
+| Historical analysis | Available, read-only | Single-run plots, 2–8 run comparison, hover, zoom, pan, A/B cursors, and exports |
 | Synchronized multi-chart view | Planned | Next stage synchronizes EVM, Power, and Frequency Error X axes and cursors |
 
 Do not describe mock, dry-run, manual CMsquares operation, or a standalone stored `FETCh` as a new complete Python hardware measurement.

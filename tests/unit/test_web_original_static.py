@@ -25,6 +25,10 @@ def test_original_workspace_supports_read_only_run_comparison() -> None:
     )[0]
     assert "/api/runs/" in comparison_code
     assert "/api/jobs/" not in comparison_code
+    # 單筆歷史紀錄與多筆比較共用唯讀圖表引擎，不應強迫至少勾選兩筆。
+    assert "count<1||count>8" in javascript
+    assert "analysisTraces.length<1" in javascript
+    assert "analysisTraces.length<2" not in comparison_code
 
 
 def test_workspace_navigation_history_and_theme_regressions() -> None:
@@ -178,7 +182,13 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert "Power Error 是 GPRF flatness" in javascript
     assert "Peak-to-Peak Ripple" in javascript
     assert "Expected error 0 dB" in javascript
+    assert "Expected = Generator Power" in javascript
+    assert "Pexpected = Pgenerator" in javascript
     assert "expected-power-line" in javascript
+    assert 'id="gprfModeTitle"' in html
+    assert "metricAxisLabel" in javascript
+    assert "Generator Power':'Frequency" in javascript
+    assert 'class="axis-title"' in javascript
     assert ".plot-line{fill:none;stroke:#1e88ff" in design
     assert "[data-theme=\"light\"] .plot-line{stroke:#0877ff" in design
 

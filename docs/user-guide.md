@@ -114,15 +114,16 @@ python scripts\cmp180_wlan_discover.py |
 此工具只從集中式 `configs/scpi_command_map.yaml` 讀取已驗證 query，
 不包含任何 WLAN setter、measurement initiate 或 RF control command。
 
-保存量測後可完全離線重建圖表與報告；這兩個命令只讀 artifacts，不會連線儀器：
+保存量測後可完全離線重建圖表、量測報告與 V1 驗收狀態；下列命令只讀設定與 artifacts，不會連線儀器：
 
 ```powershell
 python scripts\plot_results.py output\<run-folder>\results.csv
 python scripts\build_report.py output\<run-folder>
+python -m cmp180_evm validate-limits configs\limits.example.yaml
+python scripts\build_v1_acceptance.py --evidence output\<real-run-folder>
 ```
 
-Web 的歷史比較可拖拉曲線排序、直接改名並調整顏色、線型與點型，也可匯出
-SVG、PNG 與整理後 CSV。
+Web 的歷史分析可勾選一筆直接查看圖表，或選取 2–8 筆比較；可拖拉曲線排序、直接改名並調整顏色、線型與點型，也可匯出 SVG、PNG 與整理後 CSV。
 
 ## 8. 第一次連接 CMP180
 
@@ -254,8 +255,11 @@ measurement initiation, or RF-control commands.
 
 After saving a run, use `python scripts\plot_results.py <results.csv>` and
 `python scripts\build_report.py <run-folder>` to rebuild charts and a self-contained
-report entirely offline. The Web history comparison supports drag-to-reorder, inline
-trace renaming, colour/line/point styling, and SVG, PNG, or normalized CSV export.
+report entirely offline. Validate limits with `python -m cmp180_evm validate-limits
+configs\limits.example.yaml`, and build the offline V1 gate report with `python
+scripts\build_v1_acceptance.py --evidence output\<real-run-folder>`. The Web history
+analysis accepts one run for plotting or 2–8 runs for comparison, with drag-to-reorder,
+inline trace renaming, colour/line/point styling, and SVG, PNG, or normalized CSV export.
 
 ### 8. First CMP180 connection
 

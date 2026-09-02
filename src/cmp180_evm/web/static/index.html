@@ -178,7 +178,7 @@
         <button type="button" class="subtab active" data-hardware-action="single">單點</button>
         <button type="button" class="subtab" data-hardware-action="frequency">頻率掃描</button>
         <button type="button" class="subtab" data-hardware-action="power">功率掃描</button>
-        <button type="button" class="subtab" data-hardware-action="gprf">GPRF 能力掃描</button>
+        <button type="button" class="subtab" data-hardware-action="gprf">GPRF 頻率／功率掃描</button>
       </div>
       <ol class="sop-steps measurement-sop" aria-label="實機量測 SOP">
         <li><strong>01</strong><span>設定數值</span></li>
@@ -207,7 +207,7 @@
         <pre id="customPlanPreview" hidden></pre>
       </div>
       <div id="gprfPowerSetup" class="custom-plan-card sop-section" hidden>
-        <h3>GPRF Power Sweep / 儀器能力檢查</h3>
+        <h3 id="gprfModeTitle">GPRF Frequency Sweep – Power Flatness / 頻率掃描－功率平坦度</h3>
         <p class="field-help">此模式使用 GPRF Gen/Meas 讀功率，可展示 CMP180 tune 與功率量測能力；不是 WLAN EVM、不是 compliance。</p>
         <form id="gprfPowerForm" class="form-grid">
           <label><span>Axis</span><select name="axis"><option value="frequency">Frequency</option><option value="power">Power</option></select></label>
@@ -282,7 +282,7 @@
     </section>
 
     <section id="history" class="panel">
-      <div class="panel-head"><div><h2 data-i18n="historyTitle">量測紀錄</h2><p data-i18n="historyHelp">瀏覽本機保存的實機與示範結果；不會啟動量測或 RF。</p></div><div class="history-toolbar"><span id="compareCount">已選 0 筆</span><button id="compareSelectedButton" class="primary compact" type="button" disabled>比較所選資料</button><button id="refreshHistoryButton" class="ghost" type="button" data-i18n="refreshHistory">重新整理</button></div></div>
+      <div class="panel-head"><div><h2 data-i18n="historyTitle">量測紀錄</h2><p data-i18n="historyHelp">瀏覽本機保存的實機與示範結果；選 1 筆可查看圖表，選 2–8 筆可比較；不會啟動量測或 RF。</p></div><div class="history-toolbar"><span id="compareCount">已選 0 筆</span><button id="compareSelectedButton" class="primary compact" type="button" disabled>查看／比較所選資料</button><button id="refreshHistoryButton" class="ghost" type="button" data-i18n="refreshHistory">重新整理</button></div></div>
       <div class="run-filters" aria-label="Run filters">
         <label class="run-search"><span>搜尋</span><input id="runSearch" type="search" placeholder="Test name、Run ID、DUT、操作者、註記"></label>
         <label><span>日期</span><select id="runDateFilter"><option value="all">全部日期</option><option value="today">今天</option><option value="7">最近 7 天</option><option value="30">最近 30 天</option></select></label>
@@ -364,11 +364,11 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=console10"></script>
-  <script src="/hardware.js?v=workspace4"></script>
+  <script src="/app.js?v=console11"></script>
+  <script src="/hardware.js?v=workspace5"></script>
   <script src="/campaign.js?v=4"></script>
   <script src="/calibration.js?v=1"></script>
   <script src="/custom-plan.js?v=1"></script>
-  <script src="/gprf-power.js?v=1"></script>
+  <script src="/gprf-power.js?v=2"></script>
 </body>
 </html>

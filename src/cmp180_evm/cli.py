@@ -4,6 +4,7 @@ from pathlib import Path
 
 from cmp180_evm import actions
 from cmp180_evm.calibration import load_calibration_profile
+from cmp180_evm.limits import load_limit_profile
 
 
 def _cmd_validate_config(args: argparse.Namespace) -> int:
@@ -64,6 +65,20 @@ def _cmd_validate_calibration(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_validate_limits(args: argparse.Namespace) -> int:
+    try:
+        profile = load_limit_profile(Path(args.config))
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"INVALID: {exc}")
+        return 1
+    print("OK (limits)")
+    print(f"  Profile: {profile.profile_id} rev {profile.revision}")
+    print(f"  Lifecycle: {profile.lifecycle}")
+    # Draft 門檻只可做流程預覽；正式 PASS/FAIL 必須有來源與核准欄位。
+    print(f"  Compliance use: {'ALLOWED' if profile.lifecycle == 'approved' else 'BLOCKED'}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cmp180_evm")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -79,6 +94,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validate_calibration.add_argument("config", help="Path to the calibration YAML file.")
     validate_calibration.set_defaults(func=_cmd_validate_calibration)
+
+    validate_limits = subparsers.add_parser(
+        "validate-limits", help="Validate an EVM result-limit profile."
+    )
+    validate_limits.add_argument("config", help="Path to the limit-profile YAML file.")
+    validate_limits.set_defaults(func=_cmd_validate_limits)
 
     dry_run = subparsers.add_parser(
         "dry-run", help="Print the planned steps for a run without sending any SCPI writes."

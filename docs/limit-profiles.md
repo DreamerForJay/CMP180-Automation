@@ -34,6 +34,8 @@ RF／測試負責人需依 DUT 類型、802.11 模式、頻寬、MCS、測試方
 `approved`。目前 GUI 顯示 Draft 警示，Artifacts 保存 profile snapshot 與
 `compliance_claim=false`。
 
+使用 `python -m cmp180_evm validate-limits configs\limits.example.yaml` 可驗證檔案。正式 `approved` profile 強制要求 `source_reference`、`approved_by` 與 `approved_at`；只修改 lifecycle 不足以產生正式 compliance PASS。
+
 ---
 
 ## English Version
@@ -71,3 +73,5 @@ test method, path loss, calibration state, and company rules; record the source 
 approver; create an immutable revision; and complete review before setting `approved`.
 The current GUI shows a Draft warning, while artifacts save the profile snapshot and
 `compliance_claim=false`.
+
+Run `python -m cmp180_evm validate-limits configs\limits.example.yaml` to validate the file. A formal `approved` profile requires `source_reference`, `approved_by`, and `approved_at`; changing lifecycle alone is insufficient to produce a formal compliance PASS.

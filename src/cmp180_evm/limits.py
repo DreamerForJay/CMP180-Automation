@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,9 @@ class LimitProfile:
     maximum_evm_db: float
     maximum_absolute_frequency_error_hz: float
     maximum_absolute_power_error_db: float
+    source_reference: str | None = None
+    approved_by: str | None = None
+    approved_at: date | None = None
 
     def __post_init__(self) -> None:
         # Draft 與正式 profile 必須明確分流；未經核准的檔案不可產生 compliance PASS。
@@ -30,9 +34,19 @@ class LimitProfile:
             raise ValueError("Frequency-error limit must be positive")
         if self.maximum_absolute_power_error_db <= 0:
             raise ValueError("Power-error limit must be positive")
+        if self.lifecycle == "approved" and (
+            not self.source_reference or not self.approved_by or self.approved_at is None
+        ):
+            # 正式 PASS/FAIL 會形成 compliance claim，必須可追溯到規格來源與核准人。
+            raise ValueError(
+                "Approved limit profile requires source_reference, approved_by, and approved_at"
+            )
 
     def snapshot(self) -> dict[str, object]:
-        return asdict(self)
+        payload = asdict(self)
+        if self.approved_at is not None:
+            payload["approved_at"] = self.approved_at.isoformat()
+        return payload
 
 
 @dataclass(frozen=True)
@@ -63,6 +77,8 @@ def load_limit_profile(path: Path) -> LimitProfile:
     data: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("Limit profile must be a YAML object")
+    if isinstance(data.get("approved_at"), str):
+        data["approved_at"] = date.fromisoformat(data["approved_at"])
     return LimitProfile(**data)
 
 

@@ -9,6 +9,9 @@ route: "RF1.1-RF1.5"
 calibrated_at: 2026-08-20
 expires_at: 2026-11-20
 equipment_reference: "DRAFT — cable/adapter serials not yet recorded"
+source_evidence: null
+approved_by: null
+approved_at: null
 points:
   - frequency_hz: 5925000000
     loss_db: 0.0

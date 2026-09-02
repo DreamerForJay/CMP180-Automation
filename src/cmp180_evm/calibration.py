@@ -26,6 +26,9 @@ class CalibrationProfile:
     expires_at: date
     equipment_reference: str
     points: tuple[CalibrationPoint, ...]
+    source_evidence: str | None = None
+    approved_by: str | None = None
+    approved_at: date | None = None
 
     def __post_init__(self) -> None:
         if self.lifecycle not in {"draft", "approved"}:
@@ -39,6 +42,14 @@ class CalibrationProfile:
             raise ValueError("Calibration frequencies must be unique and strictly increasing")
         if any(point.frequency_hz <= 0 or not 0 <= point.loss_db <= 30 for point in self.points):
             raise ValueError("Calibration points exceed the 0..30 dB safety envelope")
+        if self.lifecycle == "approved":
+            # 正式修正會改變量測參考面；核准者與原始證據缺一不可，禁止只改 lifecycle。
+            if not self.source_evidence or not self.approved_by or self.approved_at is None:
+                raise ValueError(
+                    "Approved calibration requires source_evidence, approved_by, and approved_at"
+                )
+            if "draft" in self.equipment_reference.lower():
+                raise ValueError("Approved calibration cannot use a draft equipment reference")
 
     def loss_at(self, frequency_hz: float) -> float:
         """Linearly interpolate in-range loss; extrapolation is intentionally blocked."""
@@ -85,7 +96,7 @@ def load_calibration_profile(path: Path) -> CalibrationProfile:
         raise ValueError("Calibration profile must contain a points list")
     points = tuple(CalibrationPoint(**point) for point in data.pop("points"))
     # YAML parser 可能回傳 date，JSON-compatible YAML 則回傳 ISO 字串；統一成 date。
-    for field in ("calibrated_at", "expires_at"):
+    for field in ("calibrated_at", "expires_at", "approved_at"):
         if isinstance(data.get(field), str):
             data[field] = date.fromisoformat(data[field])
     return CalibrationProfile(points=points, **data)

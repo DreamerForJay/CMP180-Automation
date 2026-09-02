@@ -21,6 +21,9 @@ def profile(**overrides) -> CalibrationProfile:
         "calibrated_at": date(2026, 8, 1),
         "expires_at": date(2027, 8, 1),
         "equipment_reference": "cable:C01; power-meter:P01",
+        "source_evidence": "calibration-certificate:CERT-001",
+        "approved_by": "RF Owner",
+        "approved_at": date(2026, 8, 2),
         "points": (
             CalibrationPoint(5_925_000_000, 2.0),
             CalibrationPoint(7_125_000_000, 4.0),

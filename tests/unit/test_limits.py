@@ -1,4 +1,5 @@
 import math
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,9 @@ def profile(lifecycle: str = "draft") -> LimitProfile:
         maximum_evm_db=-32.0,
         maximum_absolute_frequency_error_hz=1000.0,
         maximum_absolute_power_error_db=3.0,
+        source_reference="approved-test-spec" if lifecycle == "approved" else None,
+        approved_by="RF Owner" if lifecycle == "approved" else None,
+        approved_at=date(2026, 1, 1) if lifecycle == "approved" else None,
     )
 
 
@@ -85,3 +89,8 @@ def test_example_profile_is_explicitly_draft():
     loaded = load_limit_profile(Path("configs/limits.example.yaml"))
     assert loaded.lifecycle == "draft"
     assert "draft" in loaded.profile_id
+
+
+def test_approved_limit_requires_specification_and_owner_approval():
+    with pytest.raises(ValueError, match="source_reference"):
+        LimitProfile("id", "1", "approved", "test", -32, 1000, 3)

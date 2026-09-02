@@ -16,6 +16,9 @@ def profile() -> CalibrationProfile:
         expires_at=date(2026, 12, 31),
         equipment_reference="cable-1",
         points=(CalibrationPoint(6e9, 1.0), CalibrationPoint(7e9, 2.0)),
+        source_evidence="certificate-or-controlled-reading.csv",
+        approved_by="RF Owner",
+        approved_at=date(2026, 1, 2),
     )
 
 
@@ -78,3 +81,11 @@ def test_loader_accepts_json_compatible_yaml_iso_date_strings(tmp_path):
         encoding="utf-8",
     )
     assert load_calibration_profile(path).expires_at == date(2026, 12, 31)
+
+
+def test_approved_calibration_requires_traceable_approval_fields():
+    with pytest.raises(ValueError, match="source_evidence"):
+        CalibrationProfile(
+            "id", "1", "approved", "route", date.today(), date.today(), "cable-1",
+            (CalibrationPoint(6e9, 1), CalibrationPoint(7e9, 1)),
+        )

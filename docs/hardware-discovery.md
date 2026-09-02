@@ -812,3 +812,40 @@ matching BW20 waveform, and completed OPC, error-queue, and ABSPath readback che
 continuing the RF workflow. Golden run `ca02e838b2` passed. Frequency-sweep run
 `67cfc017fd` returned 13/13 valid points from 2412 to 2472 MHz, with EVM approximately
 -42.58 to -42.69 dB. Final state was RF `OFF`, measurement `RDY`, and an empty error queue.
+
+## 中文：2026-09-02 RF1.1 → RF1.5 四點 Power Sweep 重驗
+
+為確認 Power Sweep／Linearity 圖表修正後仍有新的實機證據，重新執行
+`scripts/cmp180_power_sweep_validate.py`。本次只使用已驗證 route `RF1.1-RF1.5`，
+固定 6105 MHz、320 MHz、Analyzer expected nominal power -20 dBm、0 dB external
+attenuation，依序掃 Generator -55／-50／-45／-40 dBm。Run `3621412413` 取得 4/4
+有效點：
+
+- -55 dBm → Burst Power -54.74235 dBm，EVM -30.50002 dB。
+- -50 dBm → Burst Power -49.75368 dBm，EVM -32.31406 dB。
+- -45 dBm → Burst Power -44.81428 dBm，EVM -33.33279 dB。
+- -40 dBm → Burst Power -39.85154 dBm，EVM -36.80858 dB。
+
+Artifacts 位於 `output/20260902T094941Z_real-power-sweep_3621412413`。每點
+instrument errors 與 cleanup errors 都為空；最後確認 RF `OFF`、measurement `RDY`、
+error queue `[]`。這是新的完整 Python 實機 RF 量測，不是 Mock 或 stored-only
+`FETCh`。本次證據不涵蓋其他 RF port。
+
+## English: 2026-09-02 RF1.1 to RF1.5 four-point Power Sweep revalidation
+
+To keep fresh live-hardware evidence after the Power Sweep/Linearity chart correction,
+`scripts/cmp180_power_sweep_validate.py` was rerun. This run used only the verified
+`RF1.1-RF1.5` route with 6105 MHz, 320 MHz, -20 dBm Analyzer expected nominal power, and
+0 dB external attenuation. It swept Generator power at -55, -50, -45, and -40 dBm. Run
+`3621412413` produced 4/4 valid points:
+
+- -55 dBm -> Burst Power -54.74235 dBm, EVM -30.50002 dB.
+- -50 dBm -> Burst Power -49.75368 dBm, EVM -32.31406 dB.
+- -45 dBm -> Burst Power -44.81428 dBm, EVM -33.33279 dB.
+- -40 dBm -> Burst Power -39.85154 dBm, EVM -36.80858 dB.
+
+Artifacts are stored in `output/20260902T094941Z_real-power-sweep_3621412413`. Every point
+had empty instrument and cleanup error lists; final auditing confirmed RF `OFF`,
+measurement `RDY`, and error queue `[]`. This is a new complete Python live RF
+measurement, not Mock data or stored-only `FETCh`. This evidence does not cover other RF
+ports.

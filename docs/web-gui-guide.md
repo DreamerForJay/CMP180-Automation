@@ -33,7 +33,11 @@ Mock 頻率與功率掃描現在使用非同步 Job API，提供 queued／runnin
 
 實機頁另新增 `GPRF 能力掃描`，使用 CMP180 的 GPRF Generator／Measurement power workflow 展示儀器 tune 與功率量測能力。此模式可在 400 MHz–8 GHz 規劃頻率掃描，或在固定頻率下規劃功率掃描，並保存 CSV／JSON／metadata／HTML artifacts；但結果欄位是 `measured_power_dbm` 與 `reliability`，不是 WLAN EVM、不是 OFDM 解調，也不得作為 compliance claim。GPRF 執行仍需 `RF1.1-RF1.5` route、操作員在場、最後確認與 RF Off cleanup。
 
-GPRF 結果圖表會以高對比藍色曲線顯示實測功率，並以橘色虛線標出 Expected Power。`Power Error (dB)` 指標定義為 `measured - expected`；切換到該指標時，0 dB 參考線代表完全貼齊設定功率。Summary 會直接顯示 Average Power、Expected Power、Mean Error、Max |Error|、Peak-to-Peak Ripple、Std Dev 與 Valid 點數，適合用於說明 RF1.1-RF1.5 loopback 下的儀器功率平坦度。亮色與暗色主題都使用高對比線條，避免深色背景上曲線與圓點不可讀。
+GPRF 結果圖表會以高對比藍色曲線顯示實測功率，並以橘色虛線標出 Expected Power。Power 軸掃描的 Burst Power 圖使用 `Expected Power = Generator Power` 對角線，適合判讀線性度；Frequency 軸掃描則使用固定 expected power 水平線，適合判讀功率平坦度。`Power Error (dB)` 指標定義為 `measured - expected`；切換到該指標時，0 dB 參考線代表完全貼齊設定功率。這裡的 expected curve 是圖表判讀基準，不代表每一點都會把 Analyzer `ENPower` SCPI 安全設定改成相同數值。Summary 會直接顯示 Average Power、Expected Power、Mean Error、Max |Error|、Peak-to-Peak Ripple、Std Dev 與 Valid 點數，適合用於說明 RF1.1-RF1.5 loopback 下的儀器功率平坦度或線性度。亮色與暗色主題都使用高對比線條，避免深色背景上曲線與圓點不可讀。
+
+GPRF 名稱跟隨掃描軸：Frequency 軸顯示 `GPRF Frequency Sweep – Power Flatness`；Power 軸顯示 `GPRF Power Sweep – Linearity`。切換量測頁籤或 Axis 時，頁首與 Review 摘要會立即同步。結果圖的 X、Y 軸都明確標示工程單位；X 軸為 Frequency (MHz) 或 Generator Power (dBm)，Y 軸則顯示目前選取指標的單位。
+
+量測紀錄可只勾選一筆後按「查看所選圖表」，也可勾選 2–8 筆進行比較。兩種模式都只讀取既有 `/api/runs` artifacts，不會啟動量測或 RF；單筆模式仍可切換指標、Zoom／Pan、A/B 游標與匯出圖表。
 
 ### 下一步規格範圍量測規劃
 
@@ -198,7 +202,11 @@ The Web hardware Sweep path now uses the exact custom plan shown in Sweep Setup 
 
 The hardware page also adds `GPRF Capability Sweep`, which uses the CMP180 GPRF Generator/Measurement power workflow to demonstrate instrument tune and power-measurement capability. This mode can plan frequency sweeps across 400 MHz to 8 GHz, or power sweeps at a fixed frequency, and saves CSV, JSON, metadata, and HTML artifacts. Its result fields are `measured_power_dbm` and `reliability`; it is not WLAN EVM, not OFDM demodulation, and must not be used as a compliance claim. GPRF execution still requires the `RF1.1-RF1.5` route, operator presence, final confirmation, and RF Off cleanup.
 
-GPRF result charts show measured power as a high-contrast blue trace and draw an orange dashed Expected Power reference line. The `Power Error (dB)` metric is defined as `measured - expected`; when selected, a 0 dB reference line represents perfect agreement with the configured power. The Summary displays Average Power, Expected Power, Mean Error, Max |Error|, Peak-to-Peak Ripple, Std Dev, and Valid points so the RF1.1-RF1.5 loopback flatness can be explained directly. Both light and dark themes use high-contrast trace colors so curves and markers remain readable.
+GPRF result charts show measured power as a high-contrast blue trace and draw an orange dashed Expected Power reference line. A power-axis Burst Power chart uses the `Expected Power = Generator Power` diagonal for linearity review; a frequency-axis sweep uses a fixed expected-power horizontal line for power-flatness review. The `Power Error (dB)` metric is defined as `measured - expected`; when selected, a 0 dB reference line represents perfect agreement with the configured power. The expected curve is a chart interpretation reference, not a promise that every point writes the Analyzer `ENPower` SCPI safety setting to the same value. The Summary displays Average Power, Expected Power, Mean Error, Max |Error|, Peak-to-Peak Ripple, Std Dev, and Valid points so the RF1.1-RF1.5 loopback flatness or linearity can be explained directly. Both light and dark themes use high-contrast trace colors so curves and markers remain readable.
+
+GPRF naming follows the selected sweep axis. Frequency axis is shown as `GPRF Frequency Sweep – Power Flatness`; power axis is shown as `GPRF Power Sweep – Linearity`. The page heading and Review summary update immediately when the measurement tab or Axis changes. Result charts label both axes with engineering units: Frequency (MHz) or Generator Power (dBm) on X, and the selected metric's unit on Y.
+
+Run History now accepts either one selected run for plotting or 2–8 runs for comparison. Both modes only read existing `/api/runs` artifacts and never start a measurement or RF. Single-run mode retains metric switching, zoom/pan, A/B cursors, and chart export.
 
 ### Next spec-range measurement plan
 

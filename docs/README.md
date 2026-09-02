@@ -27,6 +27,8 @@
 | [Calibration Adapters](calibration-adapters.md) | 外部校正儀器 adapter 邊界 |
 | [硬體探索](hardware-discovery.md) | 已驗證 CMP180 事實與結果證據 |
 | [唯讀硬體驗證](hardware-readonly-validation.md) | Query-only 探索紀錄 |
+| [V1 驗收報告](v1-acceptance-report.md) | 已通過能力、正式簽核閘門與離線報告指令 |
+| [V1 Demo 腳本](v1-demo-script.md) | 10–15 分鐘安全展示流程 |
 
 ### 工程與架構
 
@@ -77,6 +79,8 @@ This page distinguishes authoritative specifications, operator documents, valida
 | [Calibration adapters](calibration-adapters.md) | External calibration-instrument adapter boundary |
 | [Hardware discovery](hardware-discovery.md) | Verified CMP180 facts and result evidence |
 | [Read-only hardware validation](hardware-readonly-validation.md) | Query-only discovery records |
+| [V1 acceptance report](v1-acceptance-report.md) | Accepted capability, formal approval gates, and offline report command |
+| [V1 Demo script](v1-demo-script.md) | Safe 10–15 minute demonstration flow |
 
 ### Engineering and architecture
 
