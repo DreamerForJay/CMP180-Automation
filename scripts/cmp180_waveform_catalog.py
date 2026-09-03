@@ -15,11 +15,13 @@ import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-
-from RsInstrument import RsInstrument
+from typing import TYPE_CHECKING
 
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.workflow.analyzer_setter_validation import ALLOWED_IDLE_MEASUREMENT_STATES
+
+if TYPE_CHECKING:
+    from RsInstrument import RsInstrument
 
 _BANDWIDTH_PATTERN = re.compile(r"(?:^|_)BW(20|40|80|160|320)(?:[-_]|\.)", re.IGNORECASE)
 
@@ -78,6 +80,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    # RsInstrument 只在真的要連上儀器時才載入。純解析邏輯（區段表、catalog 解析）
+    # 必須能在沒有安裝 hardware extra 的環境被匯入，否則 CI 收集測試就會失敗。
+    from RsInstrument import RsInstrument
+
     args = parse_args()
     registry = load_scpi_command_map(args.command_map)
     instrument: RsInstrument | None = None
