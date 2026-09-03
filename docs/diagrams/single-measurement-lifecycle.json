@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "SingleShot 量測生命週期與 RF 收尾保證",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "正常量測路徑",
+        "focus": [
+          "validating",
+          "configuring",
+          "rf_on",
+          "measuring",
+          "fetching"
+        ],
+        "note": "安全驗證通過後才設定儀器、開 RF、單次量測並讀值。"
+      },
+      {
+        "id": "failclosed",
+        "label": "失敗即關閉",
+        "focus": [
+          "rf_on",
+          "measuring",
+          "cleaning_up",
+          "complete"
+        ],
+        "note": "RF 一旦開啟，finally 區段必定 STOP／ABORT 並 RF Off。"
+      },
+      {
+        "id": "no-rf",
+        "label": "不送 RF 的拒絕",
+        "focus": [
+          "validating",
+          "rejected"
+        ],
+        "note": "安全檢查未過會直接丟出 SafetyGuardError，完全沒有送出 RF。"
+      }
+    ],
+    "viewBox": [
+      900,
+      566
+    ]
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "量測階段 MeasurementPhase"
+    },
+    {
+      "id": "exits",
+      "label": "收尾保證與終態"
+    }
+  ],
+  "states": [
+    {
+      "id": "validating",
+      "type": "start",
+      "label": "VALIDATING",
+      "sublabel": "validate_safety",
+      "lane": "main",
+      "col": 0,
+      "step": "01",
+      "tag": "尚未送 RF"
+    },
+    {
+      "id": "configuring",
+      "type": "active",
+      "label": "CONFIGURING",
+      "sublabel": "設定 gen／analyzer",
+      "lane": "main",
+      "col": 1,
+      "step": "02"
+    },
+    {
+      "id": "rf_on",
+      "type": "active",
+      "label": "RF_ON",
+      "sublabel": "開啟 RF 輸出",
+      "lane": "main",
+      "col": 2,
+      "step": "03",
+      "tag": "RF 已開"
+    },
+    {
+      "id": "measuring",
+      "type": "active",
+      "label": "MEASURING",
+      "sublabel": "initiate_single()",
+      "lane": "main",
+      "col": 3,
+      "step": "04"
+    },
+    {
+      "id": "fetching",
+      "type": "active",
+      "label": "FETCHING",
+      "sublabel": "讀取 28 欄結果",
+      "lane": "main",
+      "col": 4,
+      "step": "05"
+    },
+    {
+      "id": "cleaning_up",
+      "type": "active",
+      "label": "CLEANING_UP",
+      "sublabel": "STOP 後 RF Off",
+      "lane": "exits",
+      "col": 1,
+      "step": "06",
+      "tag": "finally",
+      "width": 118
+    },
+    {
+      "id": "complete",
+      "type": "success",
+      "label": "COMPLETE",
+      "sublabel": "回傳完整 phases",
+      "lane": "exits",
+      "col": 2,
+      "step": "07",
+      "width": 118
+    },
+    {
+      "id": "rejected",
+      "type": "failure",
+      "label": "SafetyGuardError",
+      "sublabel": "全程未送出 RF",
+      "lane": "exits",
+      "col": 0,
+      "tag": "終態",
+      "width": 118
+    }
+  ],
+  "transitions": [
+    {
+      "from": "validating",
+      "to": "configuring",
+      "label": "安全檢查通過",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "from": "configuring",
+      "to": "rf_on",
+      "label": "rf_on()",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "from": "rf_on",
+      "to": "measuring",
+      "label": "initiate_single()",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "from": "measuring",
+      "to": "fetching",
+      "label": "wait_ready()",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "from": "fetching",
+      "to": "cleaning_up",
+      "label": "取值完成",
+      "route": "bottom-channel",
+      "channelY": 252
+    },
+    {
+      "from": "cleaning_up",
+      "to": "complete",
+      "route": "straight"
+    },
+    {
+      "from": "rf_on",
+      "to": "cleaning_up",
+      "label": "例外／逾時／取消",
+      "variant": "security",
+      "route": "bottom-channel",
+      "channelY": 228
+    },
+    {
+      "from": "validating",
+      "to": "rejected",
+      "label": "未通過安全檢查",
+      "variant": "security",
+      "route": "bottom-channel"
+    }
+  ]
+}

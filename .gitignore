@@ -28,3 +28,10 @@ configs/*.private.yaml
 # Apps Script 專案 ID 與本機 OAuth 狀態不可提交到版本庫。
 deploy/google-apps-script/.clasp.json
 .clasprc.json
+
+# Archify visual-check 證據可重新產生，不納入版本庫。
+docs/diagrams/*.visual-check.*
+
+# open-slide 簡報工作區的相依與建置產物。
+presentation/node_modules/
+presentation/dist/
