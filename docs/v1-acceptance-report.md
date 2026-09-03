@@ -1,65 +1,71 @@
 # CMP180 WLAN EVM V1 驗收報告
 
-## 繁體中文
+## 中文版
 
 ### 結論
 
-V1 軟體與 RF1.1 → RF1.5 loopback 的 WLAN HIL 核心能力已完成；正式產品簽核狀態目前為 `BLOCKED`，不是因為量測流程失敗，而是 Calibration Profile 與 Limit Profile 仍為 `draft`。在 RF／Test Owner 補齊可追溯來源與核准欄位前，不得宣稱 DUT compliance PASS。
+V1 軟體與 RF1.1 到 RF1.5 loopback 的 WLAN HIL 核心能力已完成。2026-09-03 經使用者確認 RF/Test Owner 已核准 Calibration Profile 與 Limit Profile 後，V1 acceptance gate 已可產生 `ACCEPTED`。
 
-### 已通過範圍
+此驗收代表「CMP180 WLAN EVM 自動化平台 V1 可簽核交付」，仍不等於替任何 DUT 宣告正式 compliance PASS。DUT compliance 仍需依公司流程、適用標準、校驗證書與 RF/Test Owner 判定執行。
 
-- 完整 Python SingleShot、Frequency Sweep、Power Sweep、28 欄 OFDM SISO 結果與 deterministic cleanup。
-- 2.4／5／6 GHz 的 11 個合法 WLAN band／bandwidth 區段，共 176/176 channel-center 點有效。
-- 320 MHz 5925–7125 MHz 共 49/49 點，以及 -55 至 -30 dBm 共 26/26 點。
-- 2026-09-02 四點 Power Sweep 4/4 有效；最終 RF `OFF`、measurement `RDY`、error queue empty。
-- Web 單點／掃描、Pause／Resume／Stop、歷史單一 Run 圖表與 2–8 Run 唯讀比較。
+### 已納入驗收的能力
 
-### 尚待簽核
+- 完整 Python SingleShot、Frequency Sweep、Power Sweep、28-field OFDM SISO 結果解析與 deterministic cleanup。
+- 2.4、5、6 GHz 共 11 個合法 WLAN band/bandwidth 區段，合計 176/176 個 channel-center 點有效。
+- 320 MHz 5925 到 7125 MHz 的 49/49 點掃描，以及 -55 到 -30 dBm 的 26/26 點功率掃描。
+- 2026-09-02 最新 Power Sweep 4/4 點有效；最終 RF `OFF`、measurement `RDY`、error queue empty。
+- Web 單點／掃描、Pause／Resume／Stop、歷史單一 Run 圖表與 2 到 8 Run 唯讀比較。
+- Calibration Profile 與 Limit Profile 的 approval gate：`approved_by`、`approved_at` 與來源欄位都必須存在。
 
-1. 以校正過的外部 Source／Receiver 或有效證書取得 path-loss 讀值，記錄線材、轉接頭、參考面與設備編號。
-2. 由 RF Owner 在 Calibration Profile 填寫 `source_evidence`、`approved_by`、`approved_at`，並建立不可變 revision。
-3. 由 Test Owner 指定適用 DUT／standard／bandwidth／MCS 的限制來源，在 Limit Profile 填寫 `source_reference`、`approved_by`、`approved_at`。
-4. 執行離線 acceptance builder；只有所有 gate 都是 `PASS` 時才會輸出 `ACCEPTED`。
-   報告一律保持 `compliance_claim=false`：驗收通過代表「V1 交付可簽核」，
-   不等於對 DUT 的正式合規宣告，該宣告仍屬 RF／測試負責人的權責。
+### 核准狀態
+
+- Calibration Profile：`configs/calibration.example.yaml`，revision `1.0-approved`，lifecycle `approved`。
+- Limit Profile：`configs/limits.example.yaml`，revision `1.0-approved`，lifecycle `approved`。
+- 核准日：2026-09-03。
+- 核准者：RF/Test Owner。
+
+### 離線驗收指令
 
 ```powershell
-python -m cmp180_evm validate-calibration configs\calibration.example.yaml
-python -m cmp180_evm validate-limits configs\limits.example.yaml
-python scripts\build_v1_acceptance.py `
-  --calibration path\to\approved-calibration.yaml `
-  --limits path\to\approved-limits.yaml `
-  --evidence output\<real-single-run> `
-  --evidence output\<real-frequency-run> `
-  --evidence output\<real-power-run>
+.\.venv\Scripts\python.exe -m cmp180_evm validate-calibration configs\calibration.example.yaml
+.\.venv\Scripts\python.exe -m cmp180_evm validate-limits configs\limits.example.yaml
+.\.venv\Scripts\python.exe scripts\build_v1_acceptance.py `
+  --calibration configs\calibration.example.yaml `
+  --limits configs\limits.example.yaml `
+  --output output\v1-acceptance `
+  --evidence output\20260902T073534Z_web-real-single-6105mhz_7ccdb50ca1 `
+  --evidence output\20260902T030323Z_real-frequency-sweep_67cfc017fd `
+  --evidence output\20260902T094941Z_real-power-sweep_3621412413
 ```
 
 Acceptance builder 只讀取 Profile 與 artifacts，不連線 CMP180、不送 RF。Mock、partial、failed、空結果或含 invalid 點的 run 都不能通過 HIL gate。
 
 ---
 
-## English
+## English Version
 
 ### Conclusion
 
-The V1 software and core WLAN HIL capability for the RF1.1-to-RF1.5 loopback are complete. Formal product acceptance is currently `BLOCKED`, not because the measurement workflow failed, but because the Calibration and Limit Profiles remain `draft`. No DUT compliance PASS may be claimed until the RF/test owner supplies traceable sources and approval fields.
+The V1 software and core WLAN HIL capability for the RF1.1-to-RF1.5 loopback are complete. After the user confirmed RF/Test Owner approval for the Calibration Profile and Limit Profile on 2026-09-03, the V1 acceptance gates can emit `ACCEPTED`.
 
-### Accepted scope
+This acceptance means the CMP180 WLAN EVM automation platform V1 is ready for delivery sign-off. It is still not a formal DUT compliance PASS. DUT compliance remains governed by the company process, applicable standards, calibration certificates, and RF/Test Owner judgment.
 
-- Complete Python SingleShot, Frequency Sweep, Power Sweep, 28-field OFDM SISO results, and deterministic cleanup.
+### Accepted Scope
+
+- Complete Python SingleShot, Frequency Sweep, Power Sweep, 28-field OFDM SISO result parsing, and deterministic cleanup.
 - All 11 legal WLAN band/bandwidth sections across 2.4, 5, and 6 GHz, totaling 176/176 valid channel-center points.
 - A 49/49-point 320 MHz sweep from 5925 to 7125 MHz and a 26/26-point sweep from -55 to -30 dBm.
 - A fresh four-point Power Sweep with 4/4 valid points on 2026-09-02; final RF `OFF`, measurement `RDY`, and an empty error queue.
-- Web single/sweep operation, Pause/Resume/Stop, single historical-run plotting, and read-only comparison of 2–8 runs.
+- Web single/sweep operation, Pause/Resume/Stop, single historical-run plotting, and read-only comparison of 2 to 8 runs.
+- Calibration Profile and Limit Profile approval gates requiring `approved_by`, `approved_at`, and traceable source fields.
 
-### Approvals still required
+### Approval Status
 
-1. Obtain path-loss readings from a calibrated external source/receiver or a valid certificate, recording cable, adapter, reference-plane, and equipment identities.
-2. Have the RF Owner fill `source_evidence`, `approved_by`, and `approved_at` in an immutable Calibration Profile revision.
-3. Have the Test Owner identify the applicable DUT/standard/bandwidth/MCS specification source and fill `source_reference`, `approved_by`, and `approved_at` in the Limit Profile.
-4. Run the offline acceptance builder. It emits `ACCEPTED` only when every gate passes.
-   The report always keeps `compliance_claim=false`: acceptance means the V1 delivery is
-   ready to sign off, not that the tool makes a formal compliance claim about a DUT, which
-   remains the RF/test owner's responsibility.
+- Calibration Profile: `configs/calibration.example.yaml`, revision `1.0-approved`, lifecycle `approved`.
+- Limit Profile: `configs/limits.example.yaml`, revision `1.0-approved`, lifecycle `approved`.
+- Approval date: 2026-09-03.
+- Approver: RF/Test Owner.
+
+### Offline Acceptance Command
 
 Use the PowerShell command shown in the Chinese section. The acceptance builder only reads Profiles and artifacts; it never connects to the CMP180 or transmits RF. Mock, partial, failed, empty, or invalid-point runs cannot pass the HIL gate.

@@ -4,7 +4,39 @@ from pathlib import Path
 from cmp180_evm.acceptance import build_v1_acceptance_report
 
 
+def _draft_profiles(tmp_path: Path) -> tuple[Path, Path]:
+    calibration = tmp_path / "draft-calibration.yaml"
+    calibration.write_text(
+        "profile_id: \"draft-rf1.1-rf1.5-direct-cable\"\n"
+        "revision: \"0.1-draft\"\n"
+        "lifecycle: \"draft\"\n"
+        "route: \"RF1.1-RF1.5\"\n"
+        "calibrated_at: 2026-09-01\n"
+        "expires_at: 2027-12-31\n"
+        "equipment_reference: \"draft cable\"\n"
+        "points:\n"
+        "  - frequency_hz: 5925000000\n"
+        "    loss_db: 0.3\n"
+        "  - frequency_hz: 7125000000\n"
+        "    loss_db: 0.4\n",
+        encoding="utf-8",
+    )
+    limits = tmp_path / "draft-limits.yaml"
+    limits.write_text(
+        "profile_id: \"draft-eht-mcs11-bw320-loopback\"\n"
+        "revision: \"0.1-draft\"\n"
+        "lifecycle: \"draft\"\n"
+        "description: \"Draft profile\"\n"
+        "maximum_evm_db: -32.0\n"
+        "maximum_absolute_frequency_error_hz: 1000.0\n"
+        "maximum_absolute_power_error_db: 3.0\n",
+        encoding="utf-8",
+    )
+    return calibration, limits
+
+
 def test_draft_profiles_keep_v1_acceptance_blocked(tmp_path: Path) -> None:
+    calibration, limits = _draft_profiles(tmp_path)
     run_dir = tmp_path / "run"
     run_dir.mkdir()
     (run_dir / "metadata.json").write_text(
@@ -16,8 +48,8 @@ def test_draft_profiles_keep_v1_acceptance_blocked(tmp_path: Path) -> None:
     )
 
     html_path, json_path = build_v1_acceptance_report(
-        Path("configs/calibration.example.yaml"),
-        Path("configs/limits.example.yaml"),
+        calibration,
+        limits,
         (run_dir,),
         tmp_path / "acceptance",
     )

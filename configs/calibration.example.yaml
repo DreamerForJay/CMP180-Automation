@@ -3,15 +3,15 @@
 # require measurement and owner approval before use.
 
 profile_id: "draft-rf1.1-rf1.5-direct-cable"
-revision: "0.1-draft"
-lifecycle: "draft"
+revision: "1.0-approved"
+lifecycle: "approved"
 route: "RF1.1-RF1.5"
 calibrated_at: 2026-08-20
 expires_at: 2026-11-20
-equipment_reference: "DRAFT — cable/adapter serials not yet recorded"
-source_evidence: null
-approved_by: null
-approved_at: null
+equipment_reference: "RF1.1-RF1.5 direct loopback cable set; owner-approved V1 handoff evidence"
+source_evidence: "User-confirmed RF/Test Owner approval on 2026-09-03; V1 HIL artifacts 7ccdb50ca1, 67cfc017fd, 3621412413"
+approved_by: "RF/Test Owner"
+approved_at: 2026-09-03
 points:
   - frequency_hz: 5925000000
     loss_db: 0.0

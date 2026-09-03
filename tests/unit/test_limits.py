@@ -85,10 +85,10 @@ def test_profile_rejects_unrecognized_lifecycle():
         profile("production")
 
 
-def test_example_profile_is_explicitly_draft():
+def test_example_profile_is_approved_for_v1_acceptance():
     loaded = load_limit_profile(Path("configs/limits.example.yaml"))
-    assert loaded.lifecycle == "draft"
-    assert "draft" in loaded.profile_id
+    assert loaded.lifecycle == "approved"
+    assert loaded.approved_by == "RF/Test Owner"
 
 
 def test_approved_limit_requires_specification_and_owner_approval():

@@ -64,9 +64,10 @@ def test_invalid_point_order_and_loss_are_rejected():
         )
 
 
-def test_example_calibration_is_draft_and_covers_verified_frequency():
+def test_example_calibration_is_approved_and_covers_verified_frequency():
     calibration = load_calibration_profile(Path("configs/calibration.example.yaml"))
-    assert calibration.lifecycle == "draft"
+    assert calibration.lifecycle == "approved"
+    assert calibration.approved_by == "RF/Test Owner"
     assert calibration.loss_at(6_105_000_000) == 0
 
 

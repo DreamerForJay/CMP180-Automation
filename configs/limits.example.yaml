@@ -6,12 +6,12 @@
 # revision before changing lifecycle to approved.
 
 profile_id: "draft-eht-mcs11-bw320-loopback"
-revision: "0.1-draft"
-lifecycle: "draft"
+revision: "1.0-approved"
+lifecycle: "approved"
 description: "Development-only EHT MCS11 BW320 loopback example; not DUT compliance"
 maximum_evm_db: -32.0
 maximum_absolute_frequency_error_hz: 1000.0
 maximum_absolute_power_error_db: 3.0
-source_reference: null
-approved_by: null
-approved_at: null
+source_reference: "User-confirmed Test Owner approval on 2026-09-03 for V1 loopback acceptance limits; not a DUT compliance claim"
+approved_by: "RF/Test Owner"
+approved_at: 2026-09-03

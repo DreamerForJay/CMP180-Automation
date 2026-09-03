@@ -30,7 +30,7 @@ def _profile_gates(calibration_path: Path, limit_path: Path) -> list[AcceptanceG
     return [
         AcceptanceGate(
             "calibration",
-            "校正 Profile 已核准且在有效期內",
+            "Calibration Profile 已核准且在有效期內",
             "Calibration Profile approved and current",
             "PASS" if cal_ready else "BLOCKED",
             (
@@ -69,7 +69,7 @@ def _evidence_gate(evidence_dirs: tuple[Path, ...]) -> AcceptanceGate:
                 return False
             if "valid" in point:
                 return point.get("valid") is True
-            # 舊版 SingleShot schema 沒有 valid 欄；只接受 reliability=0 且 EVM 為有限值。
+            # 舊 SingleShot schema 沒有 valid 欄位，只接受 reliability=0 且 EVM 可解析的結果。
             value = point.get("evm_all_carriers_db")
             if not isinstance(value, (int, float, str)):
                 return False
@@ -110,9 +110,7 @@ def build_v1_acceptance_report(
         "schema_version": 1,
         "generated_at": generated_at,
         "overall_status": overall,
-        # 閘門全數通過代表「V1 交付可簽核」，不等於對 DUT 的正式 compliance 宣告。
-        # 專案其他 artifacts 一律 compliance_claim=false，此處保持一致，
-        # 避免這份報告被引用成合規證據；交付狀態請看 overall_status。
+        # 驗收狀態代表 V1 平台可交付，不代表工具替 DUT 發出正式 compliance 宣告。
         "compliance_claim": False,
         "gates": [asdict(gate) for gate in gates],
     }
@@ -123,31 +121,35 @@ def build_v1_acceptance_report(
 
     rows_zh = "".join(
         f"<tr><td>{html.escape(g.title_zh)}</td><td class='{g.status.lower()}'>{g.status}</td>"
-        f"<td>{html.escape(g.evidence)}</td></tr>" for g in gates
+        f"<td>{html.escape(g.evidence)}</td></tr>"
+        for g in gates
     )
     rows_en = "".join(
         f"<tr><td>{html.escape(g.title_en)}</td><td class='{g.status.lower()}'>{g.status}</td>"
-        f"<td>{html.escape(g.evidence)}</td></tr>" for g in gates
+        f"<td>{html.escape(g.evidence)}</td></tr>"
+        for g in gates
     )
-    # 中文完整內容置前、英文完整內容置後；報告只讀現有 artifacts，不觸發 SCPI/RF。
+    # 報告只整合既有 profiles 與 artifacts；這裡不可加入任何 SCPI/RF 控制副作用。
     html_path.write_text(
         "<!doctype html><html lang='zh-Hant'><meta charset='utf-8'>"
         "<title>CMP180 V1 Acceptance</title><style>body{font:15px system-ui;margin:32px;"
-        "color:#172033;background:#f4f7fb}main{max-width:1100px;margin:auto}section{background:#fff;"
-        "padding:24px;margin:18px 0;border-radius:14px}table{border-collapse:collapse;width:100%}"
-        "th,td{padding:10px;border-bottom:1px solid #dde4ec;text-align:left}.pass{color:#08785b;"
-        "font-weight:800}.blocked{color:#b4233d;font-weight:800}</style><main>"
+        "color:#172033;background:#f4f7fb}main{max-width:1100px;margin:auto}"
+        "section{background:#fff;padding:24px;margin:18px 0;border-radius:14px}"
+        "table{border-collapse:collapse;width:100%}"
+        "th,td{padding:10px;border-bottom:1px solid #dde4ec;text-align:left}"
+        ".pass{color:#08785b;font-weight:800}.blocked{color:#b4233d;font-weight:800}"
+        "</style><main>"
         f"<h1>CMP180 WLAN EVM V1 驗收報告</h1><p>總狀態：<strong>{overall}</strong></p>"
         "<p>此報告由既有 Profile 與實機 artifacts 離線產生，不會連線或控制儀器。"
-        "BLOCKED 表示仍需負責人核准或補齊證據，不得宣稱正式 compliance PASS。</p>"
-        f"<section><table><thead><tr><th>驗收閘門</th><th>狀態</th><th>證據</th></tr></thead>"
+        "ACCEPTED 表示 V1 平台可簽核交付；正式 DUT compliance 仍由 RF/Test Owner 判定。</p>"
+        "<section><table><thead><tr><th>驗收閘門</th><th>狀態</th><th>證據</th></tr></thead>"
         f"<tbody>{rows_zh}</tbody></table></section>"
         f"<h1>CMP180 WLAN EVM V1 Acceptance Report</h1><p>Overall: <strong>{overall}</strong></p>"
         "<p>This report is generated offline from existing profiles and live-hardware artifacts; "
-        "it does not connect to or control the instrument. BLOCKED means owner approval or "
-        "evidence "
-        "is still missing and no formal compliance PASS may be claimed.</p>"
-        f"<section><table><thead><tr><th>Gate</th><th>Status</th><th>Evidence</th></tr></thead>"
+        "it does not connect to or control the instrument. ACCEPTED means the V1 platform is "
+        "ready for delivery sign-off; formal DUT compliance remains under RF/Test Owner "
+        "judgment.</p>"
+        "<section><table><thead><tr><th>Gate</th><th>Status</th><th>Evidence</th></tr></thead>"
         f"<tbody>{rows_en}</tbody></table></section><p>Generated: {html.escape(generated_at)}</p>"
         "</main></html>",
         encoding="utf-8",
