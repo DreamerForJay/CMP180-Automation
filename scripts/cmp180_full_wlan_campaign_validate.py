@@ -8,8 +8,7 @@ import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-
-from RsInstrument import RsInstrument
+from typing import TYPE_CHECKING
 
 from cmp180_evm.results.artifacts import save_frequency_sweep_result, save_single_result
 from cmp180_evm.results.validity import invalid_critical_fields
@@ -17,6 +16,9 @@ from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.workflow.analyzer_setter_validation import ALLOWED_IDLE_MEASUREMENT_STATES
 from cmp180_evm.workflow.cmp180_single_backend import Cmp180SingleMeasurementBackend
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
+
+if TYPE_CHECKING:
+    from RsInstrument import RsInstrument
 
 WAVEFORM_ROOT = "/home/instrument/fw/data/waveform/WLAN"
 
@@ -168,6 +170,10 @@ def _save_manifest(manifest: dict[str, object], output_root: Path) -> Path:
 
 
 def main() -> int:
+    # RsInstrument 只在真的要連上儀器時才載入。純解析邏輯（區段表、catalog 解析）
+    # 必須能在沒有安裝 hardware extra 的環境被匯入，否則 CI 收集測試就會失敗。
+    from RsInstrument import RsInstrument
+
     sys.stdout.reconfigure(line_buffering=True)
     args = parse_args()
     if not all((args.confirm_direct_cable, args.confirm_no_attenuator,
