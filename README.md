@@ -12,6 +12,11 @@
 
 Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重現、可稽核的流程取代重複的 CMsquares 手動操作，長期產品為中英雙語、響應式公司內網 Web 工具。
 
+[![CMP180 系統架構圖](docs/diagrams/system-architecture.png)](docs/diagrams/README.md)
+
+<sub>系統架構：操作員瀏覽器 → Web API → RF 安全閘門 → RF Workflow → CMP180 實機。
+可互動版本與 SingleShot 生命週期圖見[架構圖](docs/diagrams/README.md)。</sub>
+
 ### 目前能力
 
 - Web 新增可恢復的 `HIL Campaign Runner`：按「準備」可把頻段／頻寬、代表功率、其他 RF route、500 MHz、雙 VSA／VSG 與長 waveform 分類成 READY／BLOCKED；READY 可逐列或按「執行下一個」啟動，進度保存於 `output/hil-campaign/state.json`。BLOCKED 案例不會偷換成既有 profile 執行。
@@ -89,6 +94,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only
 | [SCPI matrix](docs/scpi-command-matrix.md) | 指令來源、驗證與 schema |
 | [硬體探索](docs/hardware-discovery.md) | 已驗證事實與量測證據 |
 | [SingleShot 狀態機](docs/single-measurement-state-machine.md) | RF workflow 與 cleanup |
+| [架構圖](docs/diagrams/README.md) | 互動式系統架構圖與 SingleShot 生命週期圖 |
 | [安全短掃描](docs/sweep-safety.md) | 頻率／功率 sweep 限制與 HIL gate |
 | [Limit Profile](docs/limit-profiles.md) | Draft／Approved 判定、margin 與追溯規則 |
 | [Calibration Profile](docs/calibration-profiles.md) | 線損資料、內插、有效期限與核准閘門 |
@@ -110,6 +116,7 @@ docs/      中英雙語 SOP、規格、驗證紀錄與開發文件
 scripts/   操作員與 HIL 驗證入口；不放核心商業邏輯
 src/       Python package、workflow、Web API 與正式 static 前端
 tests/     unit／mock／安全與 artifact 測試
+presentation/ open-slide 期末專案簡報原始碼與匯出檔
 output/    本機量測成果與測試暫存，不納入 Git
 ```
 
@@ -176,13 +183,14 @@ defines the internal-console information architecture, design principles, delive
 and responsive acceptance criteria. Read the [hardware SOP](docs/hardware-test-sop.md)
 before any live operation.
 
+The [architecture diagrams](docs/diagrams/README.md) are self-contained interactive HTML: a layered system map whose nodes cite real files and line numbers, and the SingleShot measurement lifecycle.
 See the [documentation centre](docs/README.md) for categorized authoritative, supporting, and archived references.
 See [Delivery and CMP180 capability expansion](docs/deployment-and-capability-expansion.md) for partner handoff and the layered capability model.
 Use the [next HIL campaign](docs/next-hil-campaign.md) to expand the approved Web range during the next instrument session.
 
 ### Repository structure
 
-`configs/` contains shareable examples and the command map; `deploy/` contains the read-only Google Apps Script viewer; `docs/` contains bilingual specifications and SOPs; `scripts/` contains operator and HIL entry points; `src/` contains the package, workflows, API, and served frontend; `tests/` contains automated checks; and ignored `output/` contains local artifacts.
+`configs/` contains shareable examples and the command map; `deploy/` contains the read-only Google Apps Script viewer; `docs/` contains bilingual specifications and SOPs; `scripts/` contains operator and HIL entry points; `src/` contains the package, workflows, API, and served frontend; `tests/` contains automated checks; `presentation/` contains the open-slide final-project deck and its exports; and ignored `output/` contains local artifacts.
 
 `SPEC.MD` is the authoritative requirement specification. `CMP180_DEVELOPMENT_SPEC_AND_PLAN.md` is an early detailed plan, while `DEVELOPMENT_SPEC_AND_PLAN.md` is archived SMW200A/FSW85 history. The served frontend is `src/cmp180_evm/web/static/`; `static_v2/` is an archived design reference.
 

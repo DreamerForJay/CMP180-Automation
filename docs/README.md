@@ -36,6 +36,7 @@
 |---|---|
 | [SCPI Command Matrix](scpi-command-matrix.md) | 命令來源、狀態、副作用與 schema |
 | [SingleShot 狀態機](single-measurement-state-machine.md) | 狀態轉換與 cleanup |
+| [架構圖](diagrams/README.md) | 互動式系統架構與 SingleShot 生命週期圖 |
 | [結果視覺化規格](result-visualization-spec.md) | CSV／JSON／HTML 與圖表要求 |
 | [RF 工作站 UX](rf-workstation-ux-plan.md) | Runs、Trace、圖表與操作安全 UX |
 | [UI/UX Roadmap](ui-ux-roadmap.md) | 介面階段與響應式驗收標準 |
@@ -88,6 +89,7 @@ This page distinguishes authoritative specifications, operator documents, valida
 |---|---|
 | [SCPI command matrix](scpi-command-matrix.md) | Command sources, status, side effects, and schema |
 | [SingleShot state machine](single-measurement-state-machine.md) | State transitions and cleanup |
+| [Architecture diagrams](diagrams/README.md) | Interactive system architecture and SingleShot lifecycle |
 | [Result visualization specification](result-visualization-spec.md) | CSV/JSON/HTML and chart requirements |
 | [RF workstation UX](rf-workstation-ux-plan.md) | Runs, traces, charts, and safe-operation UX |
 | [UI/UX roadmap](ui-ux-roadmap.md) | UI phases and responsive acceptance criteria |

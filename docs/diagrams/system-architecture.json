@@ -1,0 +1,425 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "CMP180 WLAN TX EVM 自動化系統架構",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/DreamerForJay/CMP180-Automation",
+      "revision": "bfe8e7edb7248826f0eeff6703f8f31b3e6ebc08"
+    },
+    "views": [
+      {
+        "id": "operator-path",
+        "label": "操作員送出量測",
+        "focus": [
+          "operator",
+          "webui",
+          "httpapi",
+          "jobs",
+          "safety"
+        ],
+        "note": "從瀏覽器到 Web API，再進入非同步 Job 與安全閘門。"
+      },
+      {
+        "id": "rf-boundary",
+        "label": "RF 安全邊界",
+        "focus": [
+          "safety",
+          "workflow",
+          "instrument",
+          "cmp180"
+        ],
+        "note": "只有通過閘門的計畫能走到實機；Mock 後端不送 RF。"
+      },
+      {
+        "id": "evidence",
+        "label": "設定與量測證據",
+        "focus": [
+          "configs",
+          "scpimap",
+          "workflow",
+          "artifacts",
+          "httpapi"
+        ],
+        "note": "YAML 設定與集中式 SCPI 指令表進來，量測 artifacts 出去。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "operator",
+      "type": "external",
+      "label": "操作員瀏覽器",
+      "sublabel": "127.0.0.1:8765",
+      "pos": [
+        40,
+        310
+      ],
+      "size": [
+        136,
+        62
+      ]
+    },
+    {
+      "id": "webui",
+      "type": "frontend",
+      "label": "Web 量測工作區",
+      "sublabel": "雙語響應式前端",
+      "pos": [
+        255,
+        310
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/web/static/index.html",
+          "label": "工作區版型"
+        },
+        {
+          "path": "src/cmp180_evm/web/static/app.js",
+          "label": "前端邏輯"
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "type": "backend",
+      "label": "JobManager",
+      "sublabel": "單一 active job",
+      "pos": [
+        470,
+        120
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/web/jobs.py",
+          "line": 70,
+          "label": "非同步 Job"
+        }
+      ]
+    },
+    {
+      "id": "httpapi",
+      "type": "backend",
+      "label": "Web API",
+      "sublabel": "Cmp180WebHandler",
+      "pos": [
+        470,
+        310
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/web/server.py",
+          "line": 197,
+          "label": "HTTP handler"
+        }
+      ]
+    },
+    {
+      "id": "safety",
+      "type": "security",
+      "label": "RF 安全閘門",
+      "sublabel": "route／profile／功率",
+      "pos": [
+        685,
+        310
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/workflow/single_measurement.py",
+          "line": 38,
+          "label": "validate_safety"
+        },
+        {
+          "path": "src/cmp180_evm/web/capabilities.py",
+          "line": 114,
+          "label": "核准 profile"
+        },
+        {
+          "path": "src/cmp180_evm/workflow/rf_routes.py",
+          "label": "route 驗證"
+        }
+      ]
+    },
+    {
+      "id": "instrument",
+      "type": "backend",
+      "label": "InstrumentSession",
+      "sublabel": "實機／Mock 可互換",
+      "pos": [
+        900,
+        120
+      ],
+      "size": [
+        160,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/instrument/base.py",
+          "line": 30,
+          "label": "Protocol 介面"
+        },
+        {
+          "path": "src/cmp180_evm/instrument/session.py",
+          "line": 20,
+          "label": "實機 session"
+        },
+        {
+          "path": "src/cmp180_evm/instrument/mock_cmp180.py",
+          "label": "示範後端"
+        }
+      ]
+    },
+    {
+      "id": "workflow",
+      "type": "backend",
+      "label": "RF Workflow",
+      "sublabel": "single／sweep 量測",
+      "pos": [
+        900,
+        310
+      ],
+      "size": [
+        160,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/workflow/single_measurement.py",
+          "line": 72,
+          "label": "run_single_measurement"
+        },
+        {
+          "path": "src/cmp180_evm/workflow/frequency_sweep.py",
+          "label": "頻率掃描"
+        },
+        {
+          "path": "src/cmp180_evm/workflow/power_sweep.py",
+          "label": "功率掃描"
+        }
+      ]
+    },
+    {
+      "id": "cmp180",
+      "type": "external",
+      "label": "R&S CMP180",
+      "sublabel": "WLAN TX EVM 實機",
+      "pos": [
+        1140,
+        120
+      ],
+      "size": [
+        150,
+        62
+      ]
+    },
+    {
+      "id": "configs",
+      "type": "database",
+      "label": "YAML 設定",
+      "sublabel": "儀器／限值／校正",
+      "pos": [
+        255,
+        500
+      ],
+      "size": [
+        160,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/config/models.py",
+          "label": "pydantic 模型"
+        }
+      ]
+    },
+    {
+      "id": "artifacts",
+      "type": "database",
+      "label": "量測 Artifacts",
+      "sublabel": "CSV·JSON·report",
+      "pos": [
+        460,
+        500
+      ],
+      "size": [
+        170,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/results/artifacts.py",
+          "line": 13,
+          "label": "artifact 輸出"
+        }
+      ]
+    },
+    {
+      "id": "scpimap",
+      "type": "database",
+      "label": "SCPI Command Map",
+      "sublabel": "集中管理指令來源",
+      "pos": [
+        895,
+        500
+      ],
+      "size": [
+        170,
+        62
+      ],
+      "sources": [
+        {
+          "path": "src/cmp180_evm/scpi/registry.py",
+          "line": 172,
+          "label": "指令表載入"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "本機服務 python -m cmp180_evm.web",
+      "wraps": [
+        "webui",
+        "httpapi",
+        "jobs",
+        "safety",
+        "workflow",
+        "instrument",
+        "configs",
+        "artifacts",
+        "scpimap"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "RF 授權區：僅核准 profile 可執行",
+      "wraps": [
+        "safety",
+        "workflow",
+        "instrument"
+      ],
+      "pad": 14
+    }
+  ],
+  "connections": [
+    {
+      "from": "operator",
+      "to": "webui",
+      "label": "HTTP 內網",
+      "variant": "emphasis"
+    },
+    {
+      "from": "webui",
+      "to": "httpapi",
+      "label": "/api/*",
+      "variant": "emphasis"
+    },
+    {
+      "from": "httpapi",
+      "to": "jobs",
+      "label": "非同步掃描"
+    },
+    {
+      "from": "httpapi",
+      "to": "safety",
+      "label": "送出計畫",
+      "variant": "emphasis"
+    },
+    {
+      "from": "jobs",
+      "to": "workflow",
+      "label": "逐點進度與取消",
+      "variant": "dashed",
+      "toSide": "top"
+    },
+    {
+      "from": "safety",
+      "to": "workflow",
+      "label": "放行核准",
+      "variant": "security"
+    },
+    {
+      "from": "workflow",
+      "to": "instrument",
+      "label": "SCPI write／query",
+      "labelDy": -40
+    },
+    {
+      "from": "instrument",
+      "to": "cmp180",
+      "label": "VISA TCPIP",
+      "variant": "security"
+    },
+    {
+      "from": "configs",
+      "to": "httpapi",
+      "label": "載入並驗證"
+    },
+    {
+      "from": "scpimap",
+      "to": "workflow",
+      "label": "集中式指令"
+    },
+    {
+      "from": "workflow",
+      "to": "artifacts",
+      "label": "寫入量測結果",
+      "fromSide": "bottom"
+    },
+    {
+      "from": "artifacts",
+      "to": "httpapi",
+      "label": "唯讀歷史分析",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "分層職責",
+      "items": [
+        "前端只呼叫 /api/*，不直接碰 SCPI",
+        "JobManager 掌管非同步進度、暫停與取消",
+        "Workflow 對 InstrumentSession Protocol 撰寫，實機與 Mock 可互換"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "RF 安全邊界",
+      "items": [
+        "validate_safety 檢查操作員確認、port 與功率上限",
+        "capabilities 只放行已 HIL 驗證的 band／bandwidth 區段",
+        "成功、錯誤、逾時與取消都會 STOP／ABORT 並 RF Off"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "可稽核證據",
+      "items": [
+        "SCPI 指令集中於 configs/scpi_command_map.yaml",
+        "每次 Run 輸出 CSV、JSON、metadata 與 report.html",
+        "歷史分析只讀既有 artifacts，不送 RF"
+      ]
+    }
+  ]
+}
