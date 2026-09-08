@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from cmp180_evm.results.visualization import write_pandas_matplotlib_plots
 from cmp180_evm.scpi.registry import ScpiCommandRegistry, load_scpi_command_map
 from cmp180_evm.web.jobs import SweepJob
 from cmp180_evm.workflow.rf_routes import parse_route
@@ -53,11 +54,34 @@ class GprfPreview:
             "dwell_ms": self.dwell_ms,
             "execution_allowed": self.execution_allowed,
             "rejection_reason": self.rejection_reason,
+            "rejection_help": _gprf_rejection_help(self.rejection_reason),
+            "correct_range": _gprf_correct_range(),
             "disclaimer": (
                 "GPRF power sweep only; this is not WLAN EVM demodulation or a "
                 "WLAN compliance claim."
             ),
         }
+
+
+def _gprf_correct_range() -> str:
+    return (
+        f"Frequency {GPRF_MIN_FREQUENCY_HZ / 1e6:.0f} MHz.."
+        f"{GPRF_MAX_FREQUENCY_HZ / 1e9:.0f} GHz; generator power "
+        f"{GPRF_MIN_POWER_DBM:g}..{GPRF_MAX_POWER_DBM:g} dBm; dwell "
+        f"{GPRF_MIN_DWELL_MS}..{GPRF_MAX_DWELL_MS} ms; max {GPRF_MAX_POINTS} points."
+    )
+
+
+def _gprf_rejection_help(reason: str | None) -> str | None:
+    if not reason:
+        return None
+    if "Frequency" in reason:
+        return "Set every RF point inside the CMP180 GPRF planning range, then review again."
+    if "power" in reason.lower():
+        return "Reduce the generator level or sweep endpoints to the accepted GPRF power range."
+    if "dwell" in reason.lower():
+        return "Use a dwell time that is long enough for settling but inside the approved UI guard."
+    return "Adjust the highlighted plan field and review again before enabling RF."
 
 
 def _inclusive_points(start: float, stop: float, step: float) -> tuple[float, ...]:
@@ -270,6 +294,12 @@ def _save_gprf_result(
         f"<table><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>",
         encoding="utf-8",
     )
+    # GPRF 結果走獨立保存流程；這裡補上與 WLAN artifacts 相同的 Pandas/Matplotlib PNG，
+    # 讓「結果與圖表」不會因 workflow 不同而缺少靜態報告圖。
+    matplotlib_artifacts = {
+        f"matplotlib_{path.stem}": str(path.resolve())
+        for path in write_pandas_matplotlib_plots(csv_path)
+    }
     return {
         "run_id": run_id,
         "run_dir": str(run_dir.resolve()),
@@ -277,6 +307,7 @@ def _save_gprf_result(
         "json": str(json_path.resolve()),
         "metadata": str(metadata_path.resolve()),
         "report": str(report_path.resolve()),
+        **matplotlib_artifacts,
     }
 
 

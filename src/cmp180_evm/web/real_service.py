@@ -4,17 +4,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from cmp180_evm.calibration import CalibrationProfile
 from cmp180_evm.limits import DRAFT_LOOPBACK_LIMIT_PROFILE, LimitProfile, evaluate_limits
+from cmp180_evm.loopback import (
+    loopback_batch_requests,
+    run_loopback_repeats,
+    select_loopback_profile,
+)
 from cmp180_evm.results.artifacts import (
     save_frequency_sweep_result,
     save_power_sweep_result,
     save_single_result,
 )
-from cmp180_evm.calibration import CalibrationProfile
-from cmp180_evm.workflow.calibration_application import (
-    resolve_calibration,
-    uncalibrated_metadata,
-)
+from cmp180_evm.results.loopback_artifacts import save_loopback_result
 from cmp180_evm.results.validity import (
     IQ_ESTIMATE_FIELDS,
     evaluate_estimator_confidence,
@@ -22,8 +24,15 @@ from cmp180_evm.results.validity import (
 )
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.utils.exceptions import SafetyGuardError
-from cmp180_evm.web.custom_plans import build_custom_sweep_preview
+from cmp180_evm.web.custom_plans import (
+    build_custom_single_preview,
+    build_custom_sweep_preview,
+)
 from cmp180_evm.web.jobs import SweepJob
+from cmp180_evm.workflow.calibration_application import (
+    resolve_calibration,
+    uncalibrated_metadata,
+)
 from cmp180_evm.workflow.cmp180_single_backend import (
     VERIFIED_TRIGGER_SOURCE,
     VERIFIED_TRIGGER_THRESHOLD_DB,
@@ -34,7 +43,7 @@ from cmp180_evm.workflow.cmp180_single_backend import (
 from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan, run_frequency_sweep
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
-from cmp180_evm.workflow.wlan_bands import executable_band_for
+from cmp180_evm.workflow.wlan_bands import WLAN_BANDS, band_for_frequency
 
 VERIFIED_ARB_WAVEFORM = waveform_for_bandwidth(320_000_000)
 # 2026-08-20 HIL 已驗證的 analyzer 接收參考面；讓它跟隨 generator 功率會導致 INV。
@@ -47,19 +56,57 @@ def _measurement_diagnostics(
 ) -> dict[str, object]:
     """Return the verified configuration and observed state trace for artifacts."""
     # 這些值都已在 RF On 前完成 readback；保存快照不會額外控制儀器。
+    natural_band = band_for_frequency(plan.center_frequency_hz)
+    configured_band_readback = getattr(backend, "selected_wlan_band_readback", None)
+    if configured_band_readback is None:
+        # 測試替身沒有 backend 狀態時依正式選擇規則重建 metadata，不額外查詢儀器。
+        configured_band_readback = (natural_band or WLAN_BANDS["6GHz"]).band_readback
     return {
         # Adapter 測試替身可能不提供狀態追蹤；正式 backend 仍會保存完整轉換序列。
         "measurement_state_trace": list(
             getattr(backend, "last_measurement_states", [])
         ),
         "wlan_standard": VERIFIED_WLAN_STANDARD_READBACK,
-        "wlan_band": executable_band_for(plan.center_frequency_hz).band_readback,
+        "wlan_band": configured_band_readback,
+        "wlan_band_role": "native" if natural_band else "EHT_MEASUREMENT_TEMPLATE",
         "trigger_source": VERIFIED_TRIGGER_SOURCE,
         "trigger_threshold_db": VERIFIED_TRIGGER_THRESHOLD_DB,
         "expected_nominal_power_dbm": plan.expected_nominal_power_dbm,
         "external_attenuation_db": plan.external_attenuation_db,
         "ranging_strategy": "expected_nominal_power_fixed",
     }
+
+
+def _final_cleanup_snapshot(instrument, registry) -> dict[str, object]:
+    """Stop WLAN TX, switch RF off, and return observable final state."""
+    snapshot: dict[str, object] = {"cleanup_errors": []}
+    # 例外清理流程不得假設前一步成功；STOP 失敗時改用 ABORT，避免量測狀態卡住。
+    try:
+        instrument.write_str(registry.require("wlan_tx.stop"))
+        instrument.query_str(registry.require("common.operation_complete"))
+        snapshot["cleanup_action"] = "STOP"
+    except Exception as exc:
+        snapshot["cleanup_errors"].append(f"STOP failed: {exc}")
+        try:
+            instrument.write_str(registry.require("wlan_tx.abort"))
+            snapshot["cleanup_action"] = "ABORT"
+        except Exception as abort_exc:
+            snapshot["cleanup_errors"].append(f"ABORT failed: {abort_exc}")
+    try:
+        instrument.write_str(registry.require("generator.rf_off"))
+        instrument.query_str(registry.require("common.operation_complete"))
+        rf_state = instrument.query_str(registry.require("generator_query.state")).strip()
+        measurement_state = instrument.query_str(
+            registry.require("wlan_tx_query.measurement_state")
+        ).strip()
+        snapshot["final_rf_state"] = rf_state
+        snapshot["final_measurement_state"] = measurement_state
+        if rf_state != "OFF":
+            raise RuntimeError(f"RF state is {rf_state!r}")
+    except Exception as exc:
+        snapshot["cleanup_errors"].append(f"RF off/readback failed: {exc}")
+        raise RuntimeError("Loopback emergency cleanup could not verify final safe state") from exc
+    return snapshot
 
 
 def _web_point(
@@ -480,12 +527,16 @@ def run_custom_real_sweep(
             instrument.close()
 
 
-def run_verified_real_single(
+def _run_real_single_plan(
     *,
+    plan: SingleMeasurementPlan,
+    test_name: str,
+    source: str,
+    extra_metadata: dict[str, object] | None = None,
     resource: str = "TCPIP::192.168.200.50::5025::SOCKET",
     output_root: Path = Path("output"),
 ) -> dict[str, object]:
-    """Run only the hardware-verified fixed 6105 MHz loopback profile."""
+    """Execute one already validated SingleShot plan with emergency cleanup."""
     from RsInstrument import RsInstrument
 
     registry = load_scpi_command_map(Path("configs/scpi_command_map.yaml"))
@@ -499,20 +550,8 @@ def run_verified_real_single(
     final_rf_state = "UNKNOWN"
     final_measurement_state = "UNKNOWN"
     try:
-        # 自訂掃描僅延長等待時間；cleanup 與功率上限維持不變。
+        # 自訂單點與固定單點共用相同 timeout、狀態機與 cleanup，避免前端參數繞過安全流程。
         backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=60.0)
-        # Web 實機模式先鎖定已驗證 profile，不接受任意頻率或功率輸入。
-        plan = SingleMeasurementPlan(
-            generator_port="RF1.1",
-            analyzer_port="RF1.5",
-            center_frequency_hz=6_105_000_000,
-            bandwidth_hz=320_000_000,
-            generator_power_dbm=-40.0,
-            expected_nominal_power_dbm=-20.0,
-            external_attenuation_db=0.0,
-            operator_confirmed=True,
-            maximum_generator_power_dbm=-40.0,
-        )
         result = run_single_measurement(backend, plan)
         if result.cleanup_errors or result.instrument_errors:
             raise RuntimeError(
@@ -522,17 +561,18 @@ def run_verified_real_single(
         artifacts = save_single_result(
             result.values,
             output_root,
-            test_name="web-real-single-6105mhz",
+            test_name=test_name,
             simulated=False,
             metadata={
-                "source": "web_verified_single_shot",
+                "source": source,
                 "frequency_hz": plan.center_frequency_hz,
                 "bandwidth_hz": plan.bandwidth_hz,
                 "generator_power_dbm": plan.generator_power_dbm,
                 "expected_nominal_power_dbm": plan.expected_nominal_power_dbm,
                 "generator_port": plan.generator_port,
                 "analyzer_port": plan.analyzer_port,
-                "arb_waveform_file": VERIFIED_ARB_WAVEFORM,
+                "arb_waveform_file": waveform_for_bandwidth(plan.bandwidth_hz),
+                **(extra_metadata or {}),
                 **_measurement_diagnostics(backend, plan),
             },
         )
@@ -578,3 +618,232 @@ def run_verified_real_single(
             raise RuntimeError(
                 f"Emergency cleanup final measurement state is {final_measurement_state}"
             )
+
+
+def run_verified_real_single(
+    *,
+    resource: str = "TCPIP::192.168.200.50::5025::SOCKET",
+    output_root: Path = Path("output"),
+) -> dict[str, object]:
+    """Run the original hardware-verified fixed 6105 MHz loopback profile."""
+    plan = SingleMeasurementPlan(
+        generator_port="RF1.1",
+        analyzer_port="RF1.5",
+        center_frequency_hz=6_105_000_000,
+        bandwidth_hz=320_000_000,
+        generator_power_dbm=-40.0,
+        expected_nominal_power_dbm=VERIFIED_EXPECTED_NOMINAL_POWER_DBM,
+        external_attenuation_db=0.0,
+        operator_confirmed=True,
+        maximum_generator_power_dbm=-40.0,
+    )
+    return _run_real_single_plan(
+        plan=plan,
+        test_name="web-real-single-6105mhz",
+        source="web_verified_single_shot",
+        resource=resource,
+        output_root=output_root,
+    )
+
+
+def run_custom_real_single(
+    *,
+    request: dict[str, object],
+    output_root: Path,
+    calibration_profile: CalibrationProfile | None = None,
+    resource: str = "TCPIP::192.168.200.50::5025::SOCKET",
+) -> dict[str, object]:
+    """Run one user-defined SingleShot only after server-side profile validation."""
+    preview = build_custom_single_preview(request)
+    if not preview.execution_allowed:
+        # API 可能被直接呼叫，真正建立 session 前必須再次套用 approved profile。
+        raise SafetyGuardError(preview.rejection_reason or "Custom SingleShot is not approved")
+    frequency_hz = preview.points[0]
+    calibration = resolve_calibration(
+        calibration_profile,
+        route="RF1.1-RF1.5",
+        frequencies_hz=(frequency_hz,),
+    )
+    external_attenuation_db = calibration.loss_for(frequency_hz) if calibration else 0.0
+    plan = SingleMeasurementPlan(
+        generator_port="RF1.1",
+        analyzer_port="RF1.5",
+        center_frequency_hz=frequency_hz,
+        bandwidth_hz=preview.bandwidth_hz,
+        generator_power_dbm=float(preview.generator_power_dbm),
+        # Analyzer ranging 維持 HIL 證實可用的 -20 dBm；不可跟隨 Generator power。
+        expected_nominal_power_dbm=VERIFIED_EXPECTED_NOMINAL_POWER_DBM,
+        external_attenuation_db=external_attenuation_db,
+        operator_confirmed=True,
+        maximum_generator_power_dbm=-30.0,
+    )
+    calibration_metadata = (
+        calibration.metadata()
+        if calibration
+        else uncalibrated_metadata(
+            "No approved calibration profile supplied; analyzer expected power uses the "
+            "HIL-verified fixed -20 dBm ranging value"
+        )
+    )
+    return _run_real_single_plan(
+        plan=plan,
+        test_name=f"web-real-single-{frequency_hz / 1e6:g}mhz",
+        source="web_custom_single_shot",
+        extra_metadata={
+            "custom_plan_fingerprint": preview.plan_fingerprint,
+            "custom_plan": preview.public(),
+            "operator_authorization": "confirmed_at_request",
+            # 區段外量測是實機結果但尚無既有 HIL 證據，不得作 compliance 宣稱。
+            "hil_status": preview.hil_status,
+            "compliance_claim": False,
+            **calibration_metadata,
+        },
+        resource=resource,
+        output_root=output_root,
+    )
+
+
+def run_real_loopback_validation(
+    job: SweepJob,
+    *,
+    request: dict[str, object],
+    output_root: Path,
+    resource: str = "TCPIP::192.168.200.50::5025::SOCKET",
+    progress_offset: int = 0,
+) -> dict[str, object]:
+    """Run independent WLAN SingleShots for a draft loopback baseline."""
+    from RsInstrument import RsInstrument
+
+    preview = build_custom_single_preview(request)
+    if not preview.execution_allowed:
+        raise SafetyGuardError(preview.rejection_reason or "Loopback point is not approved")
+    repeat_count = int(request.get("repeat_count", 5))
+    # Profile lifecycle 由伺服器依 HIL 核准條件選取，不信任瀏覽器傳入的 approved 字樣。
+    profile = select_loopback_profile(request)
+    plan = SingleMeasurementPlan(
+        "RF1.1",
+        "RF1.5",
+        preview.points[0],
+        preview.bandwidth_hz,
+        float(preview.generator_power_dbm),
+        VERIFIED_EXPECTED_NOMINAL_POWER_DBM,
+        0.0,
+        True,
+        -30.0,
+    )
+    registry = load_scpi_command_map(Path("configs/scpi_command_map.yaml"))
+    instrument = RsInstrument(
+        resource, id_query=False, reset=False, options="SelectVisa='socketio'"
+    )
+    instrument.visa_timeout = 15_000
+    backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=60.0)
+    try:
+        def on_repeat(count: int, row: dict[str, object]) -> None:
+            # 即時資料只取完成 cleanup 的 repeat；此 callback 不會額外控制 RF。
+            point = _web_point(
+                count - 1,
+                plan.center_frequency_hz,
+                row,
+                "frequency",
+                bandwidth_hz=plan.bandwidth_hz,
+                fixed_power_dbm=plan.generator_power_dbm,
+            )
+            point["repeat_index"] = count
+            if request.get("batch_case_id"):
+                point["batch_case_id"] = request["batch_case_id"]
+            job.point_completed(progress_offset + count, point)
+
+        result = run_loopback_repeats(
+            backend,
+            plan,
+            repeat_count,
+            profile=profile,
+            should_cancel=job.is_cancel_requested,
+            on_repeat_complete=on_repeat,
+        )
+        final_cleanup = _final_cleanup_snapshot(instrument, registry)
+        artifacts = save_loopback_result(
+            result,
+            output_root,
+            simulated=False,
+            metadata={
+                "source": "web_loopback_validation",
+                "frequency_hz": plan.center_frequency_hz,
+                "bandwidth_hz": plan.bandwidth_hz,
+                "generator_power_dbm": plan.generator_power_dbm,
+                "analyzer_expected_nominal_power_dbm": plan.expected_nominal_power_dbm,
+                "generator_port": plan.generator_port,
+                "analyzer_port": plan.analyzer_port,
+                "reasonableness_reference_plane": "analyzer_input",
+                "compliance_claim": False,
+                "batch_case_id": request.get("batch_case_id"),
+                "final_cleanup": final_cleanup,
+                **_measurement_diagnostics(backend, plan),
+            },
+        )
+        return {
+            "simulated": False,
+            "measurement_family": "LOOPBACK_VALIDATION",
+            "points": job.live_points,
+            "loopback": result,
+            "artifacts": artifacts,
+            "measurement_failed": bool(result.get("aborted_reason")) and not job.cancel_requested,
+            "error": result.get("aborted_reason"),
+        }
+    finally:
+        # Job 失敗、取消或例外時再次強制 Stop/Abort 與 RF Off，並關閉 session。
+        try:
+            _final_cleanup_snapshot(instrument, registry)
+        except Exception:
+            # finally 不能遮蔽上游量測錯誤；正常路徑已在 artifact metadata 保存 cleanup snapshot。
+            pass
+        finally:
+            instrument.close()
+
+
+def run_real_loopback_batch(
+    job: SweepJob,
+    *,
+    output_root: Path,
+    resource: str = "TCPIP::192.168.200.50::5025::SOCKET",
+) -> dict[str, object]:
+    """Run all WLAN-section loopback baselines sequentially with per-case artifacts."""
+    case_results: list[dict[str, object]] = []
+    for case_index, request in enumerate(loopback_batch_requests()):
+        if job.is_cancel_requested():
+            break
+        # 每個 section 建立獨立 session/artifact；前一案例 cleanup 完成後才會進下一案例。
+        result = run_real_loopback_validation(
+            job,
+            request=request,
+            output_root=output_root,
+            resource=resource,
+            progress_offset=case_index * 10,
+        )
+        analysis = dict(result["loopback"])["analysis"]
+        case_results.append(
+            {
+                "case_id": request["batch_case_id"],
+                "frequency_hz": request["center_frequency_hz"],
+                "bandwidth_hz": request["bandwidth_hz"],
+                "generator_power_dbm": request["generator_power_dbm"],
+                "overall_status": dict(analysis)["overall_status"],
+                "artifacts": result["artifacts"],
+            }
+        )
+        if result.get("measurement_failed") is True:
+            return {
+                "simulated": False,
+                "measurement_family": "LOOPBACK_BATCH_VALIDATION",
+                "cases": case_results,
+                "measurement_failed": True,
+                "error": result.get("error"),
+            }
+    return {
+        "simulated": False,
+        "measurement_family": "LOOPBACK_BATCH_VALIDATION",
+        "cases": case_results,
+        "completed_cases": len(case_results),
+        "requested_cases": len(loopback_batch_requests()),
+        "measurement_failed": False,
+    }

@@ -10,6 +10,12 @@
 
 ## 中文版本
 
+Web 現已加入獨立的 Loopback 驗證頁：可執行真正獨立的 WLAN SingleShot repeats、顯示完成 cleanup 後的即時 EVM／Power／Frequency Error 趨勢、標記 INVALID 與 IQR outlier，並分開輸出 Validity、Stability、Reasonableness 與 Overall。2026-09-03 的 6105 MHz／320 MHz／−40 dBm Repeat=10 實機 HIL 為 10/10 valid、Stability PASS、Reasonableness DRAFT_PASS，且 RF 最終為 OFF；該固定條件已升級為具 artifact 來源的 approved loopback profile，核准後第二次 Repeat=10 回歸得到 `LOOPBACK_READY`。其他輸入仍維持 draft，不會宣稱 `LOOPBACK_READY`。
+
+「一鍵執行全部」會依序跑完 11 個已核准 WLAN section 代表點，每點 Repeat=10，共 110 次獨立 SingleShot。2026-09-03 實機批次為 110/110 valid，全部 Stability 與 Reasonableness 通過，且每份 artifact 最終 RF `OFF`、measurement `RDY`、cleanup error 空；11 個代表點已各自以其 HIL artifact 升級為 approved loopback profile。未列入此矩陣的頻率、功率、route 或 UD Box 仍為 draft／blocked。
+
+升級後的 11 個相同代表點已再次完成 Repeat=10 回歸：110/110 valid，11/11 均為 `approved`、Stability PASS、Reasonableness PASS 與正式 `LOOPBACK_READY`。Web 的 SingleShot、WLAN Sweep、GPRF、Loopback、HIL Campaign 與 Calibration 檢查計畫、Preview、安全提示及最後確認會隨中英切換即時更新；切換語言不會重新呼叫 Preview 或 RF endpoint。
+
 Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重現、可稽核的流程取代重複的 CMsquares 手動操作，長期產品為中英雙語、響應式公司內網 Web 工具。
 
 [![CMP180 系統架構圖](docs/diagrams/system-architecture.png)](docs/diagrams/README.md)
@@ -27,6 +33,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
 - 雙語響應式橫向量測工作區：Dark／Light、依分頁切換的專業工作區標題、整合式 Demo／實機量測、量測紀錄、多 Run 疊圖比較、可自訂 Trace 名稱／顏色／顯示、Draft 校正 SOP，以及完整 artifacts 與可復原紀錄管理。歷史分析會預先讀取既有 CSV／JSON，不會送出 RF。
 - 首頁提供產品定位、功能介紹、量測能力、安全邊界、五步標準流程與操作手冊入口；首頁 CTA 只切換工作區，不呼叫任何量測或 RF API。動畫使用本機 CSS，無外部影音依賴。
+- 首頁直接嵌入 `docs/diagrams/` 的系統架構與 SingleShot 生命週期互動圖，使用 `present=1` 互動／簡報模式；可切換、重新載入或全頁開啟，圖表操作不會呼叫量測 API。
 - 導覽明確區分示範與實機量測；一般本機啟動直接提供受保護的實機控制，`--demo-only` 才會停用儀器連線。結果頁顯示安全的相對輸出位置。
 - 實機與示範量測共用單點／頻率掃描／功率掃描分頁；結果圖表提供固定座標、受限水平 Zoom／Pan、十字游標與完整點位標值。說明頁涵蓋 GitHub clone、安裝、CLI、Web 與離線報告流程。
 - 實機執行確認可完全在 Web 完成：Route、操作員在場與安全 profile 通過後，最後摘要會列出實際頻率／功率／頻寬；取消不送 RF，後端限制與 cleanup 不可繞過。
@@ -38,13 +45,16 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - Mock Sweep 使用非同步 Job API，支援逐點進度、取消、partial artifacts 與單一 active-job 鎖。
 - Web 核准 profile 已納入 11 個完成 HIL 的 WLAN band／bandwidth 區段；後端只在 RF OFF／measurement idle 時依 20／40／80／160／320 MHz 自動選取匹配 waveform，並做絕對路徑 readback。仍只允許 RF1.1 → RF1.5 loopback 與 -55～-30 dBm，不授權非 WLAN 空隙。
 - GitHub Actions 執行 Windows／Python 3.11 unit、Mock 與設定驗證；不執行實機 RF。
+- 離線圖表同時支援 dependency-free SVG 與 Pandas／Matplotlib `Agg` PNG；query-only 連線診斷具 0–5 次 bounded transient retry，每次重試前關閉 session，且不會自動重送 RF／SCPI write。
+- 新 Web Run 會從保存後的 CSV 自動產生 `plots-matplotlib/*.png`，並在「結果與圖表」以選單切換單張 Matplotlib PNG 預覽與原圖連結；互動圖的 X／Y 軸標題、工程單位與完整刻度已分離排版，並支援滑鼠拖曳水平平移。
+- 實機 SingleShot 可直接在 CMP180 400–8000 MHz envelope 內送出單點：已核准 WLAN section 標示 `APPROVED`，區段外則沿用已驗證的 EHT/B6GHz measurement template 並標示 `HIL_PENDING`。兩者都保留 RF1.1 → RF1.5、-55～-30 dBm、readback 與 cleanup 限制；掃描仍只允許 approved section。CMsquares 只保留探索／除錯用途。
 
 ### 功能狀態
 
 | 模組 | 狀態 | 說明 |
 |---|---|---|
 | Mock／Demo | 可用 | 不連接 CMP180、不送 RF，適合介面與流程訓練 |
-| 實機 SingleShot | HIL 已通過 | RF1.1 → RF1.5、6105 MHz、320 MHz、-40 dBm |
+| 實機 SingleShot | 400–8000 MHz 軟體執行路徑完成；區段外待 HIL | 已核准 section 顯示 `APPROVED`；其他中心頻率顯示 `HIL_PENDING`，仍限 RF1.1 → RF1.5 與 -55～-30 dBm |
 | 頻率／頻寬矩陣 | HIL 已通過並納入 Web 核准 | 11 個合法 band／bandwidth 區段、176/176 點；執行時自動匹配 waveform |
 | 固定功率掃描 | 歷史 HIL 已通過；目前 Profile 待重驗 | 已驗證四點掃描與取消／cleanup；最新 waveform 仍需排除 `INV` |
 | 自訂量測規劃 | 型錄範圍可輸入；實機執行依 RF workflow | 規劃介面支援 400 MHz–8 GHz 與 WLAN 20／40／80／160／320 MHz；Web 不再把自訂輸入改跑固定 profile，未通過 workflow 的計畫會顯示拒絕原因且不送 RF |
@@ -103,6 +113,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only
 | [下一次 HIL 驗收批次](docs/next-hil-campaign.md) | 90 分鐘能力快照、邊界點、短掃描與擴大 Web Profile 的驗收方式 |
 | [視覺化規格](docs/result-visualization-spec.md) | artifacts 與圖表要求 |
 | [開發流程](docs/development-workflow.md) | 測試與文件規則 |
+| [專案開發日誌與 Week 9–12 計畫](docs/project-development-log.md) | 簡報差距、問題／解法、逐日進度與收尾計畫 |
 | [交接](HANDOFF.md) | 最新狀態與下一步 |
 
 完整分類與權威文件說明請見 [文件中心](docs/README.md)。
@@ -130,6 +141,12 @@ output/    本機量測成果與測試暫存，不納入 Git
 
 ## English Version
 
+The Web UI now includes a dedicated Loopback Validation page. It runs independent WLAN SingleShot repeats, shows live post-cleanup EVM/Power/Frequency Error trends, flags INVALID and IQR outlier values, and reports separate Validity, Stability, Reasonableness, and Overall states. The 2026-09-03 live HIL at 6105 MHz/320 MHz/−40 dBm completed 10/10 valid repeats with Stability PASS, Reasonableness DRAFT_PASS, and final RF OFF; that exact condition is now a source-linked approved loopback profile, and a second Repeat=10 regression under the approved profile produced `LOOPBACK_READY`. Other inputs remain draft and cannot claim `LOOPBACK_READY`.
+
+Run All executes representative points for all 11 approved WLAN sections sequentially, with Repeat=10 at each point for 110 independent SingleShots. The 2026-09-03 live batch completed 110/110 valid measurements; every profile passed Stability and Reasonableness, and every artifact ended with RF `OFF`, measurement `RDY`, and no cleanup errors. All 11 representative points now have separately source-linked approved loopback profiles. Frequencies, powers, routes, and UD Box paths outside this matrix remain draft or blocked.
+
+The same 11 representative points were then rerun after promotion with Repeat=10 each. All 110 measurements were valid, and all 11 profiles recorded the `approved` lifecycle, Stability PASS, Reasonableness PASS, and formal `LOOPBACK_READY`. SingleShot, WLAN Sweep, GPRF, Loopback, HIL Campaign, and Calibration plan checks, previews, safety guidance, and final confirmations now update immediately with the Chinese/English selector. Switching language does not call a preview or RF endpoint again.
+
 This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measurements with reproducible, auditable workflows. The long-term product is a bilingual responsive intranet Web tool.
 
 ### Current capabilities
@@ -142,6 +159,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
 - Bilingual responsive horizontal workspace with working Dark/Light themes, contextual workspace headings, integrated demo/guarded-hardware measurement, eagerly loaded run history, multi-run overlays, editable trace names/colours/visibility, a Draft calibration SOP, artifacts, and recoverable run management.
 - The product home explains capabilities, safety boundaries, the five-step standard workflow, and operator-manual entry points. Home-page CTAs only navigate between workspaces and call no measurement or RF API. Motion uses local CSS with no external media dependency.
+- The home page embeds the interactive system-architecture and SingleShot-lifecycle diagrams from `docs/diagrams/` in `present=1` interaction/presentation mode. Users can switch, reload, or open them full-page; diagram actions call no measurement API.
 - Dependency-free offline `results.csv` to SVG charts and a self-contained bilingual HTML report; Web comparisons support drag-to-reorder, rename/style controls, and SVG/PNG/CSV export.
 - The operator-approved horizontal workspace in `static/` is the served frontend. It supports read-only comparison of 2–8 saved runs with editable trace names, colours, visibility, and discontinuities at invalid points; this analysis never transmits RF.
 - Navigation clearly separates demo and hardware measurements. Normal local startup exposes guarded hardware control; `--demo-only` disables instrument access. Results show a safe relative output location.
@@ -155,13 +173,16 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - Mock Sweep uses an asynchronous Job API with per-point progress, cancellation, partial artifacts, and a single-active-job lock.
 - The Web approved profile now includes all 11 HIL-complete WLAN band/bandwidth sections. While RF is OFF and measurement is idle, the backend automatically selects the matching 20/40/80/160/320 MHz waveform and verifies its absolute-path readback. Execution remains limited to the RF1.1-to-RF1.5 loopback and -55 to -30 dBm; non-WLAN gaps are never authorized.
 - Windows/Python 3.11 GitHub Actions for unit, mock, and configuration checks; CI never runs live RF.
+- Offline plotting supports dependency-free SVG and Pandas/Matplotlib `Agg` PNG output. Query-only connection diagnostics use a 0–5 bounded transient retry that closes the session before retrying and never automatically repeats RF or SCPI writes.
+- New Web runs generate `plots-matplotlib/*.png` from saved CSV and show a selector-driven single Matplotlib PNG preview plus original-image links on Results. The interactive chart separates X/Y titles, engineering units, and full tick labels, and supports horizontal mouse-drag panning.
+- Hardware SingleShot can transmit one point across the CMP180 400-8000 MHz envelope. Approved WLAN sections are labelled `APPROVED`; points outside those sections use the verified EHT/B6GHz measurement template and are labelled `HIL_PENDING`. Both retain the RF1.1-to-RF1.5, -55 to -30 dBm, readback, and cleanup limits; sweeps remain restricted to approved sections. CMsquares remains a discovery/debug reference.
 
 ### Capability status
 
 | Module | Status | Notes |
 |---|---|---|
 | Mock/Demo | Available | Does not connect to CMP180 or transmit RF |
-| Hardware SingleShot | HIL passed | RF1.1 to RF1.5, 6105 MHz, 320 MHz, -40 dBm |
+| Hardware SingleShot | 400-8000 MHz software execution path complete; out-of-section HIL pending | Approved sections show `APPROVED`; other center frequencies show `HIL_PENDING` and remain limited to RF1.1-to-RF1.5 and -55 to -30 dBm |
 | Frequency/bandwidth matrix | HIL passed and Web-approved | 11 legal band/bandwidth sections and 176/176 points; execution auto-selects the matching waveform |
 | Fixed power sweep | Historical HIL passed; current profile needs revalidation | Four-point execution/cancellation passed historically; the latest waveform still produces `INV` |
 | Custom measurement planning | Catalog range available; RF execution is profile-gated | Planning accepts 400 MHz–8 GHz and WLAN 20/40/80/160/320 MHz; only approved HIL combinations may transmit RF |
@@ -185,6 +206,7 @@ before any live operation.
 
 The [architecture diagrams](docs/diagrams/README.md) are self-contained interactive HTML: a layered system map whose nodes cite real files and line numbers, and the SingleShot measurement lifecycle.
 See the [documentation centre](docs/README.md) for categorized authoritative, supporting, and archived references.
+See the [project development log and Week 9–12 plan](docs/project-development-log.md) for the deck gap review, reconstructed problem/solution history, and daily closeout plan.
 See [Delivery and CMP180 capability expansion](docs/deployment-and-capability-expansion.md) for partner handoff and the layered capability model.
 Use the [next HIL campaign](docs/next-hil-campaign.md) to expand the approved Web range during the next instrument session.
 

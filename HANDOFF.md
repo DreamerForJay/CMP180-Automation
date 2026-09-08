@@ -4,6 +4,43 @@
 
 ### 狀態（2026-08-27）
 
+- 2026-09-03 完成 11 個 approved Loopback 代表點的升級後回歸：每點 Repeat=10，共 110/110 valid；11/11 均為 approved lifecycle、Stability PASS、Reasonableness PASS、`LOOPBACK_READY`，逐份 metadata 為 final RF OFF、measurement RDY、cleanup error 空。正式 artifact 範圍為 `output/20260903T111307Z_loopback-validation_3d788aaab7` 至 `output/20260903T111527Z_loopback-validation_582aded41f`，完整 case 對照見 `docs/loopback-validation.md`。同批完成 Web 檢查計畫中英即時切換：SingleShot、WLAN Sweep、GPRF、Loopback、HIL Campaign 與 Calibration 的步驟、Preview、安全原因／修正方式與最後確認均跟隨語言；切換只重繪既有資料，不呼叫 RF。軟體驗證為 282 tests、兩份 YAML validation 與 `git diff --check` 通過。
+
+- 2026-09-03 新增 Loopback「一鍵執行全部」：涵蓋 11 個 approved WLAN section 代表點、每點 Repeat=10，共 110 次獨立 SingleShot，逐 profile 保存 artifact，SCPI／cleanup error 即停止。實機批次已完成 110/110 valid；11 個案例均 Stability PASS、Reasonableness PASS/DRAFT_PASS，final RF OFF、measurement RDY、cleanup error 空。十個新代表點已使用各自 artifact 升級為 approved profile；既有 6 GHz／320 MHz 維持原核准證據。未涵蓋的 route／UD Box 仍 blocked。
+
+- 2026-09-03 以正式 Loopback Web 頁完成第一份 Repeat=10 實機 HIL：RF1.1 → RF1.5、6105 MHz、320 MHz、−40 dBm。10/10 valid，Stability PASS，Reasonableness DRAFT_PASS；EVM／Power／Frequency Error sample std 為 0.03178 dB／0.000604 dB／9.3989 Hz。Repeat 1 frequency error 為 IQR outlier，但仍有效並保留。Artifact 為 `output/20260903T101748Z_loopback-validation_865ca580c5`；final RF OFF、measurement RDY、cleanup error 空。依此證據將完全相同條件與至少 10 repeats 升級為 approved profile；核准後回歸 artifact `output/20260903T102312Z_loopback-validation_76df94aae2` 為 10/10 valid、Stability/Reasonableness PASS、`LOOPBACK_READY`。其他輸入仍為 draft。
+
+- 2026-09-03 新增獨立 Loopback Web 頁、非同步 hardware job、完成 cleanup 後的即時三指標趨勢與 INVALID／IQR outlier 標示。每個 repeat 真正呼叫完整 SingleShot；invalid 保留並繼續，SCPI／cleanup error 才停止。新增 sample statistics、Validity／Stability／Reasonableness／Overall 分層與可追溯 artifacts。本批只使用單元／Mock 測試，沒有執行新的 CMP180 RF measurement；Repeat=10 HIL 仍待現場執行。
+
+- 2026-09-03 完成 Web 結果與首頁整合修正：新 SingleShot／Frequency Sweep／Power Sweep
+  在保存 CSV 後自動以 Pandas DataFrame＋Matplotlib Agg 產生 PNG，結果頁改為用選單切換
+  單張 Matplotlib 預覽與原圖連結，不再一次鋪出四張；功率掃描 PNG 會使用變動的
+  Generator Power (dBm) 作為 X 軸。Web SVG 圖改為獨立 X/Y 軸標題、工程單位、六組刻度、
+  安全邊界、hover 十字游標、A/B 游標與滑鼠拖曳水平平移，不再與端點文字重疊。實機
+  SingleShot 新增 CMP180 400–8000 MHz envelope 內的中心頻率／WLAN 頻寬／Generator 功率
+  輸入，預覽會顯示是否通過目前 WLAN approved/HIL profile；只有通過者才可送 RF，後端
+  仍以 fingerprint 與二次 gate 驗證同一組值。首頁白名單嵌入兩份既有互動架構圖，改用
+  `present=1` 互動／簡報模式，可切換、重新載入及全頁開啟，不自動播放。Browser Demo
+  驗證 5955 MHz／20 MHz／-50 dBm 預覽與 Matplotlib 選單式預覽；本批沒有連線 CMP180 或
+  送 RF，自訂單點仍待現場低功率 HIL。
+
+- 2026-09-03 完成新一輪 query-only CMP180 preflight：TCP 5025 經乙太網路可達，
+  firmware `6.0.50.23`，error queue 空；WLAN MEAS1 為 `RDY`、RF1.5、EHT／BW320／
+  B6GH／6105 MHz、IF Power -45 dB、expected -20 dBm、SingleShot 10。序號不寫入文件。
+  本次未查證 Generator RF state，沒有啟動量測或傳送 RF，因此是安全快照，不是新 HIL。
+  Path Loss、DUT、UDBox 仍因校正設備／接線／功率上限／owner 核准缺失而 BLOCKED；
+  詳見 `docs/path-loss-dut-udbox-hil-plan.md`。
+
+- 2026-09-03 新增 Pandas／Matplotlib 離線 PNG 報告引擎；`plot_results.py` 支援
+  `svg`、`pandas-matplotlib` 與 `both`，且只讀 stored CSV，不連線或控制 CMP180。
+  同批新增 0–5 次 bounded retry，只接到 query-only connection diagnostic；只重試
+  transient connection／timeout，每次 retry 前 disconnect，絕不自動重送 SCPI write、
+  RF workflow、safety rejection 或 `INV`。完整驗證 261 tests、兩份 YAML validation
+  與 `git diff --check` 通過；沒有連線儀器或傳送 RF。
+
+- 2026-09-03 將獨立開發日誌擴充為 Week 1–12，逐日記錄進度、問題、決策理由與隔日
+  目標，並明確區分可追溯日期與由 repository 重建的規劃單位。
+
 - 2026-09-02 修正 GPRF power sweep 的量測端設定缺口。唯讀探索確認 GPRF measurement 的
   routing／ENPower／EATTenuation／catalog 命令（韌體 `6.0.50.23`，error queue 全空），
   setter 以 RF Off 同值寫回驗證通過。修正前量測端停在**未接線的 `"RF1.6"`**，讀到的
@@ -145,6 +182,16 @@
 
 ## English Version
 
+- On 2026-09-03, the post-promotion regression completed for all 11 approved Loopback representative points with Repeat=10 each. All 110 measurements were valid; all 11 profiles recorded approved lifecycle, Stability PASS, Reasonableness PASS, and `LOOPBACK_READY`, with final RF OFF, measurement RDY, and no cleanup errors in every metadata record. Formal artifacts span `output/20260903T111307Z_loopback-validation_3d788aaab7` through `output/20260903T111527Z_loopback-validation_582aded41f`; the complete case mapping is in `docs/loopback-validation.md`. The same batch made all Web check plans immediately bilingual: SingleShot, WLAN Sweep, GPRF, Loopback, HIL Campaign, and Calibration steps, previews, safety reasons/corrections, and final confirmations follow the language selector. Language changes redraw existing data without calling RF. Software validation passed 282 tests, both YAML validations, and `git diff --check`.
+
+- On 2026-09-03, Loopback gained Run All for representative points across all 11 approved WLAN sections, Repeat=10 each, for 110 independent SingleShots. Each profile saves separate artifacts and any SCPI or cleanup error stops the batch. The live batch completed 110/110 valid; every case passed Stability and Reasonableness or draft Reasonableness, with final RF OFF, measurement RDY, and no cleanup errors. The ten new representative points were promoted using their own artifacts, while the existing 6 GHz/320 MHz profile retains its original approval evidence. Other routes and UD Box paths remain blocked.
+
+
+- On 2026-09-03, the first live Repeat=10 HIL completed through the production Loopback Web page at RF1.1 to RF1.5, 6105 MHz, 320 MHz, and −40 dBm. All 10 repeats were valid, Stability passed, and Reasonableness produced DRAFT_PASS. EVM/power/frequency-error sample standard deviations were 0.03178 dB/0.000604 dB/9.3989 Hz. Repeat 1 was an IQR frequency-error outlier but remained valid and preserved. Evidence is `output/20260903T101748Z_loopback-validation_865ca580c5`; final RF was OFF, measurement was RDY, and cleanup errors were empty. The exact condition with at least 10 repeats is now an approved profile; the post-approval regression artifact `output/20260903T102312Z_loopback-validation_76df94aae2` completed 10/10 valid with Stability/Reasonableness PASS and `LOOPBACK_READY`. All other inputs remain draft.
+
+
+- 2026-09-03: Added a dedicated Loopback Web page, asynchronous hardware job, post-cleanup live trends for three core metrics, and INVALID/IQR-outlier highlighting. Every repeat invokes a complete SingleShot; invalid results are retained while SCPI or cleanup errors stop execution. Added sample statistics, layered Validity/Stability/Reasonableness/Overall decisions, and traceable artifacts. This batch used unit/Mock tests only and did not run a new CMP180 RF measurement; Repeat=10 HIL remains pending.
+
 - On 2026-09-02, the GPRF power sweep's measurement-side configuration gap was fixed.
   Read-only discovery confirmed the GPRF measurement routing/ENPower/EATTenuation/catalog
   commands on firmware `6.0.50.23` with an empty error queue, and the setters passed
@@ -206,6 +253,40 @@
 - On 2026-08-27, the Web hierarchy was reduced: duplicate page heroes/control-state cards are hidden, "Custom Measurement Plan" is renamed "Sweep Setup," and a three-step quick-start replaces the repeated Operator Playbook cards. PowerShell guidance now changes to the project directory first and copied commands no longer include the invalid `PS` prompt. `docs/next-hil-campaign.md` defines a ninety-minute capability snapshot, RF-Off readback, reference-point, boundary-point, short-sweep, and audit campaign for the next instrument slot. The complete baseline is `153 passed`; this batch did not connect to the instrument or transmit RF.
 
 ### Status (2026-08-27)
+
+- On 2026-09-03, Web Results and home-page integration was completed. Newly saved
+  SingleShot/sweep CSV files automatically produce four 160 DPI Pandas DataFrame plus
+  Matplotlib Agg PNGs, shown as Results thumbnails and artifacts. The Web SVG now has
+  separately laid-out X/Y titles, engineering units, six tick groups, and safe margins.
+  Hardware SingleShot accepts center frequency, WLAN bandwidth, and generator power;
+  preview, fingerprint, final confirmation, and server-side gate use the same values.
+  Execution remains limited to the approved profile, RF1.1-to-RF1.5, -55 to -30 dBm, and
+  emergency cleanup. The home page allowlists and embeds both interactive diagrams with
+  autoplay, switching, replay, and full-page controls. A Browser Demo verified a
+  5955 MHz/20 MHz/-50 dBm preview and four synchronized PNGs. The full regression passed
+  263 tests, both YAML validations, and `git diff --check`. No CMP180 connection or RF
+  transmission occurred; custom-value SingleShot still requires low-power on-site HIL.
+
+- On 2026-09-03, a fresh query-only preflight confirmed Ethernet TCP 5025, firmware
+  6.0.50.23, an empty error queue, and WLAN MEAS1 in `RDY` with RF1.5,
+  EHT/BW320/B6GH/6105 MHz, IF Power at -45 dB, -20 dBm expected power, and SingleShot 10.
+  The serial is omitted. Generator RF state was not verified, no measurement was started,
+  and no RF was transmitted; this is a safety snapshot, not new HIL. Path Loss, DUT, and
+  UDBox remain blocked on calibrated equipment, cabling, power limits, and owner approval;
+  see `docs/path-loss-dut-udbox-hil-plan.md`.
+
+- On 2026-09-03, the offline reporting path gained Pandas/Matplotlib PNG output. The
+  plotting script supports `svg`, `pandas-matplotlib`, and `both` and reads stored CSV
+  without connecting to or controlling the CMP180. The same batch added a 0–5 bounded
+  retry used only by query-only connection diagnostics. It retries transient connection/
+  timeout failures, disconnects before retrying, and never automatically repeats SCPI
+  writes, RF workflows, safety rejections, or `INV`. Validation passed 261 tests, both
+  YAML validations, and `git diff --check`; no instrument connection or RF transmission
+  was performed.
+
+- On 2026-09-03, the standalone development journal was expanded to Weeks 1–12 with
+  daily progress, problems, decision rationale, and next-workday targets, while clearly
+  distinguishing dated evidence from repository-reconstructed planning units.
 
 - On 2026-08-28, hardware sweep correctness was fixed: Frequency/Power Sweep now executes the custom Sweep Plan shown on screen instead of calling the fixed three-point/four-point profile endpoints, so a 400 MHz input cannot be silently replaced by 6085/6105/6125 MHz. Preview now returns `rejection_reason`; plans rejected by the current RF workflow display the reason and transmit no RF. EVM limit direction is covered by tests: more-negative EVM dB is better, and the measured value must be `<= maximum_evm_db`. Hardware results without an approved limit profile display `MEASURED`, not PASS. Power Reference Plane does not yet apply formal +5 dB compensation; metadata still reports `calibration_applied=false`. This batch used unit/mock validation only and did not connect to the instrument or transmit RF.
 

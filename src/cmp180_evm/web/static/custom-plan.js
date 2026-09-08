@@ -70,15 +70,24 @@ function renderCustomPlanPreview(data) {
   preview.hidden = false;
   const first = data.points?.[0];
   const last = data.points?.[data.points.length - 1];
-  const axisLabel = data.axis === 'frequency' ? 'Frequency' : 'Power';
+  const axisLabel = data.axis === 'frequency'
+    ? (language === 'zh' ? 'WLAN EVM 頻率掃描' : 'WLAN EVM Frequency Sweep')
+    : (language === 'zh' ? 'WLAN EVM 功率掃描' : 'WLAN EVM Power Sweep');
   const range = data.axis === 'frequency'
     ? `${formatFrequency(first)} → ${formatFrequency(last)}`
     : `${first} dBm → ${last} dBm`;
   const gateText = data.execution_allowed
     ? (language === 'zh' ? '可執行：目前計畫會照畫面參數送出，不會改跑固定三點。' : 'Executable: this plan will use the on-screen values, not a fixed three-point profile.')
-    : `${language === 'zh' ? '不可執行' : 'Blocked'}：${data.rejection_reason || 'workflow rejected the plan'}`;
-  preview.textContent = [
-    `${axisLabel} sweep`,
+    : window.formatPlanRejection(data, 'workflow rejected the plan', 'wlan');
+  preview.textContent = language === 'zh' ? [
+    axisLabel,
+    `點數：${data.point_count}`,
+    `範圍：${range}`,
+    `頻寬：${formatFrequency(data.bandwidth_hz)}`,
+    `停留時間：${data.dwell_ms} ms`,
+    gateText
+  ].join('\n') : [
+    axisLabel,
     `Points: ${data.point_count}`,
     `Range: ${range}`,
     `Bandwidth: ${formatFrequency(data.bandwidth_hz)}`,
@@ -86,6 +95,11 @@ function renderCustomPlanPreview(data) {
     gateText
   ].join('\n');
 }
+
+window.addEventListener('cmp180-language-change', () => {
+  // 使用既有 preview 資料換語言，不重新送出 Review 或 RF 請求。
+  if (customPlanResult) renderCustomPlanPreview(customPlanResult);
+});
 
 async function reviewCustomPlan(button = null) {
   const payload = buildCustomPlanPayload();
@@ -151,7 +165,7 @@ window.reviewAndExecuteCustomHardwarePlan = async function(button) {
     ...customPlanPayload,
     cable_confirmation: hardwareForm.cable_confirmation.value,
     operator_present: hardwareForm.operator_present.checked,
-    direct_cable_no_attenuator: true,
+    direct_cable_no_attenuator: hardwareForm.direct_cable_no_attenuator.checked,
     execution_confirmation: data.required_confirmation
   }, button, data.axis);
 };

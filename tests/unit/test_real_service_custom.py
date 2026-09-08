@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -119,6 +120,58 @@ def test_custom_real_service_revalidates_runs_saves_and_cleans_up(monkeypatch, t
     assert REGISTRY.require("generator.rf_off") in instrument.writes
 
 
+def test_custom_real_single_uses_reviewed_web_values(monkeypatch, tmp_path):
+    instrument = CleanupInstrument()
+    CustomBackend.configured_plans = []
+    monkeypatch.setitem(
+        sys.modules,
+        "RsInstrument",
+        SimpleNamespace(RsInstrument=lambda *args, **kwargs: instrument),
+    )
+    monkeypatch.setattr(real_service, "Cmp180SingleMeasurementBackend", CustomBackend)
+    result = real_service.run_custom_real_single(
+        request={
+            "center_frequency_hz": 6_105_000_000,
+            "bandwidth_hz": 320_000_000,
+            "generator_power_dbm": -45,
+        },
+        output_root=tmp_path,
+    )
+    plan = CustomBackend.configured_plans[-1]
+    assert plan.center_frequency_hz == 6_105_000_000
+    assert plan.bandwidth_hz == 320_000_000
+    assert plan.generator_power_dbm == -45
+    assert plan.expected_nominal_power_dbm == -20
+    assert result["points"][0]["frequency_hz"] == 6_105_000_000
+    assert Path(result["artifacts"]["matplotlib_evm_all_carriers_db"]).is_file()
+    assert instrument.closed is True
+
+
+def test_custom_real_single_allows_catalog_edge_and_records_hil_pending(
+    monkeypatch, tmp_path
+):
+    instrument = CleanupInstrument()
+    CustomBackend.configured_plans = []
+    monkeypatch.setitem(
+        sys.modules,
+        "RsInstrument",
+        SimpleNamespace(RsInstrument=lambda *args, **kwargs: instrument),
+    )
+    monkeypatch.setattr(real_service, "Cmp180SingleMeasurementBackend", CustomBackend)
+    result = real_service.run_custom_real_single(
+        request={
+            "center_frequency_hz": 400_000_000,
+            "bandwidth_hz": 320_000_000,
+            "generator_power_dbm": -45,
+        },
+        output_root=tmp_path,
+    )
+    metadata = json.loads(Path(result["artifacts"]["metadata"]).read_text(encoding="utf-8"))
+    assert CustomBackend.configured_plans[-1].center_frequency_hz == 400_000_000
+    assert metadata["hil_status"] == "HIL_PENDING"
+    assert metadata["compliance_claim"] is False
+
+
 def test_custom_real_service_runs_full_user_frequency_plan(monkeypatch, tmp_path):
     instrument = CleanupInstrument()
     CustomBackend.configured_plans = []
@@ -173,4 +226,41 @@ def test_custom_real_service_preserves_invalid_partial_result(monkeypatch, tmp_p
     assert result["points"][1]["valid"] is False
     assert result["points"][1]["evm_all_db"] is None
     assert result["artifacts"]["csv"]
+    assert instrument.closed is True
+
+
+def test_loopback_real_service_records_final_cleanup_snapshot(monkeypatch, tmp_path):
+    instrument = CleanupInstrument()
+    CustomBackend.configured_plans = []
+    monkeypatch.setitem(
+        sys.modules,
+        "RsInstrument",
+        SimpleNamespace(RsInstrument=lambda *args, **kwargs: instrument),
+    )
+    monkeypatch.setattr(real_service, "Cmp180SingleMeasurementBackend", CustomBackend)
+    request = {
+        "center_frequency_hz": 6_105_000_000,
+        "bandwidth_hz": 320_000_000,
+        "generator_power_dbm": -45,
+        "repeat_count": 2,
+        "minimum_repeats": 2,
+        "max_evm_std_db": 1.0,
+        "max_power_std_db": 1.0,
+        "max_freq_error_std_hz": 20.0,
+        "max_invalid_ratio": 0.0,
+        "expected_power_dbm": -45.0,
+        "allowed_power_error_db": 1.0,
+    }
+    job = SweepJob("job-loopback", "hardware-loopback", 2)
+
+    result = real_service.run_real_loopback_validation(
+        job, request=request, output_root=tmp_path
+    )
+
+    assert result["measurement_family"] == "LOOPBACK_VALIDATION"
+    assert job.completed_points == 2
+    metadata = json.loads(Path(result["artifacts"]["metadata"]).read_text(encoding="utf-8"))
+    # Loopback 正常完成後仍記錄 final safe state，方便 HIL 稽核 RF Off / RDY。
+    assert metadata["final_cleanup"]["final_rf_state"] == "OFF"
+    assert metadata["final_cleanup"]["final_measurement_state"] == "RDY"
     assert instrument.closed is True

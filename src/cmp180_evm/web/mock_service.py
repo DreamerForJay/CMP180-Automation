@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from cmp180_evm.limits import DRAFT_LOOPBACK_LIMIT_PROFILE, evaluate_limits
+from cmp180_evm.results.visualization import write_pandas_matplotlib_plots
 
 MAXIMUM_DEMO_SWEEP_POINTS = 11
 # Profile 現在集中定義於 cmp180_evm.limits，實機與模擬共用；此處僅保留既有匯入名稱。
@@ -158,12 +159,18 @@ def save_mock_run(
     )
     report_path = run_dir / "report.html"
     report_path.write_text(_build_html_report(run_id, rows), encoding="utf-8")
+    # Web Demo 也從保存後的 CSV 產生正式 PNG，確保示範與實機走同一條報告鏈。
+    matplotlib_artifacts = {
+        f"matplotlib_{path.stem}": str(path.resolve())
+        for path in write_pandas_matplotlib_plots(csv_path)
+    }
     return {
         "run_id": run_id,
         "run_dir": str(run_dir.resolve()),
         "csv": str(csv_path.resolve()),
         "json": str(json_path.resolve()),
         "report": str(report_path.resolve()),
+        **matplotlib_artifacts,
     }
 
 

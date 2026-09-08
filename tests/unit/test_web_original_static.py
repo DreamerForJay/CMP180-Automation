@@ -2,7 +2,6 @@ from pathlib import Path
 
 from cmp180_evm.web.server import STATIC_DIR
 
-
 STATIC = Path("src/cmp180_evm/web/static")
 
 
@@ -29,6 +28,72 @@ def test_original_workspace_supports_read_only_run_comparison() -> None:
     assert "count<1||count>8" in javascript
     assert "analysisTraces.length<1" in javascript
     assert "analysisTraces.length<2" not in comparison_code
+
+
+def test_loopback_page_exposes_live_trends_and_traceable_analysis() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    javascript = (STATIC / "loopback.js").read_text(encoding="utf-8")
+    assert 'data-tab="loopback"' in html
+    assert 'id="loopbackCharts"' in html
+    assert 'id="loopbackRows"' in html
+    assert "/api/hardware/loopback-preview" in javascript
+    assert "/api/jobs/hardware/loopback" in javascript
+    assert "analysis.outliers" in javascript
+    assert "renderLoopbackLive" in javascript
+    # 面板宣稱 INVALID 與 IQR outlier 都會標成紅色；圖表必須真的標出 outlier 點。
+    assert "loopback-outlier-dot" in javascript
+    assert "loopback-outlier-dot" in (STATIC / "design-system.css").read_text(encoding="utf-8")
+    assert "loopback-invalid" in javascript
+    assert "preview.profile_lifecycle === 'approved'" in javascript
+    assert 'id="runAllLoopbacks"' in html
+    assert "/api/hardware/loopback-batch-preview" in javascript
+    assert "/api/jobs/hardware/loopback-batch" in javascript
+
+
+def test_all_operator_plan_reviews_follow_the_selected_language() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    app = (STATIC / "app.js").read_text(encoding="utf-8")
+    plan_scripts = {
+        name: (STATIC / name).read_text(encoding="utf-8")
+        for name in (
+            "hardware.js",
+            "custom-plan.js",
+            "gprf-power.js",
+            "loopback.js",
+            "campaign.js",
+            "calibration.js",
+        )
+    }
+
+    # 切換語言必須通知已顯示的 Preview 重繪，且不得靠重新送出 RF／preview 請求。
+    assert "cmp180-language-change" in app
+    for name, source in plan_scripts.items():
+        assert "language === 'zh'" in source, name
+    for name in ("hardware.js", "custom-plan.js", "gprf-power.js", "loopback.js", "campaign.js", "calibration.js"):
+        assert "cmp180-language-change" in plan_scripts[name], name
+
+    # 後端保留英文稽核內容；共用顯示層要翻譯安全拒絕原因，且跨頁沿用同一入口。
+    assert "function localizePlanDetail" in plan_scripts["hardware.js"]
+    assert "後端安全閘門以英文保存稽核原因" in plan_scripts["hardware.js"]
+    assert "Generator 功率超出核准範圍" in plan_scripts["hardware.js"]
+    assert "window.localizePlanDetail" in plan_scripts["loopback.js"]
+    assert "window.localizePlanDetail" in plan_scripts["campaign.js"]
+
+    # 各頁的靜態檢查步驟、按鈕與安全說明也必須由同一份語系字典控制。
+    for key in (
+        "hardwareSop3",
+        "reviewSingle",
+        "reviewPlan",
+        "reviewGprf",
+        "loopbackWarningHelp",
+        "runAllLoopbacksHelp",
+        "campaignRulesHelp",
+        "campaignEvidence",
+        "calibrationHelp",
+        "calculateDraft",
+    ):
+        assert f'data-i18n="{key}"' in html
+        assert f"{key}:" in app
 
 
 def test_workspace_navigation_history_and_theme_regressions() -> None:
@@ -122,8 +187,13 @@ def test_product_home_is_safe_bilingual_navigation() -> None:
     assert "homeCopy" in javascript
     assert "activeTopTab='home'" in javascript
     assert ".product-home" in design
+    assert 'id="diagramShowcaseFrame"' in html
+    assert "/diagrams/system-architecture.html?present=1" in html
+    assert "diagramPlaybackUrl" in javascript
     # 首頁 CTA 只切換前端工作區，不得直接呼叫 RF API。
-    navigation_code = javascript.split("document.querySelectorAll('[data-go-tab]')", 1)[1].split("document.querySelectorAll('[data-measure-view]')", 1)[0]
+    navigation_code = javascript.split("document.querySelectorAll('[data-go-tab]')", 1)[
+        1
+    ].split("document.querySelectorAll('[data-measure-view]')", 1)[0]
     assert "/api/" not in navigation_code
 
 
@@ -137,13 +207,14 @@ def test_operator_guide_uses_copyable_project_commands() -> None:
     # PowerShell 的提示符不是指令；複製區不可再把 `PS` 一併送入終端。
     assert "<em>PS</em>" not in html
     assert ".workspace-head{display:none}" in design
-    assert "掃描設定 / Sweep Setup" in html
+    assert 'data-i18n="sweepSetup"' in html
 
 
 def test_hardware_tabs_and_stable_chart_interactions() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     javascript = (STATIC / "app.js").read_text(encoding="utf-8")
     hardware = (STATIC / "hardware.js").read_text(encoding="utf-8")
+    design = (STATIC / "design-system.css").read_text(encoding="utf-8")
 
     for action in ("single", "frequency", "power"):
         assert f'data-hardware-action="{action}"' in html
@@ -153,16 +224,25 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
         encoding="utf-8"
     )
     assert 'id="hardwareProfileSummary"' in html
+    assert 'id="singlePlanForm"' in html
+    assert "/api/hardware/single-plan-preview" in hardware
+    assert "...singlePlanPayload" in hardware
     assert 'class="sop-steps measurement-sop"' in html
     assert 'id="planCheckText"' in html
     assert 'id="hardwareSweepSetup"' in html
     assert "selectHardwareAction" in hardware
-    assert "WLAN Frequency Sweep：先 Review" in hardware
-    assert "GPRF Power：可掃儀器調諧能力" in hardware
+    assert "WLAN EVM Frequency Sweep: review first" in hardware
+    assert "GPRF: RF power only" in hardware
     # 圖表平移必須限制在固定畫布內，且不得造成 Y 軸跟著游標漂移。
     assert "Math.min(900-chartView.width" in javascript
     assert "chartView.y=0" in javascript
     assert "chart-crosshair" in javascript
+    assert "chartAxisMarkup" in javascript
+    assert "xTicks=xmin===xmax?1:6" in javascript
+    assert 'id="matplotlibGallery"' in html
+    assert 'id="matplotlibMetric"' in html
+    assert "renderMatplotlibGallery" in javascript
+    assert "matplotlib-active-plot" in design
 
 
 def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:

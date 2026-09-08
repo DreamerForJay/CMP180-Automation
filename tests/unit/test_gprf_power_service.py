@@ -239,3 +239,5 @@ def test_gprf_artifacts_record_completed_point_count(tmp_path: Path):
 
     assert metadata["completed_points"] == 2
     assert metadata["point_count"] == 2
+    # GPRF 使用獨立保存流程，也必須同步產生靜態 PNG，避免結果頁只剩互動 SVG。
+    assert Path(artifacts["matplotlib_burst_power_dbm"]).is_file()

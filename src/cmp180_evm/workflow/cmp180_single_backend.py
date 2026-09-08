@@ -11,7 +11,7 @@ from cmp180_evm.workflow.analyzer_setter_validation import (
 )
 from cmp180_evm.workflow.generator_setter_validation import ScpiIo
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
-from cmp180_evm.workflow.wlan_bands import executable_band_for
+from cmp180_evm.workflow.wlan_bands import WLAN_BANDS, band_for_frequency
 
 BANDWIDTH_ENUMS = {
     20_000_000: "BW20",
@@ -69,6 +69,7 @@ class Cmp180SingleMeasurementBackend:
         self.raw_result: str | None = None
         self.last_measurement_states: list[str] = []
         self.selected_arb_file: str | None = None
+        self.selected_wlan_band_readback: str | None = None
 
     def _query(self, name: str) -> str:
         return self.io.query_str(self.registry.require(name)).strip()
@@ -118,13 +119,17 @@ class Cmp180SingleMeasurementBackend:
         self._write_checked("generator.set_power", power_dbm=plan.generator_power_dbm)
         # 儀器重啟後可能回到 LOFD/B24G，必須在頻寬與頻率前恢復 EHT/6 GHz。
         self._write_checked("wlan_tx.set_standard", standard=VERIFIED_WLAN_STANDARD)
-        # Band 依中心頻率選取，不再寫死 6 GHz；未驗證 enum 的 band 會在此拒絕。
-        band = executable_band_for(plan.center_frequency_hz)
-        if plan.bandwidth_hz > band.maximum_bandwidth_hz:
+        # 標準 WLAN 頻段使用對應 band；區段外單點沿用已驗證的 B6GHz EHT 解調
+        # template，但 RF center frequency 仍寫入使用者值並逐項 readback。這只供
+        # HIL_PENDING 單點蒐證，不能把頻點宣稱為法規 WLAN channel。
+        natural_band = band_for_frequency(plan.center_frequency_hz)
+        band = natural_band or WLAN_BANDS["6GHz"]
+        if natural_band is not None and plan.bandwidth_hz > band.maximum_bandwidth_hz:
             raise ValueError(
                 f"{plan.bandwidth_hz / 1e6:.0f} MHz exceeds the {band.name} band maximum"
             )
         self._write_checked("wlan_tx.set_band", band=band.band_enum)
+        self.selected_wlan_band_readback = band.band_readback
         self._write_checked("wlan_tx.set_rf_path", rf_path=f'"{plan.analyzer_port}"')
         self._write_checked("wlan_tx.set_bandwidth", bandwidth=bandwidth)
         self._write_checked("wlan_tx.set_frequency", frequency_hz=plan.center_frequency_hz)

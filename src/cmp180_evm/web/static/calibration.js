@@ -1,5 +1,16 @@
 let calibrationDraft = null;
 
+function renderCalibrationDraftReview() {
+  if (!calibrationDraft) return;
+  $('#calibrationGate').textContent = language === 'zh'
+    ? '目前為 Draft：只能檢查與下載，尚未核准套用正式量測。'
+    : 'Draft only: available for review and download, not approved for formal measurement.';
+  const summary = $('#calibrationLossSummary');
+  if (summary) {
+    summary.innerHTML = `<div class="table-wrap"><table><thead><tr><th>${language === 'zh' ? '頻率' : 'Frequency'} (MHz)</th><th>${language === 'zh' ? '路徑損耗' : 'Path Loss'} (dB)</th></tr></thead><tbody>${calibrationDraft.points.map(point => `<tr><td>${(point.frequency_hz / 1e6).toFixed(3)}</td><td>${point.loss_db.toFixed(3)}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+}
+
 const calibrationHelp = {
   profile_id: ['Profile ID', '這份路徑校正資料的唯一名稱。換線材、轉接頭或路徑時應建立新的 ID。'],
   revision: ['Revision', '同一 Profile 的版本。重新量測或修改器材後應提升版本，不要覆寫已使用的版本。'],
@@ -129,16 +140,13 @@ $('#calibrationForm').onsubmit = async event => {
     if (!response.ok) throw new Error(data.error || 'Calibration preview failed');
     calibrationDraft = data.profile;
     $('#calibrationResult').hidden = false;
-    $('#calibrationGate').textContent = language === 'zh'
-      ? '目前為 Draft：只能審查與下載，尚未核准套用正式量測。'
-      : 'Draft only: available for review and download, not approved for formal measurement.';
     let summary = $('#calibrationLossSummary');
     if (!summary) {
       summary = document.createElement('div');
       summary.id = 'calibrationLossSummary';
       $('#calibrationProfilePreview').before(summary);
     }
-    summary.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Frequency (MHz)</th><th>Path Loss (dB)</th></tr></thead><tbody>${data.profile.points.map(point => `<tr><td>${(point.frequency_hz / 1e6).toFixed(3)}</td><td>${point.loss_db.toFixed(3)}</td></tr>`).join('')}</tbody></table></div>`;
+    renderCalibrationDraftReview();
     $('#calibrationProfilePreview').textContent = JSON.stringify(data.profile, null, 2);
   } catch (error) {
     toast(error.message, 'error');
@@ -146,6 +154,11 @@ $('#calibrationForm').onsubmit = async event => {
     button.disabled = false;
   }
 };
+
+window.addEventListener('cmp180-language-change', () => {
+  // Draft 預覽只重繪已計算結果，不重新擷取儀器或改變核准狀態。
+  renderCalibrationDraftReview();
+});
 
 $('#downloadCalibration').onclick = () => {
   if (!calibrationDraft) return;
