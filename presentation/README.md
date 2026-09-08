@@ -11,7 +11,7 @@
 
 | 檔案 | 用途 |
 |---|---|
-| `exports/CMP180-final-project.pptx` | **可直接上傳 Google 簡報或 Canva 編輯的版本**，12 頁、16:9、附講稿備忘 |
+| `exports/CMP180-final-project.pptx` | **可直接上傳 Google 簡報或 Canva 編輯的版本**，15 頁、16:9、附講稿備忘 |
 | `slides/cmp180-final-project/index.tsx` | open-slide 原始碼，改這裡才是改簡報本身 |
 | `slides/cmp180-final-project/assets/` | 兩張系統圖，由 `docs/diagrams/` 的 Archify 成品以深色主題擷取 |
 
@@ -55,7 +55,7 @@ Source for the CMP180 final-project deck, written with
 
 | File | Purpose |
 |---|---|
-| `exports/CMP180-final-project.pptx` | **Upload-and-edit version for Google Slides or Canva** — 12 slides, 16:9, with speaker notes |
+| `exports/CMP180-final-project.pptx` | **Upload-and-edit version for Google Slides or Canva** — 15 slides, 16:9, with speaker notes |
 | `slides/cmp180-final-project/index.tsx` | open-slide source; edit here to change the deck itself |
 | `slides/cmp180-final-project/assets/` | The two system diagrams, captured in dark theme from the Archify artifacts in `docs/diagrams/` |
 
