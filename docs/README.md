@@ -32,6 +32,7 @@
 | [唯讀硬體驗證](hardware-readonly-validation.md) | Query-only 探索紀錄 |
 | [V1 驗收報告](v1-acceptance-report.md) | 已通過能力、正式簽核閘門與離線報告指令 |
 | [V1 Demo 腳本](v1-demo-script.md) | 10–15 分鐘安全展示流程 |
+| [實機成果錄影腳本](live-demo-recording-plan.md) | 3–12 分鐘成果影片流程、RF 安全檢查與備援方案 |
 
 ### 工程與架構
 
