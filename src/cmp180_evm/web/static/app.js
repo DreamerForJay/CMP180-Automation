@@ -69,7 +69,7 @@ async function loadRunHistory(){const button=$('#refreshHistoryButton');button.d
 function escapeHtml(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
 function updateCompareSelection(){const count=selectedCompareKeys.size;$('#compareCount').textContent=language==='zh'?`已選 ${count} 筆`:`${count} selected`;$('#compareSelectedButton').textContent=count===1?(language==='zh'?'查看所選圖表':'Plot selected run'):(language==='zh'?'比較所選資料':'Compare selected runs');$('#compareSelectedButton').disabled=count<1||count>8}
 function finiteNumber(value){const number=Number(value);return Number.isFinite(number)?number:null}
-function normalizeHistoricalPoints(record){const source=Array.isArray(record.results)?record.results:(record.results?.points||[]);const metadata=record.metadata||{};return source.map((raw,index)=>{const frequency=finiteNumber(raw.frequency_hz??metadata.frequency_hz??metadata.center_frequency_hz),power=finiteNumber(raw.generator_power_dbm??metadata.generator_power_dbm),evmAll=finiteNumber(raw.evm_all_db??raw.evm_all_carriers_db),evmData=finiteNumber(raw.evm_data_db??raw.evm_data_carriers_db),evmPilot=finiteNumber(raw.evm_pilot_db??raw.evm_pilot_carriers_db),burstPower=finiteNumber(raw.burst_power_dbm),expectedPower=finiteNumber(raw.expected_power_dbm??raw.generator_power_dbm??metadata.generator_power_dbm),powerError=burstPower!==null&&expectedPower!==null?burstPower-expectedPower:null,peakPower=finiteNumber(raw.peak_power_dbm),frequencyError=finiteNumber(raw.frequency_error_hz),clockError=finiteNumber(raw.clock_error_ppm??raw.clock_error);return {point_index:Number(raw.point_index??index),frequency_hz:frequency,generator_power_dbm:power,expected_power_dbm:expectedPower,power_error_db:powerError,evm_all_db:evmAll,evm_data_db:evmData,evm_pilot_db:evmPilot,burst_power_dbm:burstPower,peak_power_dbm:peakPower,frequency_error_hz:frequencyError,clock_error_ppm:clockError,measurement_state:String(raw.measurement_state||''),valid:[evmAll,burstPower,frequencyError].some(value=>value!==null)&&String(raw.measurement_state||'').toUpperCase()!=='INV',limit_status:String(raw.limit_status||raw.status||'RECORDED')}})}
+function normalizeHistoricalPoints(record){const source=Array.isArray(record.results)?record.results:(record.results?.points||[]);const metadata=record.metadata||{};return source.map((raw,index)=>{const frequency=finiteNumber(raw.frequency_hz??metadata.frequency_hz??metadata.center_frequency_hz),power=finiteNumber(raw.generator_power_dbm??metadata.generator_power_dbm),evmAll=finiteNumber(raw.evm_all_db??raw.evm_all_carriers_db),evmData=finiteNumber(raw.evm_data_db??raw.evm_data_carriers_db),evmPilot=finiteNumber(raw.evm_pilot_db??raw.evm_pilot_carriers_db),burstPower=finiteNumber(raw.burst_power_dbm),expectedPower=finiteNumber(raw.expected_power_dbm??raw.generator_power_dbm??metadata.generator_power_dbm),powerError=burstPower!==null&&expectedPower!==null?burstPower-expectedPower:null,peakPower=finiteNumber(raw.peak_power_dbm),frequencyError=finiteNumber(raw.frequency_error_hz),clockError=finiteNumber(raw.clock_error_ppm??raw.clock_error),pin=finiteNumber(raw.pin_dbm),pout=finiteNumber(raw.pout_dbm),gain=finiteNumber(raw.gain_db);return {point_index:Number(raw.point_index??index),frequency_hz:frequency,generator_power_dbm:power,expected_power_dbm:expectedPower,power_error_db:powerError,pin_dbm:pin,pout_dbm:pout,gain_db:gain,evm_all_db:evmAll,evm_data_db:evmData,evm_pilot_db:evmPilot,burst_power_dbm:burstPower,peak_power_dbm:peakPower,frequency_error_hz:frequencyError,clock_error_ppm:clockError,measurement_state:String(raw.measurement_state||''),valid:[evmAll,burstPower,frequencyError,pout,gain].some(value=>value!==null)&&String(raw.measurement_state||'').toUpperCase()!=='INV',limit_status:String(raw.limit_status||raw.status||'RECORDED')}})}
 function inferTraceAxis(points){const frequencies=new Set(points.map(point=>point.frequency_hz).filter(value=>value!==null));const powers=new Set(points.map(point=>point.generator_power_dbm).filter(value=>value!==null));return powers.size>frequencies.size?'power':'frequency'}
 const traceColors=['#18d7e5','#f59e0b','#a78bfa','#43c47a','#f05261','#60a5fa','#f472b6','#eab308'];
 async function compareSelectedRuns(){const button=$('#compareSelectedButton');button.disabled=true;try{const keys=[...selectedCompareKeys];const records=await Promise.all(keys.map(async key=>{const response=await fetch(`/api/runs/${encodeURIComponent(key)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||`Unable to load ${key}`);return record}));analysisTraces=records.map((record,index)=>{const summary=runHistory.find(run=>run.run_key===record.run_key)||{};const points=normalizeHistoricalPoints(record);return {id:record.run_key,name:summary.test_name||record.metadata?.test_name||record.metadata?.run_id||record.run_key,color:traceColors[index],visible:true,colorLocked:false,lineStyle:'solid',pointShape:'circle',axis:inferTraceAxis(points),compatibility:{bandwidth:summary.bandwidth_hz,route:summary.route,calibration:summary.calibration_profile,waveform:record.metadata?.waveform_file||record.metadata?.arb_waveform_file||'',mcs:record.metadata?.mcs||''},points}}).filter(trace=>trace.points.length);if(analysisTraces.length<1)throw new Error(language==='zh'?'所選紀錄沒有可用結果':'The selected run has no usable results');latestAxis=analysisTraces[0].axis;latest=analysisTraces[0].points;selectBestChartMetric(latest,records[0]);renderComparisonControls();const isSingle=analysisTraces.length===1;$('#runMeta').textContent=language==='zh'?(isSingle?'查看 1 筆歷史量測（唯讀）':`比較 ${analysisTraces.length} 筆歷史量測（唯讀）`):(isSingle?'Viewing 1 historical run (read-only)':`Comparing ${analysisTraces.length} historical runs (read-only)`);$('#resultBadge').textContent=isSingle?'HISTORY':'COMPARE';$('#metrics').innerHTML=metric('Runs',analysisTraces.length)+metric('Visible',analysisTraces.filter(trace=>trace.visible).length)+metric('Points',analysisTraces.reduce((sum,trace)=>sum+trace.points.length,0))+metric('Mode','READ ONLY');$('#limitProfileCard').hidden=true;$('#resultRows').innerHTML='';$('#artifacts').innerHTML='';renderMatplotlibGallery({});activateTopTab('results');drawAnalysisChart()}catch(error){toast(error.message,'error')}finally{updateCompareSelection()}}
@@ -122,14 +122,22 @@ function powerFlatnessStats(points){
   const variance=errors.reduce((sum,value)=>sum+(value-meanError)**2,0)/errors.length;
   return {avgMeasured,avgExpected,meanError,maxAbsError,ripple:maxError-minError,stdDev:Math.sqrt(variance),valid:valid.length,total:points.length};
 }
+function p1dbMetrics(p1db){
+  if(!p1db||p1db.status==='frequency_sweep')return '';
+  const value=(name,unit)=>Number.isFinite(Number(p1db[name]))?Number(p1db[name]).toFixed(2)+unit:'—';
+  if(p1db.status==='found')return metric('IP1dB',value('ip1db_dbm',' dBm'))+metric('OP1dB',value('op1db_dbm',' dBm'))+metric('Small-signal Gain',value('small_signal_gain_db',' dB'));
+  // 尚未掃到 1 dB 壓縮時仍顯示已觀察到的最大壓縮與最大 Pin/Pout，避免誤填假 P1dB。
+  return metric('P1dB','not_found')+metric('Max Compression',value('max_compression_db',' dB'))+metric('Max Pin',value('max_measured_pin_dbm',' dBm'))+metric('Max Pout',value('max_measured_pout_dbm',' dBm'));
+}
 function render(data){
   // 新量測結果取代歷史比較狀態，避免圖例與單次結果互相混淆。
   analysisTraces=[];
   $('#comparisonPanel').hidden=true;
   latest=data.points.map(point=>{
     const measured=finiteNumber(point.burst_power_dbm),expected=finiteNumber(point.expected_power_dbm??point.generator_power_dbm);
+    const pin=finiteNumber(point.pin_dbm),pout=finiteNumber(point.pout_dbm),gain=finiteNumber(point.gain_db);
     // Power Error 是 GPRF flatness 的工程量：量到的功率減去該點期望功率。
-    return {...point,power_error_db:measured!==null&&expected!==null?measured-expected:null,expected_power_dbm:expected};
+    return {...point,power_error_db:measured!==null&&expected!==null?measured-expected:null,expected_power_dbm:expected,pin_dbm:pin,pout_dbm:pout,gain_db:gain};
   });
   latestAxis=data.sweep_axis||'frequency';
   selectBestChartMetric(latest,data);
@@ -160,6 +168,7 @@ function render(data){
   const powerStats=powerFlatnessStats(latest),isGprf=data.measurement_family==='GPRF_POWER';
   $('#metrics').innerHTML=isGprf&&powerStats
     ? metric('Average Power',powerStats.avgMeasured.toFixed(3)+' dBm')
+    +p1dbMetrics(data.p1db)
     +metric('Expected Power',powerStats.avgExpected.toFixed(3)+' dBm')
     +metric('Mean Error',(powerStats.meanError>=0?'+':'')+powerStats.meanError.toFixed(3)+' dB')
     +metric('Max |Error|',powerStats.maxAbsError.toFixed(3)+' dB')
@@ -193,17 +202,20 @@ function render(data){
 }
 function renderLimitProfile(profile,complianceClaim){const card=$('#limitProfileCard');if(!profile){card.hidden=true;return}card.hidden=false;const warning=complianceClaim?'APPROVED':'DRAFT · NOT A DUT COMPLIANCE CLAIM';card.innerHTML=`<strong>${escapeHtml(profile.profile_id)} · ${escapeHtml(profile.revision)}</strong><span class="pill ${complianceClaim?'hardware-source':'draft-limit'}">${warning}</span><p>EVM ≤ ${profile.maximum_evm_db} dB · |Frequency Error| ≤ ${profile.maximum_absolute_frequency_error_hz} Hz · |Power Error| ≤ ${profile.maximum_absolute_power_error_db} dB</p>`}
 function metric(label,value){return `<div class="metric"><small>${label}</small><strong>${value}</strong></div>`}
-function metricAxisLabel(metricName){return {evm_all_db:'EVM All (dB)',evm_data_db:'EVM Data (dB)',evm_pilot_db:'EVM Pilot (dB)',burst_power_dbm:'Burst Power (dBm)',power_error_db:'Power Error (dB)',peak_power_dbm:'Peak Power (dBm)',frequency_error_hz:'Frequency Error (Hz)',clock_error_ppm:'Clock Error (ppm)'}[metricName]||metricName}
-const metricOrder=['evm_all_db','evm_data_db','evm_pilot_db','burst_power_dbm','power_error_db','peak_power_dbm','frequency_error_hz','clock_error_ppm'];
+function metricAxisLabel(metricName){return {evm_all_db:'EVM All (dB)',evm_data_db:'EVM Data (dB)',evm_pilot_db:'EVM Pilot (dB)',burst_power_dbm:'Burst Power (dBm)',pin_dbm:'PA Pin (dBm)',pout_dbm:'PA Pout (dBm)',gain_db:'PA Gain (dB)',power_error_db:'Power Error (dB)',peak_power_dbm:'Peak Power (dBm)',frequency_error_hz:'Frequency Error (Hz)',clock_error_ppm:'Clock Error (ppm)'}[metricName]||metricName}
+const metricOrder=['evm_all_db','evm_data_db','evm_pilot_db','burst_power_dbm','pin_dbm','pout_dbm','gain_db','power_error_db','peak_power_dbm','frequency_error_hz','clock_error_ppm'];
 function selectBestChartMetric(points,data={}){
   // 新結果進來時只自動選一次最有趨勢意義的指標；使用者之後手動切換不會重算資料。
-  const preferred=data.measurement_family==='GPRF_POWER'?['burst_power_dbm','power_error_db','frequency_error_hz']:metricOrder;
+  const preferred=data.measurement_family==='GPRF_POWER'?['gain_db','pout_dbm','burst_power_dbm','power_error_db','frequency_error_hz']:metricOrder;
   const selected=[...preferred,...metricOrder].find(metricName=>points.some(point=>Number.isFinite(point[metricName])));
   if(selected)$('#chartMetric').value=selected;
 }
 const matplotlibLabels={
   matplotlib_evm_all_carriers_db:{label:'EVM All (dB)',unit:'Y: EVM All (dB)'},
   matplotlib_burst_power_dbm:{label:'Burst Power (dBm)',unit:'Y: Burst Power (dBm)'},
+  matplotlib_pin_dbm:{label:'PA Pin (dBm)',unit:'Y: PA Pin (dBm)'},
+  matplotlib_pout_dbm:{label:'PA Pout (dBm)',unit:'Y: PA Pout (dBm)'},
+  matplotlib_gain_db:{label:'PA Gain (dB)',unit:'Y: PA Gain (dB)'},
   matplotlib_frequency_error_hz:{label:'Frequency Error (Hz)',unit:'Y: Frequency Error (Hz)'},
   matplotlib_clock_error_ppm:{label:'Clock Error (ppm)',unit:'Y: Clock Error (ppm)'}
 };
@@ -242,8 +254,31 @@ function expectedReferenceForPowerMetric(points,axis,metricName){
   const reference=expectedValues.length?expectedValues.reduce((sum,value)=>sum+value,0)/expectedValues.length:null;
   return reference===null?null:{kind:'horizontal',value:reference,label:`Expected ${reference.toFixed(2)} dBm`};
 }
-const chartFrame={width:900,height:300,left:88,right:28,top:30,bottom:62};
+const chartFrame={width:900,height:390,left:104,right:42,top:38,bottom:82};
+const chartZoomLimits={minWidth:18};
+function clampChartX(x,width=chartView.width){
+  // 縮小最多回到完整圖，避免 viewBox 大於圖面後把曲線縮到像消失。
+  if(width>=chartFrame.width)return 0;
+  return Math.max(0,Math.min(chartFrame.width-width,x));
+}
+function syncChartViewportSize(){
+  const svg=$('#chart');
+  chartView.x=clampChartX(chartView.x,chartView.width);
+  svg.setAttribute('viewBox',`${chartView.x} ${chartView.y} ${chartView.width} ${chartView.height}`);
+  svg.style.aspectRatio=`${chartFrame.width} / ${chartFrame.height}`;
+}
+function setChartNaturalView(points=[]){
+  // 圖表尺寸集中由 chartFrame 管理，避免 SVG viewBox 與互動縮放範圍不同步。
+  Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height});
+  syncChartViewportSize();
+}
 function axisTickLabel(axis,value){return axis==='frequency'?(value/1e6).toLocaleString(undefined,{maximumFractionDigits:3}):Number(value).toFixed(1)}
+function chartExtent(values,{minimumSpan=1,paddingRatio=.08}={}){
+  const finite=values.filter(Number.isFinite),low=Math.min(...finite),high=Math.max(...finite);
+  const midpoint=(low+high)/2,rawSpan=high-low,span=Math.max(rawSpan,minimumSpan);
+  // Y 軸只加必要留白，讓小幅變化不會被壓扁；零跨度資料仍保留最小可讀範圍。
+  return {min:midpoint-span/2-span*paddingRatio,max:midpoint+span/2+span*paddingRatio};
+}
 function chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y){
   const frame=chartFrame,xTicks=xmin===xmax?1:6,yTicks=6;
   let html='';
@@ -253,12 +288,13 @@ function chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y){
   }
   for(let index=0;index<xTicks;index++){
     const value=xTicks===1?xmin:xmin+index*(xmax-xmin)/(xTicks-1),xx=x(value);
-    html+=`<line class="grid-line x-grid" x1="${xx}" y1="${frame.top}" x2="${xx}" y2="${frame.height-frame.bottom}"/><text class="axis-label" x="${xx}" y="${frame.height-frame.bottom+24}" text-anchor="middle">${axisTickLabel(axis,value)}</text>`;
+    const anchor=index===0?'start':index===xTicks-1?'end':'middle';
+    html+=`<line class="grid-line x-grid" x1="${xx}" y1="${frame.top}" x2="${xx}" y2="${frame.height-frame.bottom}"/><text class="axis-label" x="${xx}" y="${frame.height-frame.bottom+26}" text-anchor="${anchor}">${axisTickLabel(axis,value)}</text>`;
   }
   // 軸標題與刻度保留獨立邊界，避免先前標題和端點數字疊在同一列。
   const xTitle=axis==='power'?'Generator Power':'Frequency',xUnit=xUnitFor(axis);
-  html+=`<text class="axis-title" x="${frame.left+(frame.width-frame.left-frame.right)/2}" y="${frame.height-10}" text-anchor="middle">${xTitle} (${xUnit})</text>`;
-  html+=`<text class="axis-title" x="20" y="${frame.top+(frame.height-frame.top-frame.bottom)/2}" text-anchor="middle" transform="rotate(-90 20 ${frame.top+(frame.height-frame.top-frame.bottom)/2})">${metricAxisLabel(metric)}</text>`;
+  html+=`<text class="axis-title" x="${frame.left+(frame.width-frame.left-frame.right)/2}" y="${frame.height-12}" text-anchor="middle">${xTitle} (${xUnit})</text>`;
+  html+=`<text class="axis-title" x="24" y="${frame.top+(frame.height-frame.top-frame.bottom)/2}" text-anchor="middle" transform="rotate(-90 24 ${frame.top+(frame.height-frame.top-frame.bottom)/2})">${metricAxisLabel(metric)}</text>`;
   return html;
 }
 function drawChart(points,axis='frequency'){
@@ -272,7 +308,9 @@ function drawChart(points,axis='frequency'){
   const expectedReference=expectedReferenceForPowerMetric(validPoints,axis,metric);
   const expectedSpread=expectedReference?.kind==='diagonal'?expectedReference.points.map(point=>point.y):expectedReference?[expectedReference.value]:[];
   const spread=[...ys,...(specLimit===null?[]:[specLimit]),...expectedSpread];
-  const xmin=Math.min(...xs),xmax=Math.max(...xs),margin=Math.max((Math.max(...spread)-Math.min(...spread))*.15,.5),ymin=Math.min(...spread)-margin,ymax=Math.max(...spread)+margin;
+  const xmin=Math.min(...xs),xmax=Math.max(...xs),metricSpan=Math.max(...spread)-Math.min(...spread);
+  const minimumSpan=metric==='burst_power_dbm'||metric==='power_error_db'?0.18:metric==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
+  const yExtent=chartExtent(spread,{minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max;
   const x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
   let html=chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y);
   if(specLimit!==null){
@@ -299,10 +337,11 @@ function drawChart(points,axis='frequency'){
   points.forEach(point=>{if(point.valid&&Number.isFinite(point[metric])){segment.push(point)}else{if(segment.length)segments.push(segment);segment=[]}});
   if(segment.length)segments.push(segment);
   html+=segments.map(values=>`<polyline class="plot-line" points="${values.map(point=>`${x(point[xField])},${y(point[metric])}`).join(' ')}"/>`).join('');
-  html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | Error=${formatMeasured(point.power_error_db,3)} dB | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
+  html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | Pin=${formatMeasured(point.pin_dbm)} dBm | Pout=${formatMeasured(point.pout_dbm)} dBm | Gain=${formatMeasured(point.gain_db)} dB | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | Error=${formatMeasured(point.power_error_db,3)} dB | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
   // 無效點固定畫在圖底並標示叉號，保留其頻率／功率位置且不偽造 Y 值。
   html+=points.filter(point=>!point.valid||!Number.isFinite(point[metric])).map(point=>`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${xDisplayFor(axis,point[xField])} ${xUnit} · INVALID</title></g>`).join('');
   svg.innerHTML=html;
+  setChartNaturalView(validPoints);
 }
 function drawAnalysisChart(){
   const visible=analysisTraces.filter(trace=>trace.visible);
@@ -312,7 +351,9 @@ function drawAnalysisChart(){
   if(!samples.length){$('#chart').innerHTML=`<text class="axis-label" x="45" y="70">${language==='zh'?'此指標沒有可比較的有效數值':'No comparable values for this metric'}</text>`;return}
   const referenceLines=visible.map(trace=>({trace,reference:expectedReferenceForPowerMetric(trace.points.filter(point=>point.valid),trace.axis,metricName)})).filter(item=>item.reference);
   const referenceSpread=referenceLines.flatMap(item=>item.reference.kind==='diagonal'?item.reference.points.map(point=>point.y):[item.reference.value]);
-  const xmin=Math.min(...samples.map(sample=>sample.x)),xmax=Math.max(...samples.map(sample=>sample.x)),spread=[...samples.map(sample=>sample.y),...referenceSpread],margin=Math.max((Math.max(...spread)-Math.min(...spread))*.15,.5),ymin=Math.min(...spread)-margin,ymax=Math.max(...spread)+margin,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
+  const xmin=Math.min(...samples.map(sample=>sample.x)),xmax=Math.max(...samples.map(sample=>sample.x)),spread=[...samples.map(sample=>sample.y),...referenceSpread],metricSpan=Math.max(...spread)-Math.min(...spread);
+  const minimumSpan=metricName==='burst_power_dbm'||metricName==='power_error_db'?0.18:metricName==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
+  const yExtent=chartExtent(spread,{minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
   const axes=new Set(visible.map(trace=>trace.axis)),comparisonAxis=axes.size===1?visible[0].axis:'frequency';
   let html=chartAxisMarkup(comparisonAxis,metricName,xmin,xmax,ymin,ymax,x,y);
   referenceLines.forEach(({reference})=>{
@@ -328,6 +369,7 @@ function drawAnalysisChart(){
   });
   visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(point[xField]===null||!Number.isFinite(point[metricName]))return;const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
   $('#chart').innerHTML=html;
+  setChartNaturalView(samples);
 }
 $('#chartMetric').onchange=()=>{analysisTraces.length?drawAnalysisChart():(latest.length&&drawChart(latest,latestAxis))};
 function downloadBlob(filename,blob){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),0)}
@@ -335,8 +377,18 @@ $('#exportSvg').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttrib
 $('#exportPng').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),image=new Image();image.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1800;canvas.height=600;const context=canvas.getContext('2d');context.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--console-surface')||'#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);canvas.toBlob(png=>{if(png)downloadBlob('cmp180-comparison.png',png)},'image/png');URL.revokeObjectURL(url)};image.src=url};
 $('#exportCompareCsv').onclick=()=>{const metricName=$('#chartMetric').value,rows=[['trace','valid','frequency_hz','generator_power_dbm',metricName,'measurement_state']];analysisTraces.forEach(trace=>trace.points.forEach(point=>rows.push([trace.name,point.valid,point.frequency_hz,point.generator_power_dbm,point[metricName],point.measurement_state])));const csv=rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""')}"`).join(',')).join('\r\n');downloadBlob('cmp180-comparison.csv',new Blob([csv],{type:'text/csv;charset=utf-8'}))};
 const chartTooltip=document.createElement('div');chartTooltip.className='chart-hover-tooltip';chartTooltip.hidden=true;document.querySelector('.chart-card').append(chartTooltip);
-$('#chart').addEventListener('pointermove',event=>{const svg=$('#chart'),points=[...svg.querySelectorAll('[data-chart-point]')];if(!points.length)return;let nearest=null,distance=Infinity;points.forEach(point=>{const box=point.getBoundingClientRect(),dx=event.clientX-(box.left+box.width/2),dy=event.clientY-(box.top+box.height/2),candidate=Math.hypot(dx,dy);if(candidate<distance){distance=candidate;nearest=point}});svg.querySelectorAll('.chart-crosshair,.chart-focus-ring').forEach(item=>item.remove());if(!nearest||distance>70){chartTooltip.hidden=true;return}const ns='http://www.w3.org/2000/svg',cx=Number(nearest.getAttribute('cx')??nearest.getBBox().x+nearest.getBBox().width/2),cy=Number(nearest.getAttribute('cy')??nearest.getBBox().y+nearest.getBBox().height/2),vertical=document.createElementNS(ns,'line'),horizontal=document.createElementNS(ns,'line'),ring=document.createElementNS(ns,'circle');vertical.setAttribute('class','chart-crosshair');vertical.setAttribute('x1',cx);vertical.setAttribute('x2',cx);vertical.setAttribute('y1',chartFrame.top);vertical.setAttribute('y2',chartFrame.height-chartFrame.bottom);horizontal.setAttribute('class','chart-crosshair');horizontal.setAttribute('x1',chartFrame.left);horizontal.setAttribute('x2',chartFrame.width-chartFrame.right);horizontal.setAttribute('y1',cy);horizontal.setAttribute('y2',cy);ring.setAttribute('class','chart-focus-ring');ring.setAttribute('cx',cx);ring.setAttribute('cy',cy);ring.setAttribute('r','7');svg.append(vertical,horizontal,ring);chartTooltip.innerHTML=`<strong>${language==='zh'?'量測點':'Measurement point'}</strong>${escapeHtml(nearest.dataset.tooltip).replaceAll(' | ','<br>')}`;const card=document.querySelector('.chart-card').getBoundingClientRect();chartTooltip.style.left=`${Math.min(event.clientX-card.left,card.width-330)}px`;chartTooltip.style.top=`${Math.max(8,event.clientY-card.top-24)}px`;chartTooltip.hidden=false});
-$('#chart').addEventListener('pointerleave',()=>{chartTooltip.hidden=true;$('#chart').querySelectorAll('.chart-crosshair,.chart-focus-ring').forEach(item=>item.remove())});
+function chartPointCenter(point){
+  if(point.tagName.toLowerCase()==='circle')return {x:Number(point.getAttribute('cx')),y:Number(point.getAttribute('cy'))};
+  const box=point.getBBox();
+  return {x:box.x+box.width/2,y:box.y+box.height/2};
+}
+function clearHoverPoint(){
+  chartTooltip.hidden=true;
+  if(chartView.cursors.length)renderChartCursors();else $('#chartCursorReadout').hidden=true;
+  $('#chart').querySelectorAll('.chart-crosshair,.chart-focus-ring').forEach(item=>item.remove());
+}
+$('#chart').addEventListener('pointermove',event=>{const svg=$('#chart'),points=[...svg.querySelectorAll('[data-chart-point]')];if(!points.length||chartView.drag)return;let nearest=null,distance=Infinity;points.forEach(point=>{const box=point.getBoundingClientRect(),dx=event.clientX-(box.left+box.width/2),dy=event.clientY-(box.top+box.height/2),candidate=Math.hypot(dx,dy);if(candidate<distance){distance=candidate;nearest=point}});svg.querySelectorAll('.chart-crosshair,.chart-focus-ring').forEach(item=>item.remove());if(!nearest||distance>64){clearHoverPoint();return}const ns='http://www.w3.org/2000/svg',center=chartPointCenter(nearest),vertical=document.createElementNS(ns,'line'),horizontal=document.createElementNS(ns,'line'),ring=document.createElementNS(ns,'circle');vertical.setAttribute('class','chart-crosshair');vertical.setAttribute('x1',center.x);vertical.setAttribute('x2',center.x);vertical.setAttribute('y1',chartFrame.top);vertical.setAttribute('y2',chartFrame.height-chartFrame.bottom);horizontal.setAttribute('class','chart-crosshair');horizontal.setAttribute('x1',chartFrame.left);horizontal.setAttribute('x2',chartFrame.width-chartFrame.right);horizontal.setAttribute('y1',center.y);horizontal.setAttribute('y2',center.y);ring.setAttribute('class','chart-focus-ring');ring.setAttribute('cx',center.x);ring.setAttribute('cy',center.y);ring.setAttribute('r','9');svg.append(vertical,horizontal,ring);const readout=$('#chartCursorReadout'),pointText=nearest.dataset.tooltip||'';readout.hidden=false;readout.textContent=pointText;chartTooltip.innerHTML=`<strong>${language==='zh'?'量測點數值':'Measurement values'}</strong>${escapeHtml(pointText).replaceAll(' | ','<br>')}`;const card=document.querySelector('.chart-card').getBoundingClientRect(),tooltipWidth=Math.min(460,card.width-24);chartTooltip.style.maxWidth=`${tooltipWidth}px`;chartTooltip.style.left=`${Math.max(8,Math.min(event.clientX-card.left,card.width-tooltipWidth-24))}px`;chartTooltip.style.top='104px';chartTooltip.hidden=false});
+$('#chart').addEventListener('pointerleave',clearHoverPoint);
 
 // 架構節點只切換說明，不呼叫任何儀器 API，也不會改變 RF 狀態。
 const architectureCopy={
@@ -356,15 +408,15 @@ $('#restartDiagram').addEventListener('click',()=>{$('#diagramShowcaseFrame').sr
 $('#openDiagram').addEventListener('click',()=>window.open(diagramPlaybackUrl(activeDiagramPath),'_blank','noopener'));
 
 // 圖表檢視狀態只影響瀏覽器顯示；不重新量測，也不修改原始結果。
-const chartView={x:0,y:0,width:900,height:300,drag:null,cursors:[]};
-function applyChartView(){const svg=$('#chart');svg.setAttribute('viewBox',`${chartView.x} ${chartView.y} ${chartView.width} ${chartView.height}`)}
-function resetChartView(){Object.assign(chartView,{x:0,y:0,width:900,height:300,drag:null,cursors:[]});applyChartView();$('#chartCursorReadout').hidden=true;$('#chart').querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove())}
+const chartView={x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]};
+function applyChartView(){syncChartViewportSize()}
+function resetChartView(){Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]});applyChartView();$('#chartCursorReadout').hidden=true;$('#chart').querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove())}
 function renderChartCursors(){const svg=$('#chart');svg.querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove());chartView.cursors.forEach((cursor,index)=>{const ns='http://www.w3.org/2000/svg',line=document.createElementNS(ns,'line'),label=document.createElementNS(ns,'text');line.setAttribute('class','chart-ab-line');line.setAttribute('x1',cursor.x);line.setAttribute('x2',cursor.x);line.setAttribute('y1',chartFrame.top);line.setAttribute('y2',chartFrame.height-chartFrame.bottom);label.setAttribute('class','chart-ab-label');label.setAttribute('x',cursor.x+5);label.setAttribute('y',chartFrame.top-5);label.textContent=index?'B':'A';svg.append(line,label)});const readout=$('#chartCursorReadout');if(chartView.cursors.length){readout.hidden=false;readout.textContent=chartView.cursors.map((cursor,index)=>`${index?'B':'A'}: ${cursor.label}`).join('  |  ')+(chartView.cursors.length===2?`  |  ΔX(view): ${Math.abs(chartView.cursors[1].x-chartView.cursors[0].x).toFixed(1)}`:'')}else readout.hidden=true}
 $('#chartReset').onclick=resetChartView;
 $('#chartCursorMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?'A/B 游標已啟用：點選圖上測點':'A/B 游標已關閉')};
-$('#chart').addEventListener('wheel',event=>{event.preventDefault();const factor=event.deltaY<0?.84:1.18,rect=event.currentTarget.getBoundingClientRect(),px=chartView.x+(event.clientX-rect.left)/rect.width*chartView.width,nextWidth=Math.min(900,Math.max(180,chartView.width*factor));chartView.x=Math.max(0,Math.min(900-nextWidth,px-(px-chartView.x)*nextWidth/chartView.width));chartView.y=0;chartView.width=nextWidth;chartView.height=300;applyChartView()},{passive:false});
+$('#chart').addEventListener('wheel',event=>{event.preventDefault();const factor=event.deltaY<0?.72:1.38,rect=event.currentTarget.getBoundingClientRect(),px=chartView.x+(event.clientX-rect.left)/rect.width*chartView.width,nextWidth=Math.min(chartFrame.width,Math.max(chartZoomLimits.minWidth,chartView.width*factor));chartView.x=clampChartX(px-(px-chartView.x)*nextWidth/chartView.width,nextWidth);chartView.y=0;chartView.width=nextWidth;chartView.height=chartFrame.height;applyChartView()},{passive:false});
 $('#chart').addEventListener('pointerdown',event=>{if($('#chartCursorMode').classList.contains('active')){const point=event.target.closest('[data-chart-point]');if(point){const rect=$('#chart').getBoundingClientRect(),box=point.getBoundingClientRect(),x=chartView.x+((box.left+box.width/2)-rect.left)/rect.width*chartView.width;chartView.cursors.push({x,label:point.dataset.tooltip});if(chartView.cursors.length>2)chartView.cursors.shift();renderChartCursors()}return}chartView.drag={clientX:event.clientX,clientY:event.clientY,x:chartView.x,y:chartView.y};event.currentTarget.setPointerCapture(event.pointerId);document.querySelector('.chart-card').classList.add('is-panning')});
-$('#chart').addEventListener('pointermove',event=>{if(!chartView.drag)return;const rect=event.currentTarget.getBoundingClientRect(),nextX=chartView.drag.x-(event.clientX-chartView.drag.clientX)/rect.width*chartView.width;chartView.x=Math.max(0,Math.min(900-chartView.width,nextX));chartView.y=0;applyChartView()});
+$('#chart').addEventListener('pointermove',event=>{if(!chartView.drag)return;const rect=event.currentTarget.getBoundingClientRect(),nextX=chartView.drag.x-(event.clientX-chartView.drag.clientX)/rect.width*chartView.width;chartView.x=clampChartX(nextX);chartView.y=0;applyChartView()});
 $('#chart').addEventListener('pointerup',()=>{chartView.drag=null;document.querySelector('.chart-card').classList.remove('is-panning')});
 const sunIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
 const moonIcon='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.7 15.3A8.7 8.7 0 0 1 9.7 4.3a.6.6 0 0 0-.75-.8A10 10 0 1 0 21.5 16a.6.6 0 0 0-.8-.7z"/></svg>';

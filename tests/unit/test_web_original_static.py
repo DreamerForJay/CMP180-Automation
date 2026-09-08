@@ -150,6 +150,15 @@ def test_frequency_unit_switch_is_one_click_not_a_dropdown() -> None:
     assert "addEventListener('click'" in plan
 
 
+def test_hardware_frequency_sweep_defaults_to_approved_wlan_section() -> None:
+    plan = (STATIC / "custom-plan.js").read_text(encoding="utf-8")
+
+    # 實機 frequency sweep 預設必須落在已核准 6 GHz/BW320 section，避免使用者一切換
+    # 掃描軸就得到不可執行的非 WLAN 空隙計畫。
+    assert "form.start.value = powerAxis ? -55 : 5925" in plan
+    assert "form.stop.value = powerAxis ? -30 : 6125" in plan
+
+
 def test_web_preflight_and_chart_hover_are_operator_visible() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     javascript = (STATIC / "app.js").read_text(encoding="utf-8")
@@ -234,7 +243,7 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
     assert "WLAN EVM Frequency Sweep: review first" in hardware
     assert "GPRF: RF power only" in hardware
     # 圖表平移必須限制在固定畫布內，且不得造成 Y 軸跟著游標漂移。
-    assert "Math.min(900-chartView.width" in javascript
+    assert "chartFrame.width-width" in javascript
     assert "chartView.y=0" in javascript
     assert "chart-crosshair" in javascript
     assert "chartAxisMarkup" in javascript
@@ -255,9 +264,21 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert "measurementTab:'Measure'" in javascript
     assert "calibrationTab:'Calibration'" in javascript
     assert 'value="power_error_db"' in html
+    assert 'name="input_cable_loss_db"' in html
+    assert 'name="output_cable_loss_db"' in html
+    assert 'name="external_gain_db"' in html
+    assert 'name="external_attenuation_db"' in html
+    assert 'name="sa_safe_limit_dbm"' in html
+    assert 'value="gain_db"' in html
+    assert 'value="pout_dbm"' in html
     assert "<th>Power Error (dB)</th>" in html
     assert "powerFlatnessStats" in javascript
+    assert "p1dbMetrics" in javascript
+    assert "Max Compression" in javascript
     assert "expected_power_dbm:expectedPower" in javascript
+    assert "pin_dbm:pin" in javascript
+    assert "pout_dbm:pout" in javascript
+    assert "gain_db:gain" in javascript
     assert "formatMeasured(point.power_error_db,3)" in javascript
     assert "Power Error 是 GPRF flatness" in javascript
     assert "Peak-to-Peak Ripple" in javascript

@@ -10,6 +10,9 @@ from pathlib import Path
 METRICS = (
     ("evm_all_carriers_db", "EVM All", "dB"),
     ("burst_power_dbm", "Burst Power", "dBm"),
+    ("pin_dbm", "PA Pin", "dBm"),
+    ("pout_dbm", "PA Pout", "dBm"),
+    ("gain_db", "PA Gain", "dB"),
     ("frequency_error_hz", "Frequency Error", "Hz"),
     ("clock_error_ppm", "Clock Error", "ppm"),
 )

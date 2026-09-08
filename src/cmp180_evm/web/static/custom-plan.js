@@ -174,7 +174,9 @@ function setCustomPlanAxis(axis) {
   const form = $('#customPlanForm').elements;
   const powerAxis = axis === 'power';
   form.axis.value = axis;
-  form.start.value = powerAxis ? -55 : 5085;
+  // 預設 frequency sweep 放在已核准 6 GHz/BW320 section，避免一切回掃描軸就踩到
+  // 5 GHz 以下的非 WLAN 空隙而被 workflow gate 擋下。
+  form.start.value = powerAxis ? -55 : 5925;
   form.stop.value = powerAxis ? -30 : 6125;
   form.step.value = powerAxis ? 5 : 20;
   // 切換掃描軸時單位一律回到 MHz，隱藏值與按鈕文字必須同步。

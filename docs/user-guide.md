@@ -199,7 +199,13 @@ git status
 
 ### 直接式實機控制
 
-實機頁面使用單點、頻率掃描與功率掃描三個直接分頁，不再顯示裝飾性 Generator／Analyzer／Flow 積木，也不要求從下拉選單選擇模式。Run 仍會觸發既有安全表單與最終 RF 摘要確認。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。
+實機頁面使用單點、頻率掃描與功率掃描三個直接分頁，不再顯示裝飾性 Generator／Analyzer／Flow 積木，也不要求從下拉選單選擇模式。頻率掃描預設帶入已核准的 5925→6125 MHz／320 MHz 區段，避免剛切到掃描軸就落入非 WLAN 空隙；若改成 5085 MHz 或其他未核准組合，畫面仍會拒絕並保持 RF Off。Run 仍會觸發既有安全表單與最終 RF 摘要確認。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。
+
+### GPRF PA 功率掃描與 P1dB 圖
+
+GPRF power sweep 可作為第一版 PA conducted scalar 量測入口：選擇 `Power` 軸，填入固定頻率、Start／Stop／Step、dwell、input cable loss、output cable loss、external gain、external attenuator 與 SA safe limit。Preview 會顯示 DUT Pin 範圍；執行後 CSV／JSON 會保存 `pin_dbm`、`pout_dbm`、`gain_db`，結果頁可直接切換 PA Pin、PA Pout 與 PA Gain 圖。`pout_dbm` 由 analyzer power 加回 output cable loss 與 attenuator；`pin_dbm` 由 generator power 加 external gain、扣 input cable loss。
+
+P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。本功能目前只完成軟體／Mock／離線測試，尚未做新的 PA 實機 RF 驗證。
 
 ## Loopback 驗證
 
@@ -292,6 +298,8 @@ both dependency-free SVG and PNG output. These commands read stored artifacts on
 After a new single or sweep run completes, Results shows two plot families. The upper chart is the interactive Web SVG with metric selection, wheel zoom, horizontal mouse-drag panning, hover crosshairs, A/B cursors, and export. The lower “Pandas DataFrame + Matplotlib PNG” area contains 160 DPI images generated automatically from the run's saved `results.csv`. Use its selector to switch among EVM, Burst Power, Frequency Error, or Clock Error; only the selected PNG is shown, with an open-original link. Files live in the run's `plots-matplotlib/` directory. Existing historical runs are not rewritten automatically.
 
 The Hardware Single tab can execute a center frequency across the CMP180 400-8000 MHz envelope with 20/40/80/160/320 MHz bandwidth and -55 to -30 dBm generator power. Review the plan, then confirm RF1.1-to-RF1.5 direct cabling with no added attenuator, operator presence, and the final RF dialog. A point in an approved WLAN section is labelled `APPROVED`. An out-of-section point uses the verified EHT/B6GHz measurement template while the generator and analyzer center frequencies still use and read back the entered value; its result is labelled `HIL_PENDING`. This relaxation applies only to SingleShot; frequency and power sweeps retain the approved-section gate. The backend revalidates the values and fingerprint before opening the CMP180 session. `HIL_PENDING`, uncalibrated, or no-formal-limit results are not DUT-compliance claims.
+
+The Hardware Sweep tabs use direct Single/Frequency/Power controls. Frequency sweep defaults to the approved 5925→6125 MHz / 320 MHz section so the initial plan is executable; changing it to 5085 MHz or another unapproved combination is still rejected with RF left off. Multi-point runs can be paused only at point cleanup/RF-Off boundaries, then resumed from the next point or stopped with partial artifacts saved.
 
 ### 8. First CMP180 connection
 

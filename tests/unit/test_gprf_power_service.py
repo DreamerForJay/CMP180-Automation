@@ -5,7 +5,9 @@ import pytest
 
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.web.gprf_service import (
+    _analyze_p1db,
     _drain_error_queue,
+    _point_pa_metrics,
     _restore_baseband,
     _save_gprf_result,
     _select_cw_baseband,
@@ -115,6 +117,66 @@ def test_gprf_preview_blocks_outside_cmp180_planning_range():
     assert "400 MHz..8 GHz" in str(preview.rejection_reason)
 
 
+def test_gprf_preview_reports_pa_reference_plane_budget():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "power",
+            "frequency_hz": 6_105_000_000,
+            "start_dbm": -30,
+            "stop_dbm": -20,
+            "step_dbm": 5,
+            "dwell_ms": 200,
+            "input_cable_loss_db": 1.5,
+            "output_cable_loss_db": 2.0,
+            "external_gain_db": 10.0,
+            "external_attenuation_db": 20.0,
+            "sa_safe_limit_dbm": 0.0,
+        }
+    )
+
+    public = preview.public()
+
+    assert public["execution_allowed"] is True
+    assert public["pin_start_dbm"] == pytest.approx(-21.5)
+    assert public["pin_stop_dbm"] == pytest.approx(-11.5)
+    metrics = _point_pa_metrics(
+        generator_power_dbm=-20,
+        measured_power_dbm=-3.0,
+        preview=preview,
+    )
+    # Pin/Pout/Gain 使用 DUT 參考面；線損與衰減補償不可改變送進儀器的功率設定。
+    assert metrics == {
+        "pin_dbm": pytest.approx(-11.5),
+        "pout_dbm": pytest.approx(19.0),
+        "gain_db": pytest.approx(30.5),
+    }
+
+
+def test_p1db_reports_value_or_not_found_with_observed_margin():
+    found = _analyze_p1db(
+        [
+            {"valid": True, "pin_dbm": -30.0, "pout_dbm": -10.0, "gain_db": 20.0},
+            {"valid": True, "pin_dbm": -25.0, "pout_dbm": -5.0, "gain_db": 20.0},
+            {"valid": True, "pin_dbm": -20.0, "pout_dbm": -0.2, "gain_db": 19.8},
+            {"valid": True, "pin_dbm": -15.0, "pout_dbm": 3.8, "gain_db": 18.8},
+        ]
+    )
+    not_found = _analyze_p1db(
+        [
+            {"valid": True, "pin_dbm": -30.0, "pout_dbm": -10.0, "gain_db": 20.0},
+            {"valid": True, "pin_dbm": -25.0, "pout_dbm": -5.0, "gain_db": 20.0},
+            {"valid": True, "pin_dbm": -20.0, "pout_dbm": -0.2, "gain_db": 19.8},
+        ]
+    )
+
+    assert found["status"] == "found"
+    assert found["ip1db_dbm"] == pytest.approx(-15.6666666667)
+    assert found["op1db_dbm"] == pytest.approx(3.2666666667)
+    assert not_found["status"] == "not_found"
+    assert not_found["max_compression_db"] == pytest.approx(0.1333333333)
+    assert not_found["max_measured_pin_dbm"] == pytest.approx(-20.0)
+
+
 def test_error_queue_drain_reports_empty_queue_without_extra_reads():
     conn = _StubConn(['0,"No error"'])
 
@@ -220,6 +282,9 @@ def test_gprf_artifacts_record_completed_point_count(tmp_path: Path):
                 "generator_power_dbm": -40,
                 "expected_power_dbm": -40,
                 "burst_power_dbm": -40.1,
+                "pin_dbm": -40,
+                "pout_dbm": -40.1,
+                "gain_db": -0.1,
                 "valid": True,
             },
             {
@@ -228,6 +293,9 @@ def test_gprf_artifacts_record_completed_point_count(tmp_path: Path):
                 "generator_power_dbm": -40,
                 "expected_power_dbm": -40,
                 "burst_power_dbm": -39.9,
+                "pin_dbm": -40,
+                "pout_dbm": -39.9,
+                "gain_db": 0.1,
                 "valid": True,
             },
         ],
@@ -241,3 +309,4 @@ def test_gprf_artifacts_record_completed_point_count(tmp_path: Path):
     assert metadata["point_count"] == 2
     # GPRF 使用獨立保存流程，也必須同步產生靜態 PNG，避免結果頁只剩互動 SVG。
     assert Path(artifacts["matplotlib_burst_power_dbm"]).is_file()
+    assert Path(artifacts["matplotlib_gain_db"]).is_file()

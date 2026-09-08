@@ -31,7 +31,15 @@ function configureGprfFields() {
 function buildGprfPayload() {
   const form = new FormData($('#gprfPowerForm'));
   const axis = form.get('axis');
-  const payload = {axis, dwell_ms: Number(form.get('dwell_ms'))};
+  const payload = {
+    axis,
+    dwell_ms: Number(form.get('dwell_ms')),
+    input_cable_loss_db: Number(form.get('input_cable_loss_db')),
+    output_cable_loss_db: Number(form.get('output_cable_loss_db')),
+    external_gain_db: Number(form.get('external_gain_db')),
+    external_attenuation_db: Number(form.get('external_attenuation_db')),
+    sa_safe_limit_dbm: Number(form.get('sa_safe_limit_dbm'))
+  };
   if (axis === 'frequency') {
     payload.start_hz = gprfHz(form.get('start'));
     payload.stop_hz = gprfHz(form.get('stop'));
@@ -56,6 +64,12 @@ function renderGprfPreview(data) {
   const fixed = data.axis === 'frequency'
     ? `${language === 'zh' ? '固定功率' : 'Fixed power'}: ${data.power_dbm} dBm`
     : `${language === 'zh' ? '固定頻率' : 'Fixed frequency'}: ${gprfFormatFrequency(data.frequency_hz)}`;
+  const pinRange = data.pin_start_dbm === null
+    ? ''
+    : `${language === 'zh' ? 'DUT Pin 範圍' : 'DUT Pin range'}: ${data.pin_start_dbm.toFixed(2)} → ${data.pin_stop_dbm.toFixed(2)} dBm`;
+  const compensation = language === 'zh'
+    ? `補償：Input loss ${data.input_cable_loss_db} dB，Output loss ${data.output_cable_loss_db} dB，External gain ${data.external_gain_db} dB，Attenuator ${data.external_attenuation_db} dB，SA limit ${data.sa_safe_limit_dbm} dBm`
+    : `Compensation: input loss ${data.input_cable_loss_db} dB, output loss ${data.output_cable_loss_db} dB, external gain ${data.external_gain_db} dB, attenuator ${data.external_attenuation_db} dB, SA limit ${data.sa_safe_limit_dbm} dBm`;
   preview.hidden = false;
   const title = data.axis === 'frequency'
     ? (language === 'zh' ? 'RF 功率讀值頻率掃描（GPRF）' : 'RF Power vs Frequency (GPRF)')
@@ -65,6 +79,8 @@ function renderGprfPreview(data) {
     `點數：${data.point_count}`,
     `範圍：${range}`,
     fixed,
+    pinRange,
+    compensation,
     `停留時間：${data.dwell_ms} ms`,
     data.execution_allowed
       ? '可執行：僅讀取 RF 功率，不是 WLAN EVM。'
@@ -74,6 +90,8 @@ function renderGprfPreview(data) {
     `Points: ${data.point_count}`,
     `Range: ${range}`,
     fixed,
+    pinRange,
+    compensation,
     `Dwell: ${data.dwell_ms} ms`,
     data.execution_allowed
       ? (language === 'zh' ? '可執行：RF 功率讀值，不是 WLAN EVM。' : 'Executable: RF power reading only, not WLAN EVM.')
