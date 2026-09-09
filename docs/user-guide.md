@@ -203,9 +203,39 @@ git status
 
 ### GPRF PA 功率掃描與 P1dB 圖
 
-GPRF power sweep 可作為第一版 PA conducted scalar 量測入口：選擇 `Power` 軸，填入固定頻率、Start／Stop／Step、dwell、input cable loss、output cable loss、external gain、external attenuator 與 SA safe limit。Preview 會顯示 DUT Pin 範圍；執行後 CSV／JSON 會保存 `pin_dbm`、`pout_dbm`、`gain_db`，結果頁可直接切換 PA Pin、PA Pout 與 PA Gain 圖。`pout_dbm` 由 analyzer power 加回 output cable loss 與 attenuator；`pin_dbm` 由 generator power 加 external gain、扣 input cable loss。
+GPRF power sweep 可作為第一版 PA conducted scalar 量測入口：選擇 `Power` 軸，填入固定頻率、Start／Stop／Step、dwell、input cable loss、output cable loss、external gain、output attenuator 與 SA safe limit。Preview 會顯示 DUT Pin 範圍；執行後 CSV／JSON 會保存 `pin_dbm`、`pout_dbm`、`gain_db`，結果頁可直接切換 PA Pin、PA Pout 與 PA Gain 圖。`pout_dbm` 由 analyzer power 加回 output cable loss 與 attenuator；`pin_dbm` 由 generator power 加 external gain、扣 input cable loss。
 
-P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。本功能目前只完成軟體／Mock／離線測試，尚未做新的 PA 實機 RF 驗證。
+若已使用 approved PA profile，現場換 DUT 不需重填上述工程參數。先驗證 profile：
+
+```powershell
+python -m cmp180_evm validate-pa-sweep configs\pa_sweep.example.yaml
+```
+
+確認 RF1.1 → RF1.5 route 與操作員在場後執行；若沒有外部衰減器，程式會自動把
+stop power 夾到 RF1.5 safe limit 內：
+
+```powershell
+python scripts\cmp180_pa_sweep_validate.py `
+  --dut-id DUT-001 `
+  --confirm-direct-cable `
+  --confirm-operator-present
+```
+
+現場若有外部衰減器，才加上例如 `--output-attenuator-db 30`。這會讓安全估算允許掃到
+更高 Generator stop power，但不會把該衰減器寫入 CMP180 measurement EATT。
+
+Web 操作不必輸入 CLI：進入實機量測，切到 `RF 功率讀值（GPRF）`，按「載入 approved
+PA profile」會帶入目前 approved envelope。預設沒有實體輸出衰減器，因此畫面先載入
+`-55 → -25 dBm`；若現場使用受控 DUT／實體 attenuator，才把 `Output attenuator`
+改成實際值並把 stop 調到 profile 允許的 `-20 dBm`，再按「檢查 GPRF 計畫」與
+「執行實機量測」。
+
+Profile 會把實體 `output_attenuator_db` 與 CMP180 measurement
+`measurement_external_attenuation_db` 分開；前者只用於 RF1.5 安全預估與離線 Pout/Gain，
+不得誤寫成儀器 EATT。任一點出現 SCPI error、reliability 非 0 或 SA safe limit 時，
+workflow 會在該點 STOP／RF Off 後停止後續掃描並保存 partial artifact。
+
+P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。2026-09-09 已完成 RF1.1 → RF1.5 低功率 GPRF PA sweep 實機驗證；擴大到 `-20 dBm` 的 P1dB 掃描仍需使用 profile／fixture 安全裁切，不得把失敗 finding 當成 P1dB 證據。
 
 示範模式的單點、頻率掃描與功率掃描不連接 CMP180，也不送 RF，因此不套用實機功率安全上限；功率掃描會以固定的模擬 PA 曲線產生 Pin、Pout、Gain compression 與 P1dB 摘要，方便展示目前與未來圖表流程。所有示範 artifact 仍標示 `SIMULATED`，不得當成新的 PA 實機量測證據。
 
@@ -364,3 +394,12 @@ SingleShot with Stop/Abort/RF Off in `finally`. All 11 HIL-complete sections are
 the Web approved profile. Normal Web custom sweeps select and read back the matching
 waveform while RF is OFF and measurement is idle. The 400 MHz–8 GHz figure remains an
 instrument tuning catalog range; non-WLAN gaps are not approved for execution.
+
+
+### PA 掃描摘要與有效性（2026-09-09）
+
+在結果頁開啟含 PA 欄位的 GPRF 紀錄：功率掃描摘要顯示 Small-signal Gain、Max Pout、Max Compression、IP1dB、OP1dB 與 Valid Points；頻率掃描顯示 Mean Gain、Gain Peak-to-Peak Ripple 與 Gain Std Dev（母體標準差）。PA 統計只納入有效且 Pin／Pout／Gain 齊全的點。`not_found` 表示有效掃描範圍內未觀察到 1 dB 壓縮，`insufficient_points` 表示資料不足；缺值不補零。
+
+Analyzer measured／expected power 的誤差與 PA Gain 是不同物理量；不得把 Analyzer error ripple 當成 Gain flatness。無 PA 欄位的舊 GPRF 結果保留明確標示 Analyzer 參考面的摘要，dBm 平均為算術平均。重新產生的 SVG／Matplotlib 圖會排除 INVALID 並切斷曲線；既有 PNG 不會自動更新，須由原 CSV 重新產圖。原始 CSV／JSON 保留診斷數值。
+
+本次驗證為合成資料／Mock 回歸及既有 stored artifact 查閱，未執行新的實機 RF 量測。

@@ -68,7 +68,8 @@ function renderRunHistory(){const labels=language==='zh'?{load:'查看詳情',cl
 async function loadRunHistory(){const button=$('#refreshHistoryButton');button.disabled=true;try{const response=await fetch('/api/runs',{cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load run history');runHistory=Array.isArray(data.runs)?data.runs:[];const validKeys=new Set(runHistory.map(run=>run.run_key));[...selectedCompareKeys].forEach(key=>{if(!validKeys.has(key))selectedCompareKeys.delete(key)});renderRunHistory()}catch(error){$('#historyEmpty').hidden=false;$('#historyEmpty').textContent=language==='zh'?`無法載入紀錄：${error.message}`:`Unable to load runs: ${error.message}`;toast(error.message,'error')}finally{button.disabled=false}}
 function escapeHtml(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
 function updateCompareSelection(){const count=selectedCompareKeys.size;$('#compareCount').textContent=language==='zh'?`已選 ${count} 筆`:`${count} selected`;$('#compareSelectedButton').textContent=count===1?(language==='zh'?'查看所選圖表':'Plot selected run'):(language==='zh'?'比較所選資料':'Compare selected runs');$('#compareSelectedButton').disabled=count<1||count>8}
-function finiteNumber(value){const number=Number(value);return Number.isFinite(number)?number:null}
+// 儀器缺值與空字串不代表 0；先排除，避免污染圖表及摘要統計。
+function finiteNumber(value){if(value===null||value===undefined||typeof value==='boolean'||(typeof value==='string'&&!value.trim()))return null;const number=Number(value);return Number.isFinite(number)?number:null}
 function normalizeHistoricalPoints(record){const source=Array.isArray(record.results)?record.results:(record.results?.points||[]);const metadata=record.metadata||{};return source.map((raw,index)=>{const frequency=finiteNumber(raw.frequency_hz??metadata.frequency_hz??metadata.center_frequency_hz),power=finiteNumber(raw.generator_power_dbm??metadata.generator_power_dbm),evmAll=finiteNumber(raw.evm_all_db??raw.evm_all_carriers_db),evmData=finiteNumber(raw.evm_data_db??raw.evm_data_carriers_db),evmPilot=finiteNumber(raw.evm_pilot_db??raw.evm_pilot_carriers_db),burstPower=finiteNumber(raw.burst_power_dbm),expectedPower=finiteNumber(raw.expected_power_dbm??raw.generator_power_dbm??metadata.generator_power_dbm),powerError=burstPower!==null&&expectedPower!==null?burstPower-expectedPower:null,peakPower=finiteNumber(raw.peak_power_dbm),frequencyError=finiteNumber(raw.frequency_error_hz),clockError=finiteNumber(raw.clock_error_ppm??raw.clock_error),pin=finiteNumber(raw.pin_dbm),pout=finiteNumber(raw.pout_dbm),gain=finiteNumber(raw.gain_db);return {point_index:Number(raw.point_index??index),frequency_hz:frequency,generator_power_dbm:power,expected_power_dbm:expectedPower,power_error_db:powerError,pin_dbm:pin,pout_dbm:pout,gain_db:gain,evm_all_db:evmAll,evm_data_db:evmData,evm_pilot_db:evmPilot,burst_power_dbm:burstPower,peak_power_dbm:peakPower,frequency_error_hz:frequencyError,clock_error_ppm:clockError,measurement_state:String(raw.measurement_state||''),valid:[evmAll,burstPower,frequencyError,pout,gain].some(value=>value!==null)&&String(raw.measurement_state||'').toUpperCase()!=='INV',limit_status:String(raw.limit_status||raw.status||'RECORDED')}})}
 function inferTraceAxis(points){const frequencies=new Set(points.map(point=>point.frequency_hz).filter(value=>value!==null));const powers=new Set(points.map(point=>point.generator_power_dbm).filter(value=>value!==null));return powers.size>frequencies.size?'power':'frequency'}
 const traceColors=['#18d7e5','#f59e0b','#a78bfa','#43c47a','#f05261','#60a5fa','#f472b6','#eab308'];
@@ -123,11 +124,27 @@ function powerFlatnessStats(points){
   return {avgMeasured,avgExpected,meanError,maxAbsError,ripple:maxError-minError,stdDev:Math.sqrt(variance),valid:valid.length,total:points.length};
 }
 function p1dbMetrics(p1db){
-  if(!p1db||p1db.status==='frequency_sweep')return '';
-  const value=(name,unit)=>Number.isFinite(Number(p1db[name]))?Number(p1db[name]).toFixed(2)+unit:'—';
-  if(p1db.status==='found')return metric('IP1dB',value('ip1db_dbm',' dBm'))+metric('OP1dB',value('op1db_dbm',' dBm'))+metric('Small-signal Gain',value('small_signal_gain_db',' dB'));
-  // 尚未掃到 1 dB 壓縮時仍顯示已觀察到的最大壓縮與最大 Pin/Pout，避免誤填假 P1dB。
-  return metric('P1dB','not_found')+metric('Max Compression',value('max_compression_db',' dB'))+metric('Max Pin',value('max_measured_pin_dbm',' dBm'))+metric('Max Pout',value('max_measured_pout_dbm',' dBm'));
+  const result=p1db||{},status=result.status||'insufficient_points';
+  // null 不可經 Number(null) 變成零；未找到與資料不足必須保留不同狀態。
+  const value=(name,unit)=>{const number=finiteNumber(result[name]);return number===null?'—':number.toFixed(2)+unit};
+  return metric('Small-signal Gain',value('small_signal_gain_db',' dB'))
+    +metric('Max Compression',value('max_compression_db',' dB'))
+    +metric('IP1dB',status==='found'?value('ip1db_dbm',' dBm'):status)
+    +metric('OP1dB',status==='found'?value('op1db_dbm',' dBm'):status);
+}
+function paSummaryMetrics(points,axis,p1db){
+  // PA 統計只使用同時具備有效 Pin／Pout／Gain 的點；INVALID 的數值僅供診斷。
+  const valid=points.filter(point=>point.valid===true&&['pin_dbm','pout_dbm','gain_db'].every(key=>finiteNumber(point[key])!==null));
+  const gains=valid.map(point=>Number(point.gain_db));
+  const mean=gains.length?gains.reduce((sum,value)=>sum+value,0)/gains.length:null;
+  const format=value=>value===null?'—':value.toFixed(3)+' dB';
+  const gainMetrics=axis==='power'?p1dbMetrics(p1db)
+    :metric('Mean Gain',format(mean))
+      +metric('Gain Peak-to-Peak Ripple',format(gains.length?Math.max(...gains)-Math.min(...gains):null))
+      +metric('Gain Std Dev',format(gains.length?Math.sqrt(gains.reduce((sum,value)=>sum+(value-mean)**2,0)/gains.length):null));
+  // Max Pout 取所有有效輸出中的最大值，不假設最高 Pin 的輸出必定最大。
+  return gainMetrics+metric('Max Pout',valid.length?Math.max(...valid.map(point=>Number(point.pout_dbm))).toFixed(2)+' dBm':'—')
+    +metric('Valid Points',`${valid.length}/${points.length}`);
 }
 function render(data){
   // 新量測結果取代歷史比較狀態，避免圖例與單次結果互相混淆。
@@ -166,14 +183,14 @@ function render(data){
   const worstMargin=margins.length?Math.min(...margins):null;
   const signed=value=>(value>0?'+':'')+value.toFixed(2)+' dB';
   const powerStats=powerFlatnessStats(latest),isGprf=data.measurement_family==='GPRF_POWER';
-  $('#metrics').innerHTML=isGprf&&powerStats
-    ? metric('Average Power',powerStats.avgMeasured.toFixed(3)+' dBm')
-    +p1dbMetrics(data.p1db)
-    +metric('Expected Power',powerStats.avgExpected.toFixed(3)+' dBm')
+  const hasPa=isGprf&&data.points.some(point=>Object.hasOwn(point,'gain_db'));
+  $('#metrics').innerHTML=hasPa?paSummaryMetrics(latest,latestAxis,data.p1db)+metric(fixedLabel,fixedValue):isGprf&&powerStats
+    ? metric('Mean Analyzer Power (dBm arithmetic mean)',powerStats.avgMeasured.toFixed(3)+' dBm')
+    +metric('Mean Expected Analyzer Power',powerStats.avgExpected.toFixed(3)+' dBm')
     +metric('Mean Error',(powerStats.meanError>=0?'+':'')+powerStats.meanError.toFixed(3)+' dB')
     +metric('Max |Error|',powerStats.maxAbsError.toFixed(3)+' dB')
-    +metric('Peak-to-Peak Ripple',powerStats.ripple.toFixed(3)+' dB')
-    +metric('Std Dev',powerStats.stdDev.toFixed(3)+' dB')
+    +metric('Analyzer Error Peak-to-Peak Ripple',powerStats.ripple.toFixed(3)+' dB')
+    +metric('Analyzer Error Std Dev',powerStats.stdDev.toFixed(3)+' dB')
     +metric('Valid',`${powerStats.valid}/${powerStats.total}`)
     +metric(fixedLabel,fixedValue)
     : metric('Avg EVM',avg===null?'—':avg.toFixed(2)+' dB')
@@ -186,7 +203,8 @@ function render(data){
     +metric(fixedLabel,fixedValue);
   // 只有真的存在 INVALID 點才提示，避免讓操作員誤以為本次量測含無效資料。
   const hint=$('#chartHint');
-  if(hint&&isGprf)hint.textContent=language==='zh'
+  if(hint&&hasPa)hint.textContent=language==='zh'?'PA Gain = Pout − Pin；摘要排除 INVALID。not_found 表示有效範圍內未觀察到 1 dB 壓縮；insufficient_points 表示資料不足。':'PA Gain = Pout − Pin; summary excludes INVALID. not_found: no observed 1 dB compression; insufficient_points: insufficient data.';
+  else if(hint&&isGprf)hint.textContent=language==='zh'
     ?'GPRF power：藍線是量測功率，橘色虛線是 Expected power；Power Error = measured - expected'
     :'GPRF power: blue is measured power, orange dashed line is expected power; Power Error = measured - expected';
   else if(hint)hint.textContent=invalidCount

@@ -1,0 +1,20 @@
+# 中文：RF owner 核准的 PA power sweep envelope。換 DUT 時保留本檔，執行時只輸入
+# DUT ID 與當次接線／人在場確認；現場 fixture 可用 CLI override，程式會自動夾到安全 stop。
+profile_id: "rf1.1-rf1.5-pa-p1db-6105mhz-v1"
+revision: "1.0-approved"
+lifecycle: "approved"
+route: "RF1.1-RF1.5"
+frequency_hz: 6105000000
+start_dbm: -55
+stop_dbm: -20
+step_db: 1
+dwell_ms: 200
+expected_dut_gain_db: 25
+input_cable_loss_db: 0
+output_cable_loss_db: 0
+output_attenuator_db: 0
+measurement_external_attenuation_db: 0
+sa_safe_limit_dbm: 0
+approved_by: "RF owner, user-confirmed in Codex session on 2026-09-09"
+approved_at: "2026-09-09"
+source_evidence: "User approval: start=-55, stop=-20, step=1, expected_gain=25, sa_safe_limit=0; fixture attenuation is runtime input"

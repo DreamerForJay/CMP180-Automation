@@ -1,6 +1,19 @@
 let gprfPlanPayload = null;
 let gprfPlanResult = null;
 
+const approvedPaProfile = {
+  axis: 'power',
+  start: -55,
+  stopWithoutAttenuator: -25,
+  approvedStop: -20,
+  step: 1,
+  frequency_mhz: 6105,
+  dwell_ms: 200,
+  expected_dut_gain_db: 25,
+  output_attenuator_db: 0,
+  sa_safe_limit_dbm: 0
+};
+
 function gprfHz(mhz) {
   // GPRF 表單固定用 MHz，後端與 SCPI 一律接收 Hz，避免單位誤送。
   return Number(mhz) * 1e6;
@@ -28,6 +41,30 @@ function configureGprfFields() {
   updateHardwareSummary();
 }
 
+function loadApprovedPaProfile() {
+  const form = $('#gprfPowerForm').elements;
+  // Web 快速鍵採用 profile 的安全預設：未填實體輸出衰減器時，依 25 dB DUT gain 將 stop 裁切到 RF1.5 0 dBm safe limit。
+  form.axis.value = approvedPaProfile.axis;
+  configureGprfFields();
+  form.start.value = approvedPaProfile.start;
+  form.stop.value = approvedPaProfile.stopWithoutAttenuator;
+  form.step.value = approvedPaProfile.step;
+  form.frequency_mhz.value = approvedPaProfile.frequency_mhz;
+  form.dwell_ms.value = approvedPaProfile.dwell_ms;
+  form.input_cable_loss_db.value = 0;
+  form.output_cable_loss_db.value = 0;
+  form.external_gain_db.value = 0;
+  form.expected_dut_gain_db.value = approvedPaProfile.expected_dut_gain_db;
+  form.output_attenuator_db.value = approvedPaProfile.output_attenuator_db;
+  form.sa_safe_limit_dbm.value = approvedPaProfile.sa_safe_limit_dbm;
+  gprfPlanPayload = null;
+  gprfPlanResult = null;
+  $('#gprfPowerPreview').hidden = true;
+  toast(language === 'zh'
+    ? `已載入 approved PA profile：未接衰減器先掃 ${approvedPaProfile.start} → ${approvedPaProfile.stopWithoutAttenuator} dBm；若現場有受控衰減器，可調整 Output attenuator 後再檢查計畫。`
+    : `Approved PA profile loaded: without an output attenuator, sweep ${approvedPaProfile.start} to ${approvedPaProfile.stopWithoutAttenuator} dBm first. Adjust Output attenuator for a controlled fixture before reviewing the plan.`);
+}
+
 function buildGprfPayload() {
   const form = new FormData($('#gprfPowerForm'));
   const axis = form.get('axis');
@@ -37,7 +74,9 @@ function buildGprfPayload() {
     input_cable_loss_db: Number(form.get('input_cable_loss_db')),
     output_cable_loss_db: Number(form.get('output_cable_loss_db')),
     external_gain_db: Number(form.get('external_gain_db')),
-    external_attenuation_db: Number(form.get('external_attenuation_db')),
+    expected_dut_gain_db: Number(form.get('expected_dut_gain_db')),
+    output_attenuator_db: Number(form.get('output_attenuator_db')),
+    external_attenuation_db: 0,
     sa_safe_limit_dbm: Number(form.get('sa_safe_limit_dbm'))
   };
   if (axis === 'frequency') {
@@ -68,8 +107,8 @@ function renderGprfPreview(data) {
     ? ''
     : `${language === 'zh' ? 'DUT Pin 範圍' : 'DUT Pin range'}: ${data.pin_start_dbm.toFixed(2)} → ${data.pin_stop_dbm.toFixed(2)} dBm`;
   const compensation = language === 'zh'
-    ? `補償：Input loss ${data.input_cable_loss_db} dB，Output loss ${data.output_cable_loss_db} dB，External gain ${data.external_gain_db} dB，Attenuator ${data.external_attenuation_db} dB，SA limit ${data.sa_safe_limit_dbm} dBm`
-    : `Compensation: input loss ${data.input_cable_loss_db} dB, output loss ${data.output_cable_loss_db} dB, external gain ${data.external_gain_db} dB, attenuator ${data.external_attenuation_db} dB, SA limit ${data.sa_safe_limit_dbm} dBm`;
+    ? `補償：Input loss ${data.input_cable_loss_db} dB，Output loss ${data.output_cable_loss_db} dB，External gain ${data.external_gain_db} dB，Expected DUT gain ${data.expected_dut_gain_db} dB，Output attenuator ${data.output_attenuator_db} dB，Measurement EATT ${data.external_attenuation_db} dB，SA limit ${data.sa_safe_limit_dbm} dBm`
+    : `Compensation: input loss ${data.input_cable_loss_db} dB, output loss ${data.output_cable_loss_db} dB, external gain ${data.external_gain_db} dB, expected DUT gain ${data.expected_dut_gain_db} dB, output attenuator ${data.output_attenuator_db} dB, measurement EATT ${data.external_attenuation_db} dB, SA limit ${data.sa_safe_limit_dbm} dBm`;
   preview.hidden = false;
   const title = data.axis === 'frequency'
     ? (language === 'zh' ? 'RF 功率讀值頻率掃描（GPRF）' : 'RF Power vs Frequency (GPRF)')
@@ -128,6 +167,8 @@ $('#gprfPowerForm').addEventListener('change', event => {
   if (event.target.name === 'axis') configureGprfFields();
 });
 
+$('#loadPaProfileButton').onclick = loadApprovedPaProfile;
+
 $('#gprfPowerForm').onsubmit = async event => {
   event.preventDefault();
   try {
@@ -175,3 +216,4 @@ window.reviewAndExecuteGprfPowerPlan = async function(button) {
 
 configureGprfFields();
 window.configureGprfFields = configureGprfFields;
+window.loadApprovedPaProfile = loadApprovedPaProfile;

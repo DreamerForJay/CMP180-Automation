@@ -112,3 +112,32 @@ def test_visualization_uses_power_axis_when_power_varies(tmp_path: Path) -> None
     assert "Generator Power (dBm)" in svg
     assert len(png_paths) == 4
     assert all(path.read_bytes().startswith(b"\x89PNG") for path in png_paths)
+
+
+def test_invalid_gain_breaks_offline_curves(tmp_path, monkeypatch):
+    from cmp180_evm.results.visualization import render_metric_svg
+    from matplotlib.axes import Axes
+    import math
+
+    rows = [
+        {"generator_power_dbm": "-10", "gain_db": "30.1", "valid": "True"},
+        {"generator_power_dbm": "-5", "gain_db": "99", "valid": "False"},
+        {"generator_power_dbm": "0", "gain_db": "30.5", "valid": "True"},
+    ]
+    svg = render_metric_svg(rows, "gain_db", "PA Gain", "dB")
+    assert svg.count("<circle") == 2
+    assert svg.count("<polyline") == 2
+    captured = []
+    original = Axes.plot
+
+    def capture(self, x, y, *args, **kwargs):
+        captured.append(list(y))
+        return original(self, x, y, *args, **kwargs)
+
+    monkeypatch.setattr(Axes, "plot", capture)
+    csv_path = tmp_path / "results.csv"
+    csv_path.write_text("generator_power_dbm,gain_db,valid\n-10,30.1,True\n-5,99,False\n0,30.5,True\n", encoding="utf-8")
+    write_pandas_matplotlib_plots(csv_path)
+    assert captured[0][0] == 30.1
+    assert math.isnan(captured[0][1])
+    assert captured[0][2] == 30.5

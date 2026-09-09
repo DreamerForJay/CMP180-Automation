@@ -1,9 +1,64 @@
 ﻿# CMP180 Hardware and CMsquares Discovery
 
 Initial discovery date: 2026-08-13
-Latest hardware verification: 2026-08-20
+Latest hardware verification: 2026-09-09
 Source: CMP180 local Device UI and read-only SCPI queries  
 Device address: `192.168.200.50`
+
+## 中文：2026-09-09 GPRF PA power sweep HIL
+
+操作員當次確認 RF1.1 → RF1.5 直連、無衰減器且人在 CMP180 旁後，執行 GPRF
+power-axis sweep。此流程使用 CMP180 GPRF Generator／Measurement power 功能，只保存
+scalar RF power、Pin、Pout、Gain 與 P1dB 分析；它不是 WLAN EVM 解調，也不是 compliance
+claim。
+
+Preflight 使用 query-only 連線、WLAN discovery、GPRF measurement discovery 與 GPRF
+setter 同值驗證。CMP180 firmware 為 `6.0.50.23`，error queue 為空；WLAN measurement
+為 `OFF`，GPRF measurement RF path 為 `RF1.5`，Generator RF 為 `OFF`。GPRF setter
+同值寫回後 RF 仍為 `OFF`。
+
+本次計畫固定 6105 MHz、Generator -55／-50／-45／-40 dBm、200 ms dwell、0 dB
+input/output cable loss、0 dB external gain、0 dB external attenuation、SA safe limit
+0 dBm。Workflow 在 RF Off 下切換 GPRF baseband 為 `CW`，逐點設定 frequency、power、
+expected power 與 measurement RF path，每點完成後立即 STOP power measurement 並 RF Off。
+
+| Generator power | Measured power | Pin | Pout | Gain | Reliability | Status |
+|---:|---:|---:|---:|---:|---:|---|
+| -55 dBm | -54.77354 dBm | -55.0 dBm | -54.77354 dBm | 0.22646 dB | 0 | OK |
+| -50 dBm | -49.75658 dBm | -50.0 dBm | -49.75658 dBm | 0.24342 dB | 0 | OK |
+| -45 dBm | -44.64994 dBm | -45.0 dBm | -44.64994 dBm | 0.35006 dB | 0 | OK |
+| -40 dBm | -39.66032 dBm | -40.0 dBm | -39.66032 dBm | 0.33968 dB | 0 | OK |
+
+P1dB 分析結果為 `not_found`：小訊號 Gain 為 0.27331 dB，最大已觀察 compression
+約 0.04685 dB，最大 Pin 為 -40.0 dBm，最大 Pout 為 -39.66032 dBm。這代表本次掃描
+範圍仍未達 1 dB 壓縮，不得外推或宣稱 DUT P1dB。
+
+Artifacts 位於 `output/20260909T054800Z_gprf-power-sweep_310f05e0e6`，包含
+`results.csv`、`results.json`、`metadata.json`、`report.html` 與
+`plots-matplotlib/` 的 burst power、Pin、Pout、Gain PNG。Cleanup error 為空；事後
+query-only discovery 確認 Generator RF `OFF`、GPRF measurement RF path `RF1.5`、
+GPRF measurement frequency `6.105000E+09`、error queue 空。
+
+## 中文：2026-09-09 GPRF PA/P1dB 擴大掃描 finding
+
+RF owner 口頭核准後，嘗試將 GPRF power-axis sweep 擴大為 -55～-20 dBm、1 dB step。
+計畫假設 DUT gain 25 dB、輸出衰減 30 dB、SA safe limit 0 dBm；最壞情況 RF1.5 input
+估算為 -25 dBm。Preflight 通過且 RF Off 後開始執行。
+
+Run `4bb31e48c2` 完成 36 個 requested points，但不得視為 P1dB 或 PA 驗證通過：
+前 25 點回報 `SCPI_ERROR`，原因為
+`CONFigure:GPRF:MEASurement1:RFSettings:ENPower` 在 -55～-31 dBm 區間低於儀器接受
+範圍；後 11 點雖無 error queue entry，但 reliability 為 `3`。因此全部點皆為
+`valid=false`，P1dB 分析結果為 `insufficient_points`。
+
+Artifacts 位於 `output/20260909T060201Z_gprf-power-sweep_4bb31e48c2`。Cleanup error
+為空；事後 query-only discovery 確認 Generator RF `OFF`、GPRF measurement RF path
+`RF1.5`、GPRF expected power `-2.000000E+01`、external attenuation `3.000000E+01`、
+error queue 空。
+
+此 finding 暴露 workflow 安全行為缺口：舊版 GPRF worker 會把非 OK 點標為 invalid，
+但仍繼續後續點。已修正為每點完成 STOP/RF Off 後，只要狀態不是 `OK` 就停止後續升功率，
+並在 artifact metadata 保存 `partial` 與 `stopped_reason`。
 
 ## 1. Identity and connectivity
 

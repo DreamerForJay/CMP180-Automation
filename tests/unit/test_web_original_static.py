@@ -267,8 +267,16 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert 'name="input_cable_loss_db"' in html
     assert 'name="output_cable_loss_db"' in html
     assert 'name="external_gain_db"' in html
-    assert 'name="external_attenuation_db"' in html
+    assert 'name="expected_dut_gain_db"' in html
+    assert 'name="output_attenuator_db"' in html
+    assert 'id="loadPaProfileButton"' in html
+    assert 'value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器' in html
+    gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
+    assert "function loadApprovedPaProfile" in gprf
+    assert "stopWithoutAttenuator: -25" in gprf
+    assert "window.loadApprovedPaProfile" in gprf
     assert 'name="sa_safe_limit_dbm"' in html
+    assert "external_attenuation_db: 0" in gprf
     assert 'value="gain_db"' in html
     assert 'value="pout_dbm"' in html
     assert "<th>Power Error (dB)</th>" in html

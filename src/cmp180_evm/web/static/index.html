@@ -243,9 +243,11 @@
           <label><span>Input cable loss</span><div class="input-unit"><input name="input_cable_loss_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
           <label><span>Output cable loss</span><div class="input-unit"><input name="output_cable_loss_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
           <label><span>External gain</span><div class="input-unit"><input name="external_gain_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
-          <label><span>External attenuator</span><div class="input-unit"><input name="external_attenuation_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
+          <label><span>Expected DUT gain</span><div class="input-unit"><input name="expected_dut_gain_db" type="number" value="25" min="0" max="120" step="0.01" required><b>dB</b></div></label>
+          <label><span>Output attenuator</span><div class="input-unit"><input name="output_attenuator_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器只用於 Pout/Gain 與 RF1.5 安全預估，不寫入 CMP180 EATT；未接衰減器時維持 0 dB。</small></label>
           <label><span>SA safe limit</span><div class="input-unit"><input name="sa_safe_limit_dbm" type="number" value="0" min="-120" max="30" step="0.1" required><b>dBm</b></div><small class="field-help">超過此 analyzer power 會標記為 SA_LIMIT，不列入 P1dB。</small></label>
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="50" max="5000" step="50" required><b>ms</b></div></label>
+          <button id="loadPaProfileButton" class="ghost" type="button">載入 approved PA profile</button>
           <button class="primary submit" type="submit" data-i18n="reviewGprf">檢查 GPRF 計畫</button>
         </form>
         <pre id="gprfPowerPreview" hidden></pre>

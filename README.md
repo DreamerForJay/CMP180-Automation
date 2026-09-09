@@ -77,6 +77,7 @@ python -m cmp180_evm validate-config configs\instrument.example.yaml
 python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
 python -m cmp180_evm validate-calibration configs\calibration.example.yaml
 python -m cmp180_evm validate-limits configs\limits.example.yaml
+python -m cmp180_evm validate-pa-sweep configs\pa_sweep.example.yaml
 python scripts\build_v1_acceptance.py --evidence output\<real-run-folder>
 ```
 
@@ -89,6 +90,26 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only
 ```
 
 實機前必須閱讀 [硬體 SOP](docs/hardware-test-sop.md)，並確認操作員在場、routing、頻率、頻寬、功率與線路損耗。
+
+PA／P1dB GPRF profile 已可固定化：`configs\pa_sweep.example.yaml` 保存 start/stop/step、
+預期 DUT gain、RF1.5 safe limit 與核准資訊。換 DUT 時不需重填掃描參數，只需確認
+profile、接線與人在場，然後執行；若現場沒有衰減器，程式會自動把 stop power 夾到
+RF1.5 安全範圍內，不會要求一定接 30 dB：
+
+Web 實機頁可切到 `RF 功率讀值（GPRF）` 後直接按「載入 approved PA profile」；
+此按鈕預設載入無衰減器的安全裁切範圍 `-55 → -25 dBm`。若現場有受控 DUT／實體
+output attenuator，再把 `Output attenuator` 改成實際值並重新檢查計畫即可。
+
+```powershell
+python scripts\cmp180_pa_sweep_validate.py `
+  --dut-id DUT-001 `
+  --confirm-direct-cable `
+  --confirm-operator-present
+```
+
+現場若有外部衰減器，可加 `--output-attenuator-db 30` 讓 profile 掃到更高 stop power。
+此入口使用 GPRF scalar power，不是 WLAN EVM；任一點出現 SCPI error、reliability 非 0
+或 SA safe limit 會在 RF Off 邊界停止並保存 partial artifact。
 
 ### 文件導覽
 
@@ -221,3 +242,12 @@ Use the [next HIL campaign](docs/next-hil-campaign.md) to expand the approved We
 ### Safety principles
 
 Never reset automatically; centralize SCPI; validate every RF input before RF On; STOP/ABORT and RF Off on every exit path; preserve invalid values; separate workflow success from compliance; never commit outputs, credentials, license/activation data, caches, or private device dumps.
+
+
+### PA 掃描摘要與有效性（2026-09-09）
+
+在結果頁開啟含 PA 欄位的 GPRF 紀錄：功率掃描摘要顯示 Small-signal Gain、Max Pout、Max Compression、IP1dB、OP1dB 與 Valid Points；頻率掃描顯示 Mean Gain、Gain Peak-to-Peak Ripple 與 Gain Std Dev（母體標準差）。PA 統計只納入有效且 Pin／Pout／Gain 齊全的點。`not_found` 表示有效掃描範圍內未觀察到 1 dB 壓縮，`insufficient_points` 表示資料不足；缺值不補零。
+
+Analyzer measured／expected power 的誤差與 PA Gain 是不同物理量；不得把 Analyzer error ripple 當成 Gain flatness。無 PA 欄位的舊 GPRF 結果保留明確標示 Analyzer 參考面的摘要，dBm 平均為算術平均。重新產生的 SVG／Matplotlib 圖會排除 INVALID 並切斷曲線；既有 PNG 不會自動更新，須由原 CSV 重新產圖。原始 CSV／JSON 保留診斷數值。
+
+本次驗證為合成資料／Mock 回歸及既有 stored artifact 查閱，未執行新的實機 RF 量測。
