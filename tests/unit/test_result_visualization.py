@@ -115,9 +115,11 @@ def test_visualization_uses_power_axis_when_power_varies(tmp_path: Path) -> None
 
 
 def test_invalid_gain_breaks_offline_curves(tmp_path, monkeypatch):
-    from cmp180_evm.results.visualization import render_metric_svg
-    from matplotlib.axes import Axes
     import math
+
+    from matplotlib.axes import Axes
+
+    from cmp180_evm.results.visualization import render_metric_svg
 
     rows = [
         {"generator_power_dbm": "-10", "gain_db": "30.1", "valid": "True"},

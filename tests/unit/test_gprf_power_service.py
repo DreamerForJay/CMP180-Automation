@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from cmp180_evm.pa_sweep_profile import load_pa_sweep_profile
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.web.gprf_service import (
     _analyze_p1db,
@@ -15,7 +16,6 @@ from cmp180_evm.web.gprf_service import (
     _should_stop_after_gprf_point,
     build_gprf_power_preview,
 )
-from cmp180_evm.pa_sweep_profile import load_pa_sweep_profile
 
 BBMODE_QUERY = "SOURce:GPRF:GEN:BBMode?"
 ARB_QUERY = "SOURce:GPRF:GEN:ARB:FILE? ABSPath"
