@@ -1,12 +1,12 @@
 import pytest
 
 from cmp180_evm.results.validity import (
+    INSUFFICIENT_PPDUS,
+    INSUFFICIENT_SYMBOLS,
     INVALID_EVM,
     INVALID_FREQ_ERROR,
     INVALID_POWER,
     INVALID_RELIABILITY,
-    INSUFFICIENT_PPDUS,
-    INSUFFICIENT_SYMBOLS,
     MINIMUM_DATA_SYMBOLS_FOR_IQ_ESTIMATE,
     evaluate_estimator_confidence,
     evaluate_point_validity,

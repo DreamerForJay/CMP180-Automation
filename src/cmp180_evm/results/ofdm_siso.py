@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 
-
 RESULT_FIELDS = (
     "reliability", "out_of_tolerance_percent", "mcs_index", "modulation",
     "payload_symbols", "measured_symbols", "payload_bytes", "guard_interval",

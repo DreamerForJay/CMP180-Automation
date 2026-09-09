@@ -58,7 +58,7 @@ def main() -> int:
     try:
         result = diagnose(args.resource, args.timeout_ms, args.options)
     except Exception as exc:  # Diagnostic CLI must show vendor exception details.
-        print(f"Status   : FAIL", file=sys.stderr)
+        print("Status   : FAIL", file=sys.stderr)
         print(f"Error    : {type(exc).__name__}: {exc}", file=sys.stderr)
         return 3
 

@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
 
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
-
 
 DEFAULT_CASES: tuple[dict[str, object], ...] = (
     {"case_id": "b24-bw20", "category": "bandwidth", "label": "2.4 GHz / 20 MHz", "route": "RF1.1-RF1.5", "request": {"axis": "frequency", "start_hz": 2_412_000_000, "stop_hz": 2_472_000_000, "step_hz": 30_000_000, "bandwidth_hz": 20_000_000, "generator_power_dbm": -45, "dwell_ms": 100}},
@@ -69,7 +68,7 @@ class HilCampaignStore:
 
     @staticmethod
     def _now() -> str:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
     def load(self) -> dict[str, object]:
         with self._lock:

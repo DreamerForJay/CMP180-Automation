@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path("deploy/google-apps-script")
 
 

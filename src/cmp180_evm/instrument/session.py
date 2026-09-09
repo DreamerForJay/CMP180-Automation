@@ -12,8 +12,8 @@ it only implements the generic read/write/query primitives from
 
 import time
 
-from cmp180_evm.scpi import common
 from cmp180_evm.instrument.base import validate_idn_model
+from cmp180_evm.scpi import common
 from cmp180_evm.utils.logging import get_scpi_logger
 
 

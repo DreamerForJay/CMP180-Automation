@@ -3,8 +3,10 @@ from pathlib import Path
 import pytest
 
 from cmp180_evm.scpi.registry import load_scpi_command_map
-from cmp180_evm.workflow.cmp180_single_backend import Cmp180SingleMeasurementBackend
-from cmp180_evm.workflow.cmp180_single_backend import waveform_for_bandwidth
+from cmp180_evm.workflow.cmp180_single_backend import (
+    Cmp180SingleMeasurementBackend,
+    waveform_for_bandwidth,
+)
 from cmp180_evm.workflow.single_measurement import (
     SingleMeasurementPlan,
     run_single_measurement,

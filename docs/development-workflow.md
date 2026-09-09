@@ -56,15 +56,18 @@ git status --short
 ```
 
 或直接執行 `scripts\precommit_check.ps1`，會依序跑完 pytest、兩份 config
-validation、`git diff --check`，並額外跑 ruff／mypy（非阻斷，只是提示，不會讓
-腳本失敗）：
+validation、`git diff --check` 與 Ruff；任一必要檢查失敗都會回傳非零狀態。
+mypy 會另行顯示既有型別債，但目前仍不阻斷：
 
 ```powershell
 .\scripts\precommit_check.ps1
 ```
 
-ruff／mypy 目前是新加入的，既有程式碼還沒清完全部既有問題，CI 裡也設成
-`continue-on-error`，先觀察雜訊量，之後視情況再決定是否收緊成阻斷檢查。
+若 OneDrive 非 ASCII 路徑使 `.venv` launcher 無法載入套件，可先將
+`CMP180_PYTHON` 設為已驗證的 Python 3.11+ 執行檔路徑；腳本其餘檢查不變。
+
+Ruff 已是 CI 阻斷檢查；`E501` 長行例外用來保留 SCPI／表格常值的
+可稽核性。mypy 仍為 `continue-on-error`，待既有型別債清理後再收緊。
 
 提交訊息應描述功能，不使用模糊的 `update` 或 `fix stuff`。若文件與功能在同一次
 變更中完成，應放在同一個 commit 或相鄰且容易追蹤的 commits。
@@ -131,10 +134,16 @@ git status --short
 ```
 
 Alternatively, run `scripts\precommit_check.ps1`. It executes pytest, both configuration
-validations, and `git diff --check`, then reports ruff and mypy results. Ruff and mypy are
-currently non-blocking because the existing codebase still contains known findings; CI
-also uses `continue-on-error` until the baseline is cleaned up and the team decides to
-make them blocking.
+validations, `git diff --check`, and Ruff; any required check returns a non-zero status on
+failure. Mypy reports the existing type debt separately and remains non-blocking.
+
+If a non-ASCII OneDrive path prevents the local `.venv` launcher from loading packages,
+set `CMP180_PYTHON` to a verified Python 3.11+ executable before running the script. All
+other checks remain unchanged.
+
+Ruff is a blocking CI check. `E501` is excluded so long SCPI and table literals remain
+auditable. Mypy continues to use `continue-on-error` until the existing type debt is
+resolved.
 
 Commit messages must describe the feature rather than using vague text such as `update`
 or `fix stuff`. Keep code, tests, and their documentation in the same commit or in

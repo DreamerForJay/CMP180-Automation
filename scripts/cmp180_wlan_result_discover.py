@@ -9,10 +9,9 @@ from pathlib import Path
 
 from RsInstrument import RsInstrument
 
-from cmp180_evm.scpi.registry import load_scpi_command_map
-from cmp180_evm.results.ofdm_siso import RESULT_FIELDS, parse_result
 from cmp180_evm.results.artifacts import save_single_result
-
+from cmp180_evm.results.ofdm_siso import parse_result
+from cmp180_evm.scpi.registry import load_scpi_command_map
 
 QUERY_NAMES = (
     "modulation_current", "modulation_average", "modulation_minimum",

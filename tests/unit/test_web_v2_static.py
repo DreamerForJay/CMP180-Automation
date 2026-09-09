@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 STATIC_V2 = Path("src/cmp180_evm/web/static_v2")
 
 

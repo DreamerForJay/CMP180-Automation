@@ -1,0 +1,41 @@
+{
+  "asset": "Rohde & Schwarz CMP180 exterior reference model",
+  "scale": "1 Blender unit = 1 metre",
+  "dimensions_m": {
+    "chassis_width": 0.465,
+    "chassis_depth": 0.555,
+    "overall_height_with_feet": 0.106
+  },
+  "front_panel": {
+    "rf_ports": 16,
+    "layout": "2 rows x 8 columns",
+    "independent_parts": [
+      "chassis",
+      "front_panel",
+      "handles",
+      "rf_connectors",
+      "display",
+      "sensor_port",
+      "usb_ports",
+      "power_button"
+    ]
+  },
+  "rear_panel": {
+    "independent_parts": [
+      "rear_modules",
+      "display_port",
+      "hdmi",
+      "lan",
+      "usb_ports",
+      "trigger_connectors",
+      "power_inlet",
+      "power_switch"
+    ]
+  },
+  "sources": [
+    "https://www.rohde-schwarz.com/us/products/test-and-measurement/wireless-tester-rf-analyzer-generator/cmp180-radio-communication-tester_63493-1081280.html",
+    "https://scdn.rohde-schwarz.com/ur/pws/dl_downloads/pdm/cl_brochures_and_datasheets/product_brochure/3609_7348_12/CMP180_bro_en_3609-7348-12_v0500.pdf",
+    "four user-supplied exterior reference images"
+  ],
+  "accuracy_note": "Visual exterior reference model; not a mechanical CAD drawing. Unpublished details are photo-estimated."
+}

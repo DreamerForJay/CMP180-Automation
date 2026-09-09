@@ -199,6 +199,10 @@ def test_product_home_is_safe_bilingual_navigation() -> None:
     assert 'id="diagramShowcaseFrame"' in html
     assert "/diagrams/system-architecture.html?present=1" in html
     assert "diagramPlaybackUrl" in javascript
+    assert 'src="/assets/cmp180-hero.png"' in html
+    assert (STATIC / "assets" / "cmp180-hero.png").is_file()
+    assert ".cmp180-visual" in design
+    assert "signal-console" not in html
     # 首頁 CTA 只切換前端工作區，不得直接呼叫 RF API。
     navigation_code = javascript.split("document.querySelectorAll('[data-go-tab]')", 1)[
         1

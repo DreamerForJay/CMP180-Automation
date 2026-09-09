@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from RsInstrument import RsInstrument
+
 from cmp180_evm.scpi.registry import load_scpi_command_map
 
 

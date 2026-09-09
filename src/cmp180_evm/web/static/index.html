@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
-  <link rel="stylesheet" href="/design-system.css?v=console15">
+  <link rel="stylesheet" href="/design-system.css?v=console16">
 </head>
 <body>
   <header class="topbar">
@@ -49,14 +49,15 @@
           <div class="hero-actions"><button class="primary" type="button" data-go-tab="measurement" data-home="enterConsole">進入量測控制台</button><button class="ghost" type="button" data-go-tab="guide" data-home="openManual">查看操作手冊</button></div>
           <div class="hero-tags"><span>Python 3.11+</span><span>SCPI / TCP 5025</span><span>Wi-Fi 6 / 6E / 7</span><span>中英雙語</span></div>
         </div>
-        <div class="signal-console" aria-label="Automation workflow preview">
-          <div class="signal-orbit orbit-one"></div><div class="signal-orbit orbit-two"></div>
-          <div class="instrument-core"><span>RF</span><strong>CMP180</strong><small>READY</small></div>
-          <div class="signal-node node-source"><b>01</b><span>PLAN</span></div>
-          <div class="signal-node node-measure"><b>02</b><span>MEASURE</span></div>
-          <div class="signal-node node-analyze"><b>03</b><span>ANALYZE</span></div>
-          <div class="signal-node node-report"><b>04</b><span>REPORT</span></div>
-        </div>
+        <figure class="cmp180-visual" aria-labelledby="cmp180VisualTitle">
+          <span class="model-badge">3D MODEL</span>
+          <div class="cmp180-image-stage">
+            <img src="/assets/cmp180-hero.png" width="1200" height="720" fetchpriority="high" alt="R&amp;S CMP180 3D 外觀模型 / 3D exterior model">
+          </div>
+          <figcaption id="cmp180VisualTitle"><strong>R&amp;S CMP180</strong><span>2 HU × 19″ · 16 RF PORTS</span></figcaption>
+          <span class="model-callout callout-front">2 × 8 RF</span>
+          <span class="model-callout callout-side">500 MHz BW</span>
+        </figure>
       </div>
 
       <div class="home-status-grid">

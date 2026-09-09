@@ -22,11 +22,12 @@ jobs:
         run: |
           python -m cmp180_evm validate-config configs/instrument.example.yaml
           python -m cmp180_evm validate-config configs/wlan_baseline.example.yaml
-      - name: Lint and type-check (non-blocking)
-        # 剛導入 ruff/mypy，尚未清完既有雜訊；先觀察不擋 CI，之後再決定是否收緊。
+      - name: Lint
+        # Ruff 已清除既有實質警告，新回歸必須擋下來。
+        run: python -m ruff check .
+      - name: Type-check (non-blocking)
+        # mypy 仍有既有型別債；獨立執行才不會被 Ruff 的成功結果掩蓋。
         continue-on-error: true
-        run: |
-          python -m ruff check .
-          python -m mypy src
+        run: python -m mypy src
 
       # GitHub runner 無法連入公司 CMP180 網段；實機 RF 測試只在實驗室執行。

@@ -10,7 +10,6 @@ from RsInstrument import RsInstrument
 
 from cmp180_evm.scpi.registry import load_scpi_command_map
 
-
 QUERY_NAMES = ("frequency", "level", "peak_power", "state", "states", "rf_path")
 
 

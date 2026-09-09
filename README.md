@@ -18,6 +18,10 @@ Web 現已加入獨立的 Loopback 驗證頁：可執行真正獨立的 WLAN Sin
 
 Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重現、可稽核的流程取代重複的 CMsquares 手動操作，長期產品為中英雙語、響應式公司內網 Web 工具。
 
+### CMP180 Blender 立體外觀模型
+
+可編輯的 CMP180 Blender 外觀模型、GLB 與驗證渲染位於 [`assets/cmp180_3d/`](assets/cmp180_3d/README.md)。這是依官方資料與參考照片建立的視覺模型，不是機構 CAD，且不會連線或控制儀器。
+
 [![CMP180 系統架構圖](docs/diagrams/system-architecture.png)](docs/diagrams/README.md)
 
 <sub>系統架構：操作員瀏覽器 → Web API → RF 安全閘門 → RF Workflow → CMP180 實機。
@@ -32,7 +36,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 已用同一支 Python 工具完成 11 個 WLAN 區段：2.4／5／6 GHz 搭配合法的 20／40／80／160／320 MHz 組合，共 176/176 個 channel center 有效；完整 400 MHz–8 GHz 仍不是 WLAN 頻段。
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
 - 雙語響應式橫向量測工作區：Dark／Light、依分頁切換的專業工作區標題、整合式 Demo／實機量測、量測紀錄、多 Run 疊圖比較、可自訂 Trace 名稱／顏色／顯示、Draft 校正 SOP，以及完整 artifacts 與可復原紀錄管理。歷史分析會預先讀取既有 CSV／JSON，不會送出 RF。
-- 首頁提供產品定位、功能介紹、量測能力、安全邊界、五步標準流程與操作手冊入口；首頁 CTA 只切換工作區，不呼叫任何量測或 RF API。動畫使用本機 CSS，無外部影音依賴。
+- 首頁以本機 Blender CMP180 立體渲染作為主視覺，並提供產品定位、量測能力、安全邊界、五步流程與操作手冊入口；首頁 CTA 只切換工作區，不呼叫任何量測或 RF API。圖片與動畫皆為本機資產，無外部影音依賴。
 - 首頁直接嵌入 `docs/diagrams/` 的系統架構與 SingleShot 生命週期互動圖，使用 `present=1` 互動／簡報模式；可切換、重新載入或全頁開啟，圖表操作不會呼叫量測 API。
 - 導覽明確區分示範與實機量測；一般本機啟動直接提供受保護的實機控制，`--demo-only` 才會停用儀器連線。結果頁顯示安全的相對輸出位置。
 - 實機與示範量測共用單點／頻率掃描／功率掃描分頁；結果圖表提供固定座標、受限水平 Zoom／Pan、十字游標與完整點位標值。說明頁涵蓋 GitHub clone、安裝、CLI、Web 與離線報告流程。
@@ -150,6 +154,10 @@ The same 11 representative points were then rerun after promotion with Repeat=10
 
 This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measurements with reproducible, auditable workflows. The long-term product is a bilingual responsive intranet Web tool.
 
+### CMP180 Blender exterior model
+
+The editable CMP180 Blender exterior model, GLB, and validation render are available in [`assets/cmp180_3d/`](assets/cmp180_3d/README.md). This is a visual model derived from official information and reference photographs, not mechanical CAD, and it neither connects to nor controls the instrument.
+
 ### Current capabilities
 
 - The Web UI includes a resumable `HIL Campaign Runner`. Prepare classifies band/bandwidth, representative power, alternate RF routes, 500 MHz, dual VSA/VSG, and long-waveform cases as READY or BLOCKED. READY cases can run by row or through Run Next, while progress persists in `output/hil-campaign/state.json`. BLOCKED cases are never substituted with an existing profile.
@@ -159,7 +167,7 @@ This Python 3.11+ system automates Rohde & Schwarz CMP180 WLAN TX EVM measuremen
 - One Python tool completed 11 legal WLAN band/bandwidth sections across 2.4, 5, and 6 GHz, with 176/176 valid channel centers for 20/40/80/160/320 MHz. The non-WLAN gaps in the 400 MHz–8 GHz tuning range remain out of scope.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
 - Bilingual responsive horizontal workspace with working Dark/Light themes, contextual workspace headings, integrated demo/guarded-hardware measurement, eagerly loaded run history, multi-run overlays, editable trace names/colours/visibility, a Draft calibration SOP, artifacts, and recoverable run management.
-- The product home explains capabilities, safety boundaries, the five-step standard workflow, and operator-manual entry points. Home-page CTAs only navigate between workspaces and call no measurement or RF API. Motion uses local CSS with no external media dependency.
+- The product home uses the local Blender CMP180 render as its hero visual and explains capabilities, safety boundaries, the five-step workflow, and operator-manual entry points. Home-page CTAs only navigate between workspaces and call no measurement or RF API. Imagery and motion are local assets with no external media dependency.
 - The home page embeds the interactive system-architecture and SingleShot-lifecycle diagrams from `docs/diagrams/` in `present=1` interaction/presentation mode. Users can switch, reload, or open them full-page; diagram actions call no measurement API.
 - Dependency-free offline `results.csv` to SVG charts and a self-contained bilingual HTML report; Web comparisons support drag-to-reorder, rename/style controls, and SVG/PNG/CSV export.
 - The operator-approved horizontal workspace in `static/` is the served frontend. It supports read-only comparison of 2–8 saved runs with editable trace names, colours, visibility, and discontinuities at invalid points; this analysis never transmits RF.

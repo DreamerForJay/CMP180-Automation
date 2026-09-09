@@ -11,8 +11,8 @@ Any data this produces is simulated and must be labeled as such wherever it
 is displayed or saved (rule: "Mock results must be clearly labeled simulated").
 """
 
-from cmp180_evm.scpi import common
 from cmp180_evm.instrument.base import validate_idn_model
+from cmp180_evm.scpi import common
 
 SIMULATED_IDN = "Rohde&Schwarz,CMP-MOCK,1234567,1.0.0.0"
 SIMULATED_OPTIONS = "MOCK-OPT-1,MOCK-OPT-2"

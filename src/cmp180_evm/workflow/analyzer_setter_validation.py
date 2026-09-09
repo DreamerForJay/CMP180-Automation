@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from cmp180_evm.scpi.registry import ScpiCommandRegistry
 from cmp180_evm.workflow.generator_setter_validation import ScpiIo
 
-
 # CMP180 的 OFF 與 RDY 都是不在擷取中的 idle 狀態；其餘狀態一律拒絕寫入。
 ALLOWED_IDLE_MEASUREMENT_STATES = frozenset({"OFF", "RDY"})
 

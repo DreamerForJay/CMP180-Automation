@@ -2,6 +2,8 @@
 
 本文件說明目前工具。除了設定、Mock、連線與唯讀探索外，固定安全 profile 的 Python 實機 SingleShot、頻率／功率掃描與本機 Web GUI 已完成 HIL。自訂兩點頻率 HIL 曾在第二點收到 `INV` 並安全停止，因此自訂實機掃描仍須重新驗收；不得把該次結果描述為通過。完成一次量測後，仍可使用下列唯讀工具擷取上一筆 28 欄 OFDM SISO 結果：
 
+首頁右側使用本機 Blender CMP180 渲染圖呈現儀器外觀。此圖片僅供導覽與辨識，不會建立儀器連線、送出 SCPI 或啟用 RF。
+
 ```powershell
 python scripts\cmp180_wlan_result_discover.py
 ```
@@ -215,6 +217,16 @@ P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與
 
 頁面右上角可切換中文／English。SingleShot、WLAN Sweep、GPRF、Loopback、HIL Campaign 與 Calibration 的檢查步驟、Preview、安全阻擋原因、修正方式與最後確認都會立即切換；已顯示的 Preview 只在前端重繪，不會因切換語言重新送出 SCPI、Preview API 或 RF job。
 
+## 12. 產生 CMP180 Blender 外觀模型
+
+下列指令會在本機重建可編輯 `.blend`、GLB 與驗證渲染：
+
+```powershell
+uv run --python 3.13 --with bpy==5.2.1 python scripts/build_cmp180_blender.py
+```
+
+產物位於 `assets/cmp180_3d/`。這個流程只建立離線 3D 外觀資產，不會連接儀器、傳送 SCPI、啟動量測或開啟 RF。模型是依照片估算的視覺參考，不是原廠機構 CAD。
+
 ## English Version
 
 ### Loopback validation
@@ -232,11 +244,23 @@ validation. A custom two-point frequency HIL returned `INV` at its second point 
 stopped safely, so custom live execution still requires trigger/ranging review and a new
 HIL. It must not be reported as a passing run.
 
+The home page uses a local Blender render of the CMP180 for instrument recognition and navigation. This image does not create an instrument connection, transmit SCPI, or enable RF.
+
 ### 1. Open the project
 
 Open PowerShell in `<project-root>` and run `git branch --show-current`. Develop on a
 dedicated feature branch rather than directly on `main`; use the current PR or handoff
 document as the source of truth for the branch name.
+
+### 12. Generate the CMP180 Blender exterior model
+
+The following command locally rebuilds the editable `.blend`, GLB, and validation render:
+
+```powershell
+uv run --python 3.13 --with bpy==5.2.1 python scripts/build_cmp180_blender.py
+```
+
+Outputs are written to `assets/cmp180_3d/`. The workflow creates offline 3D exterior assets only; it does not connect to an instrument, transmit SCPI, start a measurement, or enable RF. The model is a photo-estimated visual reference, not manufacturer mechanical CAD.
 
 ### 2. Activate the environment
 
