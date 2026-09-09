@@ -240,15 +240,21 @@
           <label><span>Stop</span><div class="input-unit"><input name="stop" type="number" value="8000" step="any" required><b id="gprfStopUnit">MHz</b></div></label>
           <label><span>Step</span><div class="input-unit"><input name="step" type="number" value="100" min="0.001" step="any" required><b id="gprfStepUnit">MHz</b></div></label>
           <label id="gprfFixedFrequencyField"><span>Fixed frequency</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" min="400" max="8000" step="any" required><b>MHz</b></div></label>
-          <label id="gprfFixedPowerField"><span>Fixed generator power</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" min="-80" max="20" step="any" required><b>dBm</b></div></label>
+          <label id="gprfFixedPowerField"><span>Fixed generator power</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" min="-80" max="8" step="any" required><b>dBm</b></div><small class="field-help">CMP180 generator 最大輸出 +8 dBm。</small></label>
           <label><span>Input cable loss</span><div class="input-unit"><input name="input_cable_loss_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
           <label><span>Output cable loss</span><div class="input-unit"><input name="output_cable_loss_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
           <label><span>External gain</span><div class="input-unit"><input name="external_gain_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
-          <label><span>Expected DUT gain</span><div class="input-unit"><input name="expected_dut_gain_db" type="number" value="25" min="0" max="120" step="0.01" required><b>dB</b></div></label>
+          <label><span>Expected DUT gain</span><div class="input-unit"><input name="expected_dut_gain_db" type="number" value="25" min="-120" max="120" step="0.01" required><b>dB</b></div><small class="field-help">損耗型 DUT（converter、attenuator）填負值，例如 UD Box 0630 的 conversion loss 填 −10。</small></label>
           <label><span>Output attenuator</span><div class="input-unit"><input name="output_attenuator_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器只用於 Pout/Gain 與 RF1.5 安全預估，不寫入 CMP180 EATT；未接衰減器時維持 0 dB。</small></label>
           <label><span>SA safe limit</span><div class="input-unit"><input name="sa_safe_limit_dbm" type="number" value="0" min="-120" max="30" step="0.1" required><b>dBm</b></div><small class="field-help">超過此 analyzer power 會標記為 SA_LIMIT，不列入 P1dB。</small></label>
+          <label><span>DUT max input</span><div class="input-unit"><input name="dut_max_input_dbm" type="number" value="" min="-120" max="30" step="0.1"><b>dBm</b></div><small class="field-help">DUT 參考面能承受的輸入上限，與 SA safe limit 是兩條獨立保護：後者只保護 CMP180。Expected DUT gain 非 0 時必填。</small></label>
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="50" max="5000" step="50" required><b>ms</b></div></label>
+          <label class="check-label wide-field"><input id="gprfConversionToggle" name="conversion_enabled" type="checkbox"><span>DUT 是頻率轉換器（up/down converter），輸入與輸出不同頻</span></label>
+          <label id="gprfConversionDirectionField" hidden><span>Conversion direction</span><select name="conversion_direction"><option value="up">Up：generator 送 IF、analyzer 收 RF</option><option value="down">Down：generator 送 RF、analyzer 收 IF</option></select></label>
+          <label id="gprfConversionSidebandField" hidden><span>Sideband</span><select name="conversion_sideband"><option value="high">High：RF = LO + IF</option><option value="low">Low：RF = LO − IF</option></select></label>
+          <label id="gprfConversionLoField" hidden><span>LO frequency</span><div class="input-unit"><input name="conversion_lo_mhz" type="number" value="6000" min="0" step="any"><b>MHz</b></div><small class="field-help">掃描軸永遠是 generator 端；另一端每點依 LO 與 sideband 重新解算。</small></label>
           <button id="loadPaProfileButton" class="ghost" type="button">載入 approved PA profile</button>
+          <button id="loadUdboxPlanButton" class="ghost" type="button">載入 UDBox 0630 範例</button>
           <button class="primary submit" type="submit" data-i18n="reviewGprf">檢查 GPRF 計畫</button>
         </form>
         <pre id="gprfPowerPreview" hidden></pre>
@@ -426,12 +432,12 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=console15"></script>
-  <script src="/hardware.js?v=single-range7"></script>
+  <script src="/app.js?v=console16"></script>
+  <script src="/hardware.js?v=single-range8"></script>
   <script src="/campaign.js?v=5"></script>
   <script src="/calibration.js?v=2"></script>
-  <script src="/custom-plan.js?v=3"></script>
-  <script src="/gprf-power.js?v=3"></script>
+  <script src="/custom-plan.js?v=4"></script>
+  <script src="/gprf-power.js?v=4"></script>
   <script src="/loopback.js?v=4"></script>
 </body>
 </html>

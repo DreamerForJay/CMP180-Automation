@@ -20,25 +20,31 @@ STOP／ABORT／RF Off。2026-08-28 已完成下列實機 HIL：
 ### 四層範圍
 
 1. **Catalog**：CMP180 型錄 400 MHz–8 GHz、最高 500 MHz 分析頻寬，只供顯示。
-2. **Planning**：軟體可建立 400 MHz–8 GHz、WLAN 20／40／80／160／320 MHz 計畫。
-3. **Approved Profile**：目前只允許 RF1.1→RF1.5、5925–7125 MHz、320 MHz、
-   -55 至 -30 dBm、最多 49 點、100–2000 ms。
-4. **Verified HIL**：必須有實機 artifacts、read-back、error queue 與 cleanup 證據；
-   目前已知 dwell 證據為 100／200 ms。
+2. **Planning／Execution**：軟體可建立並實際執行 400 MHz–8 GHz、WLAN
+   20／40／80／160／320 MHz 的計畫。**能否執行只看儀器物理能力，不再看 HIL。**
+3. **Verified HIL**：仍持續記錄實機 artifacts、read-back、error queue 與 cleanup 證據，
+   但只作為「這個組合已被驗證過」的說明，**不再作為執行前提**。未經 HIL 的組合
+   可以量測，只是不得作為 compliance 或驗收宣稱。
 
-Web 的 Review Plan 必須同時通過 workflow 硬性檢查、WLAN band/channel 組合與
-Approved Profile。Catalog 或 planning 可接受，不代表可以送 RF。
+Web 的 Review Plan 只需通過 workflow 硬性檢查。標準 WLAN channel plan 之外的組合
+會標示 `band_supported=false` 並提醒可能得到 INV，但不會被阻擋。
 
 ### Workflow 硬性防護
 
 - Generator 與 Analyzer port 不得相同。
 - 頻率必須在 400 MHz–8 GHz。
-- WLAN bandwidth 必須是 20／40／80／160／320 MHz；是否可執行仍由 band/profile 決定。
-- 直連無衰減器時 Generator 不得高於 -30 dBm。
+- WLAN bandwidth 必須是已安裝的 20／40／80／160／320 MHz。
 - Dwell 必須在 10–10000 ms。
 - 規劃最多 100,000 點，避免極小 step 耗盡 Web job／瀏覽器資源；這是資源防呆，
   不是已驗證 RF 點數。
-- RF 執行點數仍由 Approved Profile 限制，目前最多 49 點。
+
+### 已移除的軟體防護（改由操作員負責）
+
+- **Generator 功率上限**：原本寫死「直連無衰減器不得高於 -30 dBm」，現已移除。
+  上限改由 request 的 `maximum_generator_power_dbm` 宣告，未指定即不設限。
+  因此送 RF 前必須由操作員自行確認 analyzer 最大輸入準位、線損與衰減器配置；
+  軟體不會再攔截過高的功率設定。
+- **Approved Profile 的頻段／span／點數／dwell／route 收斂**：已不再參與執行判定。
 
 ### 每點執行與中止
 

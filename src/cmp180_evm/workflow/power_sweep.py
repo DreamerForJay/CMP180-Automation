@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from decimal import Decimal
 
 from cmp180_evm.results.validity import (
     invalid_critical_fields as _invalid_critical_fields,
@@ -54,22 +55,21 @@ class PowerSweepPlan:
             raise SafetyGuardError("Dwell time must be between 0.01 and 10.0 seconds.")
         if self.step_power_dbm <= 0 or self.stop_power_dbm < self.start_power_dbm:
             raise SafetyGuardError("Sweep stop must follow start and step must be positive.")
-        # 可用 profile/校正資料縮小功率範圍，但 direct-loopback 輸入保護上限不可由
-        # 呼叫端欄位放寬；此處與 frequency_sweep 的硬檢查保持一致。
-        effective_maximum = min(
-            self.maximum_power_dbm, DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM
-        )
+        # 功率上限由呼叫端依實際接線、衰減器與 DUT 宣告；不再硬寫保守值擋住實際量測。
+        effective_maximum = self.maximum_power_dbm
         if not (
             self.minimum_power_dbm <= self.start_power_dbm <= self.stop_power_dbm <= effective_maximum
         ):
             raise SafetyGuardError(
                 f"Sweep power must stay within {self.minimum_power_dbm}..{effective_maximum} dBm."
             )
-        count = int((self.stop_power_dbm - self.start_power_dbm) // self.step_power_dbm) + 1
+        # 以十進位計數，保留可整除終點且不補入未整除的 stop。
+        first, last, increment = (Decimal(str(value)) for value in (self.start_power_dbm, self.stop_power_dbm, self.step_power_dbm))
+        count = int((last - first) // increment) + 1
         # 防止極小 step 造成超大 job；這是軟體資源防呆，不是 CMP180 能力限制。
         if count > self.maximum_points:
             raise SafetyGuardError(f"Power sweep exceeds {self.maximum_points} points.")
-        return tuple(self.start_power_dbm + index * self.step_power_dbm for index in range(count))
+        return tuple(float(first + index * increment) for index in range(count))
 
 
 @dataclass(frozen=True)

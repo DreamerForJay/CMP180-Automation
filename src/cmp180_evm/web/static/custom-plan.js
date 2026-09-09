@@ -2,14 +2,7 @@ let customPlanPayload = null;
 let customPlanResult = null;
 let customHardwareEnabled = false;
 
-function frequencyToHz(value, unit) {
-  // UI 可切換 MHz/GHz；送到後端一律轉 Hz，避免 SCPI 單位誤判。
-  return Number(value) * (unit === 'GHz' ? 1e9 : 1e6);
-}
-
-function formatFrequency(hz) {
-  return hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : `${(hz / 1e6).toFixed(1)} MHz`;
-}
+// frequencyToHz／formatFrequency 已移至 app.js 共用，避免與 gprf-power.js／hardware.js 重複定義。
 
 function configureAxisFields() {
   const axisIsFrequency = $('#customPlanForm').elements.axis.value === 'frequency';

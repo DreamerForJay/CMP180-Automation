@@ -138,13 +138,3 @@ results:
   modulation_minimum: "FETC:WLAN:MEAS:MEV:MOD:MIN?"
   modulation_maximum: "FETC:WLAN:MEAS:MEV:MOD:MAX?"
   modulation_std_dev: "FETC:WLAN:MEAS:MEV:MOD:SDEV?"
-  burst_power_current: null
-  burst_power_average: null
-  evm_all_current: null
-  evm_all_average: null
-  evm_all_max: null
-  evm_all_std_dev: null
-  evm_data_average: null
-  evm_pilot_average: null
-  frequency_error_average: null
-  symbol_clock_error_average: null

@@ -15,6 +15,9 @@ output_cable_loss_db: 0
 output_attenuator_db: 0
 measurement_external_attenuation_db: 0
 sa_safe_limit_dbm: 0
+# DUT 參考面的輸入損傷上限，與 sa_safe_limit_dbm 是兩條獨立保護：前者保護 DUT、
+# 後者保護 CMP180 analyzer。換 DUT 必須改成該 DUT datasheet 的實際值。
+dut_max_input_dbm: -20
 approved_by: "RF owner, user-confirmed in Codex session on 2026-09-09"
 approved_at: "2026-09-09"
 source_evidence: "User approval: start=-55, stop=-20, step=1, expected_gain=25, sa_safe_limit=0; fixture attenuation is runtime input"

@@ -31,9 +31,13 @@ const LOOPBACK_METRIC_FIELDS = {
 };
 
 function loopbackSvg(points, field, label, outlierRepeats = new Set()) {
-  const samples = points.map((point, index) => ({index, value: Number(point[field]), valid: point.valid !== false && Number.isFinite(Number(point[field]))}));
+  // null／空字串不能轉成 0，否則無結果會被畫成看似有效的零值。
+  const samples = points.map((point, index) => ({index, value: Number(point[field]), valid: point.valid !== false && point[field] !== null && point[field] !== undefined && String(point[field]).trim() !== '' && Number.isFinite(Number(point[field]))}));
   const finite = samples.filter(sample => sample.valid);
-  if (!finite.length) return `<div><strong>${label}</strong><svg viewBox="0 0 360 140"><text x="180" y="70" text-anchor="middle">No valid data</text></svg></div>`;
+  if (!finite.length) {
+    const message = points.length ? '無有效量測值（INVALID）' : '等待完成第一筆量測';
+    return `<div><strong>${label}</strong><svg viewBox="0 0 360 140"><text x="180" y="70" text-anchor="middle" fill="#aebed0" font-size="14">${message}</text></svg></div>`;
+  }
   const low = Math.min(...finite.map(sample => sample.value));
   const high = Math.max(...finite.map(sample => sample.value));
   const span = Math.max(high - low, Math.abs(high) * .001, .01);
@@ -56,7 +60,10 @@ function renderLoopbackLive(points, outlierMap = new Map()) {
   const repeatsFor = field => new Set(
     [...outlierMap].filter(([, metrics]) => metrics.includes(LOOPBACK_METRIC_FIELDS[field])).map(([repeat]) => repeat)
   );
-  document.querySelector('#loopbackCharts').innerHTML =
+  // INVALID 是量測有效性失敗，不可當作 PA 不合格或自動提高 RF 功率重試。
+  const diagnostic = points.length && points.every(point => point.valid === false)
+    ? '<p role="status" style="grid-column:1/-1;color:#ffb4a8">所有已完成點皆 INVALID，無法判定 RF 效能。請查閱 raw reliability／INV 與 cleanup；RF OFF 後確認接線、ARB 波形、頻寬及 trigger，再單點重驗。RDY 只代表量測完成。</p>' : '';
+  document.querySelector('#loopbackCharts').innerHTML = diagnostic +
     loopbackSvg(points, 'evm_all_db', 'EVM All (dB)', repeatsFor('evm_all_db')) +
     loopbackSvg(points, 'burst_power_dbm', 'Burst Power (dBm)', repeatsFor('burst_power_dbm')) +
     loopbackSvg(points, 'frequency_error_hz', 'Frequency Error (Hz)', repeatsFor('frequency_error_hz'));
@@ -68,7 +75,7 @@ function renderLoopbackLive(points, outlierMap = new Map()) {
 function renderLoopbackResult(result) {
   const analysis = result.loopback.analysis;
   const stats = analysis.statistics;
-  const show = value => Number.isFinite(Number(value)) ? Number(value).toFixed(3) : '—';
+  const show = value => value !== null && value !== undefined && String(value).trim() !== '' && Number.isFinite(Number(value)) ? Number(value).toFixed(3) : '—';
   document.querySelector('#loopbackOverall').textContent = analysis.overall_status;
   document.querySelector('#loopbackMetrics').innerHTML =
     metric('Stability', analysis.stability_status) +

@@ -1327,6 +1327,39 @@ safety:
 
 確認後設定。
 
+### DUT 輸入上限是一條獨立保護
+
+`sa_safe_limit_dbm` 只保護 CMP180 analyzer 輸入，它推導不出 DUT 自身能承受多少功率。
+對增益型 DUT（PA）兩者剛好同向，因此舊公式
+`max_safe_generator = sa_safe_limit − gain + output_loss + attenuator` 看起來足夠；
+但對損耗型 DUT（converter、attenuator、filter），DUT 增益為負會讓同一條公式反而**放寬**
+generator 上限，形成只保護儀器、不保護 DUT 的缺口。
+
+因此 GPRF request 與 PA profile 都必須提供 `dut_max_input_dbm`，代表 DUT 參考面
+（`generator_power + external_gain − input_cable_loss`）能承受的輸入上限：
+
+- Profile 的 `safe_stop` 取 analyzer 與 DUT 兩條限制中較嚴的一邊。
+- Profile 起始功率就超過 `dut_max_input_dbm` 時拒絕載入，不得只依賴執行期夾制。
+- Request 只要宣告非零 `expected_dut_gain_db`（代表路徑上有 DUT），未填
+  `dut_max_input_dbm` 一律阻擋。
+- Power sweep 的判定必須用最高一點，不是起始點。
+
+P1dB 是線性度指標，不是損傷閾值；以 P1dB 推導出的值只能當工作上限，並必須在設定檔
+註明來源與推導方式。
+
+### Converter DUT 的頻率解耦
+
+Up/Down converter 的輸入與輸出不同頻，generator 與 analyzer 不得再共用同一個頻率設定。
+`workflow/frequency_conversion.py` 是 IF／LO／RF 關係的唯一來源：
+
+- `RF = LO + IF`（high side）或 `RF = LO − IF`（low side）。
+- `direction=up` 時 generator 停在 IF、analyzer 停在 RF；`direction=down` 相反。
+- 掃描軸永遠是 generator 端，另一端逐點重新解算。
+- 每個掃描點都必須驗證 IF／RF／LO 落在 DUT 範圍，且 generator 與 analyzer 兩端都落在
+  CMP180 400 MHz–8 GHz 內；只驗端點會漏掉中間落出範圍的頻率。
+- 另一個混頻乘積（up 是不要的邊帶、down 是鏡像輸入）與 LO 洩漏若落在 CMP180 範圍內，
+  應標示為可觀測，但落在範圍外只代表看不到，不是錯誤。
+
 ---
 
 ## 16.3 Exception Cleanup
