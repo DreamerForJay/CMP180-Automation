@@ -163,9 +163,18 @@ class JobManager:
             if index < len(points) - 1:
                 time.sleep(dwell_s)
         artifacts = save(captured)
+        p1db: dict[str, object] | None = None
+        try:
+            from cmp180_evm.web.mock_service import analyze_mock_p1db
+
+            # Mock job 不接觸儀器；P1dB 只由已產生的模擬點離線計算。
+            p1db = analyze_mock_p1db(captured)  # type: ignore[arg-type]
+        except (AttributeError, TypeError, ValueError):
+            p1db = None
         return {
             "simulated": True,
             "points": [asdict(point) for point in captured],
+            "p1db": p1db,
             "artifacts": artifacts,
             "partial": len(captured) < len(points),
         }

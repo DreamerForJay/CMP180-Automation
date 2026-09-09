@@ -13,7 +13,7 @@ from pathlib import Path
 from cmp180_evm.limits import DRAFT_LOOPBACK_LIMIT_PROFILE, evaluate_limits
 from cmp180_evm.results.visualization import write_pandas_matplotlib_plots
 
-MAXIMUM_DEMO_SWEEP_POINTS = 11
+MAXIMUM_DEMO_SWEEP_POINTS = 1001
 # Profile 現在集中定義於 cmp180_evm.limits，實機與模擬共用；此處僅保留既有匯入名稱。
 DEMO_LIMIT_PROFILE = DRAFT_LOOPBACK_LIMIT_PROFILE
 
@@ -28,6 +28,9 @@ class MockPoint:
     evm_data_db: float
     evm_pilot_db: float
     burst_power_dbm: float
+    pin_dbm: float
+    pout_dbm: float
+    gain_db: float
     frequency_error_hz: float
     clock_error_ppm: float
     valid: bool
@@ -43,7 +46,7 @@ def build_frequency_points(
     if start_hz <= 0 or stop_hz < start_hz or step_hz <= 0:
         raise ValueError("Invalid frequency range or step")
     count = int(math.floor((stop_hz - start_hz) / step_hz)) + 1
-    # Demo 與未來實機介面共用 11 點上限，避免使用者在模式切換後誤判可用範圍。
+    # Demo 不套用 RF 安全掃描限制；此上限只避免瀏覽器或 CSV 產生過大的模擬資料。
     if count > MAXIMUM_DEMO_SWEEP_POINTS:
         raise ValueError(f"Sweep exceeds the {MAXIMUM_DEMO_SWEEP_POINTS}-point GUI limit")
     return [start_hz + index * step_hz for index in range(count)]
@@ -58,7 +61,7 @@ def build_power_points(
     if step_dbm <= 0 or stop_dbm < start_dbm:
         raise ValueError("Invalid power range or step")
     count = int(math.floor((stop_dbm - start_dbm) / step_dbm)) + 1
-    # 功率 Demo 也維持相同上限，讓預估時間與正式安全流程一致。
+    # Demo 不套用 RF 安全掃描限制；此上限只避免瀏覽器或 CSV 產生過大的模擬資料。
     if count > MAXIMUM_DEMO_SWEEP_POINTS:
         raise ValueError(f"Sweep exceeds the {MAXIMUM_DEMO_SWEEP_POINTS}-point GUI limit")
     return [start_dbm + index * step_dbm for index in range(count)]
@@ -73,10 +76,13 @@ def simulate_point(
     """Return stable simulated values; never represent them as hardware data."""
     # 使用固定公式而非亂數，讓測試、CSV 與圖表每次都能重現。
     phase = frequency_hz / 100_000_000.0
-    # 功率越接近安全上限（-40 dBm），示範用 EVM 越差；純粹讓 Power vs EVM
-    # 圖表有意義，不代表任何實機量測特性。
-    power_headroom_db = -40.0 - generator_power_dbm
-    evm_all = -36.0 + 1.8 * math.sin(phase) - 0.06 * power_headroom_db
+    # Demo PA model 只用來產生可教學的 Gain compression/P1dB 曲線，不代表實機 DUT。
+    pin_dbm = generator_power_dbm
+    compression_db = max(0.0, (pin_dbm + 10.0) * 0.2)
+    gain_db = 20.0 - compression_db
+    pout_dbm = pin_dbm + gain_db
+    # 示範用 EVM 隨功率提高而變差；不使用 -40 dBm 安全上限概念。
+    evm_all = -36.0 + 1.8 * math.sin(phase) + 0.04 * (generator_power_dbm + 60.0)
     evm_data = evm_all + 0.35
     evm_pilot = evm_all - 0.55
     burst_power = generator_power_dbm - 0.45 + 0.12 * math.cos(phase)
@@ -98,11 +104,67 @@ def simulate_point(
         evm_data_db=round(evm_data, 4),
         evm_pilot_db=round(evm_pilot, 4),
         burst_power_dbm=round(burst_power, 4),
+        pin_dbm=round(pin_dbm, 4),
+        pout_dbm=round(pout_dbm, 4),
+        gain_db=round(gain_db, 4),
         frequency_error_hz=round(frequency_error, 4),
         clock_error_ppm=round(clock_error, 6),
         valid=True,
         limit_status=limit_result.overall_status,
     )
+
+
+def analyze_mock_p1db(points: list[MockPoint]) -> dict[str, object]:
+    rows = [asdict(point) for point in points]
+    valid = [
+        point
+        for point in rows
+        if point.get("valid") is True
+        and isinstance(point.get("pin_dbm"), (int, float))
+        and isinstance(point.get("pout_dbm"), (int, float))
+        and isinstance(point.get("gain_db"), (int, float))
+    ]
+    valid.sort(key=lambda point: float(point["pin_dbm"]))
+    if len(valid) < 2:
+        return {"status": "insufficient_points", "small_signal_gain_db": None}
+    baseline_count = max(1, min(3, len(valid)))
+    # 低 Pin 前三點作為小訊號增益，讓 demo P1dB 與實機 GPRF 分析規則一致。
+    small_signal_gain = sum(float(point["gain_db"]) for point in valid[:baseline_count]) / baseline_count
+    target_gain = small_signal_gain - 1.0
+    max_pin_point = max(valid, key=lambda point: float(point["pin_dbm"]))
+    max_compression = max(small_signal_gain - float(point["gain_db"]) for point in valid)
+    previous = valid[0]
+    for point in valid[1:]:
+        previous_gain = float(previous["gain_db"])
+        current_gain = float(point["gain_db"])
+        if previous_gain >= target_gain >= current_gain:
+            span = previous_gain - current_gain
+            ratio = 0.0 if span == 0 else (previous_gain - target_gain) / span
+            pin = float(previous["pin_dbm"]) + ratio * (
+                float(point["pin_dbm"]) - float(previous["pin_dbm"])
+            )
+            pout = float(previous["pout_dbm"]) + ratio * (
+                float(point["pout_dbm"]) - float(previous["pout_dbm"])
+            )
+            return {
+                "status": "found",
+                "small_signal_gain_db": small_signal_gain,
+                "target_gain_db": target_gain,
+                "ip1db_dbm": pin,
+                "op1db_dbm": pout,
+                "max_compression_db": max_compression,
+                "max_measured_pin_dbm": float(max_pin_point["pin_dbm"]),
+                "max_measured_pout_dbm": float(max_pin_point["pout_dbm"]),
+            }
+        previous = point
+    return {
+        "status": "not_found",
+        "small_signal_gain_db": small_signal_gain,
+        "target_gain_db": target_gain,
+        "max_compression_db": max_compression,
+        "max_measured_pin_dbm": float(max_pin_point["pin_dbm"]),
+        "max_measured_pout_dbm": float(max_pin_point["pout_dbm"]),
+    }
 
 
 def save_mock_run(
@@ -117,6 +179,7 @@ def save_mock_run(
     run_dir = output_root / f"{now.strftime('%Y%m%dT%H%M%SZ')}_{safe_name}_{run_id}"
     run_dir.mkdir(parents=True, exist_ok=False)
     rows = [asdict(point) for point in points]
+    p1db = analyze_mock_p1db(points)
 
     # CSV schema 固定使用英文，避免介面語言切換破壞後續分析流程。
     csv_path = run_dir / "results.csv"
@@ -133,6 +196,7 @@ def save_mock_run(
                 "simulated": True,
                 "created_at": now.isoformat(),
                 "points": rows,
+                "p1db": p1db,
             },
             indent=2,
         ),
@@ -152,6 +216,7 @@ def save_mock_run(
                 "source": "web-demo",
                 "limit_profile": DEMO_LIMIT_PROFILE.snapshot(),
                 "compliance_claim": False,
+                "p1db": p1db,
             },
             indent=2,
         ),
@@ -189,7 +254,7 @@ th:first-child,td:first-child{{text-align:left}}
 <p>Run ID: {run_id}</p><table id="results"></table>
 <script>
 const rows={encoded};
-const keys=['point_index','frequency_hz','evm_all_db','burst_power_dbm',
+const keys=['point_index','frequency_hz','generator_power_dbm','pin_dbm','pout_dbm','gain_db','evm_all_db','burst_power_dbm',
   'frequency_error_hz','limit_status'];
 document.querySelector('#results').innerHTML='<tr>'+
   keys.map(k=>`<th>${{k}}</th>`).join('')+'</tr>'+

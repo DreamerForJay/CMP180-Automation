@@ -147,33 +147,33 @@
       <form id="singleForm" class="form-grid">
         <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
-        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-40" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="singlePowerHelp">與實機安全 profile 一致，上限 -40 dBm。</small></label>
+        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-10" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="singlePowerHelp">示範資料不送 RF，可自由輸入功率觀察圖表。</small></label>
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-single"></label>
         <button class="primary submit" type="submit" data-i18n="runSingle">執行 Mock 單點</button>
       </form>
     </section>
 
     <section id="sweep" class="demo-panel">
-      <div class="panel-head"><div><h2 data-i18n="sweepTitle">Mock 頻率掃描</h2><p data-i18n="sweepHelp">依起點、終點與步進建立頻點，最多 11 點。</p></div><span class="pill">DEMO DATA</span></div>
+      <div class="panel-head"><div><h2 data-i18n="sweepTitle">Mock 頻率掃描</h2><p data-i18n="sweepHelp">依起點、終點與步進建立頻點，示範資料不送 RF。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="sweepForm" class="form-grid">
         <label><span data-i18n="start">起始頻率</span><div class="input-unit"><input name="start_mhz" type="number" value="5925" required><b>MHz</b></div></label>
         <label><span data-i18n="stop">結束頻率</span><div class="input-unit"><input name="stop_mhz" type="number" value="6125" required><b>MHz</b></div></label>
         <label><span data-i18n="step">步進</span><div class="input-unit"><input name="step_mhz" type="number" value="20" min="1" required><b>MHz</b></div></label>
         <label><span data-i18n="dwell">停留時間</span><div class="input-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100" required><b>ms</b></div><small class="field-help" data-i18n="dwellHelp">每個頻點之間的等待時間，範圍 100–2000 ms。</small></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
-        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" max="-40" required><b>dBm</b></div><small class="field-help" data-i18n="sweepPowerHelp">安全短掃頻上限為 -40 dBm。</small></label>
+        <label><span data-i18n="power">Generator 功率</span><div class="input-unit"><input name="power_dbm" type="number" value="-10" required><b>dBm</b></div><small class="field-help" data-i18n="sweepPowerHelp">示範資料不套用實機功率安全限制。</small></label>
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-sweep"></label>
         <button class="primary submit" type="submit" data-i18n="runSweep">執行 Mock Sweep</button>
       </form>
     </section>
 
     <section id="powerSweep" class="demo-panel">
-      <div class="panel-head"><div><h2 data-i18n="powerSweepTitle">Mock 功率掃描</h2><p data-i18n="powerSweepHelp">固定頻率，依起點、終點與步進建立功率點，最多 11 點。</p></div><span class="pill">DEMO DATA</span></div>
+      <div class="panel-head"><div><h2 data-i18n="powerSweepTitle">Mock 功率掃描</h2><p data-i18n="powerSweepHelp">固定頻率，建立可示範 Gain compression 與 P1dB 的功率點。</p></div><span class="pill">DEMO DATA</span></div>
       <form id="powerSweepForm" class="form-grid">
         <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
         <label><span data-i18n="bandwidth">頻寬</span><select name="bandwidth_mhz"><option>20</option><option>40</option><option>80</option><option>160</option><option selected>320</option></select></label>
-        <label><span data-i18n="startPower">起始功率</span><div class="input-unit"><input name="start_dbm" type="number" value="-60" min="-60" max="-40" step="1" required><b>dBm</b></div></label>
-        <label><span data-i18n="stopPower">結束功率</span><div class="input-unit"><input name="stop_dbm" type="number" value="-40" min="-60" max="-40" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="sweepPowerHelp">安全短掃頻上限為 -40 dBm。</small></label>
+        <label><span data-i18n="startPower">起始功率</span><div class="input-unit"><input name="start_dbm" type="number" value="-60" step="1" required><b>dBm</b></div></label>
+        <label><span data-i18n="stopPower">結束功率</span><div class="input-unit"><input name="stop_dbm" type="number" value="10" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="sweepPowerHelp">示範資料不套用實機功率安全限制。</small></label>
         <label><span data-i18n="stepPower">步進</span><div class="input-unit"><input name="step_dbm" type="number" value="5" min="1" required><b>dBm</b></div></label>
         <label><span data-i18n="dwell">停留時間</span><div class="input-unit"><input name="dwell_ms" type="number" value="100" min="100" max="2000" step="100" required><b>ms</b></div><small class="field-help" data-i18n="dwellHelp">每個頻點之間的等待時間，範圍 100–2000 ms。</small></label>
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-power-sweep"></label>

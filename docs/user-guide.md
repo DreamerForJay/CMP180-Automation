@@ -207,6 +207,8 @@ GPRF power sweep 可作為第一版 PA conducted scalar 量測入口：選擇 `P
 
 P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。本功能目前只完成軟體／Mock／離線測試，尚未做新的 PA 實機 RF 驗證。
 
+示範模式的單點、頻率掃描與功率掃描不連接 CMP180，也不送 RF，因此不套用實機功率安全上限；功率掃描會以固定的模擬 PA 曲線產生 Pin、Pout、Gain compression 與 P1dB 摘要，方便展示目前與未來圖表流程。所有示範 artifact 仍標示 `SIMULATED`，不得當成新的 PA 實機量測證據。
+
 ## Loopback 驗證
 
 開啟「Loopback 驗證」，設定固定中心頻率、頻寬、Generator power 與 2–100 次 repeats。Expected RX Power 必須代表 analyzer input reference plane，不是 Analyzer ranging 的 -20 dBm。確認 RF1.1 → RF1.5、固定 Cable／UD Box path 與操作員在場後，Review 並完成最後 RF 確認。紅色列表示 INVALID 或 outlier，原始值仍完整保存。11 個 WLAN section 代表點、核准門檻與至少 10 repeats 會選用各自的 2026-09-03 HIL approved profile，成功時直接產生正式 `LOOPBACK_READY`；改動代表頻率、頻寬、功率、route 或門檻會自動回到 draft。

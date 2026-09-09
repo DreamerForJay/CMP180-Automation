@@ -32,6 +32,7 @@ from cmp180_evm.web.hil_campaign import HilCampaignStore
 from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
     DEMO_LIMIT_PROFILE,
+    analyze_mock_p1db,
     build_frequency_points,
     build_power_points,
     save_mock_run,
@@ -937,6 +938,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 "compliance_claim": False,
                 "sweep_axis": sweep_axis,
                 "points": [point.__dict__ for point in points],
+                "p1db": analyze_mock_p1db(points),
                 "artifacts": artifacts,
                 "artifact_urls": self._artifact_urls(artifacts),
                 "output_location": self._output_location(artifacts),
