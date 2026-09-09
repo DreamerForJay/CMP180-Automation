@@ -10,11 +10,13 @@ def test_example_separates_catalog_from_rf_execution_profile():
     profile = load_capability_profile(Path("configs/instrument_capabilities.example.yaml"))
     public = profile.public()
     assert public["catalog"]["frequency_min_hz"] == 400_000_000
-    assert public["approved_profile"]["frequency_min_hz"] == 2_412_000_000
+    # approved_profile 已放寬為「規劃安全包絡」：涵蓋 2.4／5／6 GHz 三個 band 的聯集，
+    # 點數與 dwell 對齊 workflow 上限；-30 dBm 輸入保護仍是不可放寬的硬上限。
+    assert public["approved_profile"]["frequency_min_hz"] == 2_400_000_000
     assert public["approved_profile"]["frequency_max_hz"] == 7_125_000_000
     assert public["approved_profile"]["maximum_span_hz"] == 1_200_000_000
     assert public["approved_profile"]["generator_power_max_dbm"] == -30
-    assert public["approved_profile"]["maximum_points"] == 59
+    assert public["approved_profile"]["maximum_points"] == 100_000
     assert len(public["approved_profile"]["sections"]) == 11
     assert public["catalog_grants_execution"] is False
     assert public["rf_execution_source"] == "approved_profile"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -27,9 +28,20 @@ class PaSweepProfile:
     output_attenuator_db: float
     measurement_external_attenuation_db: float
     sa_safe_limit_dbm: float
+    # sa_safe_limit_dbm 只保護 CMP180 analyzer；DUT 自己的輸入上限是另一條獨立限制。
+    dut_max_input_dbm: float
     approved_by: str
     approved_at: date
     source_evidence: str
+
+    def max_generator_power_for_dut_dbm(
+        self,
+        *,
+        input_cable_loss_db: float | None = None,
+    ) -> float:
+        loss = self.input_cable_loss_db if input_cable_loss_db is None else input_cable_loss_db
+        # DUT 參考面 Pin = generator − 輸入線損；反推 generator 不得超過的上限。
+        return self.dut_max_input_dbm + loss
 
     def max_safe_generator_power_dbm(
         self,
@@ -87,6 +99,8 @@ class PaSweepProfile:
                 output_cable_loss_db=output_loss,
                 output_attenuator_db=attenuator,
             ),
+            # 兩條保護取較嚴者：analyzer 輸入上限與 DUT 自身輸入上限都不得被跨過。
+            self.max_generator_power_for_dut_dbm(input_cable_loss_db=input_loss),
         )
         if safe_stop < self.start_dbm:
             raise ValueError(
@@ -110,6 +124,7 @@ class PaSweepProfile:
             "output_attenuator_db": attenuator,
             "external_attenuation_db": self.measurement_external_attenuation_db,
             "sa_safe_limit_dbm": self.sa_safe_limit_dbm,
+            "dut_max_input_dbm": self.dut_max_input_dbm,
             "profile_id": self.profile_id,
             "profile_revision": self.revision,
             "dut_id": dut_id,
@@ -125,7 +140,11 @@ class PaSweepProfile:
 
 def _require_number(data: dict[str, Any], name: str) -> float:
     try:
-        return float(data[name])
+        value = float(data[name])
+        # YAML 的 .nan/.inf 會繞過大小比較；安全計畫僅接受有限數值。
+        if not math.isfinite(value):
+            raise ValueError(name)
+        return value
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError(f"PA sweep profile requires numeric {name}") from exc
 
@@ -152,6 +171,8 @@ def load_pa_sweep_profile(path: Path) -> PaSweepProfile:
             payload, "measurement_external_attenuation_db"
         ),
         sa_safe_limit_dbm=_require_number(payload, "sa_safe_limit_dbm"),
+        # 必填：沒有 DUT 輸入上限就無從判斷 sweep 會不會打壞 DUT 本身。
+        dut_max_input_dbm=_require_number(payload, "dut_max_input_dbm"),
         approved_by=str(payload.get("approved_by") or ""),
         approved_at=date.fromisoformat(str(payload["approved_at"])),
         source_evidence=str(payload.get("source_evidence") or ""),
@@ -170,4 +191,9 @@ def load_pa_sweep_profile(path: Path) -> PaSweepProfile:
         raise ValueError("PA sweep attenuation values cannot be negative")
     if profile.max_safe_generator_power_dbm() < profile.start_dbm:
         raise ValueError("PA sweep profile has no safe points with its default fixture")
+    if profile.max_generator_power_for_dut_dbm() < profile.start_dbm:
+        # 起始點就已超過 DUT 輸入上限時整份 profile 不可用，不能只靠執行期夾制。
+        raise ValueError(
+            "PA sweep start already exceeds dut_max_input_dbm at the DUT reference plane"
+        )
     return profile

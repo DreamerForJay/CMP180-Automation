@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import html
 import json
+import math
 import socket
 import time
 import uuid
@@ -20,12 +21,20 @@ from pathlib import Path
 from cmp180_evm.results.visualization import write_pandas_matplotlib_plots
 from cmp180_evm.scpi.registry import ScpiCommandRegistry, load_scpi_command_map
 from cmp180_evm.web.jobs import SweepJob
+from cmp180_evm.workflow.frequency_conversion import (
+    ConversionPlan,
+    ConverterLimits,
+    build_converter_limits,
+)
 from cmp180_evm.workflow.rf_routes import parse_route
 
 GPRF_MIN_FREQUENCY_HZ = 400_000_000.0
 GPRF_MAX_FREQUENCY_HZ = 8_000_000_000.0
 GPRF_MIN_POWER_DBM = -80.0
-GPRF_MAX_POWER_DBM = 20.0
+# CMP180 generator 最大輸出 +8 dBm（2026-09-09 由現場操作員提供的儀器規格；
+# 尚未由 Remote Manual 條目覆核）。規劃上限必須貼齊儀器實際能力，否則會規劃出
+# 儀器根本送不出來的功率點，在現場才失敗。
+GPRF_MAX_POWER_DBM = 8.0
 GPRF_MAX_POINTS = 401
 GPRF_MIN_DWELL_MS = 50
 GPRF_MAX_DWELL_MS = 5000
@@ -35,6 +44,11 @@ GPRF_MAX_PATH_COMPENSATION_DB = 120.0
 GPRF_MIN_SAFE_LIMIT_DBM = -120.0
 GPRF_MAX_SAFE_LIMIT_DBM = 30.0
 GPRF_MIN_EXPECTED_POWER_DBM = -30.0
+# Converter 類 DUT 是淨損耗，expected_dut_gain_db 必須允許負值，否則規劃階段就填不進去。
+GPRF_MIN_DUT_GAIN_DB = -GPRF_MAX_PATH_COMPENSATION_DB
+# DUT 輸入損傷上限與 sa_safe_limit_dbm 是兩件事：後者保護 CMP180，前者保護 DUT。
+GPRF_MIN_DUT_MAX_INPUT_DBM = -120.0
+GPRF_MAX_DUT_MAX_INPUT_DBM = 30.0
 
 
 @dataclass(frozen=True)
@@ -53,6 +67,24 @@ class GprfPreview:
     output_attenuator_db: float = 0.0
     expected_dut_gain_db: float = 0.0
     sa_safe_limit_dbm: float = 0.0
+    dut_max_input_dbm: float | None = None
+    # converter 為 None 時 generator 與 analyzer 同頻，維持既有 PA/loopback 行為。
+    conversion: ConversionPlan | None = None
+    converter_limits: ConverterLimits | None = None
+
+    def point_frequencies_hz(self, value: float) -> tuple[float, float]:
+        """Return (generator_hz, analyzer_hz) for one sweep point."""
+        frequency_hz = value if self.axis == "frequency" else float(self.frequency_hz)
+        if self.conversion is None:
+            # 同頻 DUT（PA、直連 loopback）：兩端共用同一個頻率。
+            return frequency_hz, frequency_hz
+        plan = ConversionPlan.from_generator_frequency(
+            generator_frequency_hz=frequency_hz,
+            lo_frequency_hz=self.conversion.lo_frequency_hz,
+            sideband=self.conversion.sideband,
+            direction=self.conversion.direction,
+        )
+        return plan.generator_frequency_hz, plan.analyzer_frequency_hz
 
     def public(self) -> dict[str, object]:
         pin_start, pin_stop = _pin_range(
@@ -75,6 +107,11 @@ class GprfPreview:
             "output_attenuator_db": self.output_attenuator_db,
             "expected_dut_gain_db": self.expected_dut_gain_db,
             "sa_safe_limit_dbm": self.sa_safe_limit_dbm,
+            "dut_max_input_dbm": self.dut_max_input_dbm,
+            "conversion": None if self.conversion is None else self.conversion.public(),
+            "converter_limits": (
+                None if self.converter_limits is None else self.converter_limits.public()
+            ),
             "pin_start_dbm": pin_start,
             "pin_stop_dbm": pin_stop,
             "execution_allowed": self.execution_allowed,
@@ -174,7 +211,7 @@ def _path_compensation(data: dict[str, object]) -> dict[str, float]:
             data,
             "expected_dut_gain_db",
             0.0,
-            minimum=0.0,
+            minimum=GPRF_MIN_DUT_GAIN_DB,
             maximum=GPRF_MAX_PATH_COMPENSATION_DB,
         ),
         "sa_safe_limit_dbm": _bounded_float(
@@ -205,12 +242,105 @@ def _pin_range(
     )
 
 
+def _dut_max_input_dbm(data: dict[str, object]) -> float | None:
+    raw = data.get("dut_max_input_dbm")
+    if raw is None or raw == "":
+        return None
+    value = float(raw)
+    if not GPRF_MIN_DUT_MAX_INPUT_DBM <= value <= GPRF_MAX_DUT_MAX_INPUT_DBM:
+        raise ValueError(
+            f"dut_max_input_dbm must stay within {GPRF_MIN_DUT_MAX_INPUT_DBM:g}.."
+            f"{GPRF_MAX_DUT_MAX_INPUT_DBM:g}"
+        )
+    return value
+
+
+def _dut_input_rejection(
+    *,
+    max_generator_power_dbm: float,
+    compensation: dict[str, float],
+    dut_max_input_dbm: float | None,
+) -> str | None:
+    """Protect the DUT itself; sa_safe_limit_dbm only ever protects the CMP180 analyzer."""
+    if dut_max_input_dbm is None:
+        # 一旦宣告了 DUT 增益／損耗就代表路徑上有 DUT，必須同時說明它的輸入上限。
+        if compensation["expected_dut_gain_db"] != 0.0:
+            return (
+                "dut_max_input_dbm is required once expected_dut_gain_db declares a DUT in the "
+                "path; state the DUT input damage limit before planning RF"
+            )
+        return None
+    pin_dbm = _pin_dbm(
+        max_generator_power_dbm,
+        compensation["external_gain_db"],
+        compensation["input_cable_loss_db"],
+    )
+    if pin_dbm > dut_max_input_dbm:
+        return (
+            f"Worst-case DUT input {pin_dbm:g} dBm exceeds the declared DUT limit "
+            f"{dut_max_input_dbm:g} dBm"
+        )
+    return None
+
+
+def _conversion_request(
+    data: dict[str, object],
+) -> tuple[dict[str, object] | None, ConverterLimits | None]:
+    raw = data.get("conversion")
+    if not raw:
+        return None, None
+    if not isinstance(raw, dict):
+        raise ValueError("GPRF conversion must be an object")
+    settings = {
+        "direction": str(raw.get("direction") or "up"),
+        "sideband": str(raw.get("sideband") or "high"),
+        "lo_frequency_hz": float(raw["lo_frequency_hz"]),
+    }
+    return settings, build_converter_limits(raw.get("limits"))
+
+
+def _conversion_rejection(
+    *,
+    generator_frequencies_hz: tuple[float, ...],
+    settings: dict[str, object],
+    limits: ConverterLimits,
+) -> str | None:
+    # 每個掃描點都要重新解一次 IF/RF；只驗端點會漏掉中間落出 DUT 範圍的頻率。
+    for generator_hz in generator_frequencies_hz:
+        plan = ConversionPlan.from_generator_frequency(
+            generator_frequency_hz=generator_hz,
+            lo_frequency_hz=float(settings["lo_frequency_hz"]),
+            sideband=str(settings["sideband"]),
+            direction=str(settings["direction"]),
+        )
+        errors = plan.validate(limits)
+        if errors:
+            return "; ".join(errors)
+    return None
+
+
+def _representative_conversion(
+    settings: dict[str, object] | None,
+    generator_frequency_hz: float | None,
+) -> ConversionPlan | None:
+    if settings is None or generator_frequency_hz is None:
+        return None
+    return ConversionPlan.from_generator_frequency(
+        generator_frequency_hz=generator_frequency_hz,
+        lo_frequency_hz=float(settings["lo_frequency_hz"]),
+        sideband=str(settings["sideband"]),
+        direction=str(settings["direction"]),
+    )
+
+
 def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
     axis = str(data.get("axis") or "frequency")
     dwell_ms = int(float(data.get("dwell_ms", 200)))
     if not GPRF_MIN_DWELL_MS <= dwell_ms <= GPRF_MAX_DWELL_MS:
         raise ValueError(f"GPRF dwell must stay within {GPRF_MIN_DWELL_MS}..{GPRF_MAX_DWELL_MS} ms")
     compensation = _path_compensation(data)
+    dut_max_input_dbm = _dut_max_input_dbm(data)
+    conversion_settings, converter_limits = _conversion_request(data)
     if axis == "frequency":
         start_hz = float(data["start_hz"])
         stop_hz = float(data["stop_hz"])
@@ -225,6 +355,18 @@ def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
                 f"Generator power must stay within {GPRF_MIN_POWER_DBM:g}.."
                 f"{GPRF_MAX_POWER_DBM:g} dBm"
             )
+        elif conversion_settings is not None and converter_limits is not None:
+            reason = _conversion_rejection(
+                generator_frequencies_hz=points,
+                settings=conversion_settings,
+                limits=converter_limits,
+            )
+        if reason is None:
+            reason = _dut_input_rejection(
+                max_generator_power_dbm=power_dbm,
+                compensation=compensation,
+                dut_max_input_dbm=dut_max_input_dbm,
+            )
         return GprfPreview(
             axis,
             points,
@@ -234,6 +376,9 @@ def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
             reason is None,
             reason,
             **compensation,
+            dut_max_input_dbm=dut_max_input_dbm,
+            conversion=_representative_conversion(conversion_settings, points[0] if points else None),
+            converter_limits=converter_limits,
         )
     if axis == "power":
         frequency_hz = float(data["frequency_hz"])
@@ -249,6 +394,19 @@ def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
                 f"Power sweep exceeds {GPRF_MIN_POWER_DBM:g}.."
                 f"{GPRF_MAX_POWER_DBM:g} dBm planning range"
             )
+        elif conversion_settings is not None and converter_limits is not None:
+            reason = _conversion_rejection(
+                generator_frequencies_hz=(frequency_hz,),
+                settings=conversion_settings,
+                limits=converter_limits,
+            )
+        if reason is None:
+            # Power sweep 的最壞情況是最高一點；DUT 保護必須用它，不是起始點。
+            reason = _dut_input_rejection(
+                max_generator_power_dbm=max(points),
+                compensation=compensation,
+                dut_max_input_dbm=dut_max_input_dbm,
+            )
         return GprfPreview(
             axis,
             points,
@@ -258,6 +416,9 @@ def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
             reason is None,
             reason,
             **compensation,
+            dut_max_input_dbm=dut_max_input_dbm,
+            conversion=_representative_conversion(conversion_settings, frequency_hz),
+            converter_limits=converter_limits,
         )
     raise ValueError("GPRF axis must be 'frequency' or 'power'")
 
@@ -364,8 +525,11 @@ def _parse_power(response: str) -> tuple[int, float | None]:
         parts = response.strip().split(",")
         reliability = int(float(parts[0]))
         value = float(parts[1]) if len(parts) > 1 else None
+        # 缺值與非有限數不是有效功率；讓呼叫端停止升功率，不能以 OK 繼續掃描。
+        if value is None or not math.isfinite(value):
+            return -1, None
         return reliability, value
-    except (IndexError, ValueError):
+    except (IndexError, ValueError, OverflowError):
         return -1, None
 
 
@@ -429,6 +593,8 @@ def _analyze_p1db(points: list[dict[str, object]], *, small_signal_points: int =
         and isinstance(point.get("pin_dbm"), (int, float))
         and isinstance(point.get("pout_dbm"), (int, float))
         and isinstance(point.get("gain_db"), (int, float))
+        # 離線匯入也可能含 NaN/Inf；不得污染基準或 P1dB 插值。
+        and all(math.isfinite(float(point[key])) for key in ("pin_dbm", "pout_dbm", "gain_db"))
     ]
     valid.sort(key=lambda point: float(point["pin_dbm"]))
     if len(valid) < 2:
@@ -440,6 +606,8 @@ def _analyze_p1db(points: list[dict[str, object]], *, small_signal_points: int =
     compressions = [small_signal_gain - float(point["gain_db"]) for point in valid]
     max_compression = max(compressions)
     max_pin_point = max(valid, key=lambda point: float(point["pin_dbm"]))
+    # 壓縮後 Pout 可能回落；最大輸出與最大輸入必須分別搜尋。
+    max_pout = max(float(point["pout_dbm"]) for point in valid)
     previous = valid[0]
     for point in valid[1:]:
         previous_gain = float(previous["gain_db"])
@@ -461,7 +629,7 @@ def _analyze_p1db(points: list[dict[str, object]], *, small_signal_points: int =
                 "op1db_dbm": pout,
                 "max_compression_db": max_compression,
                 "max_measured_pin_dbm": float(max_pin_point["pin_dbm"]),
-                "max_measured_pout_dbm": float(max_pin_point["pout_dbm"]),
+                "max_measured_pout_dbm": max_pout,
             }
         previous = point
     return {
@@ -470,7 +638,7 @@ def _analyze_p1db(points: list[dict[str, object]], *, small_signal_points: int =
         "target_gain_db": target_gain,
         "max_compression_db": max_compression,
         "max_measured_pin_dbm": float(max_pin_point["pin_dbm"]),
-        "max_measured_pout_dbm": float(max_pin_point["pout_dbm"]),
+        "max_measured_pout_dbm": max_pout,
     }
 
 
@@ -559,8 +727,10 @@ def run_gprf_power_sweep(
     registry = load_scpi_command_map(Path("configs/scpi_command_map.yaml"))
     conn = GprfSocket(registry)
     rows: list[dict[str, object]] = []
-    # 回傳 dict 持有同一個 list 參考，因此 finally 內補上的收尾錯誤仍會被呼叫端看到。
+    # 回傳結果在 finally 完成後才交付；收尾讀回與保存結果必須同步。
     cleanup_errors: list[str] = []
+    artifacts: dict[str, str] | None = None
+    result: dict[str, object] = {}
     original_baseband_mode: str | None = None
     original_arb_file: str | None = None
     stopped_reason: str | None = None
@@ -596,11 +766,20 @@ def run_gprf_power_sweep(
         for index, value in enumerate(preview.points):
             if job.is_cancel_requested():
                 break
-            frequency_hz = value if preview.axis == "frequency" else float(preview.frequency_hz)
+            generator_frequency_hz, analyzer_frequency_hz = preview.point_frequencies_hz(value)
+            # frequency_hz 沿用 generator 端，維持既有 artifact 與圖表的掃描軸語意。
+            frequency_hz = generator_frequency_hz
             power_dbm = float(preview.power_dbm) if preview.axis == "frequency" else value
             expected_power_dbm = _expected_analyzer_power_dbm(power_dbm, preview)
-            conn.write(registry.render("generator.set_frequency", frequency_hz=frequency_hz))
-            conn.write(registry.render("gprf_measurement.set_frequency", frequency_hz=frequency_hz))
+            # Converter DUT 的輸入與輸出不同頻；兩端寫同一個頻率只會讓 analyzer 停在底噪。
+            conn.write(
+                registry.render("generator.set_frequency", frequency_hz=generator_frequency_hz)
+            )
+            conn.write(
+                registry.render(
+                    "gprf_measurement.set_frequency", frequency_hz=analyzer_frequency_hz
+                )
+            )
             conn.write(registry.render("generator.set_power", power_dbm=power_dbm))
             # expected nominal power 決定 RF1.5 ranging；PA profile 需用預估輸入且避開儀器下限。
             conn.write(
@@ -641,6 +820,8 @@ def run_gprf_power_sweep(
             row = {
                 "point_index": index,
                 "frequency_hz": frequency_hz,
+                "generator_frequency_hz": generator_frequency_hz,
+                "analyzer_frequency_hz": analyzer_frequency_hz,
                 "generator_power_dbm": power_dbm,
                 "analyzer_port": route.analyzer_port,
                 "expected_power_dbm": expected_power_dbm,
@@ -695,12 +876,20 @@ def run_gprf_power_sweep(
                 "output_cable_loss_db": preview.output_cable_loss_db,
                 "external_gain_db": preview.external_gain_db,
                 "sa_safe_limit_dbm": preview.sa_safe_limit_dbm,
+                "dut_max_input_dbm": preview.dut_max_input_dbm,
+                # Converter 的 LO／sideband 決定了 analyzer 停在哪裡，必須隨 artifact 留存。
+                "conversion": None if preview.conversion is None else preview.conversion.public(),
+                "converter_limits": (
+                    None if preview.converter_limits is None else preview.converter_limits.public()
+                ),
                 "p1db": p1db,
                 "baseband_mode": GPRF_BASEBAND_MODE,
-                "restored_baseband_mode": original_baseband_mode,
+                "original_baseband_mode": original_baseband_mode,
+                "restored_baseband_mode": None,
+                "cleanup_pending": True,
             },
         )
-        return {
+        result = {
             "simulated": False,
             "sweep_axis": preview.axis,
             "measurement_family": "GPRF_POWER",
@@ -712,14 +901,17 @@ def run_gprf_power_sweep(
             "stopped_reason": stopped_reason,
             "compliance_claim": False,
         }
+        return result
     finally:
         # GPRF cleanup 只碰 GPRF power lifecycle 與 generator RF state，不碰 WLAN state tree。
         try:
             conn.write(registry.require("gprf_measurement.stop_power"))
-        except Exception:
-            pass
+        except Exception as exc:
+            cleanup_errors.append(f"STOP_FAILED: {exc}")
         try:
             conn.write(registry.require("generator.rf_off"))
+        except Exception as exc:
+            cleanup_errors.append(f"RF_OFF_FAILED: {exc}")
         finally:
             # RF 關閉後才還原 baseband；還原失敗必須留成證據，不得靜默吞掉。
             try:
@@ -731,9 +923,49 @@ def run_gprf_power_sweep(
                     )
             except Exception as exc:
                 cleanup_errors.append(f"BASEBAND_RESTORE_FAILED: {exc}")
+            # 必須讀回實際狀態；原始 mode 只是還原目標，不能預先宣稱還原成功。
+            final_cleanup: dict[str, object] = {
+                "final_rf_state": None,
+                "restored_baseband_mode": None,
+                "measurement_stop_attempted": True,
+                # Registry 尚無已驗證 GPRF state query，不能把 STOP 寫入當成狀態讀回。
+                "final_measurement_state": None,
+                "measurement_state_verified": False,
+                "cleanup_errors": cleanup_errors,
+            }
+            for key, command in (
+                ("final_rf_state", "generator_query.state"),
+                ("restored_baseband_mode", "generator_query.baseband_mode"),
+            ):
+                try:
+                    final_cleanup[key] = conn.query(registry.require(command)).strip().strip('"')
+                except Exception as exc:
+                    cleanup_errors.append(f"{key.upper()}_QUERY_FAILED: {exc}")
+            if final_cleanup["final_rf_state"] != "OFF":
+                cleanup_errors.append("FINAL_RF_OFF_NOT_CONFIRMED")
             # 收尾後再讀一次 error queue 留存證據；讀取失敗不得遮蔽原始錯誤，也不得跳過 close。
             try:
                 cleanup_errors.extend(_drain_error_queue(conn, registry))
-            except Exception:
-                pass
-            conn.close()
+            except Exception as exc:
+                cleanup_errors.append(f"ERROR_QUEUE_QUERY_FAILED: {exc}")
+            try:
+                conn.close()
+            except Exception as exc:
+                cleanup_errors.append(f"CONNECTION_CLOSE_FAILED: {exc}")
+            result["final_cleanup"] = final_cleanup
+            if cleanup_errors:
+                result["partial"] = True
+                result["stopped_reason"] = "CLEANUP_ERROR"
+            if artifacts is not None:
+                # 先前保存的資料仍保留；僅在收尾完成後原子更新 metadata 的最終安全證據。
+                metadata_path = Path(artifacts["metadata"])
+                payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+                payload.update(final_cleanup)
+                payload["final_cleanup"] = final_cleanup
+                payload["cleanup_pending"] = False
+                if cleanup_errors:
+                    payload["status"] = "partial"
+                    payload["stopped_reason"] = "CLEANUP_ERROR"
+                temporary = metadata_path.with_suffix(".json.tmp")
+                temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                temporary.replace(metadata_path)

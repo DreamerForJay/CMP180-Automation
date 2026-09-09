@@ -147,7 +147,7 @@ def test_custom_real_single_uses_reviewed_web_values(monkeypatch, tmp_path):
     assert instrument.closed is True
 
 
-def test_custom_real_single_allows_catalog_edge_and_records_hil_pending(
+def test_custom_real_single_allows_catalog_edge_and_flags_non_standard_channel(
     monkeypatch, tmp_path
 ):
     instrument = CleanupInstrument()
@@ -168,7 +168,8 @@ def test_custom_real_single_allows_catalog_edge_and_records_hil_pending(
     )
     metadata = json.loads(Path(result["artifacts"]["metadata"]).read_text(encoding="utf-8"))
     assert CustomBackend.configured_plans[-1].center_frequency_hz == 400_000_000
-    assert metadata["hil_status"] == "HIL_PENDING"
+    # 400 MHz 不在標準 WLAN channel plan 內，但仍可實際量測；artifact 保留標記。
+    assert metadata["standard_wlan_channel"] is False
     assert metadata["compliance_claim"] is False
 
 

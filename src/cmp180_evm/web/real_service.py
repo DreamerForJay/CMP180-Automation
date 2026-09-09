@@ -387,7 +387,8 @@ def run_custom_real_sweep(
                 single,
                 preview.points[0],
                 preview.points[-1],
-                preview.points[1] - preview.points[0],
+                # 保留原始十進位步長；由相鄰浮點相減反推會漏點，單點也不能索引第二點。
+                float(request["step_hz"]),
                 dwell_time_s=preview.dwell_time_s,
             )
             def callback(count, point):
@@ -445,7 +446,8 @@ def run_custom_real_sweep(
                 single,
                 preview.points[0],
                 preview.points[-1],
-                preview.points[1] - preview.points[0],
+                # 步長使用已重驗的 request，避免浮點相減導致與預覽點數不一致。
+                float(request["step_dbm"]),
                 dwell_time_s=preview.dwell_time_s,
             )
             def callback(count, point):
@@ -693,8 +695,9 @@ def run_custom_real_single(
             "custom_plan_fingerprint": preview.plan_fingerprint,
             "custom_plan": preview.public(),
             "operator_authorization": "confirmed_at_request",
-            # 區段外量測是實機結果但尚無既有 HIL 證據，不得作 compliance 宣稱。
-            "hil_status": preview.hil_status,
+            # 非標準 WLAN channel plan 的組合仍可量測，但結果可能為 INV；
+            # artifact 保留此標記供離線判讀，且一律不作 compliance 宣稱。
+            "standard_wlan_channel": preview.band_supported,
             "compliance_claim": False,
             **calibration_metadata,
         },

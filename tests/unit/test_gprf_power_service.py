@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.web.gprf_service import (
@@ -372,3 +373,204 @@ def test_gprf_artifacts_record_completed_point_count(tmp_path: Path):
     # GPRF 使用獨立保存流程，也必須同步產生靜態 PNG，避免結果頁只剩互動 SVG。
     assert Path(artifacts["matplotlib_burst_power_dbm"]).is_file()
     assert Path(artifacts["matplotlib_gain_db"]).is_file()
+
+
+def _udbox_request() -> dict:
+    return yaml.safe_load(Path("configs/udbox_sweep.example.yaml").read_text(encoding="utf-8"))
+
+
+def test_converter_loss_is_accepted_as_negative_expected_dut_gain():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "power",
+            "frequency_hz": 1_000_000_000,
+            "start_dbm": -20,
+            "stop_dbm": -10,
+            "step_dbm": 1,
+            "dwell_ms": 200,
+            "expected_dut_gain_db": -10,
+            "dut_max_input_dbm": -10,
+            "sa_safe_limit_dbm": 0,
+        }
+    )
+
+    # 損耗型 DUT 的增益是負值；規劃階段必須收得下，否則 converter 根本填不進來。
+    assert preview.expected_dut_gain_db == pytest.approx(-10.0)
+    assert preview.execution_allowed is True
+    assert _expected_analyzer_power_dbm(-10.0, preview) == pytest.approx(-20.0)
+
+
+def test_declaring_a_dut_without_its_input_limit_is_blocked():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "power",
+            "frequency_hz": 6_105_000_000,
+            "start_dbm": -55,
+            "stop_dbm": -25,
+            "step_dbm": 1,
+            "dwell_ms": 200,
+            "expected_dut_gain_db": 25,
+            "sa_safe_limit_dbm": 0,
+        }
+    )
+
+    assert preview.execution_allowed is False
+    assert "dut_max_input_dbm is required" in preview.rejection_reason
+
+
+def test_worst_case_dut_input_uses_the_highest_sweep_point():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "power",
+            "frequency_hz": 1_000_000_000,
+            "start_dbm": -20,
+            "stop_dbm": 8,
+            "step_dbm": 1,
+            "dwell_ms": 200,
+            "expected_dut_gain_db": -10,
+            "dut_max_input_dbm": 5,
+            "sa_safe_limit_dbm": 0,
+        }
+    )
+
+    # 起點安全不代表整段安全；DUT 保護必須用最高一點判斷。
+    assert preview.execution_allowed is False
+    assert "exceeds the declared DUT limit 5 dBm" in preview.rejection_reason
+
+
+def test_dut_input_limit_accounts_for_input_cable_loss():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "power",
+            "frequency_hz": 1_000_000_000,
+            "start_dbm": -20,
+            "stop_dbm": 8,
+            "step_dbm": 1,
+            "dwell_ms": 200,
+            "expected_dut_gain_db": -10,
+            "input_cable_loss_db": 2.0,
+            "dut_max_input_dbm": 6,
+            "sa_safe_limit_dbm": 0,
+        }
+    )
+
+    # 2 dB 線損讓 DUT 參考面只收到 6 dBm，因此同一組 stop 反而合法。
+    assert preview.execution_allowed is True
+    assert preview.public()["pin_stop_dbm"] == pytest.approx(6.0)
+
+
+def test_converter_preview_splits_generator_and_analyzer_frequencies():
+    preview = build_gprf_power_preview(_udbox_request())
+
+    public = preview.public()
+    assert preview.execution_allowed is True
+    assert public["conversion"]["generator_frequency_hz"] == 1_000_000_000
+    assert public["conversion"]["analyzer_frequency_hz"] == 7_000_000_000
+    assert public["conversion"]["mirror_frequency_hz"] == 5_000_000_000
+    # 鏡像與 LO 洩漏都在 CMP180 內，同一次接線可以順便觀測。
+    assert public["conversion"]["mirror_observable"] is True
+    assert public["conversion"]["lo_leakage_observable"] is True
+    # Power sweep 每點都用同一組固定頻率，但兩端仍必須分開。
+    assert preview.point_frequencies_hz(-20.0) == (1_000_000_000, 7_000_000_000)
+
+
+def test_non_converter_preview_keeps_generator_and_analyzer_on_one_frequency():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "frequency",
+            "start_hz": 6_000_000_000,
+            "stop_hz": 6_200_000_000,
+            "step_hz": 100_000_000,
+            "power_dbm": -40,
+            "dwell_ms": 200,
+        }
+    )
+
+    assert preview.conversion is None
+    assert preview.point_frequencies_hz(6_100_000_000) == (6_100_000_000, 6_100_000_000)
+
+
+def test_converter_frequency_sweep_rejects_a_point_that_leaves_the_dut_range():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "frequency",
+            "start_hz": 1_000_000_000,
+            "stop_hz": 2_500_000_000,
+            "step_hz": 500_000_000,
+            "power_dbm": -20,
+            "dwell_ms": 200,
+            "expected_dut_gain_db": -10,
+            "dut_max_input_dbm": 13,
+            "conversion": {
+                "direction": "up",
+                "sideband": "high",
+                "lo_frequency_hz": 6_000_000_000,
+            },
+        }
+    )
+
+    # IF 2.5 GHz 會把 RF 推到 8.5 GHz，超出 CMP180 analyzer 可調範圍。
+    assert preview.execution_allowed is False
+    assert "Analyzer frequency" in preview.rejection_reason
+
+
+def test_converter_frequency_sweep_allows_a_fully_in_range_span():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "frequency",
+            "start_hz": 1_000_000_000,
+            "stop_hz": 1_800_000_000,
+            "step_hz": 200_000_000,
+            "power_dbm": -20,
+            "dwell_ms": 200,
+            "expected_dut_gain_db": -10,
+            "dut_max_input_dbm": 13,
+            "conversion": {
+                "direction": "up",
+                "sideband": "high",
+                "lo_frequency_hz": 6_000_000_000,
+            },
+        }
+    )
+
+    assert preview.execution_allowed is True
+    # 掃描軸是 generator（IF）；analyzer 每點跟著 LO 偏移。
+    assert preview.point_frequencies_hz(1_000_000_000) == (1_000_000_000, 7_000_000_000)
+    assert preview.point_frequencies_hz(1_800_000_000) == (1_800_000_000, 7_800_000_000)
+
+
+def test_pa_profile_requires_a_dut_input_limit(tmp_path: Path):
+    payload = yaml.safe_load(Path("configs/pa_sweep.example.yaml").read_text(encoding="utf-8"))
+    payload.pop("dut_max_input_dbm")
+    incomplete = tmp_path / "pa_sweep_without_dut_limit.yaml"
+    incomplete.write_text(yaml.safe_dump(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="dut_max_input_dbm"):
+        load_pa_sweep_profile(incomplete)
+
+
+def test_dut_input_limit_clips_pa_safe_stop_below_the_analyzer_limit(tmp_path: Path):
+    payload = yaml.safe_load(Path("configs/pa_sweep.example.yaml").read_text(encoding="utf-8"))
+    # DUT 比 analyzer 更早成為瓶頸時，safe_stop 必須跟著 DUT 走。
+    payload["dut_max_input_dbm"] = -40
+    profile_path = tmp_path / "pa_sweep_low_dut_limit.yaml"
+    profile_path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+
+    profile = load_pa_sweep_profile(profile_path)
+    request = profile.measurement_request(dut_id="DUT-002")
+
+    assert profile.max_safe_generator_power_dbm() == pytest.approx(-25.0)
+    assert request["stop_dbm"] == pytest.approx(-40.0)
+    assert request["safe_stop_clipped"] is True
+
+
+def test_validate_pa_sweep_cli_reports_the_dut_input_limit(capsys):
+    from cmp180_evm.cli import main
+
+    exit_code = main(["validate-pa-sweep", "configs/pa_sweep.example.yaml"])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    # 兩條保護必須同時出現，操作員才不會把 SA safe limit 當成 DUT 的上限。
+    assert "SA safe limit: 0 dBm" in output
+    assert "DUT max input: -20 dBm" in output

@@ -18,8 +18,8 @@ def test_common_commands_are_fixed():
 
 def test_unconfigured_result_command_raises():
     registry = load_scpi_command_map(SCPI_MAP_PATH)
-    with pytest.raises(ScpiCommandNotConfiguredError, match="results.evm_all_average"):
-        registry.require("results.evm_all_average")
+    with pytest.raises(ScpiCommandNotConfiguredError, match="wlan_tx.adjust_level"):
+        registry.require("wlan_tx.adjust_level")
 
 
 def test_is_configured_false_for_unset_command():
@@ -111,7 +111,7 @@ def test_verified_setters_do_not_enable_lifecycle_rf_or_unverified_results():
     assert registry.is_configured("wlan_tx.set_frequency") is True
     assert registry.is_configured("wlan_tx.initiate") is True
     assert registry.is_configured("generator.rf_on") is True
-    assert registry.is_configured("results.evm_all_average") is False
+    assert registry.is_configured("wlan_tx.adjust_level") is False
 
 
 def test_modulation_aggregate_result_queries_are_configured():

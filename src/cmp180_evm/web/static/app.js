@@ -67,13 +67,37 @@ function filteredRuns(){const query=$('#runSearch').value.trim().toLowerCase(),d
 function renderRunHistory(){const labels=language==='zh'?{load:'查看詳情',close:'收合詳情',open:'開啟輸出',trash:'刪除'}:{load:'View details',close:'Close details',open:'Open output',trash:'Delete'};const rows=filteredRuns();$('#historyEmpty').hidden=rows.length>0;$('#historyEmpty').textContent=language==='zh'?'沒有符合條件的量測紀錄。':'No runs match the current filters.';$('#historyRows').innerHTML=rows.map(run=>{const files=run.artifact_urls||{};const links=[historyLink(files.report,'HTML'),historyLink(files.csv,'CSV'),historyLink(files.json,'JSON'),historyLink(files.metadata,'Metadata')].filter(Boolean).join(' · ');const source=run.simulated?'DEMO':'HARDWARE',checked=selectedCompareKeys.has(run.run_key)?'checked':'',expanded=expandedRunKey===run.run_key,openUrl=files.report||files.json||files.csv||files.metadata||'';return `<tr class="run-main-row"><td class="select-column"><input class="run-select" type="checkbox" data-compare-run="${escapeHtml(run.run_key)}" ${checked} aria-label="Select ${escapeHtml(run.test_name)} for comparison"></td><td>${run.created_at?new Date(run.created_at).toLocaleString():'—'}</td><td>${escapeHtml(run.test_name)}</td><td><code>${escapeHtml(run.run_id)}</code></td><td><span class="pill ${run.simulated?'neutral':'hardware-source'}">${source}</span></td><td>${escapeHtml(String(run.status).toUpperCase())}</td><td>${run.completed_points}</td><td class="history-links">${links||'—'}</td><td class="record-actions"><button type="button" data-record-action="load" data-run-key="${escapeHtml(run.run_key)}">${expanded?labels.close:labels.load}</button><button type="button" data-record-action="open" data-open-url="${escapeHtml(openUrl)}" ${openUrl?'':'disabled'}>${labels.open}</button><button type="button" class="danger-mini" data-record-action="trash" data-run-key="${escapeHtml(run.run_key)}" data-run-id="${escapeHtml(run.run_id)}">${labels.trash}</button></td></tr><tr class="run-detail-row" data-detail-row="${escapeHtml(run.run_key)}" ${expanded?'':'hidden'}><td colspan="9"><div class="inline-run-detail">${expanded?'<div class="detail-loading">Loading…</div>':''}</div></td></tr>`}).join('');updateCompareSelection();if(expandedRunKey)loadRunRecord(expandedRunKey,true)}
 async function loadRunHistory(){const button=$('#refreshHistoryButton');button.disabled=true;try{const response=await fetch('/api/runs',{cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load run history');runHistory=Array.isArray(data.runs)?data.runs:[];const validKeys=new Set(runHistory.map(run=>run.run_key));[...selectedCompareKeys].forEach(key=>{if(!validKeys.has(key))selectedCompareKeys.delete(key)});renderRunHistory()}catch(error){$('#historyEmpty').hidden=false;$('#historyEmpty').textContent=language==='zh'?`無法載入紀錄：${error.message}`:`Unable to load runs: ${error.message}`;toast(error.message,'error')}finally{button.disabled=false}}
 function escapeHtml(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
+// 全頁共用的頻率單位轉換／顯示格式；原本在 custom-plan.js／gprf-power.js／hardware.js 各自重複一份，統一成單一來源。
+function frequencyToHz(value,unit){return Number(value)*(unit==='GHz'?1e9:1e6)}
+function formatFrequency(hz){return hz>=1e9?`${(hz/1e9).toFixed(3)} GHz`:`${(hz/1e6).toFixed(1)} MHz`}
 function updateCompareSelection(){const count=selectedCompareKeys.size;$('#compareCount').textContent=language==='zh'?`已選 ${count} 筆`:`${count} selected`;$('#compareSelectedButton').textContent=count===1?(language==='zh'?'查看所選圖表':'Plot selected run'):(language==='zh'?'比較所選資料':'Compare selected runs');$('#compareSelectedButton').disabled=count<1||count>8}
 // 儀器缺值與空字串不代表 0；先排除，避免污染圖表及摘要統計。
 function finiteNumber(value){if(value===null||value===undefined||typeof value==='boolean'||(typeof value==='string'&&!value.trim()))return null;const number=Number(value);return Number.isFinite(number)?number:null}
-function normalizeHistoricalPoints(record){const source=Array.isArray(record.results)?record.results:(record.results?.points||[]);const metadata=record.metadata||{};return source.map((raw,index)=>{const frequency=finiteNumber(raw.frequency_hz??metadata.frequency_hz??metadata.center_frequency_hz),power=finiteNumber(raw.generator_power_dbm??metadata.generator_power_dbm),evmAll=finiteNumber(raw.evm_all_db??raw.evm_all_carriers_db),evmData=finiteNumber(raw.evm_data_db??raw.evm_data_carriers_db),evmPilot=finiteNumber(raw.evm_pilot_db??raw.evm_pilot_carriers_db),burstPower=finiteNumber(raw.burst_power_dbm),expectedPower=finiteNumber(raw.expected_power_dbm??raw.generator_power_dbm??metadata.generator_power_dbm),powerError=burstPower!==null&&expectedPower!==null?burstPower-expectedPower:null,peakPower=finiteNumber(raw.peak_power_dbm),frequencyError=finiteNumber(raw.frequency_error_hz),clockError=finiteNumber(raw.clock_error_ppm??raw.clock_error),pin=finiteNumber(raw.pin_dbm),pout=finiteNumber(raw.pout_dbm),gain=finiteNumber(raw.gain_db);return {point_index:Number(raw.point_index??index),frequency_hz:frequency,generator_power_dbm:power,expected_power_dbm:expectedPower,power_error_db:powerError,pin_dbm:pin,pout_dbm:pout,gain_db:gain,evm_all_db:evmAll,evm_data_db:evmData,evm_pilot_db:evmPilot,burst_power_dbm:burstPower,peak_power_dbm:peakPower,frequency_error_hz:frequencyError,clock_error_ppm:clockError,measurement_state:String(raw.measurement_state||''),valid:[evmAll,burstPower,frequencyError,pout,gain].some(value=>value!==null)&&String(raw.measurement_state||'').toUpperCase()!=='INV',limit_status:String(raw.limit_status||raw.status||'RECORDED')}})}
+function normalizeHistoricalPoints(record){const source=Array.isArray(record.results)?record.results:(record.results?.points||[]);const metadata=record.metadata||{};return source.map((raw,index)=>{const frequency=finiteNumber(raw.frequency_hz??metadata.frequency_hz??metadata.center_frequency_hz),power=finiteNumber(raw.generator_power_dbm??metadata.generator_power_dbm),evmAll=finiteNumber(raw.evm_all_db??raw.evm_all_carriers_db),evmData=finiteNumber(raw.evm_data_db??raw.evm_data_carriers_db),evmPilot=finiteNumber(raw.evm_pilot_db??raw.evm_pilot_carriers_db),burstPower=finiteNumber(raw.burst_power_dbm),expectedPower=finiteNumber(raw.expected_power_dbm??raw.generator_power_dbm??metadata.generator_power_dbm),powerError=burstPower!==null&&expectedPower!==null?burstPower-expectedPower:null,peakPower=finiteNumber(raw.peak_power_dbm),frequencyError=finiteNumber(raw.frequency_error_hz),clockError=finiteNumber(raw.clock_error_ppm??raw.clock_error),pin=finiteNumber(raw.pin_dbm),pout=finiteNumber(raw.pout_dbm),gain=finiteNumber(raw.gain_db);return {point_index:Number(raw.point_index??index),frequency_hz:frequency,generator_power_dbm:power,expected_power_dbm:expectedPower,power_error_db:powerError,pin_dbm:pin,pout_dbm:pout,gain_db:gain,evm_all_db:evmAll,evm_data_db:evmData,evm_pilot_db:evmPilot,burst_power_dbm:burstPower,peak_power_dbm:peakPower,frequency_error_hz:frequencyError,clock_error_ppm:clockError,margin_db:finiteNumber(raw.margin_db),measurement_state:String(raw.measurement_state||''),valid:typeof raw.valid==='boolean'?raw.valid:([evmAll,burstPower,frequencyError,pout,gain].some(value=>value!==null)&&String(raw.measurement_state||'').toUpperCase()!=='INV'),limit_status:String(raw.limit_status||raw.status||'RECORDED')}})}
 function inferTraceAxis(points){const frequencies=new Set(points.map(point=>point.frequency_hz).filter(value=>value!==null));const powers=new Set(points.map(point=>point.generator_power_dbm).filter(value=>value!==null));return powers.size>frequencies.size?'power':'frequency'}
 const traceColors=['#18d7e5','#f59e0b','#a78bfa','#43c47a','#f05261','#60a5fa','#f472b6','#eab308'];
-async function compareSelectedRuns(){const button=$('#compareSelectedButton');button.disabled=true;try{const keys=[...selectedCompareKeys];const records=await Promise.all(keys.map(async key=>{const response=await fetch(`/api/runs/${encodeURIComponent(key)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||`Unable to load ${key}`);return record}));analysisTraces=records.map((record,index)=>{const summary=runHistory.find(run=>run.run_key===record.run_key)||{};const points=normalizeHistoricalPoints(record);return {id:record.run_key,name:summary.test_name||record.metadata?.test_name||record.metadata?.run_id||record.run_key,color:traceColors[index],visible:true,colorLocked:false,lineStyle:'solid',pointShape:'circle',axis:inferTraceAxis(points),compatibility:{bandwidth:summary.bandwidth_hz,route:summary.route,calibration:summary.calibration_profile,waveform:record.metadata?.waveform_file||record.metadata?.arb_waveform_file||'',mcs:record.metadata?.mcs||''},points}}).filter(trace=>trace.points.length);if(analysisTraces.length<1)throw new Error(language==='zh'?'所選紀錄沒有可用結果':'The selected run has no usable results');latestAxis=analysisTraces[0].axis;latest=analysisTraces[0].points;selectBestChartMetric(latest,records[0]);renderComparisonControls();const isSingle=analysisTraces.length===1;$('#runMeta').textContent=language==='zh'?(isSingle?'查看 1 筆歷史量測（唯讀）':`比較 ${analysisTraces.length} 筆歷史量測（唯讀）`):(isSingle?'Viewing 1 historical run (read-only)':`Comparing ${analysisTraces.length} historical runs (read-only)`);$('#resultBadge').textContent=isSingle?'HISTORY':'COMPARE';$('#metrics').innerHTML=metric('Runs',analysisTraces.length)+metric('Visible',analysisTraces.filter(trace=>trace.visible).length)+metric('Points',analysisTraces.reduce((sum,trace)=>sum+trace.points.length,0))+metric('Mode','READ ONLY');$('#limitProfileCard').hidden=true;$('#resultRows').innerHTML='';$('#artifacts').innerHTML='';renderMatplotlibGallery({});activateTopTab('results');drawAnalysisChart()}catch(error){toast(error.message,'error')}finally{updateCompareSelection()}}
+// 歷史回放時，主紀錄（第一筆）沿用量測完成時的摘要、明細表與已保存 artifacts；比較模式再於前方補上跨 Run 統計。
+function renderHistoryDetail(records,traces){
+  const primary=records.find(record=>traces.some(trace=>trace.id===record.run_key))||records[0];
+  const trace=traces.find(item=>item.id===primary.run_key)||traces[0];
+  const metadata=primary.metadata||{};
+  // 規格、量測家族與 P1dB 都保存在 metadata；沒有的欄位維持 null，不猜測當時的判定條件。
+  const context={
+    measurement_family:String(metadata.measurement_family||''),
+    p1db:metadata.p1db||null,
+    limit_profile:metadata.limit_profile||null,
+    compliance_claim:Boolean(metadata.compliance_claim)
+  };
+  const rawPoints=Array.isArray(primary.results)?primary.results:(primary.results?.points||[]);
+  renderResultSummary(trace.points,trace.axis,context,rawPoints);
+  if(traces.length>1)$('#metrics').innerHTML=metric('Runs',traces.length)+metric('Visible',traces.filter(item=>item.visible).length)+metric('Points',traces.reduce((sum,item)=>sum+item.points.length,0))+metric('Mode','READ ONLY')+$('#metrics').innerHTML;
+  const summary=runHistory.find(run=>run.run_key===primary.run_key)||{};
+  const urls=summary.artifact_urls||{};
+  $('#artifacts').innerHTML=['csv','json','report'].filter(key=>urls[key]).map(key=>`<a href="${urls[key]}" target="_blank" rel="noopener">${key==='report'?'HTML':key.toUpperCase()}</a>`).join(' · ');
+  renderMatplotlibGallery(urls);
+  return trace;
+}
+async function compareSelectedRuns(){const button=$('#compareSelectedButton');button.disabled=true;try{const keys=[...selectedCompareKeys];const records=await Promise.all(keys.map(async key=>{const response=await fetch(`/api/runs/${encodeURIComponent(key)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||`Unable to load ${key}`);return record}));analysisTraces=records.map((record,index)=>{const summary=runHistory.find(run=>run.run_key===record.run_key)||{};const points=normalizeHistoricalPoints(record);return {id:record.run_key,name:summary.test_name||record.metadata?.test_name||record.metadata?.run_id||record.run_key,color:traceColors[index],visible:true,colorLocked:false,lineStyle:'solid',pointShape:'circle',axis:inferTraceAxis(points),compatibility:{bandwidth:summary.bandwidth_hz,route:summary.route,calibration:summary.calibration_profile,waveform:record.metadata?.waveform_file||record.metadata?.arb_waveform_file||'',mcs:record.metadata?.mcs||''},points}}).filter(trace=>trace.points.length);if(analysisTraces.length<1)throw new Error(language==='zh'?'所選紀錄沒有可用結果':'The selected run has no usable results');latestAxis=analysisTraces[0].axis;latest=analysisTraces[0].points;selectBestChartMetric(latest,{measurement_family:String(records[0].metadata?.measurement_family||'')});renderComparisonControls();const isSingle=analysisTraces.length===1;$('#runMeta').textContent=language==='zh'?(isSingle?'查看 1 筆歷史量測（唯讀）':`比較 ${analysisTraces.length} 筆歷史量測（唯讀）`):(isSingle?'Viewing 1 historical run (read-only)':`Comparing ${analysisTraces.length} historical runs (read-only)`);$('#resultBadge').textContent=isSingle?'HISTORY':'COMPARE';const primaryTrace=renderHistoryDetail(records,analysisTraces);if(!isSingle)$('#runMeta').textContent+=language==='zh'?` · 明細與 artifacts 顯示第 1 筆：${primaryTrace.name}`:` · Detail table and artifacts show run 1: ${primaryTrace.name}`;activateTopTab('results');drawAnalysisChart()}catch(error){toast(error.message,'error')}finally{updateCompareSelection()}}
 function compatibilityWarnings(){const fields=['bandwidth','waveform','mcs','route','calibration'];return fields.filter(field=>new Set(analysisTraces.map(trace=>trace.compatibility[field]).filter(Boolean)).size>1)}
 function renderComparisonControls(){$('#comparisonPanel').hidden=false;const axes=new Set(analysisTraces.map(trace=>trace.axis)),warnings=compatibilityWarnings();$('#comparisonHint').textContent=warnings.length?(language==='zh'?`相容性警告：${warnings.join('、')} 不一致，禁止直接做合規結論。`:`Compatibility warning: ${warnings.join(', ')} differ; do not infer compliance.`):axes.size>1?(language==='zh'?'資料包含不同掃描軸；請確認比較目的。':'Runs use different sweep axes; verify comparison intent.'):(language==='zh'?'EVM 越負通常越好；INVALID 點會中斷，不與正常資料連線。':'More-negative EVM is generally better; INVALID points break traces.');$('#traceList').innerHTML=analysisTraces.map((trace,index)=>`<div class="trace-control" draggable="true" data-trace-index="${index}"><button class="trace-drag" type="button" title="Drag to reorder">⋮⋮</button><input type="checkbox" data-trace-visible="${index}" ${trace.visible?'checked':''} title="Hide / Show"><input type="color" data-trace-color="${index}" value="${trace.color}" ${trace.colorLocked?'disabled':''}><input type="text" data-trace-name="${index}" value="${escapeHtml(trace.name)}"><select data-trace-line="${index}" title="Line style"><option value="solid" ${trace.lineStyle==='solid'?'selected':''}>Solid</option><option value="dash" ${trace.lineStyle==='dash'?'selected':''}>Dash</option><option value="dot" ${trace.lineStyle==='dot'?'selected':''}>Dot</option></select><select data-trace-point="${index}" title="Point shape"><option value="circle" ${trace.pointShape==='circle'?'selected':''}>●</option><option value="square" ${trace.pointShape==='square'?'selected':''}>■</option><option value="diamond" ${trace.pointShape==='diamond'?'selected':''}>◆</option></select><button type="button" data-trace-solo="${index}">Solo</button><button type="button" data-trace-lock="${index}" title="Color lock">${trace.colorLocked?'🔒':'🔓'}</button><button type="button" class="trace-remove" data-trace-remove="${index}" title="Remove">×</button><small>${trace.points.length} pts</small></div>`).join('')}
 $('#compareSelectedButton').onclick=compareSelectedRuns;
@@ -146,45 +170,39 @@ function paSummaryMetrics(points,axis,p1db){
   return gainMetrics+metric('Max Pout',valid.length?Math.max(...valid.map(point=>Number(point.pout_dbm))).toFixed(2)+' dBm':'—')
     +metric('Valid Points',`${valid.length}/${points.length}`);
 }
-function render(data){
-  // 新量測結果取代歷史比較狀態，避免圖例與單次結果互相混淆。
-  analysisTraces=[];
-  $('#comparisonPanel').hidden=true;
-  latest=data.points.map(point=>{
-    const measured=finiteNumber(point.burst_power_dbm),expected=finiteNumber(point.expected_power_dbm??point.generator_power_dbm);
-    const pin=finiteNumber(point.pin_dbm),pout=finiteNumber(point.pout_dbm),gain=finiteNumber(point.gain_db);
-    // Power Error 是 GPRF flatness 的工程量：量到的功率減去該點期望功率。
-    return {...point,power_error_db:measured!==null&&expected!==null?measured-expected:null,expected_power_dbm:expected,pin_dbm:pin,pout_dbm:pout,gain_db:gain};
-  });
-  latestAxis=data.sweep_axis||'frequency';
-  selectBestChartMetric(latest,data);
-  const xField=xFieldFor(latestAxis);
-  const validEvm=latest.map(point=>point.evm_all_db).filter(Number.isFinite);
+// 量測完成與歷史回放共用同一套摘要／明細渲染；歷史紀錄丟回圖表時必須看到與當時相同的數值。
+function renderResultSummary(points,axis,context={},rawPoints=null){
+  const source=Array.isArray(rawPoints)?rawPoints:points;
+  const xField=xFieldFor(axis);
+  $('#xAxisHeader').textContent=xUnitFor(axis);
+  // INVALID 即使留有診斷數值也不列入 EVM 摘要。
+  const validEvm=points.filter(point=>point.valid).map(point=>point.evm_all_db).filter(Number.isFinite);
   const avg=validEvm.length?validEvm.reduce((sum,value)=>sum+value,0)/validEvm.length:null;
   const worst=validEvm.length?Math.max(...validEvm):null;
-  const pass=latest.filter(point=>['PASS','DRAFT_PASS'].includes(point.limit_status)).length;
-  const measured=latest.filter(point=>point.valid&&point.limit_status==='MEASURED').length;
-  const fixedLabel=latestAxis==='power'?'Frequency':'Power';
-  const fixedValue=latestAxis==='power'?(latest[0].frequency_hz/1e6).toFixed(1)+' MHz':latest[0].generator_power_dbm+' dBm';
-  const sourceLabel=data.simulated?(language==='zh'?'示範資料':'DEMO DATA'):'HARDWARE';
-  $('#runMeta').textContent=`Run ${data.artifacts.run_id} · ${latest.length} points · ${sourceLabel}`;
-  $('#resultBadge').textContent=sourceLabel;
-  $('#xAxisHeader').textContent=xUnitFor(latestAxis);
-  const statusLabel=data.limit_profile?.lifecycle==='draft'?'DRAFT PASS':data.limit_profile?'PASS':'Measured';
+  const pass=points.filter(point=>['PASS','DRAFT_PASS'].includes(point.limit_status)).length;
+  const measured=points.filter(point=>point.valid&&point.limit_status==='MEASURED').length;
+  const fixedLabel=axis==='power'?'Frequency':'Power';
+  // 歷史紀錄可能缺少固定軸欄位；取第一個有效值，缺值顯示破折號而不是補 0。
+  const firstFrequency=points.map(point=>finiteNumber(point.frequency_hz)).find(value=>value!==null);
+  const firstPower=points.map(point=>finiteNumber(point.generator_power_dbm)).find(value=>value!==null);
+  const fixedValue=axis==='power'
+    ?(firstFrequency===undefined?'—':(firstFrequency/1e6).toFixed(1)+' MHz')
+    :(firstPower===undefined?'—':firstPower+' dBm');
+  const statusLabel=context.limit_profile?.lifecycle==='draft'?'DRAFT PASS':context.limit_profile?'PASS':'Measured';
   // PASS 分母是「有效點數」而非全部點數：無效點沒有做過規格判定，不該被算進去。
-  const validCount=latest.filter(point=>point.valid).length;
-  const invalidCount=latest.length-validCount;
-  const statusCount=data.limit_profile?pass:measured;
-  const statusTotal=data.limit_profile?validCount:latest.length;
-  latestSpecLimitDb=data.limit_profile?data.limit_profile.maximum_evm_db:null;
+  const validCount=points.filter(point=>point.valid).length;
+  const invalidCount=points.length-validCount;
+  const statusCount=context.limit_profile?pass:measured;
+  const statusTotal=context.limit_profile?validCount:points.length;
+  latestSpecLimitDb=context.limit_profile?context.limit_profile.maximum_evm_db:null;
   // margin = limit - measured，正值代表優於限值；此符號約定與 backend 的 margin_db 相同。
-  const margins=latest.filter(point=>point.valid&&Number.isFinite(point.margin_db)).map(point=>point.margin_db);
+  const margins=points.filter(point=>point.valid&&Number.isFinite(point.margin_db)).map(point=>point.margin_db);
   const avgMargin=margins.length?margins.reduce((sum,value)=>sum+value,0)/margins.length:null;
   const worstMargin=margins.length?Math.min(...margins):null;
   const signed=value=>(value>0?'+':'')+value.toFixed(2)+' dB';
-  const powerStats=powerFlatnessStats(latest),isGprf=data.measurement_family==='GPRF_POWER';
-  const hasPa=isGprf&&data.points.some(point=>Object.hasOwn(point,'gain_db'));
-  $('#metrics').innerHTML=hasPa?paSummaryMetrics(latest,latestAxis,data.p1db)+metric(fixedLabel,fixedValue):isGprf&&powerStats
+  const powerStats=powerFlatnessStats(points),isGprf=context.measurement_family==='GPRF_POWER';
+  const hasPa=isGprf&&source.some(point=>point&&Object.hasOwn(point,'gain_db'));
+  $('#metrics').innerHTML=hasPa?paSummaryMetrics(points,axis,context.p1db)+metric(fixedLabel,fixedValue):isGprf&&powerStats
     ? metric('Mean Analyzer Power (dBm arithmetic mean)',powerStats.avgMeasured.toFixed(3)+' dBm')
     +metric('Mean Expected Analyzer Power',powerStats.avgExpected.toFixed(3)+' dBm')
     +metric('Mean Error',(powerStats.meanError>=0?'+':'')+powerStats.meanError.toFixed(3)+' dB')
@@ -210,9 +228,35 @@ function render(data){
   else if(hint)hint.textContent=invalidCount
     ?(language==='zh'?'EVM dB 越負通常越好；PASS 區在 limit line 下方；INVALID 不與有效點連線':'Lower (more negative) EVM is better; PASS zone is below the limit line; INVALID points are not connected')
     :(language==='zh'?'EVM dB 越負通常越好；PASS 區在 limit line 下方':'Lower (more negative) EVM is better; PASS zone is below the limit line');
-  renderLimitProfile(data.limit_profile,data.compliance_claim);
+  renderLimitProfile(context.limit_profile,context.compliance_claim);
+  // PA 使用明確參考面欄位；避免把 Analyzer 功率當作 DUT 輸出或空白 EVM 誤當量測失敗。
+  const header=$('#resultRows').closest('table').querySelector('thead tr');
+  header.innerHTML=`<th>#</th><th id="xAxisHeader">${xUnitFor(axis)}</th>`+(hasPa
+    ?'<th>PA Pin (dBm)</th><th>PA Pout (dBm)</th><th>PA Gain (dB)</th><th>Analyzer (dBm)</th><th>Status</th>'
+    :'<th>EVM (dB)</th><th>Power (dBm)</th><th>Power Error (dB)</th><th>Freq Error (Hz)</th><th>Status</th>');
+  if(hasPa){
+    $('#resultRows').innerHTML=points.map(point=>`<tr><td>${point.point_index+1}</td><td>${Number.isFinite(point[xField])?xDisplayFor(axis,point[xField]):'—'}</td><td>${formatMeasured(point.pin_dbm)}</td><td>${formatMeasured(point.pout_dbm)}</td><td>${formatMeasured(point.gain_db,3)}</td><td>${formatMeasured(point.burst_power_dbm)}</td><td class="${String(point.limit_status||'').toLowerCase()}">${escapeHtml(point.limit_status||'—')}</td></tr>`).join('');
+    return;
+  }
   // INV／null 是量測無效訊號，表格以破折號呈現，不得補零或讓前端拋出例外。
-  $('#resultRows').innerHTML=latest.map(point=>`<tr><td>${point.point_index+1}</td><td>${xDisplayFor(latestAxis,point[xField])}</td><td>${formatMeasured(point.evm_all_db)}</td><td>${formatMeasured(point.burst_power_dbm)}</td><td>${formatMeasured(point.power_error_db,3)}</td><td>${formatMeasured(point.frequency_error_hz)}</td><td class="${point.limit_status.toLowerCase()}">${point.limit_status}</td></tr>`).join('');
+  $('#resultRows').innerHTML=points.map(point=>`<tr><td>${point.point_index+1}</td><td>${Number.isFinite(point[xField])?xDisplayFor(axis,point[xField]):'—'}</td><td>${formatMeasured(point.evm_all_db)}</td><td>${formatMeasured(point.burst_power_dbm)}</td><td>${formatMeasured(point.power_error_db,3)}</td><td>${formatMeasured(point.frequency_error_hz)}</td><td class="${String(point.limit_status||'').toLowerCase()}">${escapeHtml(point.limit_status||'—')}</td></tr>`).join('');
+}
+function render(data){
+  // 新量測結果取代歷史比較狀態，避免圖例與單次結果互相混淆。
+  analysisTraces=[];
+  $('#comparisonPanel').hidden=true;
+  latest=data.points.map(point=>{
+    const measured=finiteNumber(point.burst_power_dbm),expected=finiteNumber(point.expected_power_dbm??point.generator_power_dbm);
+    const pin=finiteNumber(point.pin_dbm),pout=finiteNumber(point.pout_dbm),gain=finiteNumber(point.gain_db);
+    // Power Error 是 GPRF flatness 的工程量：量到的功率減去該點期望功率。
+    return {...point,power_error_db:measured!==null&&expected!==null?measured-expected:null,expected_power_dbm:expected,pin_dbm:pin,pout_dbm:pout,gain_db:gain};
+  });
+  latestAxis=data.sweep_axis||'frequency';
+  selectBestChartMetric(latest,data);
+  const sourceLabel=data.simulated?(language==='zh'?'示範資料':'DEMO DATA'):'HARDWARE';
+  $('#runMeta').textContent=`Run ${data.artifacts.run_id} · ${latest.length} points · ${sourceLabel}`;
+  $('#resultBadge').textContent=sourceLabel;
+  renderResultSummary(latest,latestAxis,data,data.points);
   const urls=data.artifact_urls||{};
   $('#artifacts').innerHTML=['csv','json','report'].filter(key=>urls[key]).map(key=>`<a href="${urls[key]}" target="_blank" rel="noopener">${key==='report'?'HTML':key.toUpperCase()}</a>`).join(' · ');
   renderMatplotlibGallery(urls);
@@ -247,7 +291,8 @@ function renderMatplotlibGallery(urls){
     open.removeAttribute('href');
     return;
   }
-  const current=select.value&&plots.some(([key])=>key===select.value)?select.value:plots[0][0];
+  const preferred='matplotlib_'+$('#chartMetric').value;
+  const current=plots.some(([key])=>key===preferred)?preferred:select.value&&plots.some(([key])=>key===select.value)?select.value:plots[0][0];
   select.innerHTML=plots.map(([key])=>`<option value="${escapeHtml(key)}">${escapeHtml(matplotlibLabels[key]?.label||key)}</option>`).join('');
   select.value=current;
   const update=()=>{
@@ -388,7 +433,9 @@ function drawAnalysisChart(preserveView=false){
   if(!samples.length){$('#chart').innerHTML=`<text class="axis-label" x="45" y="70">${language==='zh'?'此指標沒有可比較的有效數值':'No comparable values for this metric'}</text>`;return}
   const referenceLines=visible.map(trace=>({trace,reference:expectedReferenceForPowerMetric(trace.points.filter(point=>point.valid),trace.axis,metricName)})).filter(item=>item.reference);
   const referenceSpread=referenceLines.flatMap(item=>item.reference.kind==='diagonal'?item.reference.points.map(point=>point.y):[item.reference.value]);
-  const window=chartDataWindow(Math.min(...samples.map(sample=>sample.x)),Math.max(...samples.map(sample=>sample.x)),samples);
+  // X 軸仍含 INVALID 的位置，Y 軸只用有效值；失敗點不應消失或擴大增益範圍。
+  const allXs=visible.flatMap(trace=>trace.points.map(point=>point[xFieldFor(trace.axis)])).filter(Number.isFinite);
+  const window=chartDataWindow(Math.min(...allXs),Math.max(...allXs),samples);
   const {xmin,xmax}=window,spread=[...samples.map(sample=>sample.y),...referenceSpread],metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metricName==='burst_power_dbm'||metricName==='power_error_db'?0.18:metricName==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
   const yExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
@@ -405,7 +452,7 @@ function drawAnalysisChart(preserveView=false){
       html+=`<text class="expected-power-label" x="${w-right-4}" y="${yReference-7}" text-anchor="end">${reference.label}</text>`;
     }
   });
-  visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(point[xField]===null||!Number.isFinite(point[metricName]))return;const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
+  visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(!Number.isFinite(point[xField]))return;if(!point.valid||!Number.isFinite(point[metricName])){html+=`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${escapeHtml(trace.name)} · INVALID</title></g>`;return}const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
   $('#chart').innerHTML=html+'</g>';
   syncChartViewportSize();
 }
@@ -413,7 +460,7 @@ $('#chartMetric').onchange=()=>{analysisTraces.length?drawAnalysisChart():(lates
 function downloadBlob(filename,blob){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),0)}
 $('#exportSvg').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');downloadBlob('cmp180-comparison.svg',new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}))};
 $('#exportPng').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),image=new Image();image.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1800;canvas.height=780;const context=canvas.getContext('2d');context.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--console-surface')||'#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);canvas.toBlob(png=>{if(png)downloadBlob('cmp180-comparison.png',png)},'image/png');URL.revokeObjectURL(url)};image.src=url};
-$('#exportCompareCsv').onclick=()=>{const metricName=$('#chartMetric').value,rows=[['trace','valid','frequency_hz','generator_power_dbm',metricName,'measurement_state']];analysisTraces.forEach(trace=>trace.points.forEach(point=>rows.push([trace.name,point.valid,point.frequency_hz,point.generator_power_dbm,point[metricName],point.measurement_state])));const csv=rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""')}"`).join(',')).join('\r\n');downloadBlob('cmp180-comparison.csv',new Blob([csv],{type:'text/csv;charset=utf-8'}))};
+$('#exportCompareCsv').onclick=()=>{const metricName=$('#chartMetric').value,rows=[['trace','valid','frequency_hz','generator_power_dbm',metricName,'measurement_state']];(analysisTraces.length?analysisTraces:[{name:'current',points:latest}]).forEach(trace=>trace.points.forEach(point=>rows.push([trace.name,point.valid,point.frequency_hz,point.generator_power_dbm,point[metricName],point.measurement_state])));const csv=rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""')}"`).join(',')).join('\r\n');downloadBlob('cmp180-comparison.csv',new Blob([csv],{type:'text/csv;charset=utf-8'}))};
 const chartTooltip=document.createElement('div');chartTooltip.className='chart-hover-tooltip';chartTooltip.hidden=true;document.querySelector('.chart-card').append(chartTooltip);
 function chartPointCenter(point){
   if(point.tagName.toLowerCase()==='circle')return {x:Number(point.getAttribute('cx')),y:Number(point.getAttribute('cy'))};

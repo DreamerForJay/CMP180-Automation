@@ -235,9 +235,60 @@ Profile 會把實體 `output_attenuator_db` 與 CMP180 measurement
 不得誤寫成儀器 EATT。任一點出現 SCPI error、reliability 非 0 或 SA safe limit 時，
 workflow 會在該點 STOP／RF Off 後停止後續掃描並保存 partial artifact。
 
+Profile 另有必填的 `dut_max_input_dbm`，代表 DUT 參考面能承受的輸入上限。它與
+`sa_safe_limit_dbm` 是兩條互相獨立的保護：後者只保護 CMP180 analyzer，前者才保護 DUT
+本身。`safe_stop` 取兩者較嚴的一邊；起始功率就已超過 `dut_max_input_dbm` 時整份 profile
+會被拒絕載入。只要 request 宣告了非零的 `expected_dut_gain_db`（代表路徑上有 DUT），
+未填 `dut_max_input_dbm` 的 GPRF 計畫一律阻擋。
+
 P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。2026-09-09 已完成 RF1.1 → RF1.5 低功率 GPRF PA sweep 實機驗證；擴大到 `-20 dBm` 的 P1dB 掃描仍需使用 profile／fixture 安全裁切，不得把失敗 finding 當成 P1dB 證據。
 
 示範模式的單點、頻率掃描與功率掃描不連接 CMP180，也不送 RF，因此不套用實機功率安全上限；功率掃描會以固定的模擬 PA 曲線產生 Pin、Pout、Gain compression 與 P1dB 摘要，方便展示目前與未來圖表流程。所有示範 artifact 仍標示 `SIMULATED`，不得當成新的 PA 實機量測證據。
+
+### Converter DUT（UDBox 類）的頻率解耦
+
+PA 的輸入與輸出同頻，因此 GPRF 掃描原本把 generator 與 analyzer 寫在同一個頻率。
+Up/Down converter 不成立：送進去的是 IF、量到的是 RF，兩端寫同頻只會讓 analyzer 停在
+底噪。GPRF request 加上 `conversion` 區塊後，兩端才會分開設定：
+
+```yaml
+conversion:
+  direction: up          # up：generator 送 IF、analyzer 收 RF；down 相反
+  sideband: high         # high：RF = LO + IF；low：RF = LO − IF
+  lo_frequency_hz: 6000000000
+  limits:                # DUT 端可調範圍，預設為 UD Box 0630
+    if_min_hz: 1000000000
+    if_max_hz: 8000000000
+    rf_min_hz: 6000000000
+    rf_max_hz: 30000000000
+    lo_min_hz: 6000000000
+    lo_max_hz: 30000000000
+```
+
+掃描軸永遠是 **generator 端**：`up` 掃 IF、`down` 掃 RF，另一端每點依 LO 與 sideband
+重新解算。Preview 會逐點驗證，只檢查端點會漏掉中間落出範圍的頻率。IF、RF、LO 任一項
+超出 DUT 範圍，或 generator／analyzer 任一端超出 CMP180 的 400 MHz–8 GHz，計畫都會被
+阻擋並指出是哪一項。
+
+`configs/udbox_sweep.example.yaml` 是 UD Box 0630 的規劃範例，頻率計畫為
+IF 1000 MHz + LO 6000 MHz → RF 7000 MHz。挑這組的原因：RF 7000 MHz 落在已核准的 6 GHz
+WLAN section 內，之後要改量 WLAN EVM 不必另開 section；不要的邊帶 `|LO − IF|` = 5000 MHz
+與 LO 洩漏 6000 MHz 也都在 CMP180 範圍內，同一次接線就能順便觀測。Preview 會用
+`mirror_observable` 與 `lo_leakage_observable` 標示這兩個頻率是否看得到。
+
+Converter 是淨損耗元件，`expected_dut_gain_db` 必須能填負值（UD Box 0630 datasheet
+conversion loss 10 dB typ）。安全設定要注意兩件事：
+
+- UDBox RF 輸出端建議實體加掛 10 dB 衰減器。理由不是增益過大，而是 datasheet 的
+  Tx Output P1dB 就落在 0 dBm，與 RF1.5 的 `sa_safe_limit_dbm` 沒有任何餘裕；加 pad
+  之後壓縮點在 analyzer 端只有 −10 dBm，才掃得過 P1dB 而不會誤觸 `SA_LIMIT` 中止。
+- `dut_max_input_dbm` 必填。UD Box 0630 datasheet 的 RF Specifications 表只給 P1dB
+  （線性度），**沒有 absolute maximum rating**，因此範例值由 Tx Output P1dB 0 dBm 加回
+  10 dB conversion loss 再留 3 dB 觀測餘裕得到，屬於工作上限而非損傷閾值。真正的
+  absolute max 仍應向原廠索取後更新該欄。
+
+目前沒有任何 UDBox route 的 HIL 證據，也沒有 RF owner 核准；上述設定只是規劃輸入，
+不得當成已驗證 profile。
 
 ## Loopback 驗證
 
@@ -403,3 +454,8 @@ instrument tuning catalog range; non-WLAN gaps are not approved for execution.
 Analyzer measured／expected power 的誤差與 PA Gain 是不同物理量；不得把 Analyzer error ripple 當成 Gain flatness。無 PA 欄位的舊 GPRF 結果保留明確標示 Analyzer 參考面的摘要，dBm 平均為算術平均。重新產生的 SVG／Matplotlib 圖會排除 INVALID 並切斷曲線；既有 PNG 不會自動更新，須由原 CSV 重新產圖。原始 CSV／JSON 保留診斷數值。
 
 本次驗證為合成資料／Mock 回歸及既有 stored artifact 查閱，未執行新的實機 RF 量測。
+
+
+### 圖表縮放與拖曳（2026-09-09）
+
+游標放在繪圖區內，滾輪前滾放大、後滾縮小；X 軸以游標位置縮放，Y 軸依可見有效測點自動調整。按住滑鼠左鍵可左右拖曳，放開即停止；拖曳範圍受資料邊界限制，縮小最多回到全圖。Reset 或雙擊恢復完整範圍。A/B 模式下左鍵改為選點；縮放／拖曳會清除舊游標，避免位置誤讀。座標軸與文字固定在圖框內，資料超出範圍時只裁切資料層。以上操作只讀取既有結果，不送 SCPI 或 RF。

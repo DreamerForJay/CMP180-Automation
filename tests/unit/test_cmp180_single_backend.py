@@ -23,9 +23,14 @@ class FakeCmp180:
         self.malformed_result = malformed_result
         self.writes: list[str] = []
         self.arb_file = waveform_for_bandwidth(320_000_000)
+        self.baseband_mode = "CW"
 
     def write_str(self, command: str) -> None:
         self.writes.append(command)
+        if command == REGISTRY.render("generator.set_baseband_mode", mode="ARB"):
+            # 模擬前一個 CW 工作留下的模式；只有顯式 setter 才切換。
+            assert self.rf_state == "OFF"
+            self.baseband_mode = "ARB"
         if command == REGISTRY.require("generator.rf_on"):
             self.rf_state = "ON"
         elif command == REGISTRY.require("generator.arb_rf_on"):
@@ -46,6 +51,7 @@ class FakeCmp180:
     def query_str(self, command: str) -> str:
         values = {
             REGISTRY.require("generator_query.state"): self.rf_state,
+            REGISTRY.require("generator_query.baseband_mode"): self.baseband_mode,
             REGISTRY.require("generator_query.arb_state"): self.arb_state,
             REGISTRY.require("generator_query.arb_repetition"): "CONT",
             REGISTRY.require("generator_query.frequency"): "6.105E9",
@@ -120,6 +126,8 @@ def test_complete_backend_fetches_new_result_and_cleans_up():
     assert backend.last_measurement_states[-1] == "RDY"
     assert io.rf_state == "OFF"
     assert REGISTRY.require("generator.rf_on") in io.writes
+    assert io.baseband_mode == "ARB"
+    assert io.writes.index(REGISTRY.render("generator.set_baseband_mode", mode="ARB")) < io.writes.index(REGISTRY.require("generator.rf_on"))
     assert REGISTRY.render(
         "generator.set_arb_file", arb_file=waveform_for_bandwidth(320_000_000)
     ) in io.writes
@@ -181,6 +189,25 @@ def test_malformed_result_still_stops_and_turns_rf_off():
         REGISTRY.require("wlan_tx.stop"),
         REGISTRY.require("generator.rf_off"),
     ]
+
+
+def test_wlan_rejects_cw_readback_before_rf_on_and_cleans_up():
+    io = FakeCmp180()
+    original_query = io.query_str
+
+    def stuck_mode(command: str) -> str:
+        # 模擬 setter 被接受卻未生效；回讀不一致必須在 RF On 前停止。
+        if command == REGISTRY.require("generator_query.baseband_mode"):
+            return "CW"
+        return original_query(command)
+
+    io.query_str = stuck_mode  # type: ignore[method-assign]
+    backend = Cmp180SingleMeasurementBackend(io, REGISTRY, poll_interval_s=0)
+    with pytest.raises(RuntimeError, match="baseband_mode readback mismatch"):
+        run_single_measurement(backend, plan())
+    assert REGISTRY.require("generator.rf_on") not in io.writes
+    assert REGISTRY.require("wlan_tx.stop") in io.writes
+    assert io.writes[-1] == REGISTRY.require("generator.rf_off")
 
 
 def test_unknown_rf_on_state_is_reported_and_rf_is_turned_off():

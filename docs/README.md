@@ -23,6 +23,7 @@
 |---|---|
 | [安全掃描](sweep-safety.md) | 頻率／功率掃描包絡與 HIL gate |
 | [自訂實機掃描](custom-hardware-sweep.md) | 自訂計畫、雙重啟動旗標與驗收 SOP |
+| [下一次實機驗收批次](next-hil-campaign.md) | 時間箱能力盤點、邊界案例、短掃描與 Profile 擴充 |
 | [Limit Profiles](limit-profiles.md) | PASS／FAIL／INVALID 與核准規則 |
 | [Calibration Profiles](calibration-profiles.md) | Path Loss、內插、期限與追溯 |
 | [Calibration Adapters](calibration-adapters.md) | 外部校正儀器 adapter 邊界 |
@@ -57,6 +58,7 @@
 4. `CMP180_DEVELOPMENT_SPEC_AND_PLAN.md` 是早期 CMP180 詳細計畫，若與 `SPEC.MD` 衝突，以 `SPEC.MD` 為準。
 5. `DEVELOPMENT_SPEC_AND_PLAN.md` 是 SMW200A／FSW85 歷史資料，不作為目前驗收依據。
 6. `web-v2-design.md` 與 `src/cmp180_evm/web/static_v2/` 是封存版型參考；正式前端是 `src/cmp180_evm/web/static/`。
+7. `HANDOFF.md` 是變動較快的交接紀錄（狀態、日期、最新 HIL 結果），不是權威規格；與 `SPEC.MD` 衝突時以 `SPEC.MD` 為準。
 
 能力範圍與交付方式另見[交付方式與 CMP180 能力擴充](deployment-and-capability-expansion.md)。
 
@@ -73,6 +75,7 @@ This page distinguishes authoritative specifications, operator documents, valida
 | [Web GUI guide](web-gui-guide.md) | Modes, confirmations, results, and artifacts |
 | [CMsquares workspace lessons](cmsquares-workspace-lessons.md) | Block controls, safe Pause, and `RDY,ADJ,INV` diagnosis |
 | [Measurement examples and fields](measurement-example-and-fields.md) | EVM, power, frequency error, and correct output interpretation |
+| [Loopback validation](loopback-validation.md) | Independent repeats, stability/reasonableness, outliers, and artifacts |
 
 ### Safety, calibration, and hardware evidence
 
@@ -84,11 +87,13 @@ This page distinguishes authoritative specifications, operator documents, valida
 | [Limit profiles](limit-profiles.md) | PASS/FAIL/INVALID and approval rules |
 | [Calibration profiles](calibration-profiles.md) | Path loss, interpolation, expiry, and traceability |
 | [Calibration adapters](calibration-adapters.md) | External calibration-instrument adapter boundary |
-| [Path Loss/DUT/UDBox HIL plan](path-loss-dut-udbox-hil-plan.md) | Required site inputs, phased workflow, and go/no-go checklist |
+| [DUT/UDBox measurement spec](dut-udbox-measurement-spec.md) | Current requirement: operator-entered conditions drive a DUT/UDBox run and produce artifacts |
+| [Path Loss/DUT/UDBox HIL plan](path-loss-dut-udbox-hil-plan.md) | Archived reference, not the current DUT/UDBox requirement; not a basis for the next implementation step |
 | [Hardware discovery](hardware-discovery.md) | Verified CMP180 facts and result evidence |
 | [Read-only hardware validation](hardware-readonly-validation.md) | Query-only discovery records |
 | [V1 acceptance report](v1-acceptance-report.md) | Accepted capability, formal approval gates, and offline report command |
 | [V1 Demo script](v1-demo-script.md) | Safe 10–15 minute demonstration flow |
+| [Live demo recording plan](live-demo-recording-plan.md) | 3–12 minute results-video flow, RF safety checks, and fallback plans |
 
 ### Engineering and architecture
 
@@ -113,4 +118,4 @@ This page distinguishes authoritative specifications, operator documents, valida
 4. `CMP180_DEVELOPMENT_SPEC_AND_PLAN.md` is an early detailed CMP180 plan; `SPEC.MD` wins if they conflict.
 5. `DEVELOPMENT_SPEC_AND_PLAN.md` is archived SMW200A/FSW85 history and is not an acceptance source.
 6. `web-v2-design.md` and `src/cmp180_evm/web/static_v2/` are archived layout references; the served frontend is `src/cmp180_evm/web/static/`.
-The [Loopback Validation guide](loopback-validation.md) documents independent repeats, layered stability/reasonableness decisions, outlier handling, artifacts, and the pending live-HIL boundary.
+7. `HANDOFF.md` is a fast-changing handoff log (status, dates, latest HIL results), not an authoritative spec; `SPEC.MD` wins if they conflict.

@@ -267,3 +267,6 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 #chart .plot-line{stroke-width:2.2;filter:none}
 #chart .plot-dot{stroke-width:2;fill:var(--console-surface)}
 #chart .grid-line{stroke-width:1;opacity:.45}
+
+/* 游標讀值保留小幅固定空間，避免大面積空白及 hover 時圖面跳動。 */
+.chart-cursor-readout{min-height:26px;margin:4px 0;padding:3px 8px;font-size:12px;line-height:1.5}
