@@ -40,6 +40,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 首頁直接嵌入 `docs/diagrams/` 的系統架構與 SingleShot 生命週期互動圖，使用 `present=1` 互動／簡報模式；可切換、重新載入或全頁開啟，圖表操作不會呼叫量測 API。
 - 導覽明確區分示範與實機量測；一般本機啟動直接提供受保護的實機控制，`--demo-only` 才會停用儀器連線。結果頁顯示安全的相對輸出位置。
 - 實機與示範量測共用單點／頻率掃描／功率掃描分頁；結果圖表提供固定座標、受限水平 Zoom／Pan、十字游標與完整點位標值。說明頁涵蓋 GitHub clone、安裝、CLI、Web 與離線報告流程。
+- 示範模式不送 RF、不套用實機功率安全上限，可輸入較寬的功率範圍來展示 PA Pin／Pout／Gain／P1dB 圖與未來功能；輸出仍一律標註 simulated，不能當成實機證據。
 - 實機執行確認可完全在 Web 完成：Route、操作員在場與安全 profile 通過後，最後摘要會列出實際頻率／功率／頻寬；取消不送 RF，後端限制與 cleanup 不可繞過。
 - Runs Table 支援全文搜尋、日期／來源／狀態篩選與時間／頻率／功率／點數／Worst EVM 排序；詳情在原列下方展開，輸出直接由瀏覽器開啟，刪除需 Run ID 二次確認並移至可復原 Trash。
 - 實機量測頁改為單點／頻率／功率三個直接操作分頁，不再顯示裝飾性積木或量測模式下拉選單；Run 仍走完整安全確認，掃描 Pause 只在 RF Off 點位邊界生效，Stop 保留 cooperative cancellation 與 emergency cleanup。
@@ -80,6 +81,7 @@ python -m cmp180_evm validate-config configs\instrument.example.yaml
 python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
 python -m cmp180_evm validate-calibration configs\calibration.example.yaml
 python -m cmp180_evm validate-limits configs\limits.example.yaml
+python -m cmp180_evm validate-pa-sweep configs\pa_sweep.example.yaml
 python scripts\build_v1_acceptance.py --evidence output\<real-run-folder>
 ```
 
@@ -92,6 +94,26 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765 --demo-only
 ```
 
 實機前必須閱讀 [硬體 SOP](docs/hardware-test-sop.md)，並確認操作員在場、routing、頻率、頻寬、功率與線路損耗。
+
+PA／P1dB GPRF profile 已可固定化：`configs\pa_sweep.example.yaml` 保存 start/stop/step、
+預期 DUT gain、RF1.5 safe limit 與核准資訊。換 DUT 時不需重填掃描參數，只需確認
+profile、接線與人在場，然後執行；若現場沒有衰減器，程式會自動把 stop power 夾到
+RF1.5 安全範圍內，不會要求一定接 30 dB：
+
+Web 實機頁可切到 `RF 功率讀值（GPRF）` 後直接按「載入 approved PA profile」；
+此按鈕預設載入無衰減器的安全裁切範圍 `-55 → -25 dBm`。若現場有受控 DUT／實體
+output attenuator，再把 `Output attenuator` 改成實際值並重新檢查計畫即可。
+
+```powershell
+python scripts\cmp180_pa_sweep_validate.py `
+  --dut-id DUT-001 `
+  --confirm-direct-cable `
+  --confirm-operator-present
+```
+
+現場若有外部衰減器，可加 `--output-attenuator-db 30` 讓 profile 掃到更高 stop power。
+此入口使用 GPRF scalar power，不是 WLAN EVM；任一點出現 SCPI error、reliability 非 0
+或 SA safe limit 會在 RF Off 邊界停止並保存 partial artifact。
 
 ### 文件導覽
 
@@ -228,3 +250,12 @@ Use the [next HIL campaign](docs/next-hil-campaign.md) to expand the approved We
 ### Safety principles
 
 Never reset automatically; centralize SCPI; validate every RF input before RF On; STOP/ABORT and RF Off on every exit path; preserve invalid values; separate workflow success from compliance; never commit outputs, credentials, license/activation data, caches, or private device dumps.
+
+
+### PA 掃描摘要與有效性（2026-09-09）
+
+在結果頁開啟含 PA 欄位的 GPRF 紀錄：功率掃描摘要顯示 Small-signal Gain、Max Pout、Max Compression、IP1dB、OP1dB 與 Valid Points；頻率掃描顯示 Mean Gain、Gain Peak-to-Peak Ripple 與 Gain Std Dev（母體標準差）。PA 統計只納入有效且 Pin／Pout／Gain 齊全的點。`not_found` 表示有效掃描範圍內未觀察到 1 dB 壓縮，`insufficient_points` 表示資料不足；缺值不補零。
+
+Analyzer measured／expected power 的誤差與 PA Gain 是不同物理量；不得把 Analyzer error ripple 當成 Gain flatness。無 PA 欄位的舊 GPRF 結果保留明確標示 Analyzer 參考面的摘要，dBm 平均為算術平均。重新產生的 SVG／Matplotlib 圖會排除 INVALID 並切斷曲線；既有 PNG 不會自動更新，須由原 CSV 重新產圖。原始 CSV／JSON 保留診斷數值。
+
+本次驗證為合成資料／Mock 回歸及既有 stored artifact 查閱，未執行新的實機 RF 量測。

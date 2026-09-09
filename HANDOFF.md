@@ -4,6 +4,43 @@
 
 ### 狀態（2026-08-27）
 
+- 2026-09-09 在操作員當次確認 RF1.1 → RF1.5 直連、無衰減器且人在場後，執行 GPRF
+  power-axis sweep 作為 PA Gain／P1dB HIL。計畫固定 6105 MHz、Generator -55／-50／
+  -45／-40 dBm、200 ms dwell、GPRF baseband `CW`、GPRF Measurement RF path `RF1.5`。
+  4/4 點 reliability `0` 且 `valid=true`，量測功率依序為 -54.77354、-49.75658、
+  -44.64994、-39.66032 dBm；對應 Gain 為 0.22646、0.24342、0.35006、
+  0.33968 dB。P1dB 分析為 `not_found`，最大已觀察 compression 約 0.04685 dB，
+  表示本次 -55 至 -40 dBm 區間尚未達 1 dB 壓縮；不得外推為 DUT P1dB。Artifact 位於
+  `output/20260909T054800Z_gprf-power-sweep_310f05e0e6`。cleanup error 空，事後
+  query-only discovery 確認 Generator RF `OFF`、GPRF Measurement `RF1.5`、error queue 空。
+  這是新的實機 RF 量測，但屬 GPRF scalar power，不是 WLAN EVM 或 compliance claim。
+
+- 2026-09-09 依 RF owner 口頭核准嘗試擴大 GPRF PA/P1dB 掃描至 -55～-20 dBm、
+  1 dB step、假設 DUT gain 25 dB 與輸出衰減 30 dB，預估最壞 RF1.5 input 為 -25 dBm。
+  Run `4bb31e48c2` 完成 36 點但**不算通過證據**：前 25 點出現
+  `SCPI_ERROR`（GPRF ENPower 低於儀器接受範圍），後 11 點為 reliability `3`，
+  P1dB 為 `insufficient_points`。Artifact 位於
+  `output/20260909T060201Z_gprf-power-sweep_4bb31e48c2`；cleanup error 空，事後
+  query-only discovery 確認 Generator RF `OFF`、GPRF Measurement `RF1.5`、error queue 空。
+  已修正 `gprf_service.py`：之後 GPRF sweep 在每點 STOP/RF Off 後，只要狀態不是 `OK`
+  就停止後續升功率並以 partial/stopped_reason 保存，避免換 DUT 時把 ranging 或 SCPI
+  異常一路掃完。
+
+- 2026-09-09 將 PA/P1dB 掃描收斂為 approved profile/envelope workflow：新增
+  `configs/pa_sweep.example.yaml`、`src/cmp180_evm/pa_sweep_profile.py`、
+  `python -m cmp180_evm validate-pa-sweep` 與 `scripts/cmp180_pa_sweep_validate.py`。
+  Profile 固定 RF1.1-RF1.5、6105 MHz、-55～-20 dBm、1 dB step、200 ms dwell、
+  expected DUT gain 25 dB、SA safe limit 0 dBm，並把實體
+  `output_attenuator_db` 與 CMP180 measurement `external_attenuation_db` 分離：前者只做
+  RF1.5 安全估算與離線 Pout/Gain，後者才寫入儀器且預設 0 dB。後續換 DUT 時直接帶
+  `--dut-id`、`--confirm-direct-cable` 與 `--confirm-operator-present` 執行；不需重新手填
+  掃描參數。若現場無外部衰減器，工具會依 expected gain 與 SA limit 自動把 stop 夾到
+  安全功率；若有衰減器，才用 `--output-attenuator-db` 宣告當次 fixture。Web 實機 GPRF
+  頁新增「載入 approved PA profile」按鈕，預設載入無衰減器的 -55～-25 dBm 安全裁切
+  範圍；現場接受控衰減器時再調整 Output attenuator 與 stop。軟體驗證為 292 tests、
+  instrument／WLAN／calibration／limits／PA profile YAML validation、PA CLI dry-check
+  拒絕測試與 `git diff --check` 通過；除上述已列 artifact 外，本批修改沒有再送 RF。
+
 - 2026-09-03 完成 11 個 approved Loopback 代表點的升級後回歸：每點 Repeat=10，共 110/110 valid；11/11 均為 approved lifecycle、Stability PASS、Reasonableness PASS、`LOOPBACK_READY`，逐份 metadata 為 final RF OFF、measurement RDY、cleanup error 空。正式 artifact 範圍為 `output/20260903T111307Z_loopback-validation_3d788aaab7` 至 `output/20260903T111527Z_loopback-validation_582aded41f`，完整 case 對照見 `docs/loopback-validation.md`。同批完成 Web 檢查計畫中英即時切換：SingleShot、WLAN Sweep、GPRF、Loopback、HIL Campaign 與 Calibration 的步驟、Preview、安全原因／修正方式與最後確認均跟隨語言；切換只重繪既有資料，不呼叫 RF。軟體驗證為 282 tests、兩份 YAML validation 與 `git diff --check` 通過。
 
 - 2026-09-03 新增 Loopback「一鍵執行全部」：涵蓋 11 個 approved WLAN section 代表點、每點 Repeat=10，共 110 次獨立 SingleShot，逐 profile 保存 artifact，SCPI／cleanup error 即停止。實機批次已完成 110/110 valid；11 個案例均 Stability PASS、Reasonableness PASS/DRAFT_PASS，final RF OFF、measurement RDY、cleanup error 空。十個新代表點已使用各自 artifact 升級為 approved profile；既有 6 GHz／320 MHz 維持原核准證據。未涵蓋的 route／UD Box 仍 blocked。
@@ -386,3 +423,12 @@
 3. Add run history, richer cancellation/cleanup detail, and a standalone CSV/JSON redraw CLI.
 
 Before live work, run connection and query-only Generator discovery, confirm RF OFF, measurement RDY, and an empty error queue, then follow the [hardware SOP](docs/hardware-test-sop.md).
+
+
+### 2026-09-09 PA 摘要與 INVALID 離線繪圖修正
+
+- 功率掃描摘要改為 PA Gain／Max Pout／Compression／IP1dB／OP1dB／Valid Points；頻率掃描統計有效 Gain 的峰對峰與母體標準差，避免將 Analyzer error ripple 誤讀為 Gain flatness。
+- 前端缺值不再經 `Number(null)` 轉為 0；P1dB 保留 `not_found` 與 `insufficient_points`。SVG／Matplotlib 排除 INVALID 並切斷線段，原 artifact 不改寫。
+- 查閱既有 stored `output/20260909T063313Z_gprf-power-sweep_9179dd51be/results.json`：16/17 有效，Gain 30.117332～30.566660 dB，峰對峰 0.449328 dB、母體標準差 0.098158 dB，Max Pout 25.223098 dBm。Analyzer 平均讀值 -42.2473225 dBm，並非 Pin。
+- 0 dBm 點 `status=SA_LIMIT`：Analyzer 0.06820796 dBm 超過 `sa_safe_limit_dbm=0`；reliability=0，error queue 空，raw `0,6.820796E-02`。未調高安全上限，未執行新 RF 量測。
+- 驗證：完整 pytest 292 passed；兩份 YAML validation、JavaScript 語法與 `git diff --check` 通過。測試使用合成／Mock 資料，另查閱上述 stored 證據。

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import html
+import math
 import os
 from pathlib import Path
 
@@ -33,10 +34,18 @@ def _number(row: dict[str, str], *names: str) -> float | None:
         if value in (None, "", "INV"):
             continue
         try:
-            return float(value)
+            number = float(value)
+            if math.isfinite(number):
+                return number
         except ValueError:
             continue
     return None
+
+
+def _row_valid(row: dict[str, object]) -> bool:
+    # 舊 CSV 可能沒有 valid；明確 INVALID 或 false 一律排除，保留原始列供追溯。
+    flag = str(row.get("valid", "true")).strip().lower()
+    return flag in {"true", "1", "1.0"} and str(row.get("limit_status", "")).upper() != "INVALID"
 
 
 def _axis(rows: list[dict[str, str]]) -> tuple[str, str, float]:
@@ -58,7 +67,8 @@ def render_metric_svg(rows: list[dict[str, str]], metric: str, title: str, unit:
         "clock_error_ppm": ("clock_error_ppm", "clock_error"),
     }
     samples = [
-        (_number(row, axis_field), _number(row, *(aliases.get(metric, (metric,))))) for row in rows
+        (_number(row, axis_field), _number(row, *(aliases.get(metric, (metric,)))))
+        if _row_valid(row) else (None, None) for row in rows
     ]
     valid = [(x, y) for x, y in samples if x is not None and y is not None]
     if not valid:
@@ -101,7 +111,17 @@ def render_metric_svg(rows: list[dict[str, str]], metric: str, title: str, unit:
             f'<text x="{gx:.1f}" y="{height - bottom_pad + 28}" fill="#526173" '
             f'font-size="13" text-anchor="middle">{label:.6g}</text>'
         )
-    points = " ".join(f"{px(x):.1f},{py(y):.1f}" for x, y in zip(xs, ys, strict=True))
+    # 無效點切斷曲線，避免跨過缺失資料造成連續有效的錯覺。
+    segments: list[list[str]] = [[]]
+    for x, y in samples:
+        if x is None or y is None:
+            segments.append([])
+        else:
+            segments[-1].append(f"{px(x * axis_scale):.1f},{py(y):.1f}")
+    lines = "".join(
+        f'<polyline points="{" ".join(segment)}" fill="none" stroke="#0f766e" stroke-width="3"/>'
+        for segment in segments if segment
+    )
     dots = "".join(
         f'<circle cx="{px(x):.1f}" cy="{py(y):.1f}" r="5" fill="#0ea5a8">'
         f"<title>x={x:.6g}, {html.escape(title)}={y:.6g} {html.escape(unit)}</title></circle>"
@@ -111,7 +131,7 @@ def render_metric_svg(rows: list[dict[str, str]], metric: str, title: str, unit:
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
         'role="img" style="background:#ffffff;border-radius:14px">'
         f"<title>{html.escape(title)}</title>{''.join(grid)}"
-        f'<polyline points="{points}" fill="none" stroke="#0f766e" stroke-width="3"/>{dots}'
+        f'{lines}{dots}'
         f'<text x="{width / 2}" y="34" text-anchor="middle" font-size="20" '
         f'font-family="system-ui" fill="#172033">{html.escape(title)} ({html.escape(unit)})</text>'
         f'<text x="{width / 2}" y="{height - 18}" text-anchor="middle" font-size="15" '
@@ -195,7 +215,9 @@ def write_pandas_matplotlib_plots(
         if source is None or source not in frame:
             continue
         values = pd.to_numeric(frame[source], errors="coerce")
-        valid = axis.notna() & values.notna()
+        # 有數值不代表量測有效；用 NaN 切斷 INVALID 點前後的線段。
+        validity = frame.apply(lambda row: _row_valid(row.to_dict()), axis=1)
+        valid = axis.map(math.isfinite) & values.map(math.isfinite) & validity
         if not valid.any():
             continue
         figure, plot = plt.subplots(
@@ -204,7 +226,7 @@ def write_pandas_matplotlib_plots(
             facecolor="#ffffff",
         )
         plot.set_facecolor("#ffffff")
-        plot.plot(axis[valid], values[valid], marker="o", linewidth=2.6, color="#0f766e")
+        plot.plot(axis, values.where(valid), marker="o", linewidth=2.6, color="#0f766e")
         plot.set_title(f"{title} ({unit})")
         plot.set_xlabel(axis_label)
         plot.set_ylabel(f"{title} ({unit})")

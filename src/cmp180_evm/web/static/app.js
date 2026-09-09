@@ -1,4 +1,4 @@
-const translations={zh:{subtitle:'WLAN TX EVM 自動化量測',mockBadge:'DEMO',workspaceTitle:'量測工作區',controlState:'控制狀態',demoControlState:'僅使用示範資料',demoControlHint:'CMP180 RF 控制未啟用',singleTab:'單點量測',sweepTab:'頻率掃描',resultsTab:'結果與圖表',historyTab:'量測紀錄',historyTitle:'量測紀錄',historyHelp:'瀏覽本機保存的實機與示範結果；不會啟動量測或 RF。',refreshHistory:'重新整理',historyEmpty:'尚無可用紀錄。',historyTime:'時間',historyName:'名稱',historySource:'來源',historyStatus:'狀態',historyPoints:'點數',historyFiles:'檔案',singleTitle:'示範單點量測',singleHelp:'輸入一個測試點，驗證資料保存與圖表流程。',frequency:'中心頻率',bandwidth:'頻寬',power:'Generator 功率',testName:'測試名稱',runSingle:'執行示範單點',sweepTitle:'示範頻率掃描',sweepHelp:'依起點、終點與步進建立頻點，最多 11 點。',start:'起始頻率',stop:'結束頻率',step:'步進',dwell:'停留時間',runSweep:'執行示範掃描',resultTitle:'量測結果',empty:'尚未執行量測。',resultChart:'結果趨勢圖',dwellHelp:'每個頻點之間的等待時間，範圍 100–2000 ms。',sweepPowerHelp:'安全短掃描上限為 -40 dBm。',powerSweepTab:'功率掃描',powerSweepTitle:'示範功率掃描',powerSweepHelp:'固定頻率，依起點、終點與步進建立功率點，最多 11 點。',startPower:'起始功率',stopPower:'結束功率',stepPower:'步進',runPowerSweep:'執行示範功率掃描',singlePowerHelp:'與實機安全 profile 一致，上限 -40 dBm。'},en:{subtitle:'WLAN TX EVM Automation',mockBadge:'DEMO',workspaceTitle:'Measurement Workspace',controlState:'Control state',demoControlState:'Demo data only',demoControlHint:'CMP180 RF control disabled',singleTab:'Single',sweepTab:'Frequency Sweep',resultsTab:'Results & Plots',historyTab:'Run History',historyTitle:'Run History',historyHelp:'Browse saved hardware and demo results without starting a measurement or RF.',refreshHistory:'Refresh',historyEmpty:'No saved runs found.',historyTime:'Time',historyName:'Name',historySource:'Source',historyStatus:'Status',historyPoints:'Points',historyFiles:'Files',singleTitle:'Demo single measurement',singleHelp:'Enter one point to validate artifact and plotting workflows.',frequency:'Center frequency',bandwidth:'Bandwidth',power:'Generator power',testName:'Test name',runSingle:'Run demo single',sweepTitle:'Demo frequency sweep',sweepHelp:'Build points from start, stop, and step; maximum 11 points.',start:'Start frequency',stop:'Stop frequency',step:'Step',dwell:'Dwell time',runSweep:'Run demo sweep',resultTitle:'Measurement results',empty:'No measurement has been run.',resultChart:'Result trends',dwellHelp:'Wait time between frequency points, 100–2000 ms.',sweepPowerHelp:'The safe short-sweep ceiling is -40 dBm.',powerSweepTab:'Power Sweep',powerSweepTitle:'Demo power sweep',powerSweepHelp:'Fixed frequency; build power points from start, stop, and step; maximum 11 points.',startPower:'Start power',stopPower:'Stop power',stepPower:'Step',runPowerSweep:'Run demo power sweep',singlePowerHelp:'Aligned with the hardware safety profile; ceiling -40 dBm.'}};
+const translations={zh:{subtitle:'WLAN TX EVM 自動化量測',mockBadge:'DEMO',workspaceTitle:'量測工作區',controlState:'控制狀態',demoControlState:'僅使用示範資料',demoControlHint:'CMP180 RF 控制未啟用',singleTab:'單點量測',sweepTab:'頻率掃描',resultsTab:'結果與圖表',historyTab:'量測紀錄',historyTitle:'量測紀錄',historyHelp:'瀏覽本機保存的實機與示範結果；不會啟動量測或 RF。',refreshHistory:'重新整理',historyEmpty:'尚無可用紀錄。',historyTime:'時間',historyName:'名稱',historySource:'來源',historyStatus:'狀態',historyPoints:'點數',historyFiles:'檔案',singleTitle:'示範單點量測',singleHelp:'輸入一個測試點，驗證資料保存與圖表流程。',frequency:'中心頻率',bandwidth:'頻寬',power:'Generator 功率',testName:'測試名稱',runSingle:'執行示範單點',sweepTitle:'示範頻率掃描',sweepHelp:'依起點、終點與步進建立頻點，示範資料不送 RF。',start:'起始頻率',stop:'結束頻率',step:'步進',dwell:'停留時間',runSweep:'執行示範掃描',resultTitle:'量測結果',empty:'尚未執行量測。',resultChart:'結果趨勢圖',dwellHelp:'每個頻點之間的等待時間，範圍 100–2000 ms。',sweepPowerHelp:'示範資料不套用實機功率安全限制。',powerSweepTab:'功率掃描',powerSweepTitle:'示範功率掃描',powerSweepHelp:'固定頻率，建立可示範 Gain compression 與 P1dB 的功率點。',startPower:'起始功率',stopPower:'結束功率',stepPower:'步進',runPowerSweep:'執行示範功率掃描',singlePowerHelp:'示範資料不送 RF，可自由輸入功率觀察圖表。'},en:{subtitle:'WLAN TX EVM Automation',mockBadge:'DEMO',workspaceTitle:'Measurement Workspace',controlState:'Control state',demoControlState:'Demo data only',demoControlHint:'CMP180 RF control disabled',singleTab:'Single',sweepTab:'Frequency Sweep',resultsTab:'Results & Plots',historyTab:'Run History',historyTitle:'Run History',historyHelp:'Browse saved hardware and demo results without starting a measurement or RF.',refreshHistory:'Refresh',historyEmpty:'No saved runs found.',historyTime:'Time',historyName:'Name',historySource:'Source',historyStatus:'Status',historyPoints:'Points',historyFiles:'Files',singleTitle:'Demo single measurement',singleHelp:'Enter one point to validate artifact and plotting workflows.',frequency:'Center frequency',bandwidth:'Bandwidth',power:'Generator power',testName:'Test name',runSingle:'Run demo single',sweepTitle:'Demo frequency sweep',sweepHelp:'Build points from start, stop, and step; demo data transmits no RF.',start:'Start frequency',stop:'Stop frequency',step:'Step',dwell:'Dwell time',runSweep:'Run demo sweep',resultTitle:'Measurement results',empty:'No measurement has been run.',resultChart:'Result trends',dwellHelp:'Wait time between frequency points, 100–2000 ms.',sweepPowerHelp:'Demo data does not apply hardware power safety limits.',powerSweepTab:'Power Sweep',powerSweepTitle:'Demo power sweep',powerSweepHelp:'Fixed frequency; build points that demonstrate gain compression and P1dB.',startPower:'Start power',stopPower:'Stop power',stepPower:'Step',runPowerSweep:'Run demo power sweep',singlePowerHelp:'Demo data transmits no RF; enter any power to explore charts.'}};
 // 導覽名稱明確區分 Demo 與實機，避免相同量測類型看起來像重複功能。
 translations.zh.singleTab='示範單點';translations.zh.sweepTab='示範頻掃';translations.zh.powerSweepTab='示範功掃';
 translations.en.singleTab='Demo Single';translations.en.sweepTab='Demo Freq Sweep';translations.en.powerSweepTab='Demo Power Sweep';
@@ -68,7 +68,8 @@ function renderRunHistory(){const labels=language==='zh'?{load:'查看詳情',cl
 async function loadRunHistory(){const button=$('#refreshHistoryButton');button.disabled=true;try{const response=await fetch('/api/runs',{cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load run history');runHistory=Array.isArray(data.runs)?data.runs:[];const validKeys=new Set(runHistory.map(run=>run.run_key));[...selectedCompareKeys].forEach(key=>{if(!validKeys.has(key))selectedCompareKeys.delete(key)});renderRunHistory()}catch(error){$('#historyEmpty').hidden=false;$('#historyEmpty').textContent=language==='zh'?`無法載入紀錄：${error.message}`:`Unable to load runs: ${error.message}`;toast(error.message,'error')}finally{button.disabled=false}}
 function escapeHtml(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
 function updateCompareSelection(){const count=selectedCompareKeys.size;$('#compareCount').textContent=language==='zh'?`已選 ${count} 筆`:`${count} selected`;$('#compareSelectedButton').textContent=count===1?(language==='zh'?'查看所選圖表':'Plot selected run'):(language==='zh'?'比較所選資料':'Compare selected runs');$('#compareSelectedButton').disabled=count<1||count>8}
-function finiteNumber(value){const number=Number(value);return Number.isFinite(number)?number:null}
+// 儀器缺值與空字串不代表 0；先排除，避免污染圖表及摘要統計。
+function finiteNumber(value){if(value===null||value===undefined||typeof value==='boolean'||(typeof value==='string'&&!value.trim()))return null;const number=Number(value);return Number.isFinite(number)?number:null}
 function normalizeHistoricalPoints(record){const source=Array.isArray(record.results)?record.results:(record.results?.points||[]);const metadata=record.metadata||{};return source.map((raw,index)=>{const frequency=finiteNumber(raw.frequency_hz??metadata.frequency_hz??metadata.center_frequency_hz),power=finiteNumber(raw.generator_power_dbm??metadata.generator_power_dbm),evmAll=finiteNumber(raw.evm_all_db??raw.evm_all_carriers_db),evmData=finiteNumber(raw.evm_data_db??raw.evm_data_carriers_db),evmPilot=finiteNumber(raw.evm_pilot_db??raw.evm_pilot_carriers_db),burstPower=finiteNumber(raw.burst_power_dbm),expectedPower=finiteNumber(raw.expected_power_dbm??raw.generator_power_dbm??metadata.generator_power_dbm),powerError=burstPower!==null&&expectedPower!==null?burstPower-expectedPower:null,peakPower=finiteNumber(raw.peak_power_dbm),frequencyError=finiteNumber(raw.frequency_error_hz),clockError=finiteNumber(raw.clock_error_ppm??raw.clock_error),pin=finiteNumber(raw.pin_dbm),pout=finiteNumber(raw.pout_dbm),gain=finiteNumber(raw.gain_db);return {point_index:Number(raw.point_index??index),frequency_hz:frequency,generator_power_dbm:power,expected_power_dbm:expectedPower,power_error_db:powerError,pin_dbm:pin,pout_dbm:pout,gain_db:gain,evm_all_db:evmAll,evm_data_db:evmData,evm_pilot_db:evmPilot,burst_power_dbm:burstPower,peak_power_dbm:peakPower,frequency_error_hz:frequencyError,clock_error_ppm:clockError,measurement_state:String(raw.measurement_state||''),valid:[evmAll,burstPower,frequencyError,pout,gain].some(value=>value!==null)&&String(raw.measurement_state||'').toUpperCase()!=='INV',limit_status:String(raw.limit_status||raw.status||'RECORDED')}})}
 function inferTraceAxis(points){const frequencies=new Set(points.map(point=>point.frequency_hz).filter(value=>value!==null));const powers=new Set(points.map(point=>point.generator_power_dbm).filter(value=>value!==null));return powers.size>frequencies.size?'power':'frequency'}
 const traceColors=['#18d7e5','#f59e0b','#a78bfa','#43c47a','#f05261','#60a5fa','#f472b6','#eab308'];
@@ -123,11 +124,27 @@ function powerFlatnessStats(points){
   return {avgMeasured,avgExpected,meanError,maxAbsError,ripple:maxError-minError,stdDev:Math.sqrt(variance),valid:valid.length,total:points.length};
 }
 function p1dbMetrics(p1db){
-  if(!p1db||p1db.status==='frequency_sweep')return '';
-  const value=(name,unit)=>Number.isFinite(Number(p1db[name]))?Number(p1db[name]).toFixed(2)+unit:'—';
-  if(p1db.status==='found')return metric('IP1dB',value('ip1db_dbm',' dBm'))+metric('OP1dB',value('op1db_dbm',' dBm'))+metric('Small-signal Gain',value('small_signal_gain_db',' dB'));
-  // 尚未掃到 1 dB 壓縮時仍顯示已觀察到的最大壓縮與最大 Pin/Pout，避免誤填假 P1dB。
-  return metric('P1dB','not_found')+metric('Max Compression',value('max_compression_db',' dB'))+metric('Max Pin',value('max_measured_pin_dbm',' dBm'))+metric('Max Pout',value('max_measured_pout_dbm',' dBm'));
+  const result=p1db||{},status=result.status||'insufficient_points';
+  // null 不可經 Number(null) 變成零；未找到與資料不足必須保留不同狀態。
+  const value=(name,unit)=>{const number=finiteNumber(result[name]);return number===null?'—':number.toFixed(2)+unit};
+  return metric('Small-signal Gain',value('small_signal_gain_db',' dB'))
+    +metric('Max Compression',value('max_compression_db',' dB'))
+    +metric('IP1dB',status==='found'?value('ip1db_dbm',' dBm'):status)
+    +metric('OP1dB',status==='found'?value('op1db_dbm',' dBm'):status);
+}
+function paSummaryMetrics(points,axis,p1db){
+  // PA 統計只使用同時具備有效 Pin／Pout／Gain 的點；INVALID 的數值僅供診斷。
+  const valid=points.filter(point=>point.valid===true&&['pin_dbm','pout_dbm','gain_db'].every(key=>finiteNumber(point[key])!==null));
+  const gains=valid.map(point=>Number(point.gain_db));
+  const mean=gains.length?gains.reduce((sum,value)=>sum+value,0)/gains.length:null;
+  const format=value=>value===null?'—':value.toFixed(3)+' dB';
+  const gainMetrics=axis==='power'?p1dbMetrics(p1db)
+    :metric('Mean Gain',format(mean))
+      +metric('Gain Peak-to-Peak Ripple',format(gains.length?Math.max(...gains)-Math.min(...gains):null))
+      +metric('Gain Std Dev',format(gains.length?Math.sqrt(gains.reduce((sum,value)=>sum+(value-mean)**2,0)/gains.length):null));
+  // Max Pout 取所有有效輸出中的最大值，不假設最高 Pin 的輸出必定最大。
+  return gainMetrics+metric('Max Pout',valid.length?Math.max(...valid.map(point=>Number(point.pout_dbm))).toFixed(2)+' dBm':'—')
+    +metric('Valid Points',`${valid.length}/${points.length}`);
 }
 function render(data){
   // 新量測結果取代歷史比較狀態，避免圖例與單次結果互相混淆。
@@ -166,14 +183,14 @@ function render(data){
   const worstMargin=margins.length?Math.min(...margins):null;
   const signed=value=>(value>0?'+':'')+value.toFixed(2)+' dB';
   const powerStats=powerFlatnessStats(latest),isGprf=data.measurement_family==='GPRF_POWER';
-  $('#metrics').innerHTML=isGprf&&powerStats
-    ? metric('Average Power',powerStats.avgMeasured.toFixed(3)+' dBm')
-    +p1dbMetrics(data.p1db)
-    +metric('Expected Power',powerStats.avgExpected.toFixed(3)+' dBm')
+  const hasPa=isGprf&&data.points.some(point=>Object.hasOwn(point,'gain_db'));
+  $('#metrics').innerHTML=hasPa?paSummaryMetrics(latest,latestAxis,data.p1db)+metric(fixedLabel,fixedValue):isGprf&&powerStats
+    ? metric('Mean Analyzer Power (dBm arithmetic mean)',powerStats.avgMeasured.toFixed(3)+' dBm')
+    +metric('Mean Expected Analyzer Power',powerStats.avgExpected.toFixed(3)+' dBm')
     +metric('Mean Error',(powerStats.meanError>=0?'+':'')+powerStats.meanError.toFixed(3)+' dB')
     +metric('Max |Error|',powerStats.maxAbsError.toFixed(3)+' dB')
-    +metric('Peak-to-Peak Ripple',powerStats.ripple.toFixed(3)+' dB')
-    +metric('Std Dev',powerStats.stdDev.toFixed(3)+' dB')
+    +metric('Analyzer Error Peak-to-Peak Ripple',powerStats.ripple.toFixed(3)+' dB')
+    +metric('Analyzer Error Std Dev',powerStats.stdDev.toFixed(3)+' dB')
     +metric('Valid',`${powerStats.valid}/${powerStats.total}`)
     +metric(fixedLabel,fixedValue)
     : metric('Avg EVM',avg===null?'—':avg.toFixed(2)+' dB')
@@ -186,7 +203,8 @@ function render(data){
     +metric(fixedLabel,fixedValue);
   // 只有真的存在 INVALID 點才提示，避免讓操作員誤以為本次量測含無效資料。
   const hint=$('#chartHint');
-  if(hint&&isGprf)hint.textContent=language==='zh'
+  if(hint&&hasPa)hint.textContent=language==='zh'?'PA Gain = Pout − Pin；摘要排除 INVALID。not_found 表示有效範圍內未觀察到 1 dB 壓縮；insufficient_points 表示資料不足。':'PA Gain = Pout − Pin; summary excludes INVALID. not_found: no observed 1 dB compression; insufficient_points: insufficient data.';
+  else if(hint&&isGprf)hint.textContent=language==='zh'
     ?'GPRF power：藍線是量測功率，橘色虛線是 Expected power；Power Error = measured - expected'
     :'GPRF power: blue is measured power, orange dashed line is expected power; Power Error = measured - expected';
   else if(hint)hint.textContent=invalidCount
@@ -254,7 +272,7 @@ function expectedReferenceForPowerMetric(points,axis,metricName){
   const reference=expectedValues.length?expectedValues.reduce((sum,value)=>sum+value,0)/expectedValues.length:null;
   return reference===null?null:{kind:'horizontal',value:reference,label:`Expected ${reference.toFixed(2)} dBm`};
 }
-const chartFrame={width:900,height:390,left:104,right:42,top:38,bottom:82};
+const chartFrame={width:900,height:390,left:88,right:28,top:24,bottom:64};
 const chartZoomLimits={minWidth:18};
 function clampChartX(x,width=chartView.width){
   // 縮小最多回到完整圖，避免 viewBox 大於圖面後把曲線縮到像消失。
@@ -264,13 +282,29 @@ function clampChartX(x,width=chartView.width){
 function syncChartViewportSize(){
   const svg=$('#chart');
   chartView.x=clampChartX(chartView.x,chartView.width);
-  svg.setAttribute('viewBox',`${chartView.x} ${chartView.y} ${chartView.width} ${chartView.height}`);
+  // 畫布與座標軸固定；縮放只改變資料範圍，避免瀏覽器等比縮放造成左右裁切。
+  svg.setAttribute('viewBox',`0 0 ${chartFrame.width} ${chartFrame.height}`);
   svg.style.aspectRatio=`${chartFrame.width} / ${chartFrame.height}`;
 }
 function setChartNaturalView(points=[]){
   // 圖表尺寸集中由 chartFrame 管理，避免 SVG viewBox 與互動縮放範圍不同步。
   Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height});
   syncChartViewportSize();
+}
+function chartDataWindow(xmin,xmax,samples){
+  const span=xmax-xmin||1;
+  const low=xmin+chartView.x/chartFrame.width*span,high=low+chartView.width/chartFrame.width*span;
+  // 最小視窗涵蓋最大相鄰有效點距離，拖到邊界仍保留有效測點。
+  const positions=[xmin,...samples.map(point=>point.x),xmax].filter(Number.isFinite).sort((a,b)=>a-b);
+  const gap=Math.max(0,...positions.slice(1).map((value,index)=>value-positions[index]));
+  chartZoomLimits.minWidth=Math.max(18,Math.min(chartFrame.width,gap/span*chartFrame.width*1.05));
+  const visible=samples.filter(point=>point.x>=low&&point.x<=high);
+  return {xmin:low,xmax:high,ys:(visible.length?visible:samples).map(point=>point.y)};
+}
+function chartClipMarkup(){
+  // 只裁切資料層；軸標題與刻度永遠留在圖框外的固定位置。
+  const f=chartFrame;
+  return `<defs><clipPath id="chartDataClip"><rect x="${f.left-6}" y="${f.top-6}" width="${f.width-f.left-f.right+12}" height="${f.height-f.top-f.bottom+12}"/></clipPath></defs><g clip-path="url(#chartDataClip)">`;
 }
 function axisTickLabel(axis,value){return axis==='frequency'?(value/1e6).toLocaleString(undefined,{maximumFractionDigits:3}):Number(value).toFixed(1)}
 function chartExtent(values,{minimumSpan=1,paddingRatio=.08}={}){
@@ -297,7 +331,8 @@ function chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y){
   html+=`<text class="axis-title" x="24" y="${frame.top+(frame.height-frame.top-frame.bottom)/2}" text-anchor="middle" transform="rotate(-90 24 ${frame.top+(frame.height-frame.top-frame.bottom)/2})">${metricAxisLabel(metric)}</text>`;
   return html;
 }
-function drawChart(points,axis='frequency'){
+function drawChart(points,axis='frequency',preserveView=false){
+  if(!preserveView)setChartNaturalView();
   const svg=$('#chart'),metric=$('#chartMetric').value,w=chartFrame.width,h=chartFrame.height,xField=xFieldFor(axis),xUnit=xUnitFor(axis),left=chartFrame.left,right=chartFrame.right,top=chartFrame.top,bottom=chartFrame.bottom;
   const xs=points.map(point=>point[xField]).filter(Number.isFinite);
   const validPoints=points.filter(point=>point.valid&&Number.isFinite(point[metric]));
@@ -308,11 +343,12 @@ function drawChart(points,axis='frequency'){
   const expectedReference=expectedReferenceForPowerMetric(validPoints,axis,metric);
   const expectedSpread=expectedReference?.kind==='diagonal'?expectedReference.points.map(point=>point.y):expectedReference?[expectedReference.value]:[];
   const spread=[...ys,...(specLimit===null?[]:[specLimit]),...expectedSpread];
-  const xmin=Math.min(...xs),xmax=Math.max(...xs),metricSpan=Math.max(...spread)-Math.min(...spread);
+  const window=chartDataWindow(Math.min(...xs),Math.max(...xs),validPoints.map(point=>({x:point[xField],y:point[metric]})));
+  const {xmin,xmax}=window,metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metric==='burst_power_dbm'||metric==='power_error_db'?0.18:metric==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
-  const yExtent=chartExtent(spread,{minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max;
+  const yExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max;
   const x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
-  let html=chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y);
+  let html=chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y)+chartClipMarkup();
   if(specLimit!==null){
     // EVM dB 越負越好，因此 PASS 區在 limit line 下方；以陰影標示避免誤讀。
     const yLimit=y(specLimit);
@@ -340,22 +376,24 @@ function drawChart(points,axis='frequency'){
   html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | Pin=${formatMeasured(point.pin_dbm)} dBm | Pout=${formatMeasured(point.pout_dbm)} dBm | Gain=${formatMeasured(point.gain_db)} dB | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | Error=${formatMeasured(point.power_error_db,3)} dB | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
   // 無效點固定畫在圖底並標示叉號，保留其頻率／功率位置且不偽造 Y 值。
   html+=points.filter(point=>!point.valid||!Number.isFinite(point[metric])).map(point=>`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${xDisplayFor(axis,point[xField])} ${xUnit} · INVALID</title></g>`).join('');
-  svg.innerHTML=html;
-  setChartNaturalView(validPoints);
+  svg.innerHTML=html+'</g>';
+  syncChartViewportSize();
 }
-function drawAnalysisChart(){
+function drawAnalysisChart(preserveView=false){
+  if(!preserveView)setChartNaturalView();
   const visible=analysisTraces.filter(trace=>trace.visible);
   if(!visible.length){$('#chart').innerHTML='';return}
   const metricName=$('#chartMetric').value,w=chartFrame.width,h=chartFrame.height,left=chartFrame.left,right=chartFrame.right,top=chartFrame.top,bottom=chartFrame.bottom,samples=[];
-  visible.forEach(trace=>trace.points.forEach(point=>{const xValue=point[xFieldFor(trace.axis)],yValue=point[metricName];if(xValue!==null&&Number.isFinite(yValue))samples.push({x:xValue,y:yValue})}));
+  visible.forEach(trace=>trace.points.forEach(point=>{const xValue=point[xFieldFor(trace.axis)],yValue=point[metricName];if(point.valid&&Number.isFinite(xValue)&&Number.isFinite(yValue))samples.push({x:xValue,y:yValue})}));
   if(!samples.length){$('#chart').innerHTML=`<text class="axis-label" x="45" y="70">${language==='zh'?'此指標沒有可比較的有效數值':'No comparable values for this metric'}</text>`;return}
   const referenceLines=visible.map(trace=>({trace,reference:expectedReferenceForPowerMetric(trace.points.filter(point=>point.valid),trace.axis,metricName)})).filter(item=>item.reference);
   const referenceSpread=referenceLines.flatMap(item=>item.reference.kind==='diagonal'?item.reference.points.map(point=>point.y):[item.reference.value]);
-  const xmin=Math.min(...samples.map(sample=>sample.x)),xmax=Math.max(...samples.map(sample=>sample.x)),spread=[...samples.map(sample=>sample.y),...referenceSpread],metricSpan=Math.max(...spread)-Math.min(...spread);
+  const window=chartDataWindow(Math.min(...samples.map(sample=>sample.x)),Math.max(...samples.map(sample=>sample.x)),samples);
+  const {xmin,xmax}=window,spread=[...samples.map(sample=>sample.y),...referenceSpread],metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metricName==='burst_power_dbm'||metricName==='power_error_db'?0.18:metricName==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
-  const yExtent=chartExtent(spread,{minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
+  const yExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
   const axes=new Set(visible.map(trace=>trace.axis)),comparisonAxis=axes.size===1?visible[0].axis:'frequency';
-  let html=chartAxisMarkup(comparisonAxis,metricName,xmin,xmax,ymin,ymax,x,y);
+  let html=chartAxisMarkup(comparisonAxis,metricName,xmin,xmax,ymin,ymax,x,y)+chartClipMarkup();
   referenceLines.forEach(({reference})=>{
     if(reference.kind==='diagonal'){
       html+=`<polyline class="expected-power-line" fill="none" points="${reference.points.map(point=>`${x(point.x)},${y(point.y)}`).join(' ')}"/>`;
@@ -368,13 +406,13 @@ function drawAnalysisChart(){
     }
   });
   visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(point[xField]===null||!Number.isFinite(point[metricName]))return;const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
-  $('#chart').innerHTML=html;
-  setChartNaturalView(samples);
+  $('#chart').innerHTML=html+'</g>';
+  syncChartViewportSize();
 }
 $('#chartMetric').onchange=()=>{analysisTraces.length?drawAnalysisChart():(latest.length&&drawChart(latest,latestAxis))};
 function downloadBlob(filename,blob){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),0)}
 $('#exportSvg').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');downloadBlob('cmp180-comparison.svg',new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}))};
-$('#exportPng').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),image=new Image();image.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1800;canvas.height=600;const context=canvas.getContext('2d');context.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--console-surface')||'#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);canvas.toBlob(png=>{if(png)downloadBlob('cmp180-comparison.png',png)},'image/png');URL.revokeObjectURL(url)};image.src=url};
+$('#exportPng').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),image=new Image();image.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1800;canvas.height=780;const context=canvas.getContext('2d');context.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--console-surface')||'#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);canvas.toBlob(png=>{if(png)downloadBlob('cmp180-comparison.png',png)},'image/png');URL.revokeObjectURL(url)};image.src=url};
 $('#exportCompareCsv').onclick=()=>{const metricName=$('#chartMetric').value,rows=[['trace','valid','frequency_hz','generator_power_dbm',metricName,'measurement_state']];analysisTraces.forEach(trace=>trace.points.forEach(point=>rows.push([trace.name,point.valid,point.frequency_hz,point.generator_power_dbm,point[metricName],point.measurement_state])));const csv=rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""')}"`).join(',')).join('\r\n');downloadBlob('cmp180-comparison.csv',new Blob([csv],{type:'text/csv;charset=utf-8'}))};
 const chartTooltip=document.createElement('div');chartTooltip.className='chart-hover-tooltip';chartTooltip.hidden=true;document.querySelector('.chart-card').append(chartTooltip);
 function chartPointCenter(point){
@@ -409,15 +447,56 @@ $('#openDiagram').addEventListener('click',()=>window.open(diagramPlaybackUrl(ac
 
 // 圖表檢視狀態只影響瀏覽器顯示；不重新量測，也不修改原始結果。
 const chartView={x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]};
-function applyChartView(){syncChartViewportSize()}
+function applyChartView(){
+  // 重繪時保留拖曳狀態，但移除舊像素座標游標，避免 A/B 標記指向錯誤測點。
+  chartView.cursors=[];clearHoverPoint();
+  analysisTraces.length?drawAnalysisChart(true):drawChart(latest,latestAxis,true);
+}
 function resetChartView(){Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]});applyChartView();$('#chartCursorReadout').hidden=true;$('#chart').querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove())}
 function renderChartCursors(){const svg=$('#chart');svg.querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove());chartView.cursors.forEach((cursor,index)=>{const ns='http://www.w3.org/2000/svg',line=document.createElementNS(ns,'line'),label=document.createElementNS(ns,'text');line.setAttribute('class','chart-ab-line');line.setAttribute('x1',cursor.x);line.setAttribute('x2',cursor.x);line.setAttribute('y1',chartFrame.top);line.setAttribute('y2',chartFrame.height-chartFrame.bottom);label.setAttribute('class','chart-ab-label');label.setAttribute('x',cursor.x+5);label.setAttribute('y',chartFrame.top-5);label.textContent=index?'B':'A';svg.append(line,label)});const readout=$('#chartCursorReadout');if(chartView.cursors.length){readout.hidden=false;readout.textContent=chartView.cursors.map((cursor,index)=>`${index?'B':'A'}: ${cursor.label}`).join('  |  ')+(chartView.cursors.length===2?`  |  ΔX(view): ${Math.abs(chartView.cursors[1].x-chartView.cursors[0].x).toFixed(1)}`:'')}else readout.hidden=true}
 $('#chartReset').onclick=resetChartView;
 $('#chartCursorMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?'A/B 游標已啟用：點選圖上測點':'A/B 游標已關閉')};
-$('#chart').addEventListener('wheel',event=>{event.preventDefault();const factor=event.deltaY<0?.72:1.38,rect=event.currentTarget.getBoundingClientRect(),px=chartView.x+(event.clientX-rect.left)/rect.width*chartView.width,nextWidth=Math.min(chartFrame.width,Math.max(chartZoomLimits.minWidth,chartView.width*factor));chartView.x=clampChartX(px-(px-chartView.x)*nextWidth/chartView.width,nextWidth);chartView.y=0;chartView.width=nextWidth;chartView.height=chartFrame.height;applyChartView()},{passive:false});
-$('#chart').addEventListener('pointerdown',event=>{if($('#chartCursorMode').classList.contains('active')){const point=event.target.closest('[data-chart-point]');if(point){const rect=$('#chart').getBoundingClientRect(),box=point.getBoundingClientRect(),x=chartView.x+((box.left+box.width/2)-rect.left)/rect.width*chartView.width;chartView.cursors.push({x,label:point.dataset.tooltip});if(chartView.cursors.length>2)chartView.cursors.shift();renderChartCursors()}return}chartView.drag={clientX:event.clientX,clientY:event.clientY,x:chartView.x,y:chartView.y};event.currentTarget.setPointerCapture(event.pointerId);document.querySelector('.chart-card').classList.add('is-panning')});
-$('#chart').addEventListener('pointermove',event=>{if(!chartView.drag)return;const rect=event.currentTarget.getBoundingClientRect(),nextX=chartView.drag.x-(event.clientX-chartView.drag.clientX)/rect.width*chartView.width;chartView.x=clampChartX(nextX);chartView.y=0;applyChartView()});
-$('#chart').addEventListener('pointerup',()=>{chartView.drag=null;document.querySelector('.chart-card').classList.remove('is-panning')});
+function chartPointer(event){
+  // 用 SVG 螢幕矩陣處理響應式尺寸與瀏覽器縮放，不以 DOM 寬度猜測圖內座標。
+  const matrix=event.currentTarget.getScreenCTM();
+  return matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()):null;
+}
+function zoomChartAt(fraction,factor){
+  const nextWidth=Math.min(chartFrame.width,Math.max(chartZoomLimits.minWidth,chartView.width*factor));
+  chartView.x=clampChartX(chartView.x+fraction*(chartView.width-nextWidth),nextWidth);
+  chartView.width=nextWidth;chartView.y=0;
+}
+$('#chart').addEventListener('wheel',event=>{
+  const point=chartPointer(event),f=chartFrame;
+  if(!point||point.x<f.left||point.x>f.width-f.right||point.y<f.top||point.y>f.height-f.bottom||!event.deltaY)return;
+  event.preventDefault();
+  zoomChartAt((point.x-f.left)/(f.width-f.left-f.right),event.deltaY<0?1/1.2:1.2);applyChartView();
+},{passive:false});
+$('#chart').addEventListener('pointerdown',event=>{
+  if(event.button!==0)return;
+  const position=chartPointer(event);if(!position)return;
+  if($('#chartCursorMode').classList.contains('active')){
+    const point=event.target.closest('[data-chart-point]');
+    if(point){chartView.cursors.push({x:chartPointCenter(point).x,label:point.dataset.tooltip});if(chartView.cursors.length>2)chartView.cursors.shift();renderChartCursors()}return;
+  }
+  const f=chartFrame;if(position.x<f.left||position.x>f.width-f.right||position.y<f.top||position.y>f.height-f.bottom)return;
+  chartView.drag={pointerId:event.pointerId,start:position.x,x:chartView.x,width:chartView.width};
+  event.currentTarget.setPointerCapture(event.pointerId);document.querySelector('.chart-card').classList.add('is-panning');
+});
+$('#chart').addEventListener('pointermove',event=>{
+  const drag=chartView.drag;if(!drag||drag.pointerId!==event.pointerId)return;
+  const position=chartPointer(event);if(!position)return;
+  chartView.x=clampChartX(drag.x-(position.x-drag.start)/(chartFrame.width-chartFrame.left-chartFrame.right)*drag.width);
+  chartView.y=0;applyChartView();
+});
+function finishChartDrag(event){
+  // 放開、系統取消與失去捕捉都結束拖曳，避免滑鼠離開後圖仍黏著游標。
+  if(chartView.drag&&event.pointerId!==chartView.drag.pointerId)return;
+  chartView.drag=null;document.querySelector('.chart-card').classList.remove('is-panning');
+  if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
+}
+['pointerup','pointercancel','lostpointercapture'].forEach(name=>$('#chart').addEventListener(name,finishChartDrag));
+$('#chart').addEventListener('dblclick',resetChartView);
 const sunIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
 const moonIcon='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.7 15.3A8.7 8.7 0 0 1 9.7 4.3a.6.6 0 0 0-.75-.8A10 10 0 1 0 21.5 16a.6.6 0 0 0-.8-.7z"/></svg>';
 let theme=localStorage.getItem('cmp180-theme')||'dark';

@@ -259,3 +259,10 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 /* Loopback 三圖共用 repeat 軸；紅色列保留 INVALID/outlier，禁止以隱藏資料美化穩定性。 */
 .loopback-charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}.loopback-charts>div{padding:12px;border:1px solid var(--console-line);border-radius:12px;background:var(--console-surface-2)}.loopback-charts svg{display:block;width:100%;margin-top:8px}.loopback-charts circle{fill:var(--console-cyan)}.loopback-charts circle.loopback-outlier-dot{fill:#ff837a;stroke:#ff837a;stroke-width:2}.loopback-invalid{fill:#ff837a;font-size:20px;font-weight:900}.loopback-abnormal{background:rgba(255,131,122,.12);color:#ff837a}
 @media(max-width:900px){.loopback-charts{grid-template-columns:1fr}}
+
+/* 固定字級與清楚線條，縮放資料時不放大軸文字；減少粗體及發光造成的視覺雜訊。 */
+#chart .axis-label{font-size:12px;font-weight:500}
+#chart .axis-title{font-size:14px;font-weight:600}
+#chart .plot-line{stroke-width:2.2;filter:none}
+#chart .plot-dot{stroke-width:2;fill:var(--console-surface)}
+#chart .grid-line{stroke-width:1;opacity:.45}

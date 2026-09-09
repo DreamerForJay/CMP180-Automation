@@ -5,6 +5,7 @@ from pathlib import Path
 from cmp180_evm import actions
 from cmp180_evm.calibration import load_calibration_profile
 from cmp180_evm.limits import load_limit_profile
+from cmp180_evm.pa_sweep_profile import load_pa_sweep_profile
 
 
 def _cmd_validate_config(args: argparse.Namespace) -> int:
@@ -79,6 +80,27 @@ def _cmd_validate_limits(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_validate_pa_sweep(args: argparse.Namespace) -> int:
+    try:
+        profile = load_pa_sweep_profile(Path(args.config))
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"INVALID: {exc}")
+        return 1
+    print("OK (pa_sweep)")
+    print(f"  Profile: {profile.profile_id} rev {profile.revision}")
+    print(f"  Route: {profile.route}")
+    print(f"  Frequency: {profile.frequency_hz:g} Hz")
+    print(f"  Power: {profile.start_dbm:g}..{profile.stop_dbm:g} dBm step {profile.step_db:g} dB")
+    request = profile.measurement_request()
+    print(f"  Default fixture output attenuator: {profile.output_attenuator_db:g} dB")
+    print(f"  Default effective stop: {request['stop_dbm']:g} dBm")
+    print(f"  Measurement EATT: {profile.measurement_external_attenuation_db:g} dB")
+    # 最壞 RF1.5 power 是硬體保護判斷，不是離線 Pout 或 DUT 規格宣稱。
+    print(f"  Worst-case RF1.5 input: {request['worst_case_rf_input_dbm']:g} dBm")
+    print(f"  SA safe limit: {profile.sa_safe_limit_dbm:g} dBm")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cmp180_evm")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -100,6 +122,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validate_limits.add_argument("config", help="Path to the limit-profile YAML file.")
     validate_limits.set_defaults(func=_cmd_validate_limits)
+
+    validate_pa_sweep = subparsers.add_parser(
+        "validate-pa-sweep", help="Validate an approved PA power-sweep profile."
+    )
+    validate_pa_sweep.add_argument("config", help="Path to the PA sweep YAML file.")
+    validate_pa_sweep.set_defaults(func=_cmd_validate_pa_sweep)
 
     dry_run = subparsers.add_parser(
         "dry-run", help="Print the planned steps for a run without sending any SCPI writes."

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from cmp180_evm.web.mock_service import (
+    analyze_mock_p1db,
     build_frequency_points,
     build_power_points,
     save_mock_run,
@@ -66,14 +67,14 @@ def test_run_history_skips_corrupt_metadata(tmp_path):
 
 def test_frequency_points_are_inclusive_and_bounded():
     assert build_frequency_points(5_925e6, 5_965e6, 20e6) == [5_925e6, 5_945e6, 5_965e6]
-    with pytest.raises(ValueError, match="11-point"):
-        build_frequency_points(1, 12, 1)
+    with pytest.raises(ValueError, match="1001-point"):
+        build_frequency_points(1, 1002, 1)
 
 
 def test_power_points_are_inclusive_and_bounded():
     assert build_power_points(-50, -40, 5) == [-50, -45, -40]
-    with pytest.raises(ValueError, match="11-point"):
-        build_power_points(-12, -1, 1)
+    with pytest.raises(ValueError, match="1001-point"):
+        build_power_points(-1000, 1, 1)
 
 
 def test_simulation_is_deterministic_and_labeled():
@@ -85,10 +86,24 @@ def test_simulation_is_deterministic_and_labeled():
 
 
 def test_simulated_evm_varies_with_power_at_fixed_frequency():
-    # Power vs EVM 圖表要有意義，功率越高（越接近 -40 dBm 上限）EVM 應該越差。
+    # Power vs EVM 圖表要有意義；demo 不套用實機安全上限，但功率提高時 EVM 應該越差。
     lower_power = simulate_point(6_105e6, 320e6, -60)
-    higher_power = simulate_point(6_105e6, 320e6, -40)
+    higher_power = simulate_point(6_105e6, 320e6, 10)
     assert higher_power.evm_all_db > lower_power.evm_all_db
+    assert higher_power.gain_db < lower_power.gain_db
+    assert higher_power.pout_dbm > lower_power.pout_dbm
+
+
+def test_demo_power_sweep_reports_p1db_when_compression_is_observed():
+    powers = build_power_points(-30, 10, 5)
+    points = [simulate_point(6_105e6, 320e6, power, index) for index, power in enumerate(powers)]
+
+    p1db = analyze_mock_p1db(points)
+
+    assert p1db["status"] == "found"
+    assert p1db["ip1db_dbm"] == pytest.approx(-5.0)
+    assert p1db["op1db_dbm"] == pytest.approx(14.0)
+    assert p1db["max_compression_db"] > 1.0
 
 
 def test_mock_artifacts_include_csv_json_and_html(tmp_path):
@@ -106,9 +121,14 @@ def test_mock_artifacts_include_csv_json_and_html(tmp_path):
     assert metadata["created_at"] == payload["created_at"]
     assert metadata["completed_points"] == 1
     assert metadata["source"] == "web-demo"
+    assert metadata["p1db"]["status"] == "insufficient_points"
+    assert payload["points"][0]["pin_dbm"] == point.pin_dbm
+    assert payload["points"][0]["pout_dbm"] == point.pout_dbm
+    assert payload["points"][0]["gain_db"] == point.gain_db
     assert "SIMULATED" in open(artifacts["report"], encoding="utf-8").read()
     assert Path(artifacts["matplotlib_evm_all_carriers_db"]).is_file()
     assert Path(artifacts["matplotlib_burst_power_dbm"]).is_file()
+    assert Path(artifacts["matplotlib_gain_db"]).is_file()
 
 
 def test_run_history_recovers_legacy_demo_timestamp_without_rewriting_artifacts(tmp_path):
