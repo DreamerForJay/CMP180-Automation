@@ -272,7 +272,7 @@ function expectedReferenceForPowerMetric(points,axis,metricName){
   const reference=expectedValues.length?expectedValues.reduce((sum,value)=>sum+value,0)/expectedValues.length:null;
   return reference===null?null:{kind:'horizontal',value:reference,label:`Expected ${reference.toFixed(2)} dBm`};
 }
-const chartFrame={width:900,height:390,left:104,right:42,top:38,bottom:82};
+const chartFrame={width:900,height:390,left:88,right:28,top:24,bottom:64};
 const chartZoomLimits={minWidth:18};
 function clampChartX(x,width=chartView.width){
   // 縮小最多回到完整圖，避免 viewBox 大於圖面後把曲線縮到像消失。
@@ -282,13 +282,29 @@ function clampChartX(x,width=chartView.width){
 function syncChartViewportSize(){
   const svg=$('#chart');
   chartView.x=clampChartX(chartView.x,chartView.width);
-  svg.setAttribute('viewBox',`${chartView.x} ${chartView.y} ${chartView.width} ${chartView.height}`);
+  // 畫布與座標軸固定；縮放只改變資料範圍，避免瀏覽器等比縮放造成左右裁切。
+  svg.setAttribute('viewBox',`0 0 ${chartFrame.width} ${chartFrame.height}`);
   svg.style.aspectRatio=`${chartFrame.width} / ${chartFrame.height}`;
 }
 function setChartNaturalView(points=[]){
   // 圖表尺寸集中由 chartFrame 管理，避免 SVG viewBox 與互動縮放範圍不同步。
   Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height});
   syncChartViewportSize();
+}
+function chartDataWindow(xmin,xmax,samples){
+  const span=xmax-xmin||1;
+  const low=xmin+chartView.x/chartFrame.width*span,high=low+chartView.width/chartFrame.width*span;
+  // 最小視窗涵蓋最大相鄰有效點距離，拖到邊界仍保留有效測點。
+  const positions=[xmin,...samples.map(point=>point.x),xmax].filter(Number.isFinite).sort((a,b)=>a-b);
+  const gap=Math.max(0,...positions.slice(1).map((value,index)=>value-positions[index]));
+  chartZoomLimits.minWidth=Math.max(18,Math.min(chartFrame.width,gap/span*chartFrame.width*1.05));
+  const visible=samples.filter(point=>point.x>=low&&point.x<=high);
+  return {xmin:low,xmax:high,ys:(visible.length?visible:samples).map(point=>point.y)};
+}
+function chartClipMarkup(){
+  // 只裁切資料層；軸標題與刻度永遠留在圖框外的固定位置。
+  const f=chartFrame;
+  return `<defs><clipPath id="chartDataClip"><rect x="${f.left-6}" y="${f.top-6}" width="${f.width-f.left-f.right+12}" height="${f.height-f.top-f.bottom+12}"/></clipPath></defs><g clip-path="url(#chartDataClip)">`;
 }
 function axisTickLabel(axis,value){return axis==='frequency'?(value/1e6).toLocaleString(undefined,{maximumFractionDigits:3}):Number(value).toFixed(1)}
 function chartExtent(values,{minimumSpan=1,paddingRatio=.08}={}){
@@ -315,7 +331,8 @@ function chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y){
   html+=`<text class="axis-title" x="24" y="${frame.top+(frame.height-frame.top-frame.bottom)/2}" text-anchor="middle" transform="rotate(-90 24 ${frame.top+(frame.height-frame.top-frame.bottom)/2})">${metricAxisLabel(metric)}</text>`;
   return html;
 }
-function drawChart(points,axis='frequency'){
+function drawChart(points,axis='frequency',preserveView=false){
+  if(!preserveView)setChartNaturalView();
   const svg=$('#chart'),metric=$('#chartMetric').value,w=chartFrame.width,h=chartFrame.height,xField=xFieldFor(axis),xUnit=xUnitFor(axis),left=chartFrame.left,right=chartFrame.right,top=chartFrame.top,bottom=chartFrame.bottom;
   const xs=points.map(point=>point[xField]).filter(Number.isFinite);
   const validPoints=points.filter(point=>point.valid&&Number.isFinite(point[metric]));
@@ -326,11 +343,12 @@ function drawChart(points,axis='frequency'){
   const expectedReference=expectedReferenceForPowerMetric(validPoints,axis,metric);
   const expectedSpread=expectedReference?.kind==='diagonal'?expectedReference.points.map(point=>point.y):expectedReference?[expectedReference.value]:[];
   const spread=[...ys,...(specLimit===null?[]:[specLimit]),...expectedSpread];
-  const xmin=Math.min(...xs),xmax=Math.max(...xs),metricSpan=Math.max(...spread)-Math.min(...spread);
+  const window=chartDataWindow(Math.min(...xs),Math.max(...xs),validPoints.map(point=>({x:point[xField],y:point[metric]})));
+  const {xmin,xmax}=window,metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metric==='burst_power_dbm'||metric==='power_error_db'?0.18:metric==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
-  const yExtent=chartExtent(spread,{minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max;
+  const yExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max;
   const x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
-  let html=chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y);
+  let html=chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y)+chartClipMarkup();
   if(specLimit!==null){
     // EVM dB 越負越好，因此 PASS 區在 limit line 下方；以陰影標示避免誤讀。
     const yLimit=y(specLimit);
@@ -358,22 +376,24 @@ function drawChart(points,axis='frequency'){
   html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | Pin=${formatMeasured(point.pin_dbm)} dBm | Pout=${formatMeasured(point.pout_dbm)} dBm | Gain=${formatMeasured(point.gain_db)} dB | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | Error=${formatMeasured(point.power_error_db,3)} dB | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
   // 無效點固定畫在圖底並標示叉號，保留其頻率／功率位置且不偽造 Y 值。
   html+=points.filter(point=>!point.valid||!Number.isFinite(point[metric])).map(point=>`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${xDisplayFor(axis,point[xField])} ${xUnit} · INVALID</title></g>`).join('');
-  svg.innerHTML=html;
-  setChartNaturalView(validPoints);
+  svg.innerHTML=html+'</g>';
+  syncChartViewportSize();
 }
-function drawAnalysisChart(){
+function drawAnalysisChart(preserveView=false){
+  if(!preserveView)setChartNaturalView();
   const visible=analysisTraces.filter(trace=>trace.visible);
   if(!visible.length){$('#chart').innerHTML='';return}
   const metricName=$('#chartMetric').value,w=chartFrame.width,h=chartFrame.height,left=chartFrame.left,right=chartFrame.right,top=chartFrame.top,bottom=chartFrame.bottom,samples=[];
-  visible.forEach(trace=>trace.points.forEach(point=>{const xValue=point[xFieldFor(trace.axis)],yValue=point[metricName];if(xValue!==null&&Number.isFinite(yValue))samples.push({x:xValue,y:yValue})}));
+  visible.forEach(trace=>trace.points.forEach(point=>{const xValue=point[xFieldFor(trace.axis)],yValue=point[metricName];if(point.valid&&Number.isFinite(xValue)&&Number.isFinite(yValue))samples.push({x:xValue,y:yValue})}));
   if(!samples.length){$('#chart').innerHTML=`<text class="axis-label" x="45" y="70">${language==='zh'?'此指標沒有可比較的有效數值':'No comparable values for this metric'}</text>`;return}
   const referenceLines=visible.map(trace=>({trace,reference:expectedReferenceForPowerMetric(trace.points.filter(point=>point.valid),trace.axis,metricName)})).filter(item=>item.reference);
   const referenceSpread=referenceLines.flatMap(item=>item.reference.kind==='diagonal'?item.reference.points.map(point=>point.y):[item.reference.value]);
-  const xmin=Math.min(...samples.map(sample=>sample.x)),xmax=Math.max(...samples.map(sample=>sample.x)),spread=[...samples.map(sample=>sample.y),...referenceSpread],metricSpan=Math.max(...spread)-Math.min(...spread);
+  const window=chartDataWindow(Math.min(...samples.map(sample=>sample.x)),Math.max(...samples.map(sample=>sample.x)),samples);
+  const {xmin,xmax}=window,spread=[...samples.map(sample=>sample.y),...referenceSpread],metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metricName==='burst_power_dbm'||metricName==='power_error_db'?0.18:metricName==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
-  const yExtent=chartExtent(spread,{minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
+  const yExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
   const axes=new Set(visible.map(trace=>trace.axis)),comparisonAxis=axes.size===1?visible[0].axis:'frequency';
-  let html=chartAxisMarkup(comparisonAxis,metricName,xmin,xmax,ymin,ymax,x,y);
+  let html=chartAxisMarkup(comparisonAxis,metricName,xmin,xmax,ymin,ymax,x,y)+chartClipMarkup();
   referenceLines.forEach(({reference})=>{
     if(reference.kind==='diagonal'){
       html+=`<polyline class="expected-power-line" fill="none" points="${reference.points.map(point=>`${x(point.x)},${y(point.y)}`).join(' ')}"/>`;
@@ -386,13 +406,13 @@ function drawAnalysisChart(){
     }
   });
   visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(point[xField]===null||!Number.isFinite(point[metricName]))return;const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
-  $('#chart').innerHTML=html;
-  setChartNaturalView(samples);
+  $('#chart').innerHTML=html+'</g>';
+  syncChartViewportSize();
 }
 $('#chartMetric').onchange=()=>{analysisTraces.length?drawAnalysisChart():(latest.length&&drawChart(latest,latestAxis))};
 function downloadBlob(filename,blob){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),0)}
 $('#exportSvg').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');downloadBlob('cmp180-comparison.svg',new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}))};
-$('#exportPng').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),image=new Image();image.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1800;canvas.height=600;const context=canvas.getContext('2d');context.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--console-surface')||'#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);canvas.toBlob(png=>{if(png)downloadBlob('cmp180-comparison.png',png)},'image/png');URL.revokeObjectURL(url)};image.src=url};
+$('#exportPng').onclick=()=>{const svg=$('#chart').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),image=new Image();image.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1800;canvas.height=780;const context=canvas.getContext('2d');context.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--console-surface')||'#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);canvas.toBlob(png=>{if(png)downloadBlob('cmp180-comparison.png',png)},'image/png');URL.revokeObjectURL(url)};image.src=url};
 $('#exportCompareCsv').onclick=()=>{const metricName=$('#chartMetric').value,rows=[['trace','valid','frequency_hz','generator_power_dbm',metricName,'measurement_state']];analysisTraces.forEach(trace=>trace.points.forEach(point=>rows.push([trace.name,point.valid,point.frequency_hz,point.generator_power_dbm,point[metricName],point.measurement_state])));const csv=rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""')}"`).join(',')).join('\r\n');downloadBlob('cmp180-comparison.csv',new Blob([csv],{type:'text/csv;charset=utf-8'}))};
 const chartTooltip=document.createElement('div');chartTooltip.className='chart-hover-tooltip';chartTooltip.hidden=true;document.querySelector('.chart-card').append(chartTooltip);
 function chartPointCenter(point){
@@ -427,15 +447,56 @@ $('#openDiagram').addEventListener('click',()=>window.open(diagramPlaybackUrl(ac
 
 // 圖表檢視狀態只影響瀏覽器顯示；不重新量測，也不修改原始結果。
 const chartView={x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]};
-function applyChartView(){syncChartViewportSize()}
+function applyChartView(){
+  // 重繪時保留拖曳狀態，但移除舊像素座標游標，避免 A/B 標記指向錯誤測點。
+  chartView.cursors=[];clearHoverPoint();
+  analysisTraces.length?drawAnalysisChart(true):drawChart(latest,latestAxis,true);
+}
 function resetChartView(){Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]});applyChartView();$('#chartCursorReadout').hidden=true;$('#chart').querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove())}
 function renderChartCursors(){const svg=$('#chart');svg.querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove());chartView.cursors.forEach((cursor,index)=>{const ns='http://www.w3.org/2000/svg',line=document.createElementNS(ns,'line'),label=document.createElementNS(ns,'text');line.setAttribute('class','chart-ab-line');line.setAttribute('x1',cursor.x);line.setAttribute('x2',cursor.x);line.setAttribute('y1',chartFrame.top);line.setAttribute('y2',chartFrame.height-chartFrame.bottom);label.setAttribute('class','chart-ab-label');label.setAttribute('x',cursor.x+5);label.setAttribute('y',chartFrame.top-5);label.textContent=index?'B':'A';svg.append(line,label)});const readout=$('#chartCursorReadout');if(chartView.cursors.length){readout.hidden=false;readout.textContent=chartView.cursors.map((cursor,index)=>`${index?'B':'A'}: ${cursor.label}`).join('  |  ')+(chartView.cursors.length===2?`  |  ΔX(view): ${Math.abs(chartView.cursors[1].x-chartView.cursors[0].x).toFixed(1)}`:'')}else readout.hidden=true}
 $('#chartReset').onclick=resetChartView;
 $('#chartCursorMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?'A/B 游標已啟用：點選圖上測點':'A/B 游標已關閉')};
-$('#chart').addEventListener('wheel',event=>{event.preventDefault();const factor=event.deltaY<0?.72:1.38,rect=event.currentTarget.getBoundingClientRect(),px=chartView.x+(event.clientX-rect.left)/rect.width*chartView.width,nextWidth=Math.min(chartFrame.width,Math.max(chartZoomLimits.minWidth,chartView.width*factor));chartView.x=clampChartX(px-(px-chartView.x)*nextWidth/chartView.width,nextWidth);chartView.y=0;chartView.width=nextWidth;chartView.height=chartFrame.height;applyChartView()},{passive:false});
-$('#chart').addEventListener('pointerdown',event=>{if($('#chartCursorMode').classList.contains('active')){const point=event.target.closest('[data-chart-point]');if(point){const rect=$('#chart').getBoundingClientRect(),box=point.getBoundingClientRect(),x=chartView.x+((box.left+box.width/2)-rect.left)/rect.width*chartView.width;chartView.cursors.push({x,label:point.dataset.tooltip});if(chartView.cursors.length>2)chartView.cursors.shift();renderChartCursors()}return}chartView.drag={clientX:event.clientX,clientY:event.clientY,x:chartView.x,y:chartView.y};event.currentTarget.setPointerCapture(event.pointerId);document.querySelector('.chart-card').classList.add('is-panning')});
-$('#chart').addEventListener('pointermove',event=>{if(!chartView.drag)return;const rect=event.currentTarget.getBoundingClientRect(),nextX=chartView.drag.x-(event.clientX-chartView.drag.clientX)/rect.width*chartView.width;chartView.x=clampChartX(nextX);chartView.y=0;applyChartView()});
-$('#chart').addEventListener('pointerup',()=>{chartView.drag=null;document.querySelector('.chart-card').classList.remove('is-panning')});
+function chartPointer(event){
+  // 用 SVG 螢幕矩陣處理響應式尺寸與瀏覽器縮放，不以 DOM 寬度猜測圖內座標。
+  const matrix=event.currentTarget.getScreenCTM();
+  return matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()):null;
+}
+function zoomChartAt(fraction,factor){
+  const nextWidth=Math.min(chartFrame.width,Math.max(chartZoomLimits.minWidth,chartView.width*factor));
+  chartView.x=clampChartX(chartView.x+fraction*(chartView.width-nextWidth),nextWidth);
+  chartView.width=nextWidth;chartView.y=0;
+}
+$('#chart').addEventListener('wheel',event=>{
+  const point=chartPointer(event),f=chartFrame;
+  if(!point||point.x<f.left||point.x>f.width-f.right||point.y<f.top||point.y>f.height-f.bottom||!event.deltaY)return;
+  event.preventDefault();
+  zoomChartAt((point.x-f.left)/(f.width-f.left-f.right),event.deltaY<0?1/1.2:1.2);applyChartView();
+},{passive:false});
+$('#chart').addEventListener('pointerdown',event=>{
+  if(event.button!==0)return;
+  const position=chartPointer(event);if(!position)return;
+  if($('#chartCursorMode').classList.contains('active')){
+    const point=event.target.closest('[data-chart-point]');
+    if(point){chartView.cursors.push({x:chartPointCenter(point).x,label:point.dataset.tooltip});if(chartView.cursors.length>2)chartView.cursors.shift();renderChartCursors()}return;
+  }
+  const f=chartFrame;if(position.x<f.left||position.x>f.width-f.right||position.y<f.top||position.y>f.height-f.bottom)return;
+  chartView.drag={pointerId:event.pointerId,start:position.x,x:chartView.x,width:chartView.width};
+  event.currentTarget.setPointerCapture(event.pointerId);document.querySelector('.chart-card').classList.add('is-panning');
+});
+$('#chart').addEventListener('pointermove',event=>{
+  const drag=chartView.drag;if(!drag||drag.pointerId!==event.pointerId)return;
+  const position=chartPointer(event);if(!position)return;
+  chartView.x=clampChartX(drag.x-(position.x-drag.start)/(chartFrame.width-chartFrame.left-chartFrame.right)*drag.width);
+  chartView.y=0;applyChartView();
+});
+function finishChartDrag(event){
+  // 放開、系統取消與失去捕捉都結束拖曳，避免滑鼠離開後圖仍黏著游標。
+  if(chartView.drag&&event.pointerId!==chartView.drag.pointerId)return;
+  chartView.drag=null;document.querySelector('.chart-card').classList.remove('is-panning');
+  if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
+}
+['pointerup','pointercancel','lostpointercapture'].forEach(name=>$('#chart').addEventListener(name,finishChartDrag));
+$('#chart').addEventListener('dblclick',resetChartView);
 const sunIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
 const moonIcon='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.7 15.3A8.7 8.7 0 0 1 9.7 4.3a.6.6 0 0 0-.75-.8A10 10 0 1 0 21.5 16a.6.6 0 0 0-.8-.7z"/></svg>';
 let theme=localStorage.getItem('cmp180-theme')||'dark';
