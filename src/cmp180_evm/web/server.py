@@ -21,24 +21,37 @@ from cmp180_evm.calibration_adapters import (
     list_calibration_adapters,
 )
 from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_profile
+from cmp180_evm.loopback import loopback_batch_requests, select_loopback_profile
 from cmp180_evm.web.capabilities import load_capability_profile
-from cmp180_evm.workflow.rf_routes import validate_route
-from cmp180_evm.web.custom_plans import build_custom_sweep_preview
+from cmp180_evm.web.custom_plans import (
+    build_custom_single_preview,
+    build_custom_sweep_preview,
+)
 from cmp180_evm.web.gprf_service import build_gprf_power_preview
 from cmp180_evm.web.hil_campaign import HilCampaignStore
 from cmp180_evm.web.jobs import JobManager
 from cmp180_evm.web.mock_service import (
     DEMO_LIMIT_PROFILE,
+    analyze_mock_p1db,
     build_frequency_points,
     build_power_points,
     save_mock_run,
     simulate_point,
 )
 from cmp180_evm.web.run_records import load_run_record, move_run_to_trash, open_run_folder
+from cmp180_evm.workflow.rf_routes import validate_route
 
 # 原版橫向量測工作區已由操作員確認較符合實驗室流程；新版分析能力回填此介面。
 STATIC_DIR = Path(__file__).with_name("static")
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DIAGRAM_ROUTES = {
+    "/diagrams/system-architecture.html": (
+        PROJECT_ROOT / "docs" / "diagrams" / "system-architecture.html"
+    ),
+    "/diagrams/single-measurement-lifecycle.html": (
+        PROJECT_ROOT / "docs" / "diagrams" / "single-measurement-lifecycle.html"
+    ),
+}
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 JOB_MANAGER = JobManager()
 CAPABILITY_PROFILE_PATH = PROJECT_ROOT / "configs" / "instrument_capabilities.example.yaml"
@@ -82,6 +95,17 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
                 }.items()
                 if (run_dir / filename).is_file()
             }
+            # Matplotlib PNG 是 results.csv 的衍生證據；存在時一併列入歷史 Run，不重新量測。
+            plot_dir = run_dir / "plots-matplotlib"
+            if plot_dir.is_dir():
+                artifacts.update(
+                    {
+                        f"matplotlib_{path.stem}": (
+                            f"/artifacts/{run_dir.name}/plots-matplotlib/{path.name}"
+                        )
+                        for path in sorted(plot_dir.glob("*.png"))
+                    }
+                )
             created_at = str(metadata.get("created_at") or "")
             if not created_at and (run_dir / "results.json").is_file():
                 # 舊版 Demo metadata 未保存時間；只讀 results.json 補回排序，不修改歷史 artifact。
@@ -242,6 +266,20 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         parsed_path = parsed.path
+        if parsed_path in DIAGRAM_ROUTES:
+            # 首頁只可嵌入兩份受控架構圖；不接受 request 組合任意 docs 路徑。
+            candidate = DIAGRAM_ROUTES[parsed_path]
+            if not candidate.is_file():
+                self.send_error(HTTPStatus.NOT_FOUND)
+                return
+            body = candidate.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if parsed_path == "/api/calibration/adapters":
             self._json_response(
                 {"adapters": [asdict(adapter) for adapter in list_calibration_adapters()]}
@@ -459,6 +497,52 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 preview = build_custom_sweep_preview(data)
                 self._json_response(preview.public())
                 return
+            if path == "/api/hardware/single-plan-preview":
+                # 單點預覽只做型別與 approved profile 檢查，不建立儀器 session，也不送 RF。
+                self._json_response(build_custom_single_preview(data).public())
+                return
+            if path == "/api/hardware/loopback-preview":
+                # Loopback 預覽沿用 SingleShot RF gate，另外限制重複次數以避免誤送過長測試。
+                preview = build_custom_single_preview(data)
+                repeats = int(data.get("repeat_count", 5))
+                if not 2 <= repeats <= 100:
+                    raise ValueError("Loopback repeat count must be between 2 and 100")
+                payload = preview.public()
+                loopback_profile = select_loopback_profile(data)
+                payload.update(
+                    repeat_count=repeats,
+                    total_measurements=repeats,
+                    profile_lifecycle=loopback_profile.lifecycle,
+                    loopback_profile=loopback_profile.snapshot(),
+                )
+                self._json_response(payload)
+                return
+            if path == "/api/hardware/loopback-batch-preview":
+                # 一鍵批次仍逐案通過正式 SingleShot profile gate；預覽本身不送 SCPI。
+                cases = []
+                for request in loopback_batch_requests():
+                    preview = build_custom_single_preview(request)
+                    cases.append(
+                        {
+                            "case_id": request["batch_case_id"],
+                            "frequency_hz": request["center_frequency_hz"],
+                            "bandwidth_hz": request["bandwidth_hz"],
+                            "generator_power_dbm": request["generator_power_dbm"],
+                            "execution_allowed": preview.execution_allowed,
+                            "rejection_reason": preview.rejection_reason,
+                        }
+                    )
+                self._json_response(
+                    {
+                        "cases": cases,
+                        "case_count": len(cases),
+                        "repeat_count_per_case": 10,
+                        "total_measurements": len(cases) * 10,
+                        "execution_allowed": all(case["execution_allowed"] for case in cases),
+                        "required_confirmation": "LOOPBACK-BATCH-11X10-RF1.1-RF1.5",
+                    }
+                )
+                return
             if path == "/api/hardware/gprf-power-preview":
                 # GPRF 預覽只檢查 CMP180 tune/power 規劃範圍；它不是 WLAN EVM 授權。
                 self._json_response(build_gprf_power_preview(data).public())
@@ -484,7 +568,8 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     return
                 from cmp180_evm.web.gprf_service import run_gprf_power_sweep
 
-                # GPRF 是獨立能力檢查 workflow；背景 thread 收到 request copy 後不再讀 handler 狀態。
+                # GPRF 是獨立能力檢查 workflow；背景 thread 收到 request copy 後
+                # 不再讀 handler 狀態。
                 execution_request = dict(data)
                 job = JOB_MANAGER.start(
                     f"hardware-gprf-{preview.axis}-power-sweep",
@@ -543,6 +628,85 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                         request=execution_request,
                         output_root=PROJECT_ROOT / "output",
                         calibration_profile=calibration_profile,
+                    ),
+                )
+                self._json_response(job.public(), HTTPStatus.ACCEPTED)
+                return
+            if path == "/api/jobs/hardware/loopback":
+                if not self.hardware_enabled or not self.custom_hardware_enabled:
+                    self._json_response(
+                        {"error": "Loopback hardware execution is locked at server startup"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                validate_cable_route(data.get("cable_confirmation"))
+                if data.get("operator_present") is not True:
+                    raise ValueError("Operator presence confirmation is required")
+                if data.get("direct_cable_no_attenuator") is not True:
+                    raise ValueError("Direct-cable/no-attenuator confirmation is required")
+                preview = build_custom_single_preview(data)
+                repeats = int(data.get("repeat_count", 5))
+                if not 2 <= repeats <= 100:
+                    raise ValueError("Loopback repeat count must be between 2 and 100")
+                if not preview.execution_allowed:
+                    self._json_response(
+                        {"error": preview.rejection_reason or "Loopback plan is blocked"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                if data.get("execution_confirmation") != preview.required_confirmation:
+                    raise ValueError("Loopback confirmation does not match revalidated plan")
+                from cmp180_evm.web.real_service import run_real_loopback_validation
+
+                execution_request = dict(data)
+                job = JOB_MANAGER.start(
+                    "hardware-loopback-validation",
+                    repeats,
+                    lambda active_job: run_real_loopback_validation(
+                        active_job,
+                        request=execution_request,
+                        output_root=PROJECT_ROOT / "output",
+                    ),
+                )
+                self._json_response(job.public(), HTTPStatus.ACCEPTED)
+                return
+            if path == "/api/jobs/hardware/loopback-batch":
+                if not self.hardware_enabled or not self.custom_hardware_enabled:
+                    self._json_response(
+                        {"error": "Loopback hardware execution is locked at server startup"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                validate_cable_route(data.get("cable_confirmation"))
+                if data.get("operator_present") is not True:
+                    raise ValueError("Operator presence confirmation is required")
+                if data.get("direct_cable_no_attenuator") is not True:
+                    raise ValueError("Direct-cable/no-attenuator confirmation is required")
+                if data.get("execution_confirmation") != "LOOPBACK-BATCH-11X10-RF1.1-RF1.5":
+                    raise ValueError("Loopback batch confirmation is required")
+                requests = loopback_batch_requests()
+                for request in requests:
+                    preview = build_custom_single_preview(request)
+                    if not preview.execution_allowed:
+                        self._json_response(
+                            {
+                                "error": (
+                                    f"{request['batch_case_id']} is blocked: "
+                                    f"{preview.rejection_reason}"
+                                )
+                            },
+                            HTTPStatus.FORBIDDEN,
+                        )
+                        return
+                from cmp180_evm.web.real_service import run_real_loopback_batch
+
+                # 單一 Job 依序執行 11×10；任何案例的 SCPI/cleanup error 都停止後續案例。
+                job = JOB_MANAGER.start(
+                    "hardware-loopback-batch-validation",
+                    len(requests) * 10,
+                    lambda active_job: run_real_loopback_batch(
+                        active_job,
+                        output_root=PROJECT_ROOT / "output",
                     ),
                 )
                 self._json_response(job.public(), HTTPStatus.ACCEPTED)
@@ -729,10 +893,24 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                         HTTPStatus.BAD_REQUEST,
                     )
                     return
+                if data.get("direct_cable_no_attenuator") is not True:
+                    raise ValueError("Direct-cable/no-attenuator confirmation is required")
+                preview = build_custom_single_preview(data)
+                if not preview.execution_allowed:
+                    self._json_response(
+                        {"error": preview.rejection_reason or "SingleShot plan is blocked"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                if data.get("execution_confirmation") != preview.required_confirmation:
+                    raise ValueError("SingleShot confirmation does not match revalidated plan")
                 # 延遲 import，Mock-only server 不載入或接觸硬體套件。
-                from cmp180_evm.web.real_service import run_verified_real_single
+                from cmp180_evm.web.real_service import run_custom_real_single
 
-                payload = run_verified_real_single(output_root=PROJECT_ROOT / "output")
+                payload = run_custom_real_single(
+                    request=data,
+                    output_root=PROJECT_ROOT / "output",
+                )
                 payload["artifact_urls"] = self._artifact_urls(payload["artifacts"])
                 payload["output_location"] = self._output_location(payload["artifacts"])
                 self._json_response(payload)
@@ -760,6 +938,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 "compliance_claim": False,
                 "sweep_axis": sweep_axis,
                 "points": [point.__dict__ for point in points],
+                "p1db": analyze_mock_p1db(points),
                 "artifacts": artifacts,
                 "artifact_urls": self._artifact_urls(artifacts),
                 "output_location": self._output_location(artifacts),

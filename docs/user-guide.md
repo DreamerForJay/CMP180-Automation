@@ -118,12 +118,22 @@ python scripts\cmp180_wlan_discover.py |
 
 ```powershell
 python scripts\plot_results.py output\<run-folder>\results.csv
+python scripts\plot_results.py output\<run-folder>\results.csv --engine pandas-matplotlib
+python scripts\plot_results.py output\<run-folder>\results.csv --engine both
 python scripts\build_report.py output\<run-folder>
 python -m cmp180_evm validate-limits configs\limits.example.yaml
 python scripts\build_v1_acceptance.py --evidence output\<real-run-folder>
 ```
 
+預設 `svg` 不需要 Pandas／Matplotlib；`--engine pandas-matplotlib` 以 Pandas
+DataFrame 讀取 stored CSV，並使用 headless `Agg` backend 產生 PNG；`both` 同時輸出
+兩種格式。三者都只讀 artifact，不會連線 CMP180 或送 RF。
+
 Web 的歷史分析可勾選一筆直接查看圖表，或選取 2–8 筆比較；可拖拉曲線排序、直接改名並調整顏色、線型與點型，也可匯出 SVG、PNG 與整理後 CSV。
+
+新執行的單點或 Sweep 完成後，「結果與圖表」會同時顯示兩類圖：上方是可切換指標、滾輪縮放、滑鼠拖曳水平平移、hover 十字游標、A/B 游標與匯出的 Web 互動 SVG；下方「Pandas DataFrame + Matplotlib PNG」是後端從該 Run 的 `results.csv` 自動產生的 160 DPI 原圖。Matplotlib 區塊使用選單切換 EVM、Burst Power、Frequency Error 或 Clock Error，只顯示目前選取的一張 PNG，並可按「開啟原圖」。檔案位於該 Run 的 `plots-matplotlib/`。既有舊 Run 不會被自動改寫；需要時可用 `plot_results.py --engine pandas-matplotlib` 補產生。
+
+實機「單點」分頁可在 CMP180 400–8000 MHz envelope 內執行中心頻率，並選擇 20／40／80／160／320 MHz 頻寬與 -55～-30 dBm Generator 功率。先按「檢查單點計畫」，再完成 RF1.1 → RF1.5 接線、無額外衰減器、操作員在場及最後 RF 確認。落在已核准 WLAN section 的點標示 `APPROVED`；區段外單點沿用已驗證的 EHT／B6GHz measurement template，實際 Generator 與 Analyzer center frequency 仍採輸入值並 readback，結果標示 `HIL_PENDING`。這項放寬只適用單點；頻率與功率掃描仍受 approved section gate 保護。後端會以 fingerprint 重新驗證同一組值後才建立 CMP180 session。`HIL_PENDING`、未校正或沒有正式 Limit Profile 的結果不得作為 DUT compliance。
 
 ## 8. 第一次連接 CMP180
 
@@ -189,9 +199,63 @@ git status
 
 ### 直接式實機控制
 
-實機頁面使用單點、頻率掃描與功率掃描三個直接分頁，不再顯示裝飾性 Generator／Analyzer／Flow 積木，也不要求從下拉選單選擇模式。Run 仍會觸發既有安全表單與最終 RF 摘要確認。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。
+實機頁面使用單點、頻率掃描與功率掃描三個直接分頁，不再顯示裝飾性 Generator／Analyzer／Flow 積木，也不要求從下拉選單選擇模式。頻率掃描預設帶入已核准的 5925→6125 MHz／320 MHz 區段，避免剛切到掃描軸就落入非 WLAN 空隙；若改成 5085 MHz 或其他未核准組合，畫面仍會拒絕並保持 RF Off。Run 仍會觸發既有安全表單與最終 RF 摘要確認。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。
+
+### GPRF PA 功率掃描與 P1dB 圖
+
+GPRF power sweep 可作為第一版 PA conducted scalar 量測入口：選擇 `Power` 軸，填入固定頻率、Start／Stop／Step、dwell、input cable loss、output cable loss、external gain、output attenuator 與 SA safe limit。Preview 會顯示 DUT Pin 範圍；執行後 CSV／JSON 會保存 `pin_dbm`、`pout_dbm`、`gain_db`，結果頁可直接切換 PA Pin、PA Pout 與 PA Gain 圖。`pout_dbm` 由 analyzer power 加回 output cable loss 與 attenuator；`pin_dbm` 由 generator power 加 external gain、扣 input cable loss。
+
+若已使用 approved PA profile，現場換 DUT 不需重填上述工程參數。先驗證 profile：
+
+```powershell
+python -m cmp180_evm validate-pa-sweep configs\pa_sweep.example.yaml
+```
+
+確認 RF1.1 → RF1.5 route 與操作員在場後執行；若沒有外部衰減器，程式會自動把
+stop power 夾到 RF1.5 safe limit 內：
+
+```powershell
+python scripts\cmp180_pa_sweep_validate.py `
+  --dut-id DUT-001 `
+  --confirm-direct-cable `
+  --confirm-operator-present
+```
+
+現場若有外部衰減器，才加上例如 `--output-attenuator-db 30`。這會讓安全估算允許掃到
+更高 Generator stop power，但不會把該衰減器寫入 CMP180 measurement EATT。
+
+Web 操作不必輸入 CLI：進入實機量測，切到 `RF 功率讀值（GPRF）`，按「載入 approved
+PA profile」會帶入目前 approved envelope。預設沒有實體輸出衰減器，因此畫面先載入
+`-55 → -25 dBm`；若現場使用受控 DUT／實體 attenuator，才把 `Output attenuator`
+改成實際值並把 stop 調到 profile 允許的 `-20 dBm`，再按「檢查 GPRF 計畫」與
+「執行實機量測」。
+
+Profile 會把實體 `output_attenuator_db` 與 CMP180 measurement
+`measurement_external_attenuation_db` 分開；前者只用於 RF1.5 安全預估與離線 Pout/Gain，
+不得誤寫成儀器 EATT。任一點出現 SCPI error、reliability 非 0 或 SA safe limit 時，
+workflow 會在該點 STOP／RF Off 後停止後續掃描並保存 partial artifact。
+
+P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。2026-09-09 已完成 RF1.1 → RF1.5 低功率 GPRF PA sweep 實機驗證；擴大到 `-20 dBm` 的 P1dB 掃描仍需使用 profile／fixture 安全裁切，不得把失敗 finding 當成 P1dB 證據。
+
+示範模式的單點、頻率掃描與功率掃描不連接 CMP180，也不送 RF，因此不套用實機功率安全上限；功率掃描會以固定的模擬 PA 曲線產生 Pin、Pout、Gain compression 與 P1dB 摘要，方便展示目前與未來圖表流程。所有示範 artifact 仍標示 `SIMULATED`，不得當成新的 PA 實機量測證據。
+
+## Loopback 驗證
+
+開啟「Loopback 驗證」，設定固定中心頻率、頻寬、Generator power 與 2–100 次 repeats。Expected RX Power 必須代表 analyzer input reference plane，不是 Analyzer ranging 的 -20 dBm。確認 RF1.1 → RF1.5、固定 Cable／UD Box path 與操作員在場後，Review 並完成最後 RF 確認。紅色列表示 INVALID 或 outlier，原始值仍完整保存。11 個 WLAN section 代表點、核准門檻與至少 10 repeats 會選用各自的 2026-09-03 HIL approved profile，成功時直接產生正式 `LOOPBACK_READY`；改動代表頻率、頻寬、功率、route 或門檻會自動回到 draft。
+
+若要一次建立所有 WLAN section baseline，勾選相同的接線與操作員確認後按「一鍵執行全部 11 Profiles × Repeat 10」。Preview 必須顯示 11 profiles／110 SingleShots；最後確認後系統依序執行，每個 profile 產生獨立 report。此按鈕不包含其他 route、UD Box 或未核准頻率。
+
+頁面右上角可切換中文／English。SingleShot、WLAN Sweep、GPRF、Loopback、HIL Campaign 與 Calibration 的檢查步驟、Preview、安全阻擋原因、修正方式與最後確認都會立即切換；已顯示的 Preview 只在前端重繪，不會因切換語言重新送出 SCPI、Preview API 或 RF job。
 
 ## English Version
+
+### Loopback validation
+
+Open Loopback Validation and enter a fixed center frequency, bandwidth, generator power, and 2–100 repeats. Expected RX Power must describe the analyzer-input reference plane; it is not the -20 dBm analyzer-ranging value. Confirm RF1.1 → RF1.5, the unchanged cable/UD Box path, and on-site operator presence, then review and accept the final RF confirmation. Red rows identify INVALID or outlier values while preserving raw measurements. The 11 WLAN-section representative points use their own 2026-09-03 HIL-approved profiles when the approved thresholds and at least 10 repeats are selected; a successful run directly produces formal `LOOPBACK_READY`. Changing the representative frequency, bandwidth, power, route, or thresholds falls back to draft.
+
+To create every WLAN-section baseline in one operation, confirm the same route and operator-presence checks and select Run All 11 Profiles × Repeat 10. Preview must show 11 profiles and 110 SingleShots. After final confirmation, profiles run sequentially and each receives an independent report. This action excludes other routes, UD Box paths, and unapproved frequencies.
+
+Use the top-right selector to switch between Chinese and English. The check steps, previews, safety rejection reasons, correction guidance, and final confirmations for SingleShot, WLAN Sweep, GPRF, Loopback, HIL Campaign, and Calibration update immediately. An already displayed preview is redrawn locally; changing language does not resend SCPI, call a preview endpoint, or start an RF job.
 
 This guide describes the current tool. Configuration validation, Mock operation,
 connection checks, query-only discovery, the fixed-profile Python hardware SingleShot,
@@ -260,6 +324,14 @@ configs\limits.example.yaml`, and build the offline V1 gate report with `python
 scripts\build_v1_acceptance.py --evidence output\<real-run-folder>`. The Web history
 analysis accepts one run for plotting or 2–8 runs for comparison, with drag-to-reorder,
 inline trace renaming, colour/line/point styling, and SVG, PNG, or normalized CSV export.
+Add `--engine pandas-matplotlib` for Pandas/Matplotlib PNG files or `--engine both` for
+both dependency-free SVG and PNG output. These commands read stored artifacts only.
+
+After a new single or sweep run completes, Results shows two plot families. The upper chart is the interactive Web SVG with metric selection, wheel zoom, horizontal mouse-drag panning, hover crosshairs, A/B cursors, and export. The lower “Pandas DataFrame + Matplotlib PNG” area contains 160 DPI images generated automatically from the run's saved `results.csv`. Use its selector to switch among EVM, Burst Power, Frequency Error, or Clock Error; only the selected PNG is shown, with an open-original link. Files live in the run's `plots-matplotlib/` directory. Existing historical runs are not rewritten automatically.
+
+The Hardware Single tab can execute a center frequency across the CMP180 400-8000 MHz envelope with 20/40/80/160/320 MHz bandwidth and -55 to -30 dBm generator power. Review the plan, then confirm RF1.1-to-RF1.5 direct cabling with no added attenuator, operator presence, and the final RF dialog. A point in an approved WLAN section is labelled `APPROVED`. An out-of-section point uses the verified EHT/B6GHz measurement template while the generator and analyzer center frequencies still use and read back the entered value; its result is labelled `HIL_PENDING`. This relaxation applies only to SingleShot; frequency and power sweeps retain the approved-section gate. The backend revalidates the values and fingerprint before opening the CMP180 session. `HIL_PENDING`, uncalibrated, or no-formal-limit results are not DUT-compliance claims.
+
+The Hardware Sweep tabs use direct Single/Frequency/Power controls. Frequency sweep defaults to the approved 5925→6125 MHz / 320 MHz section so the initial plan is executable; changing it to 5085 MHz or another unapproved combination is still rejected with RF left off. Multi-point runs can be paused only at point cleanup/RF-Off boundaries, then resumed from the next point or stopped with partial artifacts saved.
 
 ### 8. First CMP180 connection
 
@@ -270,7 +342,8 @@ and `SYST:ERR?`. See `hardware-readonly-validation.md` for the complete rules.
 ### 9. Current limitations
 
 Fixed-profile SingleShot, frequency sweep, and power sweep have passed their CLI/Web HIL.
-Custom hardware sweep remains gated after the `INV` finding. Formal WLAN compliance is
+The custom-value SingleShot software path is complete but still needs an on-site regression;
+custom hardware sweep remains gated after the `INV` finding. Formal WLAN compliance is
 also unavailable until approved limits and an approved Path Loss/Calibration Profile
 exist. Inputs outside the verified safety envelope are prohibited, and intranet exposure
 still requires authentication, RBAC, and audit logging.
@@ -321,3 +394,12 @@ SingleShot with Stop/Abort/RF Off in `finally`. All 11 HIL-complete sections are
 the Web approved profile. Normal Web custom sweeps select and read back the matching
 waveform while RF is OFF and measurement is idle. The 400 MHz–8 GHz figure remains an
 instrument tuning catalog range; non-WLAN gaps are not approved for execution.
+
+
+### PA 掃描摘要與有效性（2026-09-09）
+
+在結果頁開啟含 PA 欄位的 GPRF 紀錄：功率掃描摘要顯示 Small-signal Gain、Max Pout、Max Compression、IP1dB、OP1dB 與 Valid Points；頻率掃描顯示 Mean Gain、Gain Peak-to-Peak Ripple 與 Gain Std Dev（母體標準差）。PA 統計只納入有效且 Pin／Pout／Gain 齊全的點。`not_found` 表示有效掃描範圍內未觀察到 1 dB 壓縮，`insufficient_points` 表示資料不足；缺值不補零。
+
+Analyzer measured／expected power 的誤差與 PA Gain 是不同物理量；不得把 Analyzer error ripple 當成 Gain flatness。無 PA 欄位的舊 GPRF 結果保留明確標示 Analyzer 參考面的摘要，dBm 平均為算術平均。重新產生的 SVG／Matplotlib 圖會排除 INVALID 並切斷曲線；既有 PNG 不會自動更新，須由原 CSV 重新產圖。原始 CSV／JSON 保留診斷數值。
+
+本次驗證為合成資料／Mock 回歸及既有 stored artifact 查閱，未執行新的實機 RF 量測。

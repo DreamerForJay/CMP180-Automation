@@ -9,6 +9,19 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from cmp180_evm.results.visualization import write_pandas_matplotlib_plots
+
+
+def _matplotlib_artifacts(csv_path: Path) -> dict[str, str]:
+    """Generate Web-visible Pandas/Matplotlib PNG artifacts for one saved CSV."""
+    # PNG 一律由已落盤 CSV 產生，不重新連線儀器；這讓畫面、離線分析與稽核使用同一份資料。
+    try:
+        paths = write_pandas_matplotlib_plots(csv_path)
+    except ValueError:
+        # 舊版或最低欄位測試可能沒有頻率／功率軸；報告衍生失敗不得破壞原始 artifact 保存。
+        return {}
+    return {f"matplotlib_{path.stem}": str(path.resolve()) for path in paths}
+
 
 def save_single_result(
     values: dict[str, object],
@@ -34,6 +47,11 @@ def save_single_result(
         for key, value in values.items()
         if key != "raw" and not key.startswith("raw_")
     }
+    measurement_metadata = metadata or {}
+    # 單點儀器回傳本身沒有掃描軸；把已執行的設定寫回結果列，PNG 才能明確標示頻率座標。
+    for key in ("frequency_hz", "bandwidth_hz", "generator_power_dbm"):
+        if key in measurement_metadata:
+            normalized.setdefault(key, measurement_metadata[key])
     row = {
         "run_id": run_id,
         "timestamp": now.isoformat(),
@@ -67,7 +85,7 @@ def save_single_result(
                 "created_at": now.isoformat(),
                 "simulated": simulated,
                 "status": "complete",
-                **(metadata or {}),
+                **measurement_metadata,
             },
             indent=2,
         ),
@@ -98,6 +116,7 @@ def save_single_result(
         "json": str(json_path.resolve()),
         "metadata": str(metadata_path.resolve()),
         "report": str(report_path.resolve()),
+        **_matplotlib_artifacts(csv_path),
         **{key: str(path.resolve()) for key, path in raw_paths.items()},
     }
 
@@ -196,6 +215,7 @@ def save_frequency_sweep_result(
         "json": str(json_path.resolve()),
         "metadata": str(metadata_path.resolve()),
         "report": str(report_path.resolve()),
+        **_matplotlib_artifacts(csv_path),
     }
 
 
@@ -292,4 +312,5 @@ def save_power_sweep_result(
         "json": str(json_path.resolve()),
         "metadata": str(metadata_path.resolve()),
         "report": str(report_path.resolve()),
+        **_matplotlib_artifacts(csv_path),
     }

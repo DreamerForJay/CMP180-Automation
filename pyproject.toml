@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "CMP180 WLAN TX EVM automated measurement framework"
 requires-python = ">=3.11"
 dependencies = [
+    "matplotlib>=3.9",
+    "pandas>=2.2",
     "pyyaml>=6.0",
     "pydantic>=2.6",
 ]

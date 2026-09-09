@@ -9,14 +9,18 @@ from pathlib import Path
 
 from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.web.capabilities import load_capability_profile
-
 from cmp180_evm.workflow.frequency_sweep import (
     DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM,
     FrequencySweepPlan,
 )
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan
-from cmp180_evm.workflow.wlan_bands import describe_capability, reject_unsupported_plan
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
+from cmp180_evm.workflow.wlan_bands import (
+    INSTRUMENT_MAXIMUM_FREQUENCY_HZ,
+    INSTRUMENT_MINIMUM_FREQUENCY_HZ,
+    describe_capability,
+    reject_unsupported_plan,
+)
 
 # 只保護瀏覽器／伺服器不被誤填的極小 step 卡死，不是 RF 安全上限；
 # 真正能送 RF 的點數仍由 FrequencySweepPlan／PowerSweepPlan 的硬性包絡把關。
@@ -40,6 +44,7 @@ class CustomSweepPreview:
     required_confirmation: str
     execution_allowed: bool = False
     rejection_reason: str | None = None
+    hil_status: str = "APPROVED"
 
     def public(self) -> dict[str, object]:
         return {
@@ -55,13 +60,53 @@ class CustomSweepPreview:
             "execution_allowed": self.execution_allowed,
             # 被擋下時一定要說明原因，操作員才知道要調整哪個參數。
             "rejection_reason": self.rejection_reason,
+            "rejection_help": _wlan_rejection_help(self.rejection_reason),
+            "correct_range": (
+                "SingleShot center frequency 400 MHz..8 GHz; bandwidth "
+                "20/40/80/160/320 MHz; RF1.1-RF1.5; generator power -55..-30 dBm. "
+                "Points outside approved WLAN sections are marked HIL_PENDING."
+                if self.axis == "single"
+                else _wlan_correct_range()
+            ),
             "capability": describe_capability(),
             "gate": (
-                "APPROVED_PROFILE_READY"
+                "HIL_PENDING_SINGLE_READY"
+                if self.execution_allowed and self.hil_status == "HIL_PENDING"
+                else "APPROVED_PROFILE_READY"
                 if self.execution_allowed
                 else "PLANNING_ONLY_REQUIRES_APPROVED_PROFILE"
             ),
+            # 單點可在 CMP180 調諧範圍內蒐集新證據；區段外結果不可冒充既有 HIL 核准。
+            "hil_status": self.hil_status,
         }
+
+
+def _wlan_correct_range() -> str:
+    return (
+        "CMP180 UI planning range is 400 MHz..8 GHz, but WLAN EVM RF execution is "
+        "limited to the approved HIL profile: RF1.1-RF1.5, approved WLAN sections, "
+        "bandwidths 20/40/80/160/320 MHz, generator power -55..-30 dBm, dwell "
+        "100..2000 ms, and approved point count/span."
+    )
+
+
+def _wlan_rejection_help(reason: str | None) -> str | None:
+    if not reason:
+        return None
+    text = reason.lower()
+    if "route" in text:
+        return "Use the verified RF1.1-RF1.5 route, or run a new low-power HIL before enabling another route."
+    if "frequency" in text or "wlan" in text or "band" in text:
+        return "Move the center/sweep frequencies into an approved WLAN section for the selected bandwidth."
+    if "bandwidth" in text:
+        return "Choose one of the HIL-approved WLAN bandwidths and review the plan again."
+    if "power" in text:
+        return "Keep generator power inside the approved HIL envelope; for DUT/UDBox, obtain path-loss data first."
+    if "dwell" in text:
+        return "Set dwell to the approved range so each point has enough settling time without overextending RF exposure."
+    if "point" in text or "span" in text:
+        return "Reduce sweep span, increase step size, or split the run into smaller approved campaigns."
+    return "Adjust the rejected field and run Review again; no RF is transmitted until the gate passes."
 
 
 def _fingerprint(payload: dict[str, object]) -> tuple[str, str]:
@@ -112,7 +157,10 @@ def _gate(
             item
             for item in approved.sections
             if item.bandwidth_hz == bandwidth_hz
-            and all(item.frequency_min_hz <= value <= item.frequency_max_hz for value in frequencies_hz)
+            and all(
+                item.frequency_min_hz <= value <= item.frequency_max_hz
+                for value in frequencies_hz
+            )
         ),
         None,
     )
@@ -148,7 +196,10 @@ def _gate(
     if point_count > approved.maximum_points:
         return False, f"Plan exceeds the approved {approved.maximum_points}-point campaign size"
     if point_count > section.maximum_points:
-        return False, f"Plan exceeds the approved {section.maximum_points}-point size for {section.key}"
+        return False, (
+            f"Plan exceeds the approved {section.maximum_points}-point size "
+            f"for {section.key}"
+        )
     return True, None
 
 
@@ -241,3 +292,57 @@ def build_custom_sweep_preview(data: dict[str, object]) -> CustomSweepPreview:
             rejection_reason,
         )
     raise ValueError("Sweep axis must be 'frequency' or 'power'")
+
+
+def build_custom_single_preview(data: dict[str, object]) -> CustomSweepPreview:
+    """Validate one SingleShot across the installed CMP180 tuning envelope."""
+    center_frequency_hz = float(data["center_frequency_hz"])
+    bandwidth_hz = float(data.get("bandwidth_hz", 320_000_000))
+    generator_power_dbm = float(data.get("generator_power_dbm", -40))
+    profile = load_capability_profile(CAPABILITY_PROFILE_PATH)
+    approved = profile.approved_profile
+    rejection_reason = None
+    if not (
+        INSTRUMENT_MINIMUM_FREQUENCY_HZ
+        <= center_frequency_hz
+        <= INSTRUMENT_MAXIMUM_FREQUENCY_HZ
+    ):
+        rejection_reason = "SingleShot frequency must stay within the CMP180 400 MHz–8 GHz range"
+    elif bandwidth_hz not in profile.installed.analysis_bandwidths_hz:
+        rejection_reason = f"Bandwidth {bandwidth_hz / 1e6:g} MHz is not installed"
+    elif not (
+        approved.generator_power_min_dbm
+        <= generator_power_dbm
+        <= approved.generator_power_max_dbm
+    ):
+        rejection_reason = (
+            f"Generator power is outside approved {approved.generator_power_min_dbm:g}–"
+            f"{approved.generator_power_max_dbm:g} dBm"
+        )
+    fingerprint, confirmation = _fingerprint(
+        {
+            "axis": "single",
+            "center_frequency_hz": center_frequency_hz,
+            "bandwidth_hz": bandwidth_hz,
+            "generator_power_dbm": generator_power_dbm,
+        }
+    )
+    # WLAN 區段外仍可執行單一低功率量測以建立 HIL 證據；掃描 gate 完全不受影響。
+    hil_status = "APPROVED" if any(
+        section.bandwidth_hz == bandwidth_hz
+        and section.frequency_min_hz <= center_frequency_hz <= section.frequency_max_hz
+        for section in approved.sections
+    ) else "HIL_PENDING"
+    return CustomSweepPreview(
+        axis="single",
+        points=(center_frequency_hz,),
+        dwell_time_s=0.1,
+        bandwidth_hz=bandwidth_hz,
+        generator_power_dbm=generator_power_dbm,
+        center_frequency_hz=center_frequency_hz,
+        plan_fingerprint=fingerprint,
+        required_confirmation=confirmation,
+        execution_allowed=rejection_reason is None,
+        rejection_reason=rejection_reason,
+        hil_status=hil_status,
+    )

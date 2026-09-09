@@ -19,6 +19,7 @@ from cmp180_evm.instrument.mock_cmp180 import MockCmp180
 from cmp180_evm.instrument.session import Cmp180Session
 from cmp180_evm.scpi import common
 from cmp180_evm.utils.exceptions import Cmp180Error
+from cmp180_evm.utils.retry import RetryPolicy, run_with_bounded_retry
 
 
 @dataclass
@@ -142,7 +143,7 @@ def test_connection(instrument_config_path: Path, use_mock: bool) -> ConnectionR
             mask_sensitive_data=config.instrument.logging.mask_sensitive_data,
         )
 
-    try:
+    def attempt_connection(attempt: int) -> ConnectionResult:
         session.connect()
         idn = session.verify_identity(config.instrument.identity.expected_model_contains)
         options = session.query(common.OPTIONS)
@@ -152,7 +153,27 @@ def test_connection(instrument_config_path: Path, use_mock: bool) -> ConnectionR
             idn=idn,
             options=options,
             errors=errors,
-            message="Connected successfully" + (" (mock)" if use_mock else ""),
+            message=(
+                "Connected successfully"
+                + (" (mock)" if use_mock else "")
+                + (f" after {attempt} attempts" if attempt > 1 else "")
+            ),
+        )
+
+    def cleanup_failed_attempt(attempt: int, exc: BaseException) -> None:
+        del attempt, exc
+        # 連線診斷不送 RF；重試前仍關閉可能半開的 session，避免資源鎖殘留。
+        session.disconnect()
+
+    try:
+        policy = RetryPolicy(
+            retry_count=0 if use_mock else config.instrument.connection.retry_count,
+            retry_interval_ms=config.instrument.connection.retry_interval_ms,
+        )
+        return run_with_bounded_retry(
+            attempt_connection,
+            policy=policy,
+            cleanup=cleanup_failed_attempt,
         )
     except Cmp180Error as exc:
         return ConnectionResult(ok=False, message=str(exc))

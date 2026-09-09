@@ -22,8 +22,9 @@ class ConnectionConfig(BaseModel):
     timeout_ms: int = 10000
     opc_timeout_ms: int = 30000
     query_delay_ms: int = 0
-    retry_count: int = 3
-    retry_interval_ms: int = 1000
+    # 僅供明確 transient 的連線診斷重試；不得自動重送 RF／SCPI write。
+    retry_count: int = Field(default=3, ge=0, le=5)
+    retry_interval_ms: int = Field(default=1000, ge=0, le=30_000)
 
 
 class IdentityConfig(BaseModel):

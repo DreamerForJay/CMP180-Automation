@@ -6,11 +6,9 @@
 
 All new or modified code must include concise Traditional Chinese comments around safety limits, SCPI side effects, state transitions, exception cleanup, unit conversions, and non-obvious logic. Do not add line-by-line translations or comments that merely repeat the code. Public API docstrings may remain in English, but critical control flow still requires Chinese comments.
 
-## 文件語言規則／Documentation language rule
+## 文件語言規則
 
-本專案所有新增或改寫的說明文件，必須先提供完整繁體中文，再提供完整英文；不得只翻譯標題或摘要。程式識別字、SCPI 指令與必要技術名詞可保留英文。
-
-All new or rewritten project documentation must contain a complete Traditional Chinese version first, followed by a complete English version. Translating only headings or summaries is not sufficient. Code identifiers, SCPI commands, and necessary technical terms may remain in English.
+本專案所有新增或改寫的說明文件以繁體中文撰寫，不再要求提供英文版本。程式識別字、SCPI 指令與必要技術名詞可保留英文；既有雙語文件不必為此回溯刪除英文。
 
 ## 中文版
 
@@ -27,7 +25,7 @@ All new or rewritten project documentation must contain a complete Traditional C
 3. RF On 前確認 routing、頻率、頻寬、功率、線材／衰減與輸入限制。
 4. RF workflow 必須用 `try/finally`，在錯誤、逾時與取消時仍 Stop／Abort 並 RF Off。
 5. SCPI 字串只放 command map 與 typed registry；未驗證命令維持 `null`。
-6. 每次功能修改都要更新測試與相關文件，文件必須中文在前、英文在後。
+6. 每次功能修改都要更新測試與相關文件；新增或改寫內容使用繁體中文。
 7. 執行 pytest、兩份 YAML validation 與 `git diff --check`，並標示使用 Mock、stored result 或新實機 RF 量測。
 
 ### Agent 導航與冗餘邊界

@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from cmp180_evm.results.visualization import write_pandas_matplotlib_plots
 from cmp180_evm.scpi.registry import ScpiCommandRegistry, load_scpi_command_map
 from cmp180_evm.web.jobs import SweepJob
 from cmp180_evm.workflow.rf_routes import parse_route
@@ -30,6 +31,10 @@ GPRF_MIN_DWELL_MS = 50
 GPRF_MAX_DWELL_MS = 5000
 # GPRF power 量測需要連續波；突發 ARB 波形會被平均進閒置期而無法解讀。
 GPRF_BASEBAND_MODE = "CW"
+GPRF_MAX_PATH_COMPENSATION_DB = 120.0
+GPRF_MIN_SAFE_LIMIT_DBM = -120.0
+GPRF_MAX_SAFE_LIMIT_DBM = 30.0
+GPRF_MIN_EXPECTED_POWER_DBM = -30.0
 
 
 @dataclass(frozen=True)
@@ -41,8 +46,20 @@ class GprfPreview:
     dwell_ms: int
     execution_allowed: bool
     rejection_reason: str | None = None
+    input_cable_loss_db: float = 0.0
+    output_cable_loss_db: float = 0.0
+    external_gain_db: float = 0.0
+    external_attenuation_db: float = 0.0
+    output_attenuator_db: float = 0.0
+    expected_dut_gain_db: float = 0.0
+    sa_safe_limit_dbm: float = 0.0
 
     def public(self) -> dict[str, object]:
+        pin_start, pin_stop = _pin_range(
+            self,
+            start=float(self.points[0]) if self.axis == "power" and self.points else self.power_dbm,
+            stop=float(self.points[-1]) if self.axis == "power" and self.points else self.power_dbm,
+        )
         return {
             "measurement_family": "GPRF_POWER",
             "axis": self.axis,
@@ -51,13 +68,45 @@ class GprfPreview:
             "frequency_hz": self.frequency_hz,
             "power_dbm": self.power_dbm,
             "dwell_ms": self.dwell_ms,
+            "input_cable_loss_db": self.input_cable_loss_db,
+            "output_cable_loss_db": self.output_cable_loss_db,
+            "external_gain_db": self.external_gain_db,
+            "external_attenuation_db": self.external_attenuation_db,
+            "output_attenuator_db": self.output_attenuator_db,
+            "expected_dut_gain_db": self.expected_dut_gain_db,
+            "sa_safe_limit_dbm": self.sa_safe_limit_dbm,
+            "pin_start_dbm": pin_start,
+            "pin_stop_dbm": pin_stop,
             "execution_allowed": self.execution_allowed,
             "rejection_reason": self.rejection_reason,
+            "rejection_help": _gprf_rejection_help(self.rejection_reason),
+            "correct_range": _gprf_correct_range(),
             "disclaimer": (
                 "GPRF power sweep only; this is not WLAN EVM demodulation or a "
                 "WLAN compliance claim."
             ),
         }
+
+
+def _gprf_correct_range() -> str:
+    return (
+        f"Frequency {GPRF_MIN_FREQUENCY_HZ / 1e6:.0f} MHz.."
+        f"{GPRF_MAX_FREQUENCY_HZ / 1e9:.0f} GHz; generator power "
+        f"{GPRF_MIN_POWER_DBM:g}..{GPRF_MAX_POWER_DBM:g} dBm; dwell "
+        f"{GPRF_MIN_DWELL_MS}..{GPRF_MAX_DWELL_MS} ms; max {GPRF_MAX_POINTS} points."
+    )
+
+
+def _gprf_rejection_help(reason: str | None) -> str | None:
+    if not reason:
+        return None
+    if "Frequency" in reason:
+        return "Set every RF point inside the CMP180 GPRF planning range, then review again."
+    if "power" in reason.lower():
+        return "Reduce the generator level or sweep endpoints to the accepted GPRF power range."
+    if "dwell" in reason.lower():
+        return "Use a dwell time that is long enough for settling but inside the approved UI guard."
+    return "Adjust the highlighted plan field and review again before enabling RF."
 
 
 def _inclusive_points(start: float, stop: float, step: float) -> tuple[float, ...]:
@@ -69,11 +118,99 @@ def _inclusive_points(start: float, stop: float, step: float) -> tuple[float, ..
     return tuple(round(start + index * step, 9) for index in range(count))
 
 
+def _bounded_float(
+    data: dict[str, object],
+    name: str,
+    default: float,
+    *,
+    minimum: float,
+    maximum: float,
+) -> float:
+    value = float(data.get(name, default))
+    if not minimum <= value <= maximum:
+        raise ValueError(f"{name} must stay within {minimum:g}..{maximum:g}")
+    return value
+
+
+def _path_compensation(data: dict[str, object]) -> dict[str, float]:
+    # PA 參考面補償只影響輸出 artifact 的 Pin/Pout/Gain，不放寬 RF 或儀器安全範圍。
+    return {
+        "input_cable_loss_db": _bounded_float(
+            data,
+            "input_cable_loss_db",
+            0.0,
+            minimum=0.0,
+            maximum=GPRF_MAX_PATH_COMPENSATION_DB,
+        ),
+        "output_cable_loss_db": _bounded_float(
+            data,
+            "output_cable_loss_db",
+            0.0,
+            minimum=0.0,
+            maximum=GPRF_MAX_PATH_COMPENSATION_DB,
+        ),
+        "external_gain_db": _bounded_float(
+            data,
+            "external_gain_db",
+            0.0,
+            minimum=0.0,
+            maximum=GPRF_MAX_PATH_COMPENSATION_DB,
+        ),
+        "external_attenuation_db": _bounded_float(
+            data,
+            "external_attenuation_db",
+            0.0,
+            minimum=0.0,
+            maximum=GPRF_MAX_PATH_COMPENSATION_DB,
+        ),
+        "output_attenuator_db": _bounded_float(
+            data,
+            "output_attenuator_db",
+            float(data.get("external_attenuation_db", 0.0)),
+            minimum=0.0,
+            maximum=GPRF_MAX_PATH_COMPENSATION_DB,
+        ),
+        "expected_dut_gain_db": _bounded_float(
+            data,
+            "expected_dut_gain_db",
+            0.0,
+            minimum=0.0,
+            maximum=GPRF_MAX_PATH_COMPENSATION_DB,
+        ),
+        "sa_safe_limit_dbm": _bounded_float(
+            data,
+            "sa_safe_limit_dbm",
+            0.0,
+            minimum=GPRF_MIN_SAFE_LIMIT_DBM,
+            maximum=GPRF_MAX_SAFE_LIMIT_DBM,
+        ),
+    }
+
+
+def _pin_dbm(generator_power_dbm: float, external_gain_db: float, input_loss_db: float) -> float:
+    return generator_power_dbm + external_gain_db - input_loss_db
+
+
+def _pin_range(
+    preview: GprfPreview,
+    *,
+    start: float | None,
+    stop: float | None,
+) -> tuple[float | None, float | None]:
+    if start is None or stop is None:
+        return None, None
+    return (
+        _pin_dbm(start, preview.external_gain_db, preview.input_cable_loss_db),
+        _pin_dbm(stop, preview.external_gain_db, preview.input_cable_loss_db),
+    )
+
+
 def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
     axis = str(data.get("axis") or "frequency")
     dwell_ms = int(float(data.get("dwell_ms", 200)))
     if not GPRF_MIN_DWELL_MS <= dwell_ms <= GPRF_MAX_DWELL_MS:
         raise ValueError(f"GPRF dwell must stay within {GPRF_MIN_DWELL_MS}..{GPRF_MAX_DWELL_MS} ms")
+    compensation = _path_compensation(data)
     if axis == "frequency":
         start_hz = float(data["start_hz"])
         stop_hz = float(data["stop_hz"])
@@ -88,7 +225,16 @@ def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
                 f"Generator power must stay within {GPRF_MIN_POWER_DBM:g}.."
                 f"{GPRF_MAX_POWER_DBM:g} dBm"
             )
-        return GprfPreview(axis, points, None, power_dbm, dwell_ms, reason is None, reason)
+        return GprfPreview(
+            axis,
+            points,
+            None,
+            power_dbm,
+            dwell_ms,
+            reason is None,
+            reason,
+            **compensation,
+        )
     if axis == "power":
         frequency_hz = float(data["frequency_hz"])
         start_dbm = float(data["start_dbm"])
@@ -103,7 +249,16 @@ def build_gprf_power_preview(data: dict[str, object]) -> GprfPreview:
                 f"Power sweep exceeds {GPRF_MIN_POWER_DBM:g}.."
                 f"{GPRF_MAX_POWER_DBM:g} dBm planning range"
             )
-        return GprfPreview(axis, points, frequency_hz, None, dwell_ms, reason is None, reason)
+        return GprfPreview(
+            axis,
+            points,
+            frequency_hz,
+            None,
+            dwell_ms,
+            reason is None,
+            reason,
+            **compensation,
+        )
     raise ValueError("GPRF axis must be 'frequency' or 'power'")
 
 
@@ -214,6 +369,111 @@ def _parse_power(response: str) -> tuple[int, float | None]:
         return -1, None
 
 
+def _pout_dbm(
+    measured_power_dbm: float | None,
+    output_loss_db: float,
+    attenuation_db: float,
+) -> float | None:
+    if measured_power_dbm is None:
+        return None
+    return measured_power_dbm + output_loss_db + attenuation_db
+
+
+def _point_pa_metrics(
+    *,
+    generator_power_dbm: float,
+    measured_power_dbm: float | None,
+    preview: GprfPreview,
+) -> dict[str, float | None]:
+    # Pin/Pout 以 DUT 參考面計算；這是 PA 圖表用欄位，不回寫儀器 expected power。
+    pin_dbm = _pin_dbm(
+        generator_power_dbm,
+        preview.external_gain_db,
+        preview.input_cable_loss_db,
+    )
+    pout_dbm = _pout_dbm(
+        measured_power_dbm,
+        preview.output_cable_loss_db,
+        preview.output_attenuator_db,
+    )
+    return {
+        "pin_dbm": pin_dbm,
+        "pout_dbm": pout_dbm,
+        "gain_db": None if pout_dbm is None else pout_dbm - pin_dbm,
+    }
+
+
+def _should_stop_after_gprf_point(status: str) -> bool:
+    # SCPI/ranging/SA limit 異常代表量測條件已不可信；PA sweep 必須在 RF Off 邊界停止。
+    return status != "OK"
+
+
+def _expected_analyzer_power_dbm(generator_power_dbm: float, preview: GprfPreview) -> float:
+    # CMP180 ENPower 是 RF1.5 量測端 ranging，不是 DUT Pout；實體輸出衰減只進安全估算。
+    estimated_input = (
+        generator_power_dbm
+        + preview.external_gain_db
+        - preview.input_cable_loss_db
+        + preview.expected_dut_gain_db
+        - preview.output_cable_loss_db
+        - preview.output_attenuator_db
+    )
+    return max(estimated_input, GPRF_MIN_EXPECTED_POWER_DBM)
+
+
+def _analyze_p1db(points: list[dict[str, object]], *, small_signal_points: int = 3) -> dict[str, object]:
+    valid = [
+        point
+        for point in points
+        if point.get("valid") is True
+        and isinstance(point.get("pin_dbm"), (int, float))
+        and isinstance(point.get("pout_dbm"), (int, float))
+        and isinstance(point.get("gain_db"), (int, float))
+    ]
+    valid.sort(key=lambda point: float(point["pin_dbm"]))
+    if len(valid) < 2:
+        return {"status": "insufficient_points", "small_signal_gain_db": None}
+    # 小訊號增益用最低 Pin 的前幾點平均；避免單點雜訊直接決定 P1dB 門檻。
+    baseline_count = max(1, min(small_signal_points, len(valid)))
+    small_signal_gain = sum(float(point["gain_db"]) for point in valid[:baseline_count]) / baseline_count
+    target_gain = small_signal_gain - 1.0
+    compressions = [small_signal_gain - float(point["gain_db"]) for point in valid]
+    max_compression = max(compressions)
+    max_pin_point = max(valid, key=lambda point: float(point["pin_dbm"]))
+    previous = valid[0]
+    for point in valid[1:]:
+        previous_gain = float(previous["gain_db"])
+        current_gain = float(point["gain_db"])
+        if previous_gain >= target_gain >= current_gain:
+            span = previous_gain - current_gain
+            ratio = 0.0 if span == 0 else (previous_gain - target_gain) / span
+            pin = float(previous["pin_dbm"]) + ratio * (
+                float(point["pin_dbm"]) - float(previous["pin_dbm"])
+            )
+            pout = float(previous["pout_dbm"]) + ratio * (
+                float(point["pout_dbm"]) - float(previous["pout_dbm"])
+            )
+            return {
+                "status": "found",
+                "small_signal_gain_db": small_signal_gain,
+                "target_gain_db": target_gain,
+                "ip1db_dbm": pin,
+                "op1db_dbm": pout,
+                "max_compression_db": max_compression,
+                "max_measured_pin_dbm": float(max_pin_point["pin_dbm"]),
+                "max_measured_pout_dbm": float(max_pin_point["pout_dbm"]),
+            }
+        previous = point
+    return {
+        "status": "not_found",
+        "small_signal_gain_db": small_signal_gain,
+        "target_gain_db": target_gain,
+        "max_compression_db": max_compression,
+        "max_measured_pin_dbm": float(max_pin_point["pin_dbm"]),
+        "max_measured_pout_dbm": float(max_pin_point["pout_dbm"]),
+    }
+
+
 def _save_gprf_result(
     points: list[dict[str, object]],
     output_root: Path,
@@ -270,6 +530,12 @@ def _save_gprf_result(
         f"<table><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>",
         encoding="utf-8",
     )
+    # GPRF 結果走獨立保存流程；這裡補上與 WLAN artifacts 相同的 Pandas/Matplotlib PNG，
+    # 讓「結果與圖表」不會因 workflow 不同而缺少靜態報告圖。
+    matplotlib_artifacts = {
+        f"matplotlib_{path.stem}": str(path.resolve())
+        for path in write_pandas_matplotlib_plots(csv_path)
+    }
     return {
         "run_id": run_id,
         "run_dir": str(run_dir.resolve()),
@@ -277,6 +543,7 @@ def _save_gprf_result(
         "json": str(json_path.resolve()),
         "metadata": str(metadata_path.resolve()),
         "report": str(report_path.resolve()),
+        **matplotlib_artifacts,
     }
 
 
@@ -296,6 +563,7 @@ def run_gprf_power_sweep(
     cleanup_errors: list[str] = []
     original_baseband_mode: str | None = None
     original_arb_file: str | None = None
+    stopped_reason: str | None = None
     try:
         conn.connect()
         conn.write(registry.require("common.clear_status"))
@@ -304,7 +572,7 @@ def run_gprf_power_sweep(
         # 量測端 routing 與位準必須在 RF Off 時先寫入並 read-back：run 252bbbe39a 因為
         # GPRF measurement 停在未接線的 RF1.6，才會在送出 -40 dBm 時讀到雜訊底 -80.87 dBm。
         route = parse_route(request.get("cable_confirmation"))
-        external_attenuation_db = float(request.get("external_attenuation_db", 0.0))
+        external_attenuation_db = preview.external_attenuation_db
         conn.write(
             registry.render("gprf_measurement.set_rf_path", rf_path=f'"{route.analyzer_port}"')
         )
@@ -330,13 +598,14 @@ def run_gprf_power_sweep(
                 break
             frequency_hz = value if preview.axis == "frequency" else float(preview.frequency_hz)
             power_dbm = float(preview.power_dbm) if preview.axis == "frequency" else value
+            expected_power_dbm = _expected_analyzer_power_dbm(power_dbm, preview)
             conn.write(registry.render("generator.set_frequency", frequency_hz=frequency_hz))
             conn.write(registry.render("gprf_measurement.set_frequency", frequency_hz=frequency_hz))
             conn.write(registry.render("generator.set_power", power_dbm=power_dbm))
-            # expected nominal power 決定量測端 ranging，必須在 RF On 前依該點功率設定。
+            # expected nominal power 決定 RF1.5 ranging；PA profile 需用預估輸入且避開儀器下限。
             conn.write(
                 registry.render(
-                    "gprf_measurement.set_expected_power", expected_power_dbm=power_dbm
+                    "gprf_measurement.set_expected_power", expected_power_dbm=expected_power_dbm
                 )
             )
             conn.write(registry.require("generator.rf_on"))
@@ -348,22 +617,43 @@ def run_gprf_power_sweep(
             conn.write(registry.require("gprf_measurement.stop_power"))
             conn.write(registry.require("generator.rf_off"))
             reliability, measured = _parse_power(raw)
+            pa_metrics = _point_pa_metrics(
+                generator_power_dbm=power_dbm,
+                measured_power_dbm=measured,
+                preview=preview,
+            )
             # 每點都讀 error queue（涵蓋量測與收尾）：儀器已回報錯誤時不得標記為有效量測。
             point_errors = _drain_error_queue(conn, registry)
             if point_errors:
                 status = "SCPI_ERROR"
             elif reliability != 0:
                 status = f"RELIABILITY_{reliability}"
+            elif measured is not None and measured > preview.sa_safe_limit_dbm:
+                status = "SA_LIMIT"
             else:
                 status = "OK"
-            valid = reliability == 0 and measured is not None and not point_errors
+            valid = (
+                reliability == 0
+                and measured is not None
+                and measured <= preview.sa_safe_limit_dbm
+                and not point_errors
+            )
             row = {
                 "point_index": index,
                 "frequency_hz": frequency_hz,
                 "generator_power_dbm": power_dbm,
                 "analyzer_port": route.analyzer_port,
-                "expected_power_dbm": power_dbm,
+                "expected_power_dbm": expected_power_dbm,
                 "external_attenuation_db": external_attenuation_db,
+                "output_attenuator_db": preview.output_attenuator_db,
+                "expected_dut_gain_db": preview.expected_dut_gain_db,
+                "input_cable_loss_db": preview.input_cable_loss_db,
+                "output_cable_loss_db": preview.output_cable_loss_db,
+                "external_gain_db": preview.external_gain_db,
+                "sa_safe_limit_dbm": preview.sa_safe_limit_dbm,
+                "pin_dbm": pa_metrics["pin_dbm"],
+                "pout_dbm": pa_metrics["pout_dbm"],
+                "gain_db": pa_metrics["gain_db"],
                 "baseband_mode": GPRF_BASEBAND_MODE,
                 "measured_power_dbm": measured,
                 "evm_all_db": None,
@@ -381,16 +671,31 @@ def run_gprf_power_sweep(
             }
             rows.append(row)
             job.point_completed(index + 1, row)
+            if _should_stop_after_gprf_point(status):
+                stopped_reason = status
+                break
+        p1db = _analyze_p1db(rows) if preview.axis == "power" else {"status": "frequency_sweep"}
+        completed = len(rows) == len(preview.points) and stopped_reason is None
         artifacts = _save_gprf_result(
             rows,
             output_root,
             {
+                "status": "complete" if completed else "partial",
                 "axis": preview.axis,
                 "requested_points": preview.points,
+                "completed_requested_points": len(rows),
+                "stopped_reason": stopped_reason,
                 "dwell_ms": preview.dwell_ms,
                 "cable_route": route.label,
                 "analyzer_port": route.analyzer_port,
                 "external_attenuation_db": external_attenuation_db,
+                "output_attenuator_db": preview.output_attenuator_db,
+                "expected_dut_gain_db": preview.expected_dut_gain_db,
+                "input_cable_loss_db": preview.input_cable_loss_db,
+                "output_cable_loss_db": preview.output_cable_loss_db,
+                "external_gain_db": preview.external_gain_db,
+                "sa_safe_limit_dbm": preview.sa_safe_limit_dbm,
+                "p1db": p1db,
                 "baseband_mode": GPRF_BASEBAND_MODE,
                 "restored_baseband_mode": original_baseband_mode,
             },
@@ -400,8 +705,11 @@ def run_gprf_power_sweep(
             "sweep_axis": preview.axis,
             "measurement_family": "GPRF_POWER",
             "points": rows,
+            "p1db": p1db,
             "artifacts": artifacts,
             "cleanup_errors": cleanup_errors,
+            "partial": not completed,
+            "stopped_reason": stopped_reason,
             "compliance_claim": False,
         }
     finally:

@@ -270,6 +270,36 @@ const Architecture: Page = () => (
   </div>
 );
 
+const Learning: Page = () => (
+  <div style={{ ...fill, padding: '100px 100px 0' }}>
+    <Eyebrow text="03 / 學習與工具鏈" />
+    <Heading text="從 RF 量測走到可維護的自動化" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, marginTop: 54 }}>
+      <Row
+        k="RF / EVM"
+        v="整理 dBm、dB、EVM、burst power、frequency error 與 invalid token 的判讀規則。"
+        tone="#22d3ee"
+      />
+      <Row
+        k="CMP180 / SCPI"
+        v="透過 CMsquares、Command Help 與 query-only discovery 建立可驗證的命令邊界。"
+        tone={ok}
+      />
+      <Row
+        k="Python / CI"
+        v="使用 Python 3.11、typed config、pytest 與 GitHub Actions，讓沒有儀器時也能回歸。"
+        tone={warn}
+      />
+      <Row
+        k="Web / Report"
+        v="把安全確認、非同步 job、run history、圖表與 artifacts 整合成操作員可交接的介面。"
+        tone={danger}
+      />
+    </div>
+    <Footer />
+  </div>
+);
+
 const Safety: Page = () => (
   <div style={{ ...fill, padding: '100px 100px 0' }}>
     <Eyebrow text="04 / RF 安全設計" />
@@ -350,6 +380,24 @@ const Results: Page = () => (
     <p style={{ fontSize: 28, color: muted, lineHeight: 1.6, marginTop: 56, maxWidth: 1500 }}>
       涵蓋 20 / 40 / 80 / 160 / 320 MHz。執行時由後端在 RF Off 且量測 idle 的狀態下自動選取匹配
       waveform，並做絕對路徑 readback 確認。
+    </p>
+    <Footer />
+  </div>
+);
+
+const Reporting: Page = () => (
+  <div style={{ ...fill, padding: '100px 100px 0' }}>
+    <Eyebrow text="08 / 資料輸出" />
+    <Heading text="每次量測都留下可追溯證據" />
+    <div style={{ display: 'flex', gap: 28, marginTop: 62 }}>
+      <Stat value="CSV" unit="" label="供 Excel、Pandas 與後續統計分析使用" />
+      <Stat value="JSON" unit="" label="保存 normalized results 與 structured metadata" />
+      <Stat value="RAW" unit="" label="保留儀器原始回應，方便回查 parser 與異常" />
+      <Stat value="PNG" unit="" label="由 Pandas / Matplotlib 產生，可直接放入報告" />
+    </div>
+    <p style={{ fontSize: 28, color: muted, lineHeight: 1.6, marginTop: 56, maxWidth: 1540 }}>
+      沒有 approved limit profile 時，報告只標示 MEASURED。Invalid point 會中斷曲線，不補 0，也不寫成
+      compliance PASS。
     </p>
     <Footer />
   </div>
@@ -455,6 +503,21 @@ const Next: Page = () => (
   </div>
 );
 
+const DemoFlow: Page = () => (
+  <div style={{ ...fill, padding: '100px 100px 0' }}>
+    <Eyebrow text="14 / DEMO 流程" />
+    <Heading text="現場展示以安全與證據為主" />
+    <ul style={bullets}>
+      <li>先展示 README、文件中心與 hardware SOP，說明 RF 操作邊界。</li>
+      <li>用 Mock / Demo mode 示範 Web 操作，不需要實機也能看完整流程。</li>
+      <li>展示實機 preview gate、最後確認、rejection reason 與安全阻擋訊息。</li>
+      <li>開啟既有 run history、HTML report、CSV、JSON、metadata 與 Matplotlib PNG。</li>
+      <li>若現場沒有 RF 授權，只展示 stored artifacts，不啟動新的 RF job。</li>
+    </ul>
+    <Footer />
+  </div>
+);
+
 const End: Page = () => (
   <div
     style={{
@@ -494,13 +557,16 @@ export default [
   Cover,
   Problem,
   Goal,
+  Learning,
   Architecture,
   Safety,
   Lifecycle,
   Results,
+  Reporting,
   WebTool,
   Engineering,
   Honest,
   Next,
+  DemoFlow,
   End,
 ] satisfies Page[];
