@@ -207,15 +207,12 @@ document.querySelectorAll('[data-hardware-action]').forEach(button => {
 });
 selectHardwareAction('single');
 
-function singleFrequencyToHz(value, unit) {
-  // 單點 UI 可切 MHz/GHz；API 永遠接收 Hz，避免後端或 SCPI 猜測單位。
-  return Number(value) * (unit === 'GHz' ? 1e9 : 1e6);
-}
+// 單點 UI 可切 MHz/GHz；改呼叫 app.js 共用的 frequencyToHz，API 永遠接收 Hz。
 
 function buildSinglePlanPayload() {
   const form = new FormData($('#singlePlanForm'));
   return {
-    center_frequency_hz: singleFrequencyToHz(form.get('center_frequency'), form.get('center_unit')),
+    center_frequency_hz: frequencyToHz(form.get('center_frequency'), form.get('center_unit')),
     bandwidth_hz: Number(form.get('bandwidth_mhz')) * 1e6,
     generator_power_dbm: Number(form.get('generator_power_dbm'))
   };
@@ -250,7 +247,7 @@ function renderSinglePlanPreview(data) {
       `頻寬：${data.bandwidth_hz / 1e6} MHz`,
       `Generator 功率：${data.generator_power_dbm} dBm`,
       data.execution_allowed
-        ? `可執行：${data.hil_status === 'HIL_PENDING' ? '此頻點尚未 HIL 核准，結果會標記 HIL_PENDING。' : '已在核准 HIL 區段內。'}`
+        ? `可執行：${data.band_supported === false ? '此組合不在標準 WLAN channel plan 內，可執行但結果可能為 INV。' : '在標準 WLAN channel plan 內。'}`
         : formatPlanRejection(data, 'workflow 拒絕此計畫', 'wlan')
     ].join('\n') : [
       'SingleShot',
@@ -258,7 +255,7 @@ function renderSinglePlanPreview(data) {
       `Bandwidth: ${data.bandwidth_hz / 1e6} MHz`,
       `Generator power: ${data.generator_power_dbm} dBm`,
       data.execution_allowed
-        ? `Executable: ${data.hil_status === 'HIL_PENDING' ? 'this point is not HIL-approved and will be marked HIL_PENDING.' : 'inside an approved HIL section.'}`
+        ? `Executable: ${data.band_supported === false ? 'outside the standard WLAN channel plan; the run is allowed but may return INV.' : 'inside the standard WLAN channel plan.'}`
         : formatPlanRejection(data, 'workflow rejected the plan', 'wlan')
     ].join('\n');
 }
@@ -281,7 +278,7 @@ document.querySelector('[data-single-unit]').addEventListener('click', event => 
   const form = $('#singlePlanForm').elements;
   const previous = form.center_unit.value;
   const next = previous === 'GHz' ? 'MHz' : 'GHz';
-  const hz = singleFrequencyToHz(form.center_frequency.value, previous);
+  const hz = frequencyToHz(form.center_frequency.value, previous);
   form.center_frequency.value = Math.round((hz / (next === 'GHz' ? 1e9 : 1e6)) * 1e6) / 1e6;
   form.center_unit.value = next;
   event.currentTarget.textContent = next;

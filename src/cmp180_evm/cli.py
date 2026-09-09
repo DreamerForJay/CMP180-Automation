@@ -98,6 +98,8 @@ def _cmd_validate_pa_sweep(args: argparse.Namespace) -> int:
     # 最壞 RF1.5 power 是硬體保護判斷，不是離線 Pout 或 DUT 規格宣稱。
     print(f"  Worst-case RF1.5 input: {request['worst_case_rf_input_dbm']:g} dBm")
     print(f"  SA safe limit: {profile.sa_safe_limit_dbm:g} dBm")
+    # DUT 輸入上限是與 SA safe limit 並列的獨立保護，操作員送 RF 前必須看得到。
+    print(f"  DUT max input: {profile.dut_max_input_dbm:g} dBm")
     return 0
 
 

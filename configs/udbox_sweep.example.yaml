@@ -1,0 +1,66 @@
+# UDBox 0630 conversion gain / P1dB 量測的 GPRF request 範例。
+#
+# 這是「規劃用」payload，不是已核准的 RF profile：
+#   1. 尚未取得 RF owner 對 UDBox route 的核准，也沒有任何 UDBox HIL 證據。
+#   2. dut_max_input_dbm 由 datasheet 的 P1dB 反推，不是原廠標示的損傷閾值（見下）。
+#   3. 送到 /api/jobs/hardware/gprf-power-sweep 前仍需 --enable-hardware、接線確認與現場操作員。
+#
+# 頻率計畫（up-conversion，高側注入）：
+#   IF 1000 MHz (CMP180 generator) + LO 6000 MHz → RF 7000 MHz (CMP180 analyzer)
+#   不要的邊帶 |LO − IF| = 5000 MHz、LO 洩漏 6000 MHz，兩者都落在 CMP180 400 MHz–8 GHz 內，
+#   因此同一次接線就能另外觀測；RF 7000 MHz 也落在已核准的 6 GHz WLAN section 內，
+#   之後要改量 WLAN EVM 不必另外開 section。
+#   LO 解析度 1 MHz，6000 MHz 可精確設定。
+
+axis: power
+frequency_hz: 1000000000
+# 起點看小訊號增益，終點是 CMP180 generator 的最大輸出 +8 dBm。
+#
+# 重要：本組態量不到 P1dB。datasheet Tx Output P1dB ≥ 0 dBm、conversion loss 10 dB，
+# 反推 IF 端要約 +10 dBm 才進入壓縮，但 CMP180 generator 上限是 +8 dBm，至少差 2 dB
+# （P1dB 是「Min.」值，實際可能更高，差距只會更大）。因此本檔只能量 conversion gain
+# 與平坦度；要量 P1dB 必須在 IF 路徑外加驅動放大器，那是另一組接線與安全分析。
+start_dbm: -20
+stop_dbm: 8
+step_dbm: 1
+dwell_ms: 200
+cable_confirmation: RF1.1-RF1.5
+
+# UDBox 是淨損耗元件（datasheet conversion loss 10 dB typ, full band），
+# expected_dut_gain_db 為負值；此值只影響 analyzer ranging 與離線 Pout/Gain 計算，
+# 不會放寬任何安全上限。
+expected_dut_gain_db: -10
+input_cable_loss_db: 0
+output_cable_loss_db: 0
+
+# UDBox RF 輸出端建議實體加掛 10 dB 衰減器。generator 上限 +8 dBm、conversion loss
+# 10 dB，最高輸出約 −2 dBm，距離 sa_safe_limit_dbm 只有 2 dB；對首次上線的未驗證
+# route 太薄。加 pad 後 analyzer 端最高約 −12 dBm，保留 12 dB 餘裕，低端 −40 dBm
+# 仍在已驗證的量測功率範圍內。
+output_attenuator_db: 10
+# 儀器端 EATT 保持 0：讓 sa_safe_limit_dbm 直接守住 RF1.5 接頭的真實功率。
+# pad 只在離線 Pout/Gain 計算中加回，不寫入 CMP180。
+external_attenuation_db: 0
+
+# 保護 CMP180 analyzer 輸入。
+sa_safe_limit_dbm: 0
+# 保護 UDBox 自己的 IF port。
+# 注意：datasheet RF Specifications 只給 P1dB（線性度），沒有 Absolute Maximum Rating。
+# 此值 = Tx Output P1dB 0 dBm + conversion loss 10 dB + 3 dB 觀測餘裕，屬於工作上限，
+# 不等於損傷閾值。真正的 absolute max 仍應向 TMYTEK 索取後更新本欄。
+# 實際上 CMP180 generator 的 +8 dBm 才是本組態的約束條件，此欄不會成為瓶頸。
+dut_max_input_dbm: 13
+
+conversion:
+  direction: up
+  sideband: high
+  lo_frequency_hz: 6000000000
+  limits:
+    # 來源：TMYTEK UD Box 0630 datasheet RF Specifications 表。
+    if_min_hz: 1000000000
+    if_max_hz: 8000000000
+    rf_min_hz: 6000000000
+    rf_max_hz: 30000000000
+    lo_min_hz: 6000000000
+    lo_max_hz: 30000000000
+    source: "TMYTEK UD Box 0630 datasheet RF Specifications table"

@@ -11,17 +11,28 @@ const approvedPaProfile = {
   dwell_ms: 200,
   expected_dut_gain_db: 25,
   output_attenuator_db: 0,
-  sa_safe_limit_dbm: 0
+  sa_safe_limit_dbm: 0,
+  dut_max_input_dbm: -20
 };
 
-function gprfHz(mhz) {
-  // GPRF 表單固定用 MHz，後端與 SCPI 一律接收 Hz，避免單位誤送。
-  return Number(mhz) * 1e6;
-}
+// UDBox 0630 規劃範例；數值與 configs/udbox_sweep.example.yaml 對齊，改一邊要同時改另一邊。
+const udboxPlan = {
+  axis: 'power',
+  start: -20,
+  stop: 8,
+  step: 1,
+  frequency_mhz: 1000,
+  dwell_ms: 200,
+  expected_dut_gain_db: -10,
+  output_attenuator_db: 10,
+  sa_safe_limit_dbm: 0,
+  dut_max_input_dbm: 13,
+  conversion_direction: 'up',
+  conversion_sideband: 'high',
+  conversion_lo_mhz: 6000
+};
 
-function gprfFormatFrequency(hz) {
-  return hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : `${(hz / 1e6).toFixed(1)} MHz`;
-}
+// GPRF 表單固定用 MHz；改呼叫 app.js 共用的 frequencyToHz(value,'MHz')／formatFrequency。
 
 function configureGprfFields() {
   const form = $('#gprfPowerForm').elements;
@@ -32,13 +43,52 @@ function configureGprfFields() {
   $('#gprfStopUnit').textContent = frequencyAxis ? 'MHz' : 'dBm';
   $('#gprfStepUnit').textContent = frequencyAxis ? 'MHz' : 'dB';
   form.start.value = frequencyAxis ? 400 : -80;
-  form.stop.value = frequencyAxis ? 8000 : 20;
+  // CMP180 generator 上限 +8 dBm，預設 stop 不可再用 +20；改用安全的 -25 dBm。
+  form.stop.value = frequencyAxis ? 8000 : -25;
   form.step.value = frequencyAxis ? 100 : 5;
   $('#gprfModeTitle').textContent = frequencyAxis
     ? (language === 'zh' ? 'RF 功率讀值頻率掃描（GPRF）' : 'RF Power vs Frequency (GPRF)')
     : (language === 'zh' ? 'RF 功率讀值功率掃描（GPRF）' : 'RF Power vs Generator Power (GPRF)');
   // Axis 改變後同步頁首與執行摘要，避免仍顯示上一種掃描名稱。
   updateHardwareSummary();
+}
+
+function configureConversionFields() {
+  const form = $('#gprfPowerForm').elements;
+  const enabled = form.conversion_enabled.checked;
+  // 未勾選時隱藏並不送出 conversion；後端沒有 conversion 就維持兩端同頻。
+  $('#gprfConversionDirectionField').hidden = !enabled;
+  $('#gprfConversionSidebandField').hidden = !enabled;
+  $('#gprfConversionLoField').hidden = !enabled;
+}
+
+function loadUdboxPlan() {
+  const form = $('#gprfPowerForm').elements;
+  form.axis.value = udboxPlan.axis;
+  configureGprfFields();
+  form.start.value = udboxPlan.start;
+  form.stop.value = udboxPlan.stop;
+  form.step.value = udboxPlan.step;
+  form.frequency_mhz.value = udboxPlan.frequency_mhz;
+  form.dwell_ms.value = udboxPlan.dwell_ms;
+  form.input_cable_loss_db.value = 0;
+  form.output_cable_loss_db.value = 0;
+  form.external_gain_db.value = 0;
+  form.expected_dut_gain_db.value = udboxPlan.expected_dut_gain_db;
+  form.output_attenuator_db.value = udboxPlan.output_attenuator_db;
+  form.sa_safe_limit_dbm.value = udboxPlan.sa_safe_limit_dbm;
+  form.dut_max_input_dbm.value = udboxPlan.dut_max_input_dbm;
+  form.conversion_enabled.checked = true;
+  form.conversion_direction.value = udboxPlan.conversion_direction;
+  form.conversion_sideband.value = udboxPlan.conversion_sideband;
+  form.conversion_lo_mhz.value = udboxPlan.conversion_lo_mhz;
+  configureConversionFields();
+  gprfPlanPayload = null;
+  gprfPlanResult = null;
+  $('#gprfPowerPreview').hidden = true;
+  toast(language === 'zh'
+    ? ' 已載入 UDBox 0630 規劃範例：IF 1000 MHz + LO 6000 MHz → RF 7000 MHz。此範例量得到 conversion gain 與平坦度，但 generator 上限 +8 dBm 不足以推到 P1dB。'
+    : 'UD Box 0630 planning example loaded: IF 1000 MHz + LO 6000 MHz to RF 7000 MHz. It measures conversion gain and flatness; the +8 dBm generator ceiling cannot reach P1dB.');
 }
 
 function loadApprovedPaProfile() {
@@ -57,6 +107,10 @@ function loadApprovedPaProfile() {
   form.expected_dut_gain_db.value = approvedPaProfile.expected_dut_gain_db;
   form.output_attenuator_db.value = approvedPaProfile.output_attenuator_db;
   form.sa_safe_limit_dbm.value = approvedPaProfile.sa_safe_limit_dbm;
+  form.dut_max_input_dbm.value = approvedPaProfile.dut_max_input_dbm;
+  // PA 是同頻 DUT；載入 PA profile 必須清掉 converter 設定，避免殘留上一次的 LO。
+  form.conversion_enabled.checked = false;
+  configureConversionFields();
   gprfPlanPayload = null;
   gprfPlanResult = null;
   $('#gprfPowerPreview').hidden = true;
@@ -79,13 +133,25 @@ function buildGprfPayload() {
     external_attenuation_db: 0,
     sa_safe_limit_dbm: Number(form.get('sa_safe_limit_dbm'))
   };
+  // 空字串代表「路徑上沒有 DUT」；不可送成 0，那會被當成一個真實的 0 dBm 上限。
+  const dutMaxInput = form.get('dut_max_input_dbm');
+  if (dutMaxInput !== null && String(dutMaxInput).trim() !== '') {
+    payload.dut_max_input_dbm = Number(dutMaxInput);
+  }
+  if (form.get('conversion_enabled')) {
+    payload.conversion = {
+      direction: form.get('conversion_direction'),
+      sideband: form.get('conversion_sideband'),
+      lo_frequency_hz: frequencyToHz(form.get('conversion_lo_mhz'), 'MHz')
+    };
+  }
   if (axis === 'frequency') {
-    payload.start_hz = gprfHz(form.get('start'));
-    payload.stop_hz = gprfHz(form.get('stop'));
-    payload.step_hz = gprfHz(form.get('step'));
+    payload.start_hz = frequencyToHz(form.get('start'), 'MHz');
+    payload.stop_hz = frequencyToHz(form.get('stop'), 'MHz');
+    payload.step_hz = frequencyToHz(form.get('step'), 'MHz');
     payload.power_dbm = Number(form.get('power_dbm'));
   } else {
-    payload.frequency_hz = gprfHz(form.get('frequency_mhz'));
+    payload.frequency_hz = frequencyToHz(form.get('frequency_mhz'), 'MHz');
     payload.start_dbm = Number(form.get('start'));
     payload.stop_dbm = Number(form.get('stop'));
     payload.step_dbm = Number(form.get('step'));
@@ -98,11 +164,11 @@ function renderGprfPreview(data) {
   const first = data.points?.[0];
   const last = data.points?.[data.points.length - 1];
   const range = data.axis === 'frequency'
-    ? `${gprfFormatFrequency(first)} → ${gprfFormatFrequency(last)}`
+    ? `${formatFrequency(first)} → ${formatFrequency(last)}`
     : `${first} dBm → ${last} dBm`;
   const fixed = data.axis === 'frequency'
     ? `${language === 'zh' ? '固定功率' : 'Fixed power'}: ${data.power_dbm} dBm`
-    : `${language === 'zh' ? '固定頻率' : 'Fixed frequency'}: ${gprfFormatFrequency(data.frequency_hz)}`;
+    : `${language === 'zh' ? '固定頻率' : 'Fixed frequency'}: ${formatFrequency(data.frequency_hz)}`;
   const pinRange = data.pin_start_dbm === null
     ? ''
     : `${language === 'zh' ? 'DUT Pin 範圍' : 'DUT Pin range'}: ${data.pin_start_dbm.toFixed(2)} → ${data.pin_stop_dbm.toFixed(2)} dBm`;
@@ -165,9 +231,11 @@ async function reviewGprfPlan(button = null) {
 
 $('#gprfPowerForm').addEventListener('change', event => {
   if (event.target.name === 'axis') configureGprfFields();
+  if (event.target.name === 'conversion_enabled') configureConversionFields();
 });
 
 $('#loadPaProfileButton').onclick = loadApprovedPaProfile;
+$('#loadUdboxPlanButton').onclick = loadUdboxPlan;
 
 $('#gprfPowerForm').onsubmit = async event => {
   event.preventDefault();
@@ -215,5 +283,8 @@ window.reviewAndExecuteGprfPowerPlan = async function(button) {
 };
 
 configureGprfFields();
+configureConversionFields();
 window.configureGprfFields = configureGprfFields;
+window.configureConversionFields = configureConversionFields;
 window.loadApprovedPaProfile = loadApprovedPaProfile;
+window.loadUdboxPlan = loadUdboxPlan;

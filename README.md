@@ -259,3 +259,8 @@ Never reset automatically; centralize SCPI; validate every RF input before RF On
 Analyzer measured／expected power 的誤差與 PA Gain 是不同物理量；不得把 Analyzer error ripple 當成 Gain flatness。無 PA 欄位的舊 GPRF 結果保留明確標示 Analyzer 參考面的摘要，dBm 平均為算術平均。重新產生的 SVG／Matplotlib 圖會排除 INVALID 並切斷曲線；既有 PNG 不會自動更新，須由原 CSV 重新產圖。原始 CSV／JSON 保留診斷數值。
 
 本次驗證為合成資料／Mock 回歸及既有 stored artifact 查閱，未執行新的實機 RF 量測。
+
+
+### 圖表縮放與拖曳（2026-09-09）
+
+游標放在繪圖區內，滾輪前滾放大、後滾縮小；X 軸以游標位置縮放，Y 軸依可見有效測點自動調整。按住滑鼠左鍵可左右拖曳，放開即停止；拖曳範圍受資料邊界限制，縮小最多回到全圖。Reset 或雙擊恢復完整範圍。A/B 模式下左鍵改為選點；縮放／拖曳會清除舊游標，避免位置誤讀。座標軸與文字固定在圖框內，資料超出範圍時只裁切資料層。以上操作只讀取既有結果，不送 SCPI 或 RF。

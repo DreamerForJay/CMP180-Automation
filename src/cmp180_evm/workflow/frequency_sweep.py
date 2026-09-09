@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from decimal import Decimal
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 
@@ -54,8 +55,8 @@ class FrequencySweepPlan:
             raise SafetyGuardError("Generator and analyzer ports must be different.")
         if self.single.bandwidth_hz not in SUPPORTED_WLAN_BANDWIDTHS_HZ:
             raise SafetyGuardError("WLAN bandwidth must be 20, 40, 80, 160, or 320 MHz.")
-        if self.single.generator_power_dbm > DIRECT_LOOPBACK_MAXIMUM_GENERATOR_POWER_DBM:
-            raise SafetyGuardError("Direct-loopback generator power must not exceed -30 dBm.")
+        # 功率上限已由 single.validate_safety() 依 plan 自帶的 maximum_generator_power_dbm
+        # 檢查；呼叫端依實際接線宣告上限，這裡不再另外硬寫保守值。
         if not 0.01 <= self.dwell_time_s <= 10.0:
             raise SafetyGuardError("Dwell time must be between 0.01 and 10.0 seconds.")
         if self.step_frequency_hz <= 0 or self.stop_frequency_hz < self.start_frequency_hz:
@@ -75,14 +76,14 @@ class FrequencySweepPlan:
             and self.stop_frequency_hz - self.start_frequency_hz > self.maximum_span_hz
         ):
             raise SafetyGuardError(f"Sweep span exceeds {self.maximum_span_hz} Hz.")
-        count = (
-            int((self.stop_frequency_hz - self.start_frequency_hz) // self.step_frequency_hz) + 1
-        )
+        # 以十進位計數，保留可整除終點且不補入未整除的 stop。
+        first, last, increment = (Decimal(str(value)) for value in (self.start_frequency_hz, self.stop_frequency_hz, self.step_frequency_hz))
+        count = int((last - first) // increment) + 1
         # 軟體仍保留很高的防呆上限，避免極小 step 讓 Web job 或瀏覽器記憶體爆掉。
         if count > self.maximum_points:
             raise SafetyGuardError(f"Sweep exceeds {self.maximum_points} points.")
         return tuple(
-            self.start_frequency_hz + index * self.step_frequency_hz for index in range(count)
+            float(first + index * increment) for index in range(count)
         )
 
 

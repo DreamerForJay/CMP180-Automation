@@ -95,10 +95,15 @@ def dry_run_steps(instrument_config_path: Path, wlan_config_path: Path) -> list[
         f"Set generator power {baseline.generator.output_power_dbm} dBm",
         f"Set analyzer expected power {baseline.analyzer.expected_nominal_power_dbm} dBm",
     ]
+    # wlan_tx.adjust_level／clear_statistics 在 SCPI registry 仍是 null（未經官方文件或實機驗證），
+    # 真正的實機 backend（cmp180_single_backend.py）目前完全不會呼叫這兩個命令；
+    # dry-run 必須誠實標示「尚未實作」，避免操作員誤以為實機會執行這兩步。
     if baseline.measurement.adjust_level_before_run:
-        steps.append("Adjust level")
+        steps.append("Adjust level (not yet implemented on real hardware; SCPI command unverified)")
     if baseline.measurement.clear_statistics_before_run:
-        steps.append("Clear statistics")
+        steps.append(
+            "Clear statistics (not yet implemented on real hardware; SCPI command unverified)"
+        )
     steps.append(f"Measure {baseline.measurement.burst_count} bursts")
     steps.append("Query EVM / Burst Power / Frequency Error")
     if baseline.output.save_csv or baseline.output.save_json:

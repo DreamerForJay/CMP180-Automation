@@ -76,19 +76,17 @@ def run_single_measurement(
     """Run one measurement and always attempt stop plus RF off."""
     phases: list[MeasurementPhase] = [MeasurementPhase.VALIDATING]
     cleanup_errors: list[str] = []
-    measurement_started = False
-    rf_enabled = False
+    configuration_started = False
     values: dict[str, object] = {}
     instrument_errors: list[str] = []
 
     plan.validate_safety()
     try:
         phases.append(MeasurementPhase.CONFIGURING)
+        configuration_started = True
         backend.configure(plan)
-        rf_enabled = True
         backend.rf_on()
         phases.append(MeasurementPhase.RF_ON)
-        measurement_started = True
         backend.initiate_single()
         phases.append(MeasurementPhase.MEASURING)
         backend.wait_ready()
@@ -97,12 +95,12 @@ def run_single_measurement(
         instrument_errors = backend.drain_error_queue()
     finally:
         phases.append(MeasurementPhase.CLEANING_UP)
-        if measurement_started:
+        if configuration_started:
+            # configure 可能已改動 WLAN/GPRF baseband 或 measurement state；即使 RF On 前失敗也要嘗試收尾。
             try:
                 backend.stop_measurement()
             except Exception as exc:  # cleanup must continue to RF off
                 cleanup_errors.append(f"stop_measurement: {type(exc).__name__}: {exc}")
-        if rf_enabled:
             try:
                 backend.rf_off()
             except Exception as exc:

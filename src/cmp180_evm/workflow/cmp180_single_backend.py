@@ -108,6 +108,10 @@ class Cmp180SingleMeasurementBackend:
             raise ValueError(f"Unsupported WLAN bandwidth: {plan.bandwidth_hz}")
 
         waveform = waveform_for_bandwidth(plan.bandwidth_hz)
+        # GPRF 功率量測可能留下 CW；選取檔案不代表已切回 ARB，必須在 RF OFF
+        # 且 Analyzer idle 時明確切換並回讀，否則 WLAN 解調可能整批回傳 INV。
+        self._write_checked("generator.set_baseband_mode", mode="ARB")
+        self._require_readback("generator_query.baseband_mode", "ARB")
         # FILE setter 會改變 Generator baseband source；只能在 RF OFF 且量測 idle 後執行，
         # 並以 ABSPath readback 確認沒有誤選相同名稱但不同目錄的檔案。
         self._write_checked("generator.set_arb_file", arb_file=waveform)
@@ -119,9 +123,9 @@ class Cmp180SingleMeasurementBackend:
         self._write_checked("generator.set_power", power_dbm=plan.generator_power_dbm)
         # 儀器重啟後可能回到 LOFD/B24G，必須在頻寬與頻率前恢復 EHT/6 GHz。
         self._write_checked("wlan_tx.set_standard", standard=VERIFIED_WLAN_STANDARD)
-        # 標準 WLAN 頻段使用對應 band；區段外單點沿用已驗證的 B6GHz EHT 解調
-        # template，但 RF center frequency 仍寫入使用者值並逐項 readback。這只供
-        # HIL_PENDING 單點蒐證，不能把頻點宣稱為法規 WLAN channel。
+        # 標準 WLAN 頻段使用對應 band；標準 channel plan 外的點沿用已驗證的 B6GHz
+        # EHT 解調 template，但 RF center frequency 仍寫入使用者值並逐項 readback。
+        # 這類點可以量測與蒐證，但不能把頻點宣稱為法規 WLAN channel。
         natural_band = band_for_frequency(plan.center_frequency_hz)
         band = natural_band or WLAN_BANDS["6GHz"]
         if natural_band is not None and plan.bandwidth_hz > band.maximum_bandwidth_hz:

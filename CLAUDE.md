@@ -61,9 +61,21 @@ CLEANING_UP → COMPLETE` 執行。無論成功、錯誤、逾時或取消，都
 嘗試 Stop 與 RF Off，且 cleanup 錯誤不得遮蔽原始錯誤。
 
 `frequency_sweep.py` 與 `power_sweep.py` 以多次完整 SingleShot 組成掃描。每點之間
-都完成 cleanup；失敗時保留已成功點。安全上限是不可由呼叫端放寬的硬性包絡：
-RF1.1 → RF1.5、320 MHz、功率不高於 -40 dBm、最多 11 點、dwell 0.1–2 秒；
-功率掃描另外固定 6105 MHz 與 -60 至 -40 dBm。兩種實機 sweep 都尚未完成 HIL。
+都完成 cleanup；失敗時保留已成功點。
+
+執行閘門只保留儀器物理上做不到的項目：Generator／Analyzer port 必須不同、
+中心頻率 400 MHz–8 GHz、頻寬必須是已安裝的 20／40／80／160／320 MHz、
+dwell 0.01–10 秒、點數上限 100,000（資源防呆）。**HIL／approved profile 已不再參與
+執行判定**：未經 HIL 的頻段、頻寬與功率組合一律可以實際量測。
+
+Generator 功率上限由呼叫端以 `maximum_generator_power_dbm` 宣告（依實際接線、
+衰減器與 DUT 決定）；未指定時等於本次要求的功率，也就是不額外設限。專案不再
+硬寫 -30 dBm 保守值擋住量測——這代表軟體不會替你確認 analyzer 最大輸入準位，
+接線與衰減是否安全必須由操作員負責。
+
+不在標準 WLAN channel plan 內的組合不再被擋下，只在 preview 與 artifact metadata
+標示 `band_supported` / `standard_wlan_channel=false`；這類結果通常會是 INV，
+且一律不得作為 compliance 宣稱。
 
 其他 `workflow/*_validation.py` 與同名 `scripts/cmp180_*_validate.py`、SCPI matrix
 必須視為同一組變更與驗證證據。
@@ -97,7 +109,7 @@ CLI 功能時先實作共用 action，再接 CLI，不得複製量測邏輯。
 
 - 安全限制、SCPI 副作用、狀態轉換、例外清理、單位轉換與不直觀邏輯旁必須有
   簡潔繁體中文註解。
-- 新增或改寫的文件必須完整繁體中文在前、完整英文在後。
+- 新增或改寫的說明文件以繁體中文撰寫即可，不再要求提供英文版本；程式識別字、SCPI 指令與必要技術名詞可保留英文，既有雙語文件不必為此回溯刪除英文。
 - 未經要求不得 Reset 儀器或 Workspace；預設 query-only。
 - RF On 前確認 routing、頻率、頻寬、功率、線材／衰減與輸入限制。
 - 所有 RF workflow 都必須保證 Stop／Abort 與 RF Off cleanup。
@@ -169,9 +181,9 @@ Tests marked `hardware` require a real CMP180 connection and are never run in CI
 
 `workflow/single_measurement.py`: `SingleMeasurementPlan.validate_safety()` enforces operator confirmation, distinct generator/analyzer ports, and a power ceiling *before* any RF write. `run_single_measurement()` drives phases `VALIDATING → CONFIGURING → RF_ON → MEASURING → FETCHING → CLEANING_UP → COMPLETE` against a `MeasurementBackend` protocol (configure/rf_on/initiate_single/wait_ready/fetch_result/stop_measurement/rf_off/drain_error_queue). Cleanup (`stop_measurement`, `rf_off`) always runs in a `finally` block regardless of success, exception, or cancellation, and cleanup failures are collected rather than masking the original error. `workflow/cmp180_single_backend.py` is the real hardware implementation of `MeasurementBackend`.
 
-`workflow/frequency_sweep.py` builds a bounded sweep out of repeated, fully-cleaned-up `run_single_measurement` calls (never a single long-running sweep primitive). `FrequencySweepPlan.frequencies()` hard-enforces: RF1.1→RF1.5 only, ≤ -40 dBm, dwell 0.1–2.0s, frequencies within the approved 6 GHz range, span ≤ 200 MHz, ≤ 11 points. On any point failure it returns a partial `FrequencySweepResult` (previously-succeeded points preserved) rather than losing the whole run — this is why sweep artifacts must always be checked for `completed=False`.
+`workflow/frequency_sweep.py` builds a sweep out of repeated, fully-cleaned-up `run_single_measurement` calls (never a single long-running sweep primitive). Execution is gated only by what the instrument can physically accept: distinct generator/analyzer ports, center frequency 400 MHz–8 GHz, an installed WLAN bandwidth (20/40/80/160/320 MHz), dwell 0.01–10 s, and a point-count resource guard. HIL/approved-profile evidence no longer gates execution — un-validated frequency, bandwidth, and power combinations run. The generator power ceiling comes from the caller's `maximum_generator_power_dbm` (defaulting to the requested power, i.e. no extra cap), so confirming the analyzer's maximum input level for the actual cabling/attenuation is the operator's responsibility, not the software's. Combinations outside the standard WLAN channel plan are flagged (`band_supported` / `standard_wlan_channel=false`) rather than blocked; they usually return INV and may never back a compliance claim. On any point failure it returns a partial `FrequencySweepResult` (previously-succeeded points preserved) rather than losing the whole run — this is why sweep artifacts must always be checked for `completed=False`.
 
-Other `workflow/*_validation.py` modules (`analyzer_setter_validation.py`, `generator_setter_validation.py`, `measurement_lifecycle_validation.py`, `rf_state_validation.py`) are the safety/domain-rule checks paired with the `scripts/cmp180_*_validate.py` hardware discovery/validation scripts of the same name — treat script + workflow-validation module + matrix doc update as one unit of work.
+Other `workflow/*_validation.py` modules (`analyzer_setter_validation.py`, `generator_setter_validation.py`, `measurement_lifecycle_validation.py`, `rf_state_validation.py`, `gprf_measurement_validation.py`) are the safety/domain-rule checks paired with the `scripts/cmp180_*_validate.py` hardware discovery/validation scripts of the same name (`gprf_measurement_validation.py` pairs with `scripts/cmp180_gprf_measurement_setter_validate.py`) — treat script + workflow-validation module + matrix doc update as one unit of work.
 
 ### Config: pydantic models + separate cross-field validators
 
@@ -198,7 +210,7 @@ Other `workflow/*_validation.py` modules (`analyzer_setter_validation.py`, `gene
 ## Project-specific rules (from AGENTS.md — apply repo-wide)
 
 - **Code comments**: all new/modified code must carry concise Traditional Chinese comments around safety limits, SCPI side effects, state transitions, exception/cleanup paths, unit conversions, and non-obvious logic. Don't add line-by-line translations or comments that just restate the code. Public API docstrings may stay in English.
-- **Documentation language**: new or rewritten docs must be written in full Traditional Chinese first, then full English — not just translated headings/summaries. Code identifiers, SCPI commands, and necessary technical terms may stay in English.
+- **Documentation language**: new or rewritten docs are written in Traditional Chinese; an English version is no longer required. Code identifiers, SCPI commands, and necessary technical terms may stay in English; existing bilingual docs do not need their English content retroactively removed.
 - **Hardware safety invariants**:
   1. Never reset the instrument or workspace unless explicitly requested.
   2. Default to query-only SCPI; `FETCh` only reads a stored result — `READ`/`INITiate` start a measurement and require an approved workflow.

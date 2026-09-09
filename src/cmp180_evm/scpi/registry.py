@@ -125,16 +125,6 @@ class ResultCommands(BaseModel):
     modulation_minimum: str | None = None
     modulation_maximum: str | None = None
     modulation_std_dev: str | None = None
-    burst_power_current: str | None = None
-    burst_power_average: str | None = None
-    evm_all_current: str | None = None
-    evm_all_average: str | None = None
-    evm_all_max: str | None = None
-    evm_all_std_dev: str | None = None
-    evm_data_average: str | None = None
-    evm_pilot_average: str | None = None
-    frequency_error_average: str | None = None
-    symbol_clock_error_average: str | None = None
 
 
 class ScpiCommandRegistry(BaseModel):

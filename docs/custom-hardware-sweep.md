@@ -5,16 +5,25 @@
 ### 能力狀態
 
 自訂頻率／功率掃描的軟體執行路徑已接通 Web Job、既有 SingleShot backend、取消、
-partial artifacts 與 emergency cleanup。目前仍是 **HIL pending**；在完成新的現場驗收前，
-不得宣稱任意自訂計畫已通過實機驗證。
+partial artifacts 與 emergency cleanup。**HIL／approved profile 已不再作為執行閘門**：
+未經實機驗證的頻段、頻寬與功率組合一樣可以量測。但「可以執行」不等於「已通過驗證」，
+任何未經 HIL 的結果都不得作為 compliance 或驗收宣稱。
 
-### 不可由前端放寬的限制
+### 仍會阻擋執行的限制（儀器物理能力）
 
-- 路徑：只允許 RF1.1 → RF1.5 直接線材，無衰減器。
-- 頻寬：只允許已驗證的 320 MHz waveform。
-- 頻率掃描：5925–7125 MHz、最大 span 200 MHz、最多 11 點、Generator 不高於 -40 dBm。
-- 功率掃描：固定 6105 MHz、-60 至 -40 dBm、最多 11 點。
-- Dwell：每點 100–2000 ms。
+- Port：Generator 與 Analyzer 必須是不同的 RF port。
+- 頻率：中心／掃描頻率必須落在 CMP180 400 MHz–8 GHz 調諧範圍。
+- 頻寬：必須是已安裝且可解調的 20／40／80／160／320 MHz。
+- Dwell：每點 0.01–10 秒。
+- 點數：上限 100,000，屬於瀏覽器與 Job 的資源防呆，不是 RF 限制。
+
+### 由操作員負責、軟體不再代為把關的項目
+
+- **Generator 功率上限**：由 request 的 `maximum_generator_power_dbm` 宣告；未指定時
+  等於本次要求的功率，即不額外設限。原本寫死的 -30 dBm 保守值已移除，因此
+  analyzer 最大輸入準位、線損與衰減器是否足夠，必須由操作員在送 RF 前自行確認。
+- **標準 WLAN channel plan 之外的組合**：不再阻擋，只在 preview 與 artifact 標示
+  `band_supported` / `standard_wlan_channel=false`。這類點多半會回 INV。
 - 每點均執行完整 SingleShot cleanup；`INV`、error queue、逾時或例外立即停止後續點。
 - 每批結束再次執行 STOP／ABORT、RF Off 並讀回 RF `OFF` 與 measurement `OFF/RDY`。
 - 尚未提供 Approved Calibration Profile，因此目前 metadata 明確記錄 `calibration_applied=false`。
