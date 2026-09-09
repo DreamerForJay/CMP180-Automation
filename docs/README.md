@@ -15,6 +15,7 @@
 | [Web GUI 指南](web-gui-guide.md) | 模式、確認流程、結果與 artifacts |
 | [CMsquares Workspace 借鑑](cmsquares-workspace-lessons.md) | 歷史設計研究：安全 Pause 與 `RDY,ADJ,INV` 診斷；積木 UI 已移除 |
 | [量測範例與欄位](measurement-example-and-fields.md) | EVM、Power、Frequency Error 與正確輸出解讀 |
+| [Loopback 驗證](loopback-validation.md) | 獨立 repeats、穩定性／合理性、outlier 與 artifacts |
 
 ### 安全、校正與實機驗證
 
@@ -25,10 +26,13 @@
 | [Limit Profiles](limit-profiles.md) | PASS／FAIL／INVALID 與核准規則 |
 | [Calibration Profiles](calibration-profiles.md) | Path Loss、內插、期限與追溯 |
 | [Calibration Adapters](calibration-adapters.md) | 外部校正儀器 adapter 邊界 |
+| [DUT／UDBox 量測功能實作規格](dut-udbox-measurement-spec.md) | 目前需求：操作員輸入條件後執行 DUT／UDBox 量測並產生 artifacts |
+| [Path Loss／DUT／UDBox HIL 計畫](path-loss-dut-udbox-hil-plan.md) | 歷史參考：非目前 DUT／UDBox 量測需求，不作為下一步實作依據 |
 | [硬體探索](hardware-discovery.md) | 已驗證 CMP180 事實與結果證據 |
 | [唯讀硬體驗證](hardware-readonly-validation.md) | Query-only 探索紀錄 |
 | [V1 驗收報告](v1-acceptance-report.md) | 已通過能力、正式簽核閘門與離線報告指令 |
 | [V1 Demo 腳本](v1-demo-script.md) | 10–15 分鐘安全展示流程 |
+| [實機成果錄影腳本](live-demo-recording-plan.md) | 3–12 分鐘成果影片流程、RF 安全檢查與備援方案 |
 
 ### 工程與架構
 
@@ -38,9 +42,11 @@
 | [SingleShot 狀態機](single-measurement-state-machine.md) | 狀態轉換與 cleanup |
 | [架構圖](diagrams/README.md) | 互動式系統架構與 SingleShot 生命週期圖 |
 | [結果視覺化規格](result-visualization-spec.md) | CSV／JSON／HTML 與圖表要求 |
+| [實習結案報告 PPT 規格](final-presentation-spec.md) | 12–15 頁期末簡報結構、講稿節奏、證據與能力邊界 |
 | [RF 工作站 UX](rf-workstation-ux-plan.md) | Runs、Trace、圖表與操作安全 UX |
 | [UI/UX Roadmap](ui-ux-roadmap.md) | 介面階段與響應式驗收標準 |
 | [開發流程](development-workflow.md) | Definition of Done、測試與文件同步 |
+| [專案開發日誌與 Week 9–12 計畫](project-development-log.md) | 簡報差距、問題／解法、逐日進度與交付 backlog |
 | [Google Apps Script 部署](google-apps-script-deployment.md) | 唯讀分享版部署與去識別化 |
 
 ### 文件權威順序與封存資料
@@ -78,6 +84,7 @@ This page distinguishes authoritative specifications, operator documents, valida
 | [Limit profiles](limit-profiles.md) | PASS/FAIL/INVALID and approval rules |
 | [Calibration profiles](calibration-profiles.md) | Path loss, interpolation, expiry, and traceability |
 | [Calibration adapters](calibration-adapters.md) | External calibration-instrument adapter boundary |
+| [Path Loss/DUT/UDBox HIL plan](path-loss-dut-udbox-hil-plan.md) | Required site inputs, phased workflow, and go/no-go checklist |
 | [Hardware discovery](hardware-discovery.md) | Verified CMP180 facts and result evidence |
 | [Read-only hardware validation](hardware-readonly-validation.md) | Query-only discovery records |
 | [V1 acceptance report](v1-acceptance-report.md) | Accepted capability, formal approval gates, and offline report command |
@@ -94,6 +101,7 @@ This page distinguishes authoritative specifications, operator documents, valida
 | [RF workstation UX](rf-workstation-ux-plan.md) | Runs, traces, charts, and safe-operation UX |
 | [UI/UX roadmap](ui-ux-roadmap.md) | UI phases and responsive acceptance criteria |
 | [Development workflow](development-workflow.md) | Definition of Done, testing, and documentation synchronization |
+| [Project development log and Week 9–12 plan](project-development-log.md) | Deck gap review, problem/solution history, daily plan, and delivery backlog |
 | [Google Apps Script deployment](google-apps-script-deployment.md) | Read-only viewer deployment and de-identification |
 | [Delivery and capability expansion](deployment-and-capability-expansion.md) | Partner handoff and layered CMP180 execution envelopes |
 
@@ -105,3 +113,4 @@ This page distinguishes authoritative specifications, operator documents, valida
 4. `CMP180_DEVELOPMENT_SPEC_AND_PLAN.md` is an early detailed CMP180 plan; `SPEC.MD` wins if they conflict.
 5. `DEVELOPMENT_SPEC_AND_PLAN.md` is archived SMW200A/FSW85 history and is not an acceptance source.
 6. `web-v2-design.md` and `src/cmp180_evm/web/static_v2/` are archived layout references; the served frontend is `src/cmp180_evm/web/static/`.
+The [Loopback Validation guide](loopback-validation.md) documents independent repeats, layered stability/reasonableness decisions, outlier handling, artifacts, and the pending live-HIL boundary.

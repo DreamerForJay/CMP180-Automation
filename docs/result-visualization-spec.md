@@ -49,6 +49,8 @@ output/<timestamp>_<test-name>_<run-id>/
 
 ```powershell
 python scripts\plot_results.py output\<run-id>\results.csv
+python scripts\plot_results.py output\<run-id>\results.csv --engine pandas-matplotlib
+python scripts\plot_results.py output\<run-id>\results.csv --engine both
 python scripts\build_report.py output\<run-id>
 ```
 
@@ -56,6 +58,12 @@ python scripts\build_report.py output\<run-id>
 `plots/`，並可用 `--output-dir` 指定輸出目錄。`build_report.py` 使用已保存的 CSV
 重建自包含中英雙語 HTML，不會重新連線或控制 CMP180。Web 比較畫面另支援 SVG、
 PNG 與整理後 CSV 匯出。
+
+`--engine pandas-matplotlib` 會用 Pandas 讀取 stored CSV／正規化 `INV`，再以
+Matplotlib `Agg` backend 產生 160 DPI PNG；`--engine both` 同時保留 SVG 與 PNG。
+此路徑只讀 artifact，不會建立儀器連線或啟動 RF。
+
+**2026-09-03 Web 同步更新**：新建立且具有可用頻率／功率軸的 Run，在保存 `results.csv` 後會自動建立 `plots-matplotlib/`。結果頁上方 Web SVG 是互動主圖，支援指標切換、滑鼠拖曳水平平移、滾輪縮放、hover 十字游標、A/B 游標與 SVG／Web PNG／CSV 匯出；X 軸會依資料自動切換為 Frequency (MHz) 或 Generator Power (dBm)，Y 軸跟隨所選指標顯示完整名稱與單位。下方 Pandas DataFrame + Matplotlib 區塊改為單一選單式 PNG 預覽，可在 EVM、Burst Power、Frequency Error、Clock Error 間切換並開啟原圖，不再一次顯示四張。Matplotlib PNG 以白底、高對比文字輸出，功率掃描會用變動的 Generator Power 作為 X 軸；舊 Run 不會自動改寫。
 
 ### 5. 必要圖表
 
@@ -69,7 +77,7 @@ PNG 與整理後 CSV 匯出。
 
 後續 power sweep 需增加 Power vs. EVM 與 Power vs. output power error。圖表必須顯示單位、run ID、測試時間、有效點與 limit line；無效點不得連成正常資料線。
 
-**2026-08-20 更新（Mock 版本已完成）**：Web GUI 功率掃描 tab 的圖表已支援 Power vs. EVM（沿用現有結果圖表，X 軸依掃描類型自動切換頻率／功率並標示單位），且無效點（`valid=false`）不會連成正常資料線、以紅色標示。Run ID／測試時間顯示在圖表正上方的 `#runMeta`，不是畫在 SVG 內部。**Power vs. output power error**（設定功率與實際 Burst Power 的差值）尚未實作——目前只能透過既有下拉選單看 Power vs. Burst Power（絕對值，不是誤差），仍是待辦。這些都只是 Mock 資料，實機功率掃描仍未通過 HIL（見 `docs/sweep-safety.md`）。
+**2026-09-03 更新**：Web 互動主圖已支援 Power Error (dB)，定義為 `Burst Power - expected_power_dbm`，並在功率軸 Burst Power 圖上畫出 `Expected = Generator Power` 參考線；頻率軸 Burst Power 則畫固定 expected-power 參考線。無效點（`valid=false`）仍不會連成正常資料線、以紅色標示。這些互動分析只使用本次或歷史 Run 保存的資料；是否能宣稱實機能力，仍以該 Run 的 HIL 證據與 metadata 為準。
 
 ### 6. GUI 與 Web 整合
 
@@ -137,6 +145,8 @@ The following offline commands are available:
 
 ```powershell
 python scripts\plot_results.py output\<run-id>\results.csv
+python scripts\plot_results.py output\<run-id>\results.csv --engine pandas-matplotlib
+python scripts\plot_results.py output\<run-id>\results.csv --engine both
 python scripts\build_report.py output\<run-id>
 ```
 
@@ -145,6 +155,13 @@ python scripts\build_report.py output\<run-id>
 rebuilds a self-contained bilingual HTML report from the saved CSV without reconnecting
 to or controlling the CMP180. The Web comparison view additionally exports SVG, PNG, and
 a normalized comparison CSV.
+
+`--engine pandas-matplotlib` loads the stored CSV through Pandas, normalizes `INV`, and
+uses the headless Matplotlib `Agg` backend to create 160 DPI PNG files. `--engine both`
+keeps both SVG and PNG outputs. This artifact-only path never connects to the instrument
+or starts RF.
+
+**2026-09-03 Web integration update:** newly created runs with a usable frequency or power axis automatically generate `plots-matplotlib/` after `results.csv` is saved. The upper Web SVG is the interactive primary chart, with metric switching, horizontal mouse-drag panning, wheel zoom, hover crosshairs, A/B cursors, and SVG/Web PNG/CSV export. Its X axis switches automatically between Frequency (MHz) and Generator Power (dBm), while the Y axis follows the selected metric's full name and unit. The lower Pandas DataFrame + Matplotlib area is now a single selectable PNG preview for EVM, Burst Power, Frequency Error, or Clock Error instead of four always-visible images. Matplotlib PNGs use a white background and high-contrast text, and power sweeps use the varying Generator Power as the X axis. Historical runs are not rewritten automatically.
 
 ### 5. Required plots
 
@@ -158,7 +175,7 @@ For a frequency sweep, the first release must produce at least:
 
 A later power-sweep release adds Power vs. EVM and Power vs. output-power error. Every plot must show units, run ID, test time, valid points, and limit lines. Invalid points must not be connected as normal data.
 
-**2026-08-20 update (mock version complete)**: the Web GUI's Power Sweep tab chart now supports Power vs. EVM (the existing results chart, with its X axis auto-switching between frequency and power depending on sweep type, labeled with units). Invalid points (`valid=false`) are no longer connected into the normal data line and are marked in red. Run ID/test time appear in `#runMeta` directly above the chart, not drawn inside the SVG itself. **Power vs. output-power error** (the difference between set power and actual Burst Power) is not implemented yet — the existing metric dropdown only offers Power vs. Burst Power (an absolute value, not an error), which remains open work. All of this is mock data only; the real power sweep has not passed HIL (see `docs/sweep-safety.md`).
+**2026-09-03 update:** the Web interactive primary chart now supports Power Error (dB), defined as `Burst Power - expected_power_dbm`. A power-axis Burst Power chart draws the `Expected = Generator Power` reference line, while a frequency-axis Burst Power chart draws a fixed expected-power reference line. Invalid points (`valid=false`) are still disconnected from normal traces and marked in red. These analyses use only saved current or historical run data; hardware capability claims still depend on that run's HIL evidence and metadata.
 
 ### 6. GUI and web integration
 

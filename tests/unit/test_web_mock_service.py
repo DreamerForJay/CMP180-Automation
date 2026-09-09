@@ -1,5 +1,6 @@
 import csv
 import json
+from pathlib import Path
 
 import pytest
 
@@ -106,6 +107,8 @@ def test_mock_artifacts_include_csv_json_and_html(tmp_path):
     assert metadata["completed_points"] == 1
     assert metadata["source"] == "web-demo"
     assert "SIMULATED" in open(artifacts["report"], encoding="utf-8").read()
+    assert Path(artifacts["matplotlib_evm_all_carriers_db"]).is_file()
+    assert Path(artifacts["matplotlib_burst_power_dbm"]).is_file()
 
 
 def test_run_history_recovers_legacy_demo_timestamp_without_rewriting_artifacts(tmp_path):

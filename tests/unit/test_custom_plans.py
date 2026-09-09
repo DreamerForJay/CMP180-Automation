@@ -2,6 +2,7 @@ import pytest
 
 from cmp180_evm.web.custom_plans import (
     MAXIMUM_PLANNING_PREVIEW_POINTS,
+    build_custom_single_preview,
     build_custom_sweep_preview,
 )
 
@@ -27,6 +28,55 @@ def test_frequency_preview_marks_approved_user_inputs_executable():
     )
     assert preview.public()["execution_allowed"] is True
     assert preview.required_confirmation.startswith("EXECUTE-CUSTOM-")
+
+
+def test_single_preview_uses_web_values_and_marks_hil_status():
+    preview = build_custom_single_preview(
+        {
+            "center_frequency_hz": 6_105_000_000,
+            "bandwidth_hz": 320_000_000,
+            "generator_power_dbm": -45,
+        }
+    )
+    assert preview.points == (6_105_000_000,)
+    assert preview.generator_power_dbm == -45
+    assert preview.execution_allowed is True
+    assert preview.hil_status == "APPROVED"
+    assert preview.required_confirmation.startswith("EXECUTE-CUSTOM-")
+
+    rejected = build_custom_single_preview(
+        {
+            "center_frequency_hz": 6_105_000_000,
+            "bandwidth_hz": 320_000_000,
+            "generator_power_dbm": -29,
+        }
+    )
+    assert rejected.execution_allowed is False
+
+    # 單點與掃描刻意分流：CMP180 全調諧範圍可做低功率蒐證，但不得冒充已核准區段。
+    exploratory = build_custom_single_preview(
+        {
+            "center_frequency_hz": 400_000_000,
+            "bandwidth_hz": 320_000_000,
+            "generator_power_dbm": -45,
+        }
+    )
+    assert exploratory.execution_allowed is True
+    assert exploratory.hil_status == "HIL_PENDING"
+    assert exploratory.public()["gate"] == "HIL_PENDING_SINGLE_READY"
+
+
+@pytest.mark.parametrize("frequency_hz", [399_999_999, 8_000_000_001])
+def test_single_preview_rejects_frequency_outside_cmp180_envelope(frequency_hz):
+    preview = build_custom_single_preview(
+        {
+            "center_frequency_hz": frequency_hz,
+            "bandwidth_hz": 20_000_000,
+            "generator_power_dbm": -45,
+        }
+    )
+    assert preview.execution_allowed is False
+    assert "400 MHz" in (preview.rejection_reason or "")
 
 
 def test_plan_fingerprint_is_stable_and_changes_with_any_rf_parameter():

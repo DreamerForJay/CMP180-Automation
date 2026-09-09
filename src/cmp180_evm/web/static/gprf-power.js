@@ -22,8 +22,8 @@ function configureGprfFields() {
   form.stop.value = frequencyAxis ? 8000 : 20;
   form.step.value = frequencyAxis ? 100 : 5;
   $('#gprfModeTitle').textContent = frequencyAxis
-    ? 'GPRF Frequency Sweep – Power Flatness / 頻率掃描－功率平坦度'
-    : 'GPRF Power Sweep – Linearity / 功率掃描－線性度';
+    ? (language === 'zh' ? 'RF 功率讀值頻率掃描（GPRF）' : 'RF Power vs Frequency (GPRF)')
+    : (language === 'zh' ? 'RF 功率讀值功率掃描（GPRF）' : 'RF Power vs Generator Power (GPRF)');
   // Axis 改變後同步頁首與執行摘要，避免仍顯示上一種掃描名稱。
   updateHardwareSummary();
 }
@@ -31,7 +31,15 @@ function configureGprfFields() {
 function buildGprfPayload() {
   const form = new FormData($('#gprfPowerForm'));
   const axis = form.get('axis');
-  const payload = {axis, dwell_ms: Number(form.get('dwell_ms'))};
+  const payload = {
+    axis,
+    dwell_ms: Number(form.get('dwell_ms')),
+    input_cable_loss_db: Number(form.get('input_cable_loss_db')),
+    output_cable_loss_db: Number(form.get('output_cable_loss_db')),
+    external_gain_db: Number(form.get('external_gain_db')),
+    external_attenuation_db: Number(form.get('external_attenuation_db')),
+    sa_safe_limit_dbm: Number(form.get('sa_safe_limit_dbm'))
+  };
   if (axis === 'frequency') {
     payload.start_hz = gprfHz(form.get('start'));
     payload.stop_hz = gprfHz(form.get('stop'));
@@ -54,20 +62,47 @@ function renderGprfPreview(data) {
     ? `${gprfFormatFrequency(first)} → ${gprfFormatFrequency(last)}`
     : `${first} dBm → ${last} dBm`;
   const fixed = data.axis === 'frequency'
-    ? `Power: ${data.power_dbm} dBm`
-    : `Frequency: ${gprfFormatFrequency(data.frequency_hz)}`;
+    ? `${language === 'zh' ? '固定功率' : 'Fixed power'}: ${data.power_dbm} dBm`
+    : `${language === 'zh' ? '固定頻率' : 'Fixed frequency'}: ${gprfFormatFrequency(data.frequency_hz)}`;
+  const pinRange = data.pin_start_dbm === null
+    ? ''
+    : `${language === 'zh' ? 'DUT Pin 範圍' : 'DUT Pin range'}: ${data.pin_start_dbm.toFixed(2)} → ${data.pin_stop_dbm.toFixed(2)} dBm`;
+  const compensation = language === 'zh'
+    ? `補償：Input loss ${data.input_cable_loss_db} dB，Output loss ${data.output_cable_loss_db} dB，External gain ${data.external_gain_db} dB，Attenuator ${data.external_attenuation_db} dB，SA limit ${data.sa_safe_limit_dbm} dBm`
+    : `Compensation: input loss ${data.input_cable_loss_db} dB, output loss ${data.output_cable_loss_db} dB, external gain ${data.external_gain_db} dB, attenuator ${data.external_attenuation_db} dB, SA limit ${data.sa_safe_limit_dbm} dBm`;
   preview.hidden = false;
-  preview.textContent = [
-    data.axis === 'frequency' ? 'GPRF Frequency Sweep – Power Flatness' : 'GPRF Power Sweep – Linearity',
+  const title = data.axis === 'frequency'
+    ? (language === 'zh' ? 'RF 功率讀值頻率掃描（GPRF）' : 'RF Power vs Frequency (GPRF)')
+    : (language === 'zh' ? 'RF 功率讀值功率掃描（GPRF）' : 'RF Power vs Generator Power (GPRF)');
+  preview.textContent = language === 'zh' ? [
+    title,
+    `點數：${data.point_count}`,
+    `範圍：${range}`,
+    fixed,
+    pinRange,
+    compensation,
+    `停留時間：${data.dwell_ms} ms`,
+    data.execution_allowed
+      ? '可執行：僅讀取 RF 功率，不是 WLAN EVM。'
+      : window.formatPlanRejection(data, 'GPRF workflow 拒絕此計畫', 'gprf')
+  ].join('\n') : [
+    title,
     `Points: ${data.point_count}`,
     `Range: ${range}`,
     fixed,
+    pinRange,
+    compensation,
     `Dwell: ${data.dwell_ms} ms`,
     data.execution_allowed
-      ? '可執行：GPRF power measurement，不是 WLAN EVM。'
-      : `不可執行：${data.rejection_reason || 'GPRF workflow rejected the plan'}`
+      ? (language === 'zh' ? '可執行：RF 功率讀值，不是 WLAN EVM。' : 'Executable: RF power reading only, not WLAN EVM.')
+      : window.formatPlanRejection(data, 'GPRF workflow rejected the plan', 'gprf')
   ].join('\n');
 }
+
+window.addEventListener('cmp180-language-change', () => {
+  // 語言切換只重繪已驗證計畫；不控制儀器、不重新執行 preview。
+  if (gprfPlanResult) renderGprfPreview(gprfPlanResult);
+});
 
 async function reviewGprfPlan(button = null) {
   const payload = buildGprfPayload();
@@ -120,9 +155,12 @@ window.reviewAndExecuteGprfPowerPlan = async function(button) {
     return;
   }
   // GPRF 會開真實 RF，但不使用 WLAN measurement；確認文字必須把能力邊界講清楚。
+  const runTitle = data.axis === 'frequency'
+    ? (language === 'zh' ? 'RF 功率讀值頻率掃描（GPRF）' : 'RF Power vs Frequency (GPRF)')
+    : (language === 'zh' ? 'RF 功率讀值功率掃描（GPRF）' : 'RF Power vs Generator Power (GPRF)');
   const approved = confirm(language === 'zh'
-    ? `即將送出真實 RF 進行 ${data.axis === 'frequency' ? 'GPRF Frequency Sweep – Power Flatness' : 'GPRF Power Sweep – Linearity'}\n\n${$('#gprfPowerPreview').textContent}\n\n確認這不是 WLAN EVM，接線未變、人在儀器旁並開始？`
-    : `Real RF will be transmitted for ${data.axis === 'frequency' ? 'GPRF Frequency Sweep – Power Flatness' : 'GPRF Power Sweep – Linearity'}\n\n${$('#gprfPowerPreview').textContent}\n\nConfirm this is not WLAN EVM, cabling is unchanged, and an operator is present?`);
+    ? `即將送出真實 RF 進行 ${runTitle}\n\n${$('#gprfPowerPreview').textContent}\n\n確認這不是 WLAN EVM，接線未變、人在儀器旁並開始？`
+    : `Real RF will be transmitted for ${runTitle}\n\n${$('#gprfPowerPreview').textContent}\n\nConfirm this is not WLAN EVM, cabling is unchanged, and an operator is present?`);
   if (!approved) {
     toast(language === 'zh' ? '已取消，未送出 RF。' : 'Cancelled; no RF was transmitted.');
     return;
@@ -136,3 +174,4 @@ window.reviewAndExecuteGprfPowerPlan = async function(button) {
 };
 
 configureGprfFields();
+window.configureGprfFields = configureGprfFields;

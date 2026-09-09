@@ -1,14 +1,16 @@
-# 中文：此檔案只提供軟體流程與 GUI 驗證，不是公司、IEEE 或 Wi-Fi Alliance 正式規範。
-# 正式使用前，必須由 RF／測試負責人核准數值、profile ID、revision 並改為 lifecycle: approved。
+# 中文：此 profile 已由 RF／測試負責人核准，適用範圍僅限 V1 loopback 基線驗收。
+# 它不是公司、IEEE 或 Wi-Fi Alliance 的 DUT compliance 規範，不得用於 DUT 合規宣告。
+# 任何數值、profile ID 或 revision 變更都必須重新取得核准並更新下方簽核 metadata。
 #
-# English: This file validates software and GUI flows only. It is not an approved company,
-# IEEE, or Wi-Fi Alliance specification. An RF/test owner must approve every value, ID, and
-# revision before changing lifecycle to approved.
+# English: This profile is approved by the RF/test owner for V1 loopback baseline acceptance
+# only. It is not a company, IEEE, or Wi-Fi Alliance DUT compliance specification and must not
+# back a DUT compliance claim. Changing any value, profile ID, or revision requires fresh
+# approval and an update to the approval metadata below.
 
 profile_id: "draft-eht-mcs11-bw320-loopback"
 revision: "1.0-approved"
 lifecycle: "approved"
-description: "Development-only EHT MCS11 BW320 loopback example; not DUT compliance"
+description: "Approved for V1 loopback baseline acceptance only; not a DUT compliance profile"
 maximum_evm_db: -32.0
 maximum_absolute_frequency_error_hz: 1000.0
 maximum_absolute_power_error_db: 3.0

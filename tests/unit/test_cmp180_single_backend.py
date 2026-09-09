@@ -131,6 +131,39 @@ def test_complete_backend_fetches_new_result_and_cleans_up():
     assert io.writes[-1] == REGISTRY.require("generator.rf_off")
 
 
+def test_catalog_edge_single_uses_verified_b6_measurement_template():
+    io = FakeCmp180()
+    original_query = io.query_str
+
+    def query_catalog_edge(command: str) -> str:
+        if command in {
+            REGISTRY.require("generator_query.frequency"),
+            REGISTRY.require("wlan_tx_query.center_frequency"),
+        }:
+            return "4.0E8"
+        return original_query(command)
+
+    io.query_str = query_catalog_edge  # type: ignore[method-assign]
+    edge_plan = SingleMeasurementPlan(
+        generator_port="RF1.1",
+        analyzer_port="RF1.5",
+        center_frequency_hz=400_000_000,
+        bandwidth_hz=320_000_000,
+        generator_power_dbm=-40,
+        expected_nominal_power_dbm=-20,
+        external_attenuation_db=0,
+        operator_confirmed=True,
+        maximum_generator_power_dbm=-40,
+    )
+    backend = Cmp180SingleMeasurementBackend(io, REGISTRY, poll_interval_s=0)
+    result = run_single_measurement(backend, edge_plan)
+    # 非 WLAN section 只借用已驗證的 EHT/B6G 解調 template，RF 頻率仍是 400 MHz。
+    assert result.cleanup_errors == ()
+    assert backend.selected_wlan_band_readback == "B6GH"
+    assert REGISTRY.render("generator.set_frequency", frequency_hz=400_000_000) in io.writes
+    assert REGISTRY.render("wlan_tx.set_frequency", frequency_hz=400_000_000) in io.writes
+
+
 @pytest.mark.parametrize("bandwidth_hz", [20e6, 40e6, 80e6, 160e6, 320e6])
 def test_each_approved_bandwidth_has_a_matching_hil_waveform(bandwidth_hz):
     path = waveform_for_bandwidth(bandwidth_hz)

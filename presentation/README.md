@@ -11,7 +11,8 @@
 
 | 檔案 | 用途 |
 |---|---|
-| `exports/CMP180-final-project.pptx` | **可直接上傳 Google 簡報或 Canva 編輯的版本**，12 頁、16:9、附講稿備忘 |
+| `exports/CMP180-final-project.pptx` | **可直接上傳 Google 簡報或 Canva 編輯的版本**，15 頁、16:9、附講稿備忘 |
+| `exports/CMP180-final-project-draft.pptx` | 草稿版結案簡報，可先給 mentor 修改與確認 |
 | `slides/cmp180-final-project/index.tsx` | open-slide 原始碼，改這裡才是改簡報本身 |
 | `slides/cmp180-final-project/assets/` | 兩張系統圖，由 `docs/diagrams/` 的 Archify 成品以深色主題擷取 |
 
@@ -38,6 +39,7 @@ cd presentation
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # 產生靜態網站到 presentation/dist（未納入版本庫）
+npm run build:pptx:draft  # 產生 presentation/exports/CMP180-final-project-draft.pptx
 ```
 
 開發伺服器起來後點該簡報即可翻頁，按 `F` 進全螢幕播放，改 `index.tsx` 會即時熱更新。
@@ -55,7 +57,8 @@ Source for the CMP180 final-project deck, written with
 
 | File | Purpose |
 |---|---|
-| `exports/CMP180-final-project.pptx` | **Upload-and-edit version for Google Slides or Canva** — 12 slides, 16:9, with speaker notes |
+| `exports/CMP180-final-project.pptx` | **Upload-and-edit version for Google Slides or Canva** — 15 slides, 16:9, with speaker notes |
+| `exports/CMP180-final-project-draft.pptx` | Draft final-project deck for mentor review and revision |
 | `slides/cmp180-final-project/index.tsx` | open-slide source; edit here to change the deck itself |
 | `slides/cmp180-final-project/assets/` | The two system diagrams, captured in dark theme from the Archify artifacts in `docs/diagrams/` |
 
@@ -71,6 +74,7 @@ cd presentation
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # static site into presentation/dist (git-ignored)
+npm run build:pptx:draft  # writes presentation/exports/CMP180-final-project-draft.pptx
 ```
 
 The `.pptx` is rebuilt from the same content with `pptxgenjs` rather than exported from

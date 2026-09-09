@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import csv
 import html
+import os
 from pathlib import Path
 
 METRICS = (
     ("evm_all_carriers_db", "EVM All", "dB"),
     ("burst_power_dbm", "Burst Power", "dBm"),
+    ("pin_dbm", "PA Pin", "dBm"),
+    ("pout_dbm", "PA Pout", "dBm"),
+    ("gain_db", "PA Gain", "dB"),
     ("frequency_error_hz", "Frequency Error", "Hz"),
     ("clock_error_ppm", "Clock Error", "ppm"),
 )
@@ -36,9 +40,12 @@ def _number(row: dict[str, str], *names: str) -> float | None:
 
 
 def _axis(rows: list[dict[str, str]]) -> tuple[str, str, float]:
-    if any(_number(row, "generator_power_dbm") is not None for row in rows) and not any(
-        _number(row, "frequency_hz") is not None for row in rows
-    ):
+    frequency_values = {_number(row, "frequency_hz") for row in rows}
+    power_values = {_number(row, "generator_power_dbm") for row in rows}
+    frequency_values.discard(None)
+    power_values.discard(None)
+    # 同時有頻率與功率時，用有變化的欄位當 X 軸；避免功率掃描被誤畫成單點頻率圖。
+    if len(power_values) > len(frequency_values):
         return "generator_power_dbm", "Generator Power (dBm)", 1.0
     return "frequency_hz", "Frequency (MHz)", 1e-6
 
@@ -64,22 +71,35 @@ def render_metric_svg(rows: list[dict[str, str]], metric: str, title: str, unit:
     xspan = xmax - xmin or 1.0
     ymargin = max((ymax - ymin) * 0.15, 0.5)
     ymin, ymax = ymin - ymargin, ymax + ymargin
-    width, height, pad = 960, 420, 64
+    width, height, left_pad, right_pad, top_pad, bottom_pad = 1080, 540, 96, 42, 66, 82
 
     def px(value: float) -> float:
-        return pad + (value - xmin) / xspan * (width - 2 * pad)
+        return left_pad + (value - xmin) / xspan * (width - left_pad - right_pad)
 
     def py(value: float) -> float:
-        return height - pad - (value - ymin) / (ymax - ymin) * (height - 2 * pad)
+        return height - bottom_pad - (value - ymin) / (ymax - ymin) * (
+            height - top_pad - bottom_pad
+        )
 
     grid = []
-    for index in range(5):
-        gy = pad + index * (height - 2 * pad) / 4
-        label = ymax - index * (ymax - ymin) / 4
+    for index in range(6):
+        gy = top_pad + index * (height - top_pad - bottom_pad) / 5
+        label = ymax - index * (ymax - ymin) / 5
         grid.append(
-            f'<line x1="{pad}" y1="{gy:.1f}" x2="{width - pad}" y2="{gy:.1f}" '
-            'stroke="#dbe4ef"/><text x="8" y="{:.1f}" fill="#526173" '
-            'font-size="13">{:.3g}</text>'.format(gy + 5, label)
+            f'<line x1="{left_pad}" y1="{gy:.1f}" x2="{width - right_pad}" '
+            f'y2="{gy:.1f}" stroke="#dbe4ef"/>'
+            '<text x="84" y="{:.1f}" fill="#526173" font-size="13" '
+            'text-anchor="end">{:.3g}</text>'.format(gy + 5, label)
+        )
+    for index in range(6):
+        gx = left_pad + index * (width - left_pad - right_pad) / 5
+        label = xmin + index * (xmax - xmin) / 5
+        grid.append(
+            f'<line x1="{gx:.1f}" y1="{top_pad}" x2="{gx:.1f}" '
+            f'y2="{height - bottom_pad}" stroke="#dbe4ef" stroke-dasharray="4 6" '
+            'opacity=".75"/>'
+            f'<text x="{gx:.1f}" y="{height - bottom_pad + 28}" fill="#526173" '
+            f'font-size="13" text-anchor="middle">{label:.6g}</text>'
         )
     points = " ".join(f"{px(x):.1f},{py(y):.1f}" for x, y in zip(xs, ys, strict=True))
     dots = "".join(
@@ -89,13 +109,17 @@ def render_metric_svg(rows: list[dict[str, str]], metric: str, title: str, unit:
     )
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
-        'role="img" style="background:#fff;border-radius:14px">'
+        'role="img" style="background:#ffffff;border-radius:14px">'
         f"<title>{html.escape(title)}</title>{''.join(grid)}"
         f'<polyline points="{points}" fill="none" stroke="#0f766e" stroke-width="3"/>{dots}'
-        f'<text x="{width / 2}" y="28" text-anchor="middle" font-size="19" '
+        f'<text x="{width / 2}" y="34" text-anchor="middle" font-size="20" '
         f'font-family="system-ui" fill="#172033">{html.escape(title)} ({html.escape(unit)})</text>'
-        f'<text x="{width / 2}" y="408" text-anchor="middle" font-size="14" '
-        f'font-family="system-ui" fill="#526173">{html.escape(axis_label)}</text></svg>'
+        f'<text x="{width / 2}" y="{height - 18}" text-anchor="middle" font-size="15" '
+        f'font-family="system-ui" fill="#526173">{html.escape(axis_label)}</text>'
+        f'<text x="24" y="{top_pad + (height - top_pad - bottom_pad) / 2}" '
+        f'text-anchor="middle" font-size="15" font-family="system-ui" fill="#526173" '
+        f'transform="rotate(-90 24 {top_pad + (height - top_pad - bottom_pad) / 2})">'
+        f'{html.escape(title)} ({html.escape(unit)})</text></svg>'
     )
 
 
@@ -112,6 +136,94 @@ def write_plots(csv_path: Path, output_dir: Path | None = None) -> list[Path]:
             continue
         path = destination / f"{metric}.svg"
         path.write_text(svg, encoding="utf-8")
+        created.append(path)
+    if not created:
+        raise ValueError("Results CSV has no supported numeric metrics")
+    return created
+
+
+def write_pandas_matplotlib_plots(
+    csv_path: Path, output_dir: Path | None = None
+) -> list[Path]:
+    """Create presentation-ready PNG charts using Pandas and Matplotlib."""
+    # 實驗室帳號的使用者家目錄可能禁止寫入；把 font cache 留在該 Run 的可寫目錄。
+    cache_dir = csv_path.parent / ".matplotlib-cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("MPLCONFIGDIR", str(cache_dir))
+    try:
+        import matplotlib
+        import pandas as pd
+    except ImportError as exc:
+        raise RuntimeError(
+            "Pandas/Matplotlib reporting requires the project reporting dependencies"
+        ) from exc
+
+    # 離線／CI 報告不需要 GUI；固定 Agg 避免 Windows session 或 headless runner 卡住。
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    frame = pd.read_csv(csv_path, encoding="utf-8-sig", na_values=["INV", ""])
+    if frame.empty:
+        raise ValueError("Results CSV contains no measurement rows")
+    destination = output_dir or csv_path.parent / "plots-matplotlib"
+    destination.mkdir(parents=True, exist_ok=True)
+    frequency_unique = (
+        pd.to_numeric(frame["frequency_hz"], errors="coerce").dropna().nunique()
+        if "frequency_hz" in frame
+        else 0
+    )
+    power_unique = (
+        pd.to_numeric(frame["generator_power_dbm"], errors="coerce").dropna().nunique()
+        if "generator_power_dbm" in frame
+        else 0
+    )
+    # 功率掃描會同時保存固定頻率與變動功率；選唯一值較多者作為趨勢 X 軸。
+    if power_unique > frequency_unique:
+        axis = pd.to_numeric(frame["generator_power_dbm"], errors="coerce")
+        axis_label = "Generator Power (dBm)"
+    else:
+        if "frequency_hz" not in frame:
+            raise ValueError("Results CSV has no supported sweep axis")
+        # 儀器 artifact 保存 Hz；顯示時轉 MHz，原始 CSV 不被改寫。
+        axis = pd.to_numeric(frame["frequency_hz"], errors="coerce") / 1e6
+        axis_label = "Frequency (MHz)"
+
+    aliases = {"evm_all_carriers_db": "evm_all_db", "clock_error_ppm": "clock_error"}
+    created: list[Path] = []
+    for metric, title, unit in METRICS:
+        source = metric if metric in frame else aliases.get(metric)
+        if source is None or source not in frame:
+            continue
+        values = pd.to_numeric(frame[source], errors="coerce")
+        valid = axis.notna() & values.notna()
+        if not valid.any():
+            continue
+        figure, plot = plt.subplots(
+            figsize=(10.8, 5.4),
+            constrained_layout=True,
+            facecolor="#ffffff",
+        )
+        plot.set_facecolor("#ffffff")
+        plot.plot(axis[valid], values[valid], marker="o", linewidth=2.6, color="#0f766e")
+        plot.set_title(f"{title} ({unit})")
+        plot.set_xlabel(axis_label)
+        plot.set_ylabel(f"{title} ({unit})")
+        plot.grid(True, color="#dbe4ef", alpha=0.9)
+        plot.tick_params(colors="#172033", labelsize=9)
+        plot.title.set_color("#172033")
+        plot.xaxis.label.set_color("#172033")
+        plot.yaxis.label.set_color("#172033")
+        for spine in plot.spines.values():
+            spine.set_color("#94a3b8")
+        path = destination / f"{metric}.png"
+        # 白底輸出可在深色 Web 容器與簡報中保持可讀，不依賴瀏覽器背景色。
+        figure.savefig(
+            path,
+            dpi=160,
+            facecolor=figure.get_facecolor(),
+            metadata={"Software": "CMP180 EVM Automation"},
+        )
+        plt.close(figure)
         created.append(path)
     if not created:
         raise ValueError("Results CSV has no supported numeric metrics")

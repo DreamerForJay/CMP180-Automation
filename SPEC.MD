@@ -1,5 +1,13 @@
 下面這份 SPEC 會以你目前實際狀況為基礎來規劃，不把尚未確認的 CMP180 SCPI 命令、Option 名稱、量測 Query 路徑硬寫成「已知事實」。
 
+新增 Loopback baseline 能力：正式 DUT 判定前，以獨立 SingleShot repeats 驗證 Tester path。Validity、Stability 與 Reasonableness 必須分層；Draft 或未指定 threshold 不得產生正式 `LOOPBACK_READY`。Raw repeats、outlier 標記、profile snapshot、統計與 cleanup evidence 必須可追溯。第一版為單頻點 repeats，多頻點 frequency × repeat 後續增量加入。2026-09-03 Repeat=10 實機 HIL 已核准 6105 MHz／320 MHz／−40 dBm／RF1.1-RF1.5 固定 baseline；只有相同門檻與至少 10 repeats 可使用該 approved profile，其他條件維持 draft。
+
+全 WLAN section Loopback 批次固定涵蓋 11 個已核准 section 代表點，每點 Repeat=10 且逐 profile 保存 artifact。執行只能使用 RF1.1-RF1.5 direct-cable route；任一 SCPI／cleanup error 必須停止後續 profile。2026-09-03 的 110/110 valid HIL 已讓各代表點取得獨立 source evidence 並升級為 approved。這不授權其他頻率、功率、route 或 UD Box path。
+
+相同 11 個代表點在升級後必須直接選到 approved lifecycle，且只有 validity、stability、reasonableness 均通過才可輸出 `LOOPBACK_READY`。2026-09-03 升級後回歸為 110/110 valid、11/11 `LOOPBACK_READY`。Web 所有量測與校正檢查計畫、Preview、安全阻擋原因、修正方式及最後確認必須隨中文／English 選擇即時切換；語言切換不得重新送出 SCPI、Preview API 或 RF job。
+
+GPRF power sweep 可作為 PA Gain／Pout／P1dB 圖的軟體計算入口：以既有 GPRF Generator／Measurement power 讀值產生 `pin_dbm`、`pout_dbm`、`gain_db` 與 P1dB 摘要，並保存到 CSV／JSON／metadata／圖表。參考面補償只可由使用者輸入 input cable loss、output cable loss、external gain、external attenuator 與 SA safe limit 後套用於 artifact 計算，不得放寬 CMP180 frequency/power planning guard 或替代實體 attenuator。若 power sweep 尚未觀察到 1 dB gain compression，必須顯示 `not_found` 與最大已觀察 compression／Pin／Pout，不得把最後一點宣稱為 P1dB。此能力目前為軟體與 Mock／離線測試通過，尚未形成新的 PA 實機 RF 驗證證據。
+
 目前已確認的基礎是：
 
 * 儀器為 **Rohde & Schwarz CMP180 Radio Communication Tester**
@@ -1448,6 +1456,17 @@ retry:
   max_delay_s: 5.0
 ```
 
+目前實作先限制於 query-only connection diagnostic：`retry_count` 為初次 attempt
+之外的重試次數，硬限制 0–5；只處理 transient connection／timeout，且每次 retry
+前關閉可能半開的 session。SCPI write、RF workflow、Safety rejection、SCPI error 與
+`INV` 不會自動重試，避免重複副作用。RF measurement retry 必須另經 HIL review。
+
+Current implementation is intentionally limited to query-only connection diagnostics.
+`retry_count` means retries after the initial attempt and is hard-bounded to 0–5. Only
+transient connection/timeout failures qualify, and any half-open session is closed before
+retrying. SCPI writes, RF workflows, safety rejections, SCPI errors, and `INV` results are
+never retried automatically. RF-measurement retry requires a separate HIL review.
+
 ---
 
 # 19. Band 與 Frequency 驗證
@@ -2309,7 +2328,21 @@ Web RF 執行核准 RF1.1 → RF1.5、-55～-30 dBm，以及已完成 HIL 的 11
 外框放行頻段間空隙。後端只能在 RF OFF 且 measurement idle 時選擇匹配 waveform，
 完成 OPC、error queue 與絕對路徑 readback 後才能繼續設定及 RF On。
 
+單點量測例外允許 CMP180 400–8000 MHz 型錄調諧範圍內的中心頻率。已核准
+WLAN section 外的單點必須標示 `HIL_PENDING`，使用已驗證的 EHT／B6GHz
+measurement template，並對實際 Generator／Analyzer center frequency 做 readback。
+此例外不得套用到 Sweep 或 Loopback baseline，也不得產生 compliance PASS；Route、
+功率、操作員確認、錯誤停止與 deterministic cleanup 限制維持不變。
+
 400 MHz–8 GHz 是 CMP180 調諧型錄範圍，不等於 WLAN 可執行範圍。
+
+## English: Loopback baseline requirement
+
+Before formal DUT decisions, the system uses independent SingleShot repeats to validate the tester path. Validity, Stability, and Reasonableness remain separate. Draft or unspecified thresholds cannot produce formal `LOOPBACK_READY`. Raw repeats, outlier flags, profile snapshots, statistics, and cleanup evidence remain traceable. Version one supports one-frequency repeats; frequency-by-repeat execution is a later increment. The 2026-09-03 Repeat=10 live HIL approved the fixed 6105 MHz/320 MHz/−40 dBm/RF1.1-RF1.5 baseline. Only the same thresholds with at least 10 repeats may use that approved profile; other conditions remain draft.
+
+The all-WLAN-section Loopback batch covers fixed representative points for all 11 approved sections, uses Repeat=10 per point, and saves independent artifacts per profile. Execution is restricted to the RF1.1-to-RF1.5 direct-cable route, and any SCPI or cleanup error must stop later profiles. The 2026-09-03 110/110-valid HIL gave every representative point its own source evidence and approved lifecycle. It does not authorize other frequencies, powers, routes, or UD Box paths.
+
+The same 11 representative points must select the approved lifecycle after promotion, and `LOOPBACK_READY` requires passing validity, stability, and reasonableness. The 2026-09-03 post-promotion regression completed 110/110 valid measurements with 11/11 `LOOPBACK_READY`. Every Web measurement and calibration check plan, preview, safety rejection reason, correction instruction, and final confirmation must immediately follow the Chinese/English selector. A language change must not resend SCPI, call a preview endpoint, or start an RF job.
 
 ## English: 2026-09-02 Web full-WLAN approval boundary
 
@@ -2319,6 +2352,13 @@ center-frequency range, and 20/40/80/160/320 MHz bandwidth. The overall 2412–7
 envelope must never authorize gaps between WLAN bands. The backend may select a matching
 waveform only while RF is OFF and measurement is idle, and must complete OPC, error-queue,
 and absolute-path readback checks before configuration continues or RF is enabled.
+
+As a SingleShot-only exception, the center frequency may use the CMP180 catalog tuning
+range of 400-8000 MHz. A point outside an approved WLAN section must be labelled
+`HIL_PENDING`, use the verified EHT/B6GHz measurement template, and read back the actual
+generator and analyzer center frequencies. This exception must not apply to sweeps or the
+Loopback baseline and must not produce a compliance PASS. Route, power, operator
+confirmation, stop-on-error, and deterministic-cleanup limits remain unchanged.
 
 The CMP180 400 MHz–8 GHz tuning catalog range is not the executable WLAN range.
 

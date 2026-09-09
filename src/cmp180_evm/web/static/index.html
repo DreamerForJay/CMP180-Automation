@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
-  <link rel="stylesheet" href="/design-system.css?v=console12">
+  <link rel="stylesheet" href="/design-system.css?v=console15">
 </head>
 <body>
   <header class="topbar">
@@ -27,6 +27,7 @@
     <nav class="tabs" aria-label="Workspace">
       <button class="tab active" data-tab="home" data-i18n="homeTab">首頁</button>
       <button class="tab" data-tab="measurement" data-i18n="measurementTab">量測</button>
+      <button class="tab" data-tab="loopback">Loopback 驗證</button>
       <button class="tab" data-tab="campaign" data-i18n="campaignTab">HIL 批次</button>
       <button class="tab" data-tab="calibration" data-i18n="calibrationTab">校正</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
@@ -62,7 +63,7 @@
         <article><small>CONTROL</small><strong>本機安全控制</strong><span>Loopback-only Web endpoint</span></article>
         <article><small>MEASUREMENT</small><strong>SingleShot 與 Sweep</strong><span>固定 HIL profile＋安全自訂計畫</span></article>
         <article><small>RESULT</small><strong>28 欄 OFDM SISO</strong><span>EVM、Power、Frequency Error</span></article>
-        <article><small>TRACEABILITY</small><strong>完整 Artifacts</strong><span>CSV、JSON、Raw、HTML、Metadata</span></article>
+        <article><small>TRACEABILITY</small><strong>完整 Artifacts</strong><span>CSV、JSON、Raw、HTML、Matplotlib PNG</span></article>
       </div>
 
       <section class="home-section capability-envelope" aria-labelledby="capabilityEnvelopeTitle">
@@ -81,6 +82,18 @@
           <button class="architecture-node" type="button" data-architecture="artifact" role="listitem"><b>05</b><strong>報告與比較</strong><small>CSV、JSON、HTML 與歷史 Trace</small></button>
         </div>
         <div id="architectureDetail" class="architecture-detail" aria-live="polite">先建立量測條件；此步驟只定義計畫，不會送出 RF。</div>
+      </section>
+
+      <section class="architecture-panel diagram-showcase" aria-labelledby="diagramShowcaseTitle">
+        <div class="home-section-head"><p class="workspace-kicker">ANIMATED DIAGRAMS</p><h3 id="diagramShowcaseTitle">播放完整架構與量測生命週期</h3><p>首頁直接嵌入專案既有互動圖。可播放導覽故事、暫停動畫、檢查節點關係，所有操作都只影響說明圖，不會連線或控制 CMP180。</p></div>
+        <div class="diagram-showcase-toolbar" role="group" aria-label="架構圖選擇與播放控制">
+          <button class="ghost active" type="button" data-diagram-path="/diagrams/system-architecture.html">系統架構</button>
+          <button class="ghost" type="button" data-diagram-path="/diagrams/single-measurement-lifecycle.html">單點量測生命週期</button>
+          <button id="restartDiagram" class="primary" type="button">從頭播放</button>
+          <button id="openDiagram" class="ghost" type="button">全頁開啟</button>
+        </div>
+        <div class="diagram-frame-shell"><iframe id="diagramShowcaseFrame" src="/diagrams/system-architecture.html?present=1" title="CMP180 互動系統架構動畫" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe></div>
+        <p class="field-help">圖內 Play story 可播放／暫停章節；「從頭播放」只重新載入目前互動圖，不會自動送出播放指令。</p>
       </section>
 
       <section class="home-section">
@@ -120,14 +133,14 @@
 
     <section id="measurement" class="panel measurement-workspace">
       <div class="section-switch" role="tablist" aria-label="量測資料來源">
-        <button type="button" class="section-switch-button active" data-measure-view="hardware">實機量測</button>
-        <button type="button" class="section-switch-button" data-measure-view="demoWorkspace">示範與訓練</button>
+        <button type="button" class="section-switch-button active" data-measure-view="hardware" data-i18n="hardwareSource">實機量測</button>
+        <button type="button" class="section-switch-button" data-measure-view="demoWorkspace" data-i18n="demoSource">示範與訓練</button>
       </div>
       <div id="demoWorkspace" class="measurement-view">
         <div class="subtabs" role="tablist" aria-label="示範量測類型">
-          <button type="button" class="subtab active" data-demo-tab="single">單點</button>
-          <button type="button" class="subtab" data-demo-tab="sweep">頻率掃描</button>
-          <button type="button" class="subtab" data-demo-tab="powerSweep">功率掃描</button>
+          <button type="button" class="subtab active" data-demo-tab="single" data-i18n="demoSingleMode">示範單點</button>
+          <button type="button" class="subtab" data-demo-tab="sweep" data-i18n="demoFrequencyMode">示範頻率掃描</button>
+          <button type="button" class="subtab" data-demo-tab="powerSweep" data-i18n="demoPowerMode">示範功率掃描</button>
         </div>
     <section id="single" class="demo-panel active">
       <div class="panel-head"><div><h2 data-i18n="singleTitle">Mock 單點量測</h2><p data-i18n="singleHelp">輸入一個測試點，驗證完整 GUI、資料保存與圖表流程。</p></div><span class="pill">DEMO DATA</span></div>
@@ -175,24 +188,35 @@
       <div class="warning-card"><strong data-i18n="rfWarning">此動作會產生真實 RF</strong><p data-i18n="rfWarningText">只有在線材已確認且操作員位於儀器旁時才能執行。錯誤或取消時會 STOP/ABORT 並 RF Off。</p></div>
       <div id="hardwareAlert" class="inline-alert" role="alert" aria-live="assertive" hidden></div>
       <div class="subtabs hardware-subtabs" role="tablist" aria-label="實機量測類型">
-        <button type="button" class="subtab active" data-hardware-action="single">單點</button>
-        <button type="button" class="subtab" data-hardware-action="frequency">頻率掃描</button>
-        <button type="button" class="subtab" data-hardware-action="power">功率掃描</button>
-        <button type="button" class="subtab" data-hardware-action="gprf">GPRF 頻率／功率掃描</button>
+        <button type="button" class="subtab active" data-hardware-action="single" data-i18n="hardwareSingleMode">WLAN EVM 單點</button>
+        <button type="button" class="subtab" data-hardware-action="frequency" data-i18n="hardwareFrequencyMode">WLAN EVM 頻率掃描</button>
+        <button type="button" class="subtab" data-hardware-action="power" data-i18n="hardwarePowerMode">WLAN EVM 功率掃描</button>
+        <button type="button" class="subtab" data-hardware-action="gprf" data-i18n="hardwareGprfMode">RF 功率讀值（GPRF）</button>
       </div>
       <ol class="sop-steps measurement-sop" aria-label="實機量測 SOP">
-        <li><strong>01</strong><span>設定數值</span></li>
-        <li><strong>02</strong><span>檢查接線與人在場</span></li>
-        <li><strong>03</strong><span>Review 計畫</span></li>
-        <li><strong>04</strong><span>執行並保存 artifacts</span></li>
+        <li><strong>01</strong><span data-i18n="hardwareSop1">設定數值</span></li>
+        <li><strong>02</strong><span data-i18n="hardwareSop2">檢查接線與人在場</span></li>
+        <li><strong>03</strong><span data-i18n="hardwareSop3">檢查計畫</span></li>
+        <li><strong>04</strong><span data-i18n="hardwareSop4">執行並保存 artifacts</span></li>
       </ol>
       <div class="sop-section">
-        <div class="sop-section-head"><b>STEP 1</b><h3>設定數值 / Measurement Settings</h3><p>先選擇量測類型並填好要展示的頻率、功率、頻寬與點數。</p></div>
+        <div class="sop-section-head"><b>STEP 1</b><h3 data-i18n="measurementSettings">設定數值</h3><p data-i18n="measurementSettingsHelp">先選擇量測類型並填好頻率、功率、頻寬與點數。</p></div>
         <div id="hardwareProfileSummary" class="hardware-profile-summary"><small>目前設定</small><strong>SingleShot</strong><span>6105 MHz · 320 MHz · -40 dBm</span></div>
       </div>
+      <div id="hardwareSingleSetup" class="custom-plan-card sop-section">
+        <h3 data-i18n="singleSetup">單點設定</h3>
+        <p class="field-help" data-i18n="singleSetupHelp">輸入中心頻率、WLAN 頻寬與 Generator 功率。Web 會先檢查 approved profile，通過且完成最後確認後才控制 CMP180。</p>
+        <form id="singlePlanForm" class="form-grid">
+          <label><span>Center frequency</span><div class="input-unit"><input name="center_frequency" type="number" value="6105" min="400" max="8000" step="any" required><input name="center_unit" type="hidden" value="MHz"><button type="button" class="field-unit" data-single-unit aria-label="中心頻率單位（點擊切換 MHz／GHz）">MHz</button></div><small class="field-help">可輸入 CMP180 400–8000 MHz envelope；RF 執行仍需通過 WLAN approved profile 與現場 HIL。</small></label>
+          <label><span>Bandwidth</span><select name="bandwidth_mhz"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80">80 MHz</option><option value="160">160 MHz</option><option value="320" selected>320 MHz</option></select></label>
+          <label><span>Generator power</span><div class="input-unit"><input name="generator_power_dbm" type="number" value="-40" min="-55" max="-30" step="1" required><b>dBm</b></div><small class="field-help">實機只接受目前 approved profile 的 -55 至 -30 dBm；Analyzer expected power 固定 -20 dBm。</small></label>
+          <button class="primary submit" type="submit" data-i18n="reviewSingle">檢查單點計畫</button>
+        </form>
+        <pre id="singlePlanPreview" hidden></pre>
+      </div>
       <div id="hardwareSweepSetup" class="custom-plan-card sop-section" hidden>
-        <h3>掃描設定 / Sweep Setup</h3>
-        <p class="field-help">設定 WLAN EVM 掃描軸、範圍、步進與停留時間；送出前會顯示點位、預估時間與安全檢查結果。WLAN EVM 只宣稱 approved sections；GPRF 能力請切到「GPRF 能力掃描」。</p>
+        <h3 data-i18n="sweepSetup">掃描設定</h3>
+        <p class="field-help" data-i18n="sweepSetupHelp">設定 WLAN EVM 掃描軸、範圍、步進與停留時間；送出前會顯示點位、預估時間與安全檢查結果。</p>
         <form id="customPlanForm" class="form-grid">
           <input name="axis" type="hidden" value="frequency">
           <label><span>Bandwidth</span><select name="bandwidth_mhz"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80">80 MHz</option><option value="160">160 MHz</option><option value="320" selected>320 MHz</option></select></label>
@@ -202,13 +226,13 @@
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="100" max="2000" step="100" required><b>ms</b></div></label>
           <label><span>Fixed generator power</span><div class="input-unit"><input name="generator_power_dbm" type="number" value="-45" max="-40" required><b>dBm</b></div></label>
           <label><span>Fixed center frequency</span><div class="input-unit"><input name="center_frequency_mhz" type="number" value="6105" min="400" max="8000" step="any" required><input type="hidden" name="center_unit" value="MHz"><button type="button" class="field-unit" data-unit-for="center_unit" aria-label="Center frequency unit（點擊切換 MHz／GHz）">MHz</button></div></label>
-          <button class="primary submit" type="submit">檢查量測計畫 / Review Plan</button>
+          <button class="primary submit" type="submit" data-i18n="reviewPlan">檢查量測計畫</button>
         </form>
         <pre id="customPlanPreview" hidden></pre>
       </div>
       <div id="gprfPowerSetup" class="custom-plan-card sop-section" hidden>
-        <h3 id="gprfModeTitle">GPRF Frequency Sweep – Power Flatness / 頻率掃描－功率平坦度</h3>
-        <p class="field-help">此模式使用 GPRF Gen/Meas 讀功率，可展示 CMP180 tune 與功率量測能力；不是 WLAN EVM、不是 compliance。</p>
+        <h3 id="gprfModeTitle">RF 功率讀值頻率掃描（GPRF）</h3>
+        <p class="field-help" data-i18n="gprfModeHelp">GPRF 是 General Purpose RF：此模式只用 CMP180 Gen/Meas 讀 RF power，可看 tune／power flatness；不是 WLAN EVM、不是 compliance。</p>
         <form id="gprfPowerForm" class="form-grid">
           <label><span>Axis</span><select name="axis"><option value="frequency">Frequency</option><option value="power">Power</option></select></label>
           <label><span>Start</span><div class="input-unit"><input name="start" type="number" value="400" step="any" required><b id="gprfStartUnit">MHz</b></div></label>
@@ -216,23 +240,30 @@
           <label><span>Step</span><div class="input-unit"><input name="step" type="number" value="100" min="0.001" step="any" required><b id="gprfStepUnit">MHz</b></div></label>
           <label id="gprfFixedFrequencyField"><span>Fixed frequency</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" min="400" max="8000" step="any" required><b>MHz</b></div></label>
           <label id="gprfFixedPowerField"><span>Fixed generator power</span><div class="input-unit"><input name="power_dbm" type="number" value="-40" min="-80" max="20" step="any" required><b>dBm</b></div></label>
+          <label><span>Input cable loss</span><div class="input-unit"><input name="input_cable_loss_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
+          <label><span>Output cable loss</span><div class="input-unit"><input name="output_cable_loss_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
+          <label><span>External gain</span><div class="input-unit"><input name="external_gain_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
+          <label><span>External attenuator</span><div class="input-unit"><input name="external_attenuation_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
+          <label><span>SA safe limit</span><div class="input-unit"><input name="sa_safe_limit_dbm" type="number" value="0" min="-120" max="30" step="0.1" required><b>dBm</b></div><small class="field-help">超過此 analyzer power 會標記為 SA_LIMIT，不列入 P1dB。</small></label>
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="50" max="5000" step="50" required><b>ms</b></div></label>
-          <button class="primary submit" type="submit">檢查 GPRF 計畫 / Review GPRF</button>
+          <button class="primary submit" type="submit" data-i18n="reviewGprf">檢查 GPRF 計畫</button>
         </form>
         <pre id="gprfPowerPreview" hidden></pre>
       </div>
       <form id="hardwareForm" class="form-grid sop-section">
         <input name="hardware_action" type="hidden" value="single">
-        <div class="sop-section-head wide-field"><b>STEP 2</b><h3>檢查接線與現場狀態 / Safety Check</h3><p>目前只核准 RF1.1 → RF1.5。請把 RF1.1 Generator output 直接接到 RF1.5 Analyzer input，確認沒有額外衰減器，操作員人在機台旁。</p></div>
+        <div class="sop-section-head wide-field"><b>STEP 2</b><h3 data-i18n="safetyCheck">檢查接線與現場狀態</h3><p data-i18n="safetyCheckHelp">目前只核准 RF1.1 → RF1.5。確認直接線路沒有額外衰減器，且操作員在機台旁。</p></div>
         <label><span data-i18n="cableText">接線路徑（可選擇或輸入）</span><input name="cable_confirmation" list="cableRoutes" autocomplete="off" data-i18n-placeholder="cablePlaceholder" placeholder="例如 RF1.1-RF1.5"><datalist id="cableRoutes"><option value="RF1.1-RF1.5" data-i18n="cableVerifiedOption">已驗證：RF1.1 → RF1.5</option></datalist><small class="field-help" data-i18n="cableHelp">請接 RF1.1 Generator output → RF1.5 Analyzer input；其他路徑目前不會送 RF。</small></label>
+        <label class="check-label"><input name="direct_cable_no_attenuator" type="checkbox"><span data-i18n="directCableConfirm">我已確認目前為核准的直接線路，沒有未登錄的衰減器或轉接件</span></label>
         <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="operatorPresent">我人在 CMP180 旁並能觀察儀器</span></label>
         <div class="preflight-card wide-field">
           <strong data-i18n="preflightTitle">STEP 3：Review / 執行前安全檢查</strong>
           <div tabindex="0" title="綠燈：符合已驗證 RF1.1-RF1.5 路徑 / Green: verified RF1.1-RF1.5 route"><span id="routeCheck" class="check-dot"></span><span data-i18n="routeCheck">接線符合已驗證路徑</span></div>
+          <div tabindex="0" title="綠燈：已確認直接線路中沒有未登錄衰減器"><span id="directCableCheck" class="check-dot"></span><span data-i18n="directCableCheck">直接線路／無未登錄衰減器</span></div>
           <div tabindex="0" title="綠燈：操作員已確認在場，可處理異常 / Green: operator confirmed on site"><span id="operatorCheck" class="check-dot"></span><span data-i18n="operatorCheck">操作員在儀器旁</span></div>
           <div tabindex="0" title="綠燈：量測計畫需由對應 workflow preview 或固定 SingleShot profile 確認"><span class="check-dot ok"></span><span id="planCheckText">等待計畫檢查 / Ready for plan review</span></div>
         </div>
-        <div class="sop-section-head wide-field"><b>STEP 4</b><h3>執行實機量測 / Execute</h3><p>按下後仍會跳出最後確認；取消不會送 RF，執行完成會保存 artifacts。</p></div>
+        <div class="sop-section-head wide-field"><b>STEP 4</b><h3 data-i18n="executeHardware">執行實機量測</h3><p data-i18n="executeHardwareHelp">按下後仍會顯示最後確認；取消不會送 RF，完成後保存 artifacts。</p></div>
         <button id="hardwareButton" class="danger-button submit wide-field" type="submit" disabled data-i18n="runHardware">執行實機量測</button>
       </form>
       <section id="liveMeasurementPanel" class="live-measurement" hidden aria-live="polite">
@@ -242,19 +273,46 @@
     </section>
     </section>
 
+    <section id="loopback" class="panel">
+      <div class="panel-head"><div><p class="workspace-kicker">TESTER BASELINE</p><h2 data-i18n="loopbackTitle">Loopback RF 效能驗證</h2><p data-i18n="loopbackHelp">固定條件下執行獨立 SingleShot repeats；先驗證 Tester／Cable／UD Box／RF path，不代表 DUT PASS。</p></div><span id="loopbackOverall" class="pill neutral">LOOPBACK_UNVERIFIED</span></div>
+      <div class="warning-card"><strong data-i18n="loopbackWarning">穩定不等於合理</strong><p data-i18n="loopbackWarningHelp">Stability 評估重複性；Reasonableness 比較 Analyzer input reference plane 的 Expected RX Power。相同代表點、門檻且至少 Repeat 10 使用 approved baseline；其他條件仍為 draft。</p></div>
+      <form id="loopbackForm" class="form-grid">
+        <label><span>Center frequency</span><div class="input-unit"><input name="center_frequency_hz" type="number" value="6105000000" min="400000000" max="8000000000" step="1" required><b>Hz</b></div></label>
+        <label><span>Bandwidth</span><select name="bandwidth_hz"><option value="20000000">20 MHz</option><option value="40000000">40 MHz</option><option value="80000000">80 MHz</option><option value="160000000">160 MHz</option><option value="320000000" selected>320 MHz</option></select></label>
+        <label><span>Generator power</span><div class="input-unit"><input name="generator_power_dbm" type="number" value="-40" min="-55" max="-30" step="0.1" required><b>dBm</b></div></label>
+        <label><span>Repeats</span><input name="repeat_count" type="number" value="10" min="2" max="100" required></label>
+        <label><span>Max EVM Std (Draft)</span><div class="input-unit"><input name="max_evm_std_db" type="number" value="0.2" min="0" step="0.01"><b>dB</b></div></label>
+        <label><span>Max Power Std (Draft)</span><div class="input-unit"><input name="max_power_std_db" type="number" value="0.1" min="0" step="0.01"><b>dB</b></div></label>
+        <label><span>Max Freq Error Std (Draft)</span><div class="input-unit"><input name="max_freq_error_std_hz" type="number" value="20" min="0" step="0.1"><b>Hz</b></div></label>
+        <label><span>Max Invalid Ratio (Draft)</span><input name="max_invalid_ratio" type="number" value="0" min="0" max="1" step="0.01"></label>
+        <label><span>Expected RX Power</span><div class="input-unit"><input name="expected_power_dbm" type="number" value="-40" step="0.01"><b>dBm</b></div><small class="field-help">這是 analyzer input baseline，不是 Analyzer ranging 的 -20 dBm。</small></label>
+        <label><span>Allowed Power Error (Draft)</span><div class="input-unit"><input name="allowed_power_error_db" type="number" value="1" min="0" step="0.01"><b>dB</b></div></label>
+        <label><span>Route</span><input name="cable_confirmation" value="RF1.1-RF1.5" required></label>
+        <label class="check-label"><input name="direct_cable_no_attenuator" type="checkbox"><span data-i18n="loopbackCableConfirm">接線、Cable／UD Box path 與衰減條件已確認且本次不變</span></label>
+        <label class="check-label"><input name="operator_present" type="checkbox"><span data-i18n="loopbackOperatorConfirm">操作員在 CMP180 旁，可處理 RF 異常</span></label>
+        <button class="danger-button submit" type="submit" data-i18n="runLoopback">檢查並執行 Loopback</button>
+      </form>
+      <div class="campaign-toolbar"><button id="runAllLoopbacks" class="danger-button" type="button" data-i18n="runAllLoopbacks">一鍵執行全部 11 Profiles × Repeat 10</button><span class="field-help" data-i18n="runAllLoopbacksHelp">依序執行 110 次 SingleShot；每個 profile 獨立保存 artifact，SCPI／cleanup error 會停止整批。</span></div>
+      <pre id="loopbackPreview" hidden></pre>
+      <div id="loopbackMetrics" class="metrics"></div>
+      <div class="chart-card"><div class="chart-title"><strong data-i18n="loopbackTrends">即時 Repeat 趨勢</strong><small data-i18n="loopbackTrendsHelp">紅色點代表 INVALID 或 IQR outlier；資料不會被刪除</small></div><div id="loopbackCharts" class="loopback-charts"></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Repeat</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Freq Error (Hz)</th><th>Validity</th><th>Outlier</th></tr></thead><tbody id="loopbackRows"></tbody></table></div>
+      <div id="loopbackArtifacts" class="artifacts"></div>
+    </section>
+
     <section id="campaign" class="panel campaign-panel">
-      <div class="panel-head"><div><h2>HIL Campaign Runner</h2><p>分類矩陣會保存到 output/hil-campaign/state.json；關閉瀏覽器或對話後仍可繼續。</p></div><span id="campaignSummary" class="pill">NOT PREPARED</span></div>
-      <div class="inline-alert"><strong>執行規則</strong><span>Prepare 只檢查目前 profile；只有 READY 案例可送 RF。BLOCKED 不會改跑其他 profile。Pause／Stop 只會在單點 cleanup 與 RF Off 邊界生效。</span></div>
-      <ol class="sop-steps campaign-sop"><li><strong>01</strong><span>Prepare 矩陣</span></li><li><strong>02</strong><span>依 Priority 接線</span></li><li><strong>03</strong><span>只執行 READY</span></li><li><strong>04</strong><span>保存證據</span></li></ol>
+      <div class="panel-head"><div><h2 data-i18n="campaignTitle">HIL 批次執行器</h2><p data-i18n="campaignHelp">分類矩陣保存到 output/hil-campaign/state.json；關閉瀏覽器或對話後仍可繼續。</p></div><span id="campaignSummary" class="pill">NOT PREPARED</span></div>
+      <div class="inline-alert"><strong data-i18n="campaignRules">執行規則</strong><span data-i18n="campaignRulesHelp">Prepare 只檢查目前 profile；只有 READY 案例可送 RF。BLOCKED 不會改跑其他 profile。Pause／Stop 只會在單點 cleanup 與 RF Off 邊界生效。</span></div>
+      <ol class="sop-steps campaign-sop"><li><strong>01</strong><span data-i18n="campaignSop1">準備矩陣</span></li><li><strong>02</strong><span data-i18n="campaignSop2">依 Priority 接線</span></li><li><strong>03</strong><span data-i18n="campaignSop3">只執行 READY</span></li><li><strong>04</strong><span data-i18n="campaignSop4">保存證據</span></li></ol>
       <div id="campaignOperatorHint" class="operator-hint"><strong>目前接線指示</strong><span>先按「準備／重新檢查矩陣」，再依第一個 READY 案例接 RF1.1 → RF1.5。</span></div>
-      <div class="campaign-toolbar"><button id="prepareCampaign" class="primary" type="button">STEP 1：準備／重新檢查矩陣</button><button id="runNextCampaign" class="danger-button" type="button">STEP 3：執行下一個 READY</button><button id="refreshCampaign" class="ghost" type="button">重新載入</button><button id="resetCampaign" class="ghost" type="button">重設進度</button></div>
-      <div class="campaign-confirmations"><label><input id="campaignOperator" type="checkbox"> 操作員在機台旁</label><label><input id="campaignRoute" type="checkbox"> RF1.1 Generator output 已接到 RF1.5 Analyzer input</label></div>
-      <div class="table-wrap campaign-table-wrap"><table class="campaign-table"><colgroup><col class="campaign-col-priority"><col class="campaign-col-state"><col class="campaign-col-category"><col class="campaign-col-case"><col class="campaign-col-route"><col class="campaign-col-points"><col class="campaign-col-evidence"><col class="campaign-col-action"></colgroup><thead><tr><th>重要度</th><th>狀態</th><th>類別</th><th>案例</th><th>接線</th><th>點數</th><th>下一步／證據</th><th>操作</th></tr></thead><tbody id="campaignRows"></tbody></table></div>
+      <div class="campaign-toolbar"><button id="prepareCampaign" class="primary" type="button" data-i18n="prepareCampaign">STEP 1：準備／重新檢查矩陣</button><button id="runNextCampaign" class="danger-button" type="button" data-i18n="runNextCampaign">STEP 3：執行下一個 READY</button><button id="refreshCampaign" class="ghost" type="button" data-i18n="refreshCampaign">重新載入</button><button id="resetCampaign" class="ghost" type="button" data-i18n="resetCampaign">重設進度</button></div>
+      <div class="campaign-confirmations"><label><input id="campaignOperator" type="checkbox"> <span data-i18n="campaignOperatorConfirm">操作員在機台旁</span></label><label><input id="campaignRoute" type="checkbox"> <span data-i18n="campaignRouteConfirm">RF1.1 Generator output 已接到 RF1.5 Analyzer input</span></label></div>
+      <div class="table-wrap campaign-table-wrap"><table class="campaign-table"><colgroup><col class="campaign-col-priority"><col class="campaign-col-state"><col class="campaign-col-category"><col class="campaign-col-case"><col class="campaign-col-route"><col class="campaign-col-points"><col class="campaign-col-evidence"><col class="campaign-col-action"></colgroup><thead><tr><th data-i18n="campaignPriority">重要度</th><th data-i18n="campaignState">狀態</th><th data-i18n="campaignCategory">類別</th><th data-i18n="campaignCase">案例</th><th data-i18n="campaignRoute">接線</th><th data-i18n="campaignPoints">點數</th><th data-i18n="campaignEvidence">下一步／證據</th><th data-i18n="campaignAction">操作</th></tr></thead><tbody id="campaignRows"></tbody></table></div>
     </section>
 
     <section id="calibration" class="panel">
-      <div class="panel-head"><div><h2>Path Loss 校正 SOP</h2><p>輸入校正設備的參考面讀值，建立待審查 Draft Profile；此頁不會控制儀器或開啟 RF。</p></div><span class="pill draft-limit">DRAFT ONLY</span></div>
-      <ol class="sop-steps calibration-steps"><li><strong>01</strong><span>登錄器材</span></li><li><strong>02</strong><span>取得讀值</span></li><li><strong>03</strong><span>檢查線損</span></li><li><strong>04</strong><span>送交核准</span></li></ol>
+      <div class="panel-head"><div><h2 data-i18n="calibrationTitle">Path Loss 校正 SOP</h2><p data-i18n="calibrationHelp">輸入校正設備的參考面讀值，建立待審查 Draft Profile；此頁不會控制儀器或開啟 RF。</p></div><span class="pill draft-limit">DRAFT ONLY</span></div>
+      <ol class="sop-steps calibration-steps"><li><strong>01</strong><span data-i18n="calibrationSop1">登錄器材</span></li><li><strong>02</strong><span data-i18n="calibrationSop2">取得讀值</span></li><li><strong>03</strong><span data-i18n="calibrationSop3">檢查線損</span></li><li><strong>04</strong><span data-i18n="calibrationSop4">送交核准</span></li></ol>
       <form id="calibrationForm" class="form-grid">
         <label><span>Profile ID</span><input name="profile_id" value="rf1.1-rf1.5-cable" required></label>
         <label><span>Revision</span><input name="revision" value="0.1-draft" required></label>
@@ -266,9 +324,9 @@
 6085000000,-40.000,-40.850
 6105000000,-40.000,-40.870
 6125000000,-40.000,-40.890</textarea><small class="field-help">目前支援貼上 adapter／功率計匯出的 CSV。範例值僅供軟體驗證，不是正式校正資料。</small></label>
-        <button class="primary submit" type="submit">計算 Draft Profile / Calculate Draft</button>
+        <button class="primary submit" type="submit" data-i18n="calculateDraft">計算 Draft Profile</button>
       </form>
-      <section id="calibrationResult" class="calibration-result" hidden><div class="panel-head"><div><h3>Draft Preview</h3><p id="calibrationGate"></p></div><button id="downloadCalibration" type="button" class="ghost">下載 Draft YAML</button></div><pre id="calibrationProfilePreview"></pre></section>
+      <section id="calibrationResult" class="calibration-result" hidden><div class="panel-head"><div><h3 data-i18n="draftPreview">Draft 預覽</h3><p id="calibrationGate"></p></div><button id="downloadCalibration" type="button" class="ghost" data-i18n="downloadDraft">下載 Draft YAML</button></div><pre id="calibrationProfilePreview"></pre></section>
     </section>
 
     <section id="results" class="panel">
@@ -276,7 +334,8 @@
       <div id="metrics" class="metrics"></div>
       <div id="limitProfileCard" class="limit-profile-card" hidden></div>
       <section id="comparisonPanel" class="comparison-panel" hidden><div><strong>歷史資料比較 / Historical comparison</strong><p id="comparisonHint">可調整曲線名稱、顏色與顯示狀態。</p></div><div id="traceList" class="trace-list"></div></section>
-      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="power_error_db">Power Error (dB)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button">PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 300" role="img"></svg></div>
+      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="pin_dbm">PA Pin (dBm)</option><option value="pout_dbm">PA Pout (dBm)</option><option value="gain_db">PA Gain (dB)</option><option value="power_error_db">Power Error (dB)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button" title="匯出目前前端互動圖">Web PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 390" role="img" aria-label="量測結果趨勢圖，含完整橫軸、縱軸標題與刻度"></svg></div>
+      <section id="matplotlibGallery" class="matplotlib-gallery" hidden><div class="panel-head"><div><h3>Pandas DataFrame + Matplotlib PNG</h3><p id="matplotlibDescription">由本次 Run 已保存的 CSV 產生；選擇指標後可開啟原始 160 DPI PNG。</p></div><span class="pill">OFFLINE REPORT</span></div><div class="matplotlib-toolbar"><label><span>Matplotlib metric</span><select id="matplotlibMetric"></select></label><a id="matplotlibOpen" class="ghost" href="#" target="_blank" rel="noopener">開啟原圖</a></div><div id="matplotlibPlots" class="matplotlib-plots"></div></section>
       <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Power Error (dB)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
     </section>
@@ -364,11 +423,12 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=console11"></script>
-  <script src="/hardware.js?v=workspace5"></script>
-  <script src="/campaign.js?v=4"></script>
-  <script src="/calibration.js?v=1"></script>
-  <script src="/custom-plan.js?v=1"></script>
-  <script src="/gprf-power.js?v=2"></script>
+  <script src="/app.js?v=console15"></script>
+  <script src="/hardware.js?v=single-range7"></script>
+  <script src="/campaign.js?v=5"></script>
+  <script src="/calibration.js?v=2"></script>
+  <script src="/custom-plan.js?v=3"></script>
+  <script src="/gprf-power.js?v=3"></script>
+  <script src="/loopback.js?v=4"></script>
 </body>
 </html>

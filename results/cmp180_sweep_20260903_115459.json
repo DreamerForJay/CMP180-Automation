@@ -1,0 +1,386 @@
+{
+  "metadata": {
+    "frequency_hz": 6105000000.0,
+    "power_start_dbm": -20.0,
+    "power_stop_dbm": 20.0,
+    "power_step_db": 1.0,
+    "total_points": 41,
+    "generated_at": "2026-09-03T11:54:59.352137"
+  },
+  "measurements": [
+    {
+      "index": 1,
+      "timestamp_unix": 1788407681.7666738,
+      "timestamp_iso": "2026-09-03T11:54:41.766674",
+      "power_set_dbm": -20.0,
+      "power_measured_dbm": -62.61037,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 2,
+      "timestamp_unix": 1788407682.471261,
+      "timestamp_iso": "2026-09-03T11:54:42.471261",
+      "power_set_dbm": -19.0,
+      "power_measured_dbm": -62.58009,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 3,
+      "timestamp_unix": 1788407683.1740193,
+      "timestamp_iso": "2026-09-03T11:54:43.174019",
+      "power_set_dbm": -18.0,
+      "power_measured_dbm": -62.54326,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 4,
+      "timestamp_unix": 1788407683.8764677,
+      "timestamp_iso": "2026-09-03T11:54:43.876468",
+      "power_set_dbm": -17.0,
+      "power_measured_dbm": -62.52393,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 5,
+      "timestamp_unix": 1788407684.5792658,
+      "timestamp_iso": "2026-09-03T11:54:44.579266",
+      "power_set_dbm": -16.0,
+      "power_measured_dbm": -62.57877,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 6,
+      "timestamp_unix": 1788407685.2831366,
+      "timestamp_iso": "2026-09-03T11:54:45.283137",
+      "power_set_dbm": -15.0,
+      "power_measured_dbm": -62.69461,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 7,
+      "timestamp_unix": 1788407685.9860728,
+      "timestamp_iso": "2026-09-03T11:54:45.986073",
+      "power_set_dbm": -14.0,
+      "power_measured_dbm": -62.59108,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 8,
+      "timestamp_unix": 1788407686.688344,
+      "timestamp_iso": "2026-09-03T11:54:46.688344",
+      "power_set_dbm": -13.0,
+      "power_measured_dbm": -62.54966,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 9,
+      "timestamp_unix": 1788407687.3915253,
+      "timestamp_iso": "2026-09-03T11:54:47.391525",
+      "power_set_dbm": -12.0,
+      "power_measured_dbm": -62.55871,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 10,
+      "timestamp_unix": 1788407688.0942397,
+      "timestamp_iso": "2026-09-03T11:54:48.094240",
+      "power_set_dbm": -11.0,
+      "power_measured_dbm": -62.55956,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 11,
+      "timestamp_unix": 1788407688.7981935,
+      "timestamp_iso": "2026-09-03T11:54:48.798193",
+      "power_set_dbm": -10.0,
+      "power_measured_dbm": -62.56065,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 12,
+      "timestamp_unix": 1788407689.5011108,
+      "timestamp_iso": "2026-09-03T11:54:49.501111",
+      "power_set_dbm": -9.0,
+      "power_measured_dbm": -62.49626,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 13,
+      "timestamp_unix": 1788407690.2036393,
+      "timestamp_iso": "2026-09-03T11:54:50.203639",
+      "power_set_dbm": -8.0,
+      "power_measured_dbm": -62.53151,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 14,
+      "timestamp_unix": 1788407690.9068606,
+      "timestamp_iso": "2026-09-03T11:54:50.906861",
+      "power_set_dbm": -7.0,
+      "power_measured_dbm": -62.50987,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 15,
+      "timestamp_unix": 1788407691.6093636,
+      "timestamp_iso": "2026-09-03T11:54:51.609364",
+      "power_set_dbm": -6.0,
+      "power_measured_dbm": -62.49698,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 16,
+      "timestamp_unix": 1788407692.311892,
+      "timestamp_iso": "2026-09-03T11:54:52.311892",
+      "power_set_dbm": -5.0,
+      "power_measured_dbm": -62.60583,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 17,
+      "timestamp_unix": 1788407693.0151594,
+      "timestamp_iso": "2026-09-03T11:54:53.015159",
+      "power_set_dbm": -4.0,
+      "power_measured_dbm": -62.48879,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 18,
+      "timestamp_unix": 1788407693.7178895,
+      "timestamp_iso": "2026-09-03T11:54:53.717890",
+      "power_set_dbm": -3.0,
+      "power_measured_dbm": -62.46367,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 19,
+      "timestamp_unix": 1788407694.4205797,
+      "timestamp_iso": "2026-09-03T11:54:54.420580",
+      "power_set_dbm": -2.0,
+      "power_measured_dbm": -62.40778,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 20,
+      "timestamp_unix": 1788407695.1270602,
+      "timestamp_iso": "2026-09-03T11:54:55.127060",
+      "power_set_dbm": -1.0,
+      "power_measured_dbm": -62.37003,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 21,
+      "timestamp_unix": 1788407695.8299527,
+      "timestamp_iso": "2026-09-03T11:54:55.829953",
+      "power_set_dbm": 0.0,
+      "power_measured_dbm": -62.35207,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 22,
+      "timestamp_unix": 1788407696.533398,
+      "timestamp_iso": "2026-09-03T11:54:56.533398",
+      "power_set_dbm": 1.0,
+      "power_measured_dbm": -62.25317,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 23,
+      "timestamp_unix": 1788407697.2360663,
+      "timestamp_iso": "2026-09-03T11:54:57.236066",
+      "power_set_dbm": 2.0,
+      "power_measured_dbm": -62.32013,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 24,
+      "timestamp_unix": 1788407697.9393,
+      "timestamp_iso": "2026-09-03T11:54:57.939300",
+      "power_set_dbm": 3.0,
+      "power_measured_dbm": -62.29133,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 25,
+      "timestamp_unix": 1788407698.6417422,
+      "timestamp_iso": "2026-09-03T11:54:58.641742",
+      "power_set_dbm": 4.0,
+      "power_measured_dbm": -62.3491,
+      "reliability": 0,
+      "status": "OK"
+    },
+    {
+      "index": 26,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 5.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 27,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 6.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 28,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 7.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 29,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 8.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 30,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 9.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 31,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 10.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 32,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 11.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 33,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 12.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 34,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 13.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 35,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 14.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 36,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 15.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 37,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 16.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 38,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 17.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 39,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 18.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 40,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 19.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    },
+    {
+      "index": 41,
+      "timestamp_unix": 1788407699.344419,
+      "timestamp_iso": "2026-09-03T11:54:59.344419",
+      "power_set_dbm": 20.0,
+      "power_measured_dbm": NaN,
+      "reliability": -1,
+      "status": "略過: 超出儀器可設定功率範圍"
+    }
+  ],
+  "statistics": {
+    "min_dbm": -62.69461,
+    "max_dbm": -62.25317,
+    "mean_dbm": -62.49148840000001
+  }
+}
