@@ -292,7 +292,7 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert 'name="output_attenuator_db"' in html
     assert 'id="loadPaProfileButton"' in html
     # 靜態資源版本必須跟著 profile UI 修正提升，避免現場瀏覽器沿用舊摘要與安全文案。
-    assert 'src="/app.js?v=console18"' in html
+    assert 'src="/app.js?v=feedback4"' in html
     assert 'src="/hardware.js?v=route1"' in html
     assert 'src="/gprf-power.js?v=route1"' in html
     assert 'value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器' in html
@@ -311,14 +311,14 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert "<th>Power Error (dB)</th>" in html
     assert "powerFlatnessStats" in javascript
     assert "p1dbMetrics" in javascript
-    assert "Max Compression" in javascript
+    assert "Max compression" in javascript
     assert "expected_power_dbm:expectedPower" in javascript
     assert "pin_dbm:pin" in javascript
     assert "pout_dbm:pout" in javascript
     assert "gain_db:gain" in javascript
     assert "formatMeasured(point.power_error_db,3)" in javascript
     assert "Power Error 是 GPRF flatness" in javascript
-    assert "Peak-to-Peak Ripple" in javascript
+    assert "peak-to-peak ripple" in javascript
     assert "Expected error 0 dB" in javascript
     assert "Expected = Generator Power" in javascript
     assert "Pexpected = Pgenerator" in javascript
@@ -476,6 +476,60 @@ def test_home_typewriter_preserves_accessibility_and_reduced_motion() -> None:
     assert "typewriter-current" in css
     assert "h2.typewriter-title span{background:none;color:var(--console-cyan)}" in css
     assert "color-mix(in srgb,var(--console-cyan),#79f2df var(--type-progress))" in css
+
+
+def test_home_status_and_capability_table_follow_language_and_theme() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    app = (STATIC / "app.js").read_text(encoding="utf-8")
+
+    for key in (
+        "homeControl",
+        "homeMeasurement",
+        "homeResult",
+        "capabilityTitle",
+        "capItem",
+        "capCatalog",
+        "capInstalled",
+        "capApproved",
+        "capHil",
+    ):
+        assert f'data-i18n="{key}"' in html
+        assert f"{key}:" in app
+    # 能力資料只讀取一次；語言切換以快取資料重繪，不重送 API 或 RF 請求。
+    assert "function renderCapabilityProfile" in app
+    assert "renderRunHistory(false);renderCapabilityProfile()" in app
+    assert app.count("fetch('/api/capabilities')") == 1
+    # 主題切換同步嵌入圖表的 theme 查詢值，且只重新載入說明圖。
+    apply_theme = app.split("function applyTheme", 1)[1].split("\n$('#themeButton').onclick", 1)[0]
+    assert "diagramPlaybackUrl(activeDiagramPath)" in apply_theme
+    assert "/api/" not in apply_theme
+
+    # 主導覽與嵌入圖表的輔助文字也需跟著語系切換。
+    assert 'data-i18n="loopbackTab"' in html
+    assert 'data-i18n-aria-label="diagramControlsLabel"' in html
+    assert 'data-i18n-title="diagramFrameTitle"' in html
+    assert "querySelectorAll('[data-i18n-aria-label]')" in app
+    assert "querySelectorAll('[data-i18n-title]')" in app
+    for key in ("loopbackTab", "diagramControlsLabel", "diagramFrameTitle"):
+        assert f"{key}:" in app
+
+
+def test_results_distinguish_empty_partial_invalid_and_complete_states() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    app = (STATIC / "app.js").read_text(encoding="utf-8")
+    css = (STATIC / "design-system.css").read_text(encoding="utf-8")
+
+    assert 'id="resultNotice"' in html
+    assert 'role="status" aria-live="polite"' in html
+    for state in ("empty", "history"):
+        assert f"state.mode==='{state}'" in app
+    assert "resultViewState={mode:'current'" in app
+    for outcome in ("INVALID", "PARTIAL", "CANCELLED", "COMPLETE"):
+        assert outcome in app
+    assert "Completion does not imply a specification pass" in app
+    assert '.result-notice[data-state="warning"]' in css
+    assert '.result-notice[data-state="error"]' in css
+    assert '.result-notice[data-state="ready"]' in css
 
 def test_home_copy_is_consistent_and_avoids_unqualified_claims() -> None:
     import json

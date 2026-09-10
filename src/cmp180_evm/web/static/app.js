@@ -26,6 +26,8 @@ Object.assign(translations.zh,{demoSingleMode:'示範單點',demoFrequencyMode:'
 Object.assign(translations.en,{demoSingleMode:'Demo Single',demoFrequencyMode:'Demo Frequency Sweep',demoPowerMode:'Demo Power Sweep',hardwareSingleMode:'WLAN EVM SingleShot',hardwareFrequencyMode:'WLAN EVM Frequency Sweep',hardwarePowerMode:'WLAN EVM Power Sweep',hardwareGprfMode:'RF Power Reading (GPRF)',gprfModeHelp:'GPRF means General Purpose RF: this mode reads RF power with CMP180 Gen/Meas for tune/power-flatness checks; it is not WLAN EVM or compliance.'});
 Object.assign(translations.en,{homeTab:'Home',measurementTab:'Measure',calibrationTab:'Calibration',guideTab:'Operator Guide',guideTitle:'From startup to report',guideIntro:'Each card is a directly usable standard procedure. First choose demo data, a query-only check, or an explicitly authorized hardware mode.',guideSafeTitle:'Recommended now: Demo mode',guideSafeText:'Do not enable RF while power is unstable',guideStep1:'Start service',guideStep2:'Select measurement',guideStep3:'Review results',guideStep4:'Open report',demoCommandTitle:'Start the Demo console',demoCommandHelp:'No CMP180 connection, SCPI, or RF. Use it to review and practice the workflow.',copyCommand:'Copy',openBrowser:'Open browser',configCommandTitle:'Validate configuration',configCommandHelp:'Validates YAML fields and safety settings without contacting the instrument.',expectedOutput:'Expected output',connectionCommandTitle:'Query-only connection check',connectionCommandHelp:'Reads IDN, options, and the error queue without starting measurement or RF.',powerWarning:'During unstable power',queryOnlyAdvice:'Run query-only checks only; do not enable hardware Web mode.',hardwareCommandTitle:'Hardware mode (on hold)',hardwareCommandHelp:'Use only with stable power, confirmed cabling, an on-site operator, and explicit authorization.',hardwareHold:'Instrument power is currently unstable; execution is prohibited.',whereResultsTitle:'Where are results stored?',whereResultsText:'Each run creates an independent output folder. Use Open folder in Run History or open HTML, CSV, and JSON from Results.',whenStopTitle:'When must I stop?',whenStopText:'Stop immediately and verify RF OFF on INV, unknown RF state, timeout, SCPI error, cabling change, or power abnormality.'});
 let language='zh';let latest=[];let runHistory=[];let analysisTraces=[];const selectedCompareKeys=new Set();
+let resultViewState={mode:'empty'};
+let lastSummaryContext={context:{},rawPoints:null};
 let expandedRunKey=null;
 const $=selector=>document.querySelector(selector);
 // 紀錄狀態與篩選文案同步語系，保留後端狀態碼原義。
@@ -33,6 +35,8 @@ Object.assign(translations.zh,{"historyUi0": "搜尋", "historyUi1": "日期", "
 Object.assign(translations.en,{"historyUi0": "Search", "historyUi1": "Date", "historyUi2": "Source", "historyUi3": "Status", "historyUi4": "Sort", "historyUi5": "All dates", "historyUi6": "Today", "historyUi7": "Last 7 days", "historyUi8": "Last 30 days", "historyUi9": "All sources", "historyUi10": "Hardware", "historyUi11": "Demo", "historyUi12": "All statuses", "historyUi13": "Complete", "historyUi14": "Partial", "historyUi15": "Failed", "historyUi16": "Time: newest first", "historyUi17": "Time: oldest first", "historyUi18": "Points: most first", "historyUi19": "Frequency: ascending", "historyUi20": "Power: ascending", "historyUi21": "Worst EVM: worst first", "historyUi22": "Compare", "historyUi23": "Actions", "historyRunNote": "Completion does not imply valid results or a specification pass. Review validity and applicable limits.", "historySearchHint": "Test name, Run ID, DUT, operator, notes"});
 Object.assign(translations.zh,{homeControl:'本機 Web 控制',homeControlDetail:'可執行接線依後端設定',homeMeasurement:'SingleShot 與掃描',homeMeasurementDetail:'依設定檢查量測條件',homeResult:'28 欄 OFDM SISO',homeResultDetail:'EVM、功率與頻率誤差',capabilityTitle:'CMP180 能力與目前執行範圍',capabilityIntro:'本表區分型錄規格、目前設定與既有 HIL 紀錄。列出的範圍不代表每個條件均已驗證；實際執行仍依所選流程檢查。',capItem:'項目',capCatalog:'CMP180 型錄',capInstalled:'本機／選件',capApproved:'核准 Profile',capHil:'HIL 證據'});
 Object.assign(translations.en,{homeControl:'Local Web control',homeControlDetail:'Available routes depend on server configuration',homeMeasurement:'SingleShot and sweeps',homeMeasurementDetail:'Measurement conditions are checked against configuration',homeResult:'28-field OFDM SISO',homeResultDetail:'EVM, power, and frequency error',capabilityTitle:'CMP180 capability and current execution scope',capabilityIntro:'This table separates catalog specifications, local configuration, and existing HIL evidence. A listed range does not mean every condition has been verified; each workflow still checks the requested plan.',capItem:'Item',capCatalog:'CMP180 catalog',capInstalled:'Local installation / options',capApproved:'Approved profile',capHil:'HIL evidence'});
+Object.assign(translations.zh,{loopbackTab:'Loopback 驗證',diagramControlsLabel:'架構圖選擇與播放控制',diagramFrameTitle:'CMP180 互動系統架構動畫'});
+Object.assign(translations.en,{loopbackTab:'Loopback Validation',diagramControlsLabel:'Architecture diagram selection and playback controls',diagramFrameTitle:'Interactive CMP180 system architecture diagram'});
 const homeCopy={
   "zh": {
     "heroTitle": "CMP180 WLAN<br><span>自動化量測與分析</span>",
@@ -239,7 +243,7 @@ function renderHeroTypewriter(element, markup){
   };
   state.timer=setTimeout(tick,350);
 }
-function applyLanguage(){document.documentElement.lang=language==='zh'?'zh-Hant':'en';document.querySelectorAll('[data-i18n]').forEach(el=>{const value=translations[language][el.dataset.i18n];if(value)el.textContent=value});document.querySelectorAll('[data-home]').forEach(el=>{const value=homeCopy[language][el.dataset.home];if(value){if(el.dataset.home==='heroTitle')renderHeroTypewriter(el,value);else el.textContent=value}});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const value=translations[language][el.dataset.i18nPlaceholder];if(value)el.placeholder=value});$('#languageButton').textContent=language==='zh'?'EN':'中文';updatePageHeading();if(window.updateHardwareSummary)window.updateHardwareSummary();if(window.configureGprfFields)window.configureGprfFields();renderRunHistory(false);renderCapabilityProfile();updateThemeLabel();renderToast();if(analysisTraces.length)renderComparisonControls();if(latest.length||analysisTraces.length)redrawActiveChart();
+function applyLanguage(){document.documentElement.lang=language==='zh'?'zh-Hant':'en';document.querySelectorAll('[data-i18n]').forEach(el=>{const value=translations[language][el.dataset.i18n];if(value)el.textContent=value});document.querySelectorAll('[data-home]').forEach(el=>{const value=homeCopy[language][el.dataset.home];if(value){if(el.dataset.home==='heroTitle')renderHeroTypewriter(el,value);else el.textContent=value}});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const value=translations[language][el.dataset.i18nPlaceholder];if(value)el.placeholder=value});document.querySelectorAll('[data-i18n-aria-label]').forEach(el=>{const value=translations[language][el.dataset.i18nAriaLabel];if(value)el.setAttribute('aria-label',value)});document.querySelectorAll('[data-i18n-title]').forEach(el=>{const value=translations[language][el.dataset.i18nTitle];if(value)el.title=value});$('#languageButton').textContent=language==='zh'?'EN':'中文';updatePageHeading();if(window.updateHardwareSummary)window.updateHardwareSummary();if(window.configureGprfFields)window.configureGprfFields();renderRunHistory(false);renderCapabilityProfile();updateThemeLabel();renderToast();renderResultViewState();if(latest.length)renderResultSummary(latest,latestAxis,lastSummaryContext.context,lastSummaryContext.rawPoints);if(analysisTraces.length)renderComparisonControls();if(latest.length||analysisTraces.length)redrawActiveChart();
   // 已顯示的 Review／Preview 也要即時換語言，避免操作員讀到上一個語言的安全計畫。
   window.dispatchEvent(new CustomEvent('cmp180-language-change',{detail:{language}}));
 }
@@ -317,7 +321,7 @@ function renderHistoryDetail(records,traces){
   renderMatplotlibGallery(urls);
   return trace;
 }
-async function compareSelectedRuns(){const button=$('#compareSelectedButton');button.disabled=true;try{const keys=[...selectedCompareKeys];const records=await Promise.all(keys.map(async key=>{const response=await fetch(`/api/runs/${encodeURIComponent(key)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||`Unable to load ${key}`);return record}));analysisTraces=records.map((record,index)=>{const summary=runHistory.find(run=>run.run_key===record.run_key)||{};const points=normalizeHistoricalPoints(record);return {id:record.run_key,name:summary.test_name||record.metadata?.test_name||record.metadata?.run_id||record.run_key,color:traceColors[index],visible:true,colorLocked:false,lineStyle:'solid',pointShape:'circle',axis:inferTraceAxis(points),compatibility:{bandwidth:summary.bandwidth_hz,route:summary.route,calibration:summary.calibration_profile,waveform:record.metadata?.waveform_file||record.metadata?.arb_waveform_file||'',mcs:record.metadata?.mcs||''},points}}).filter(trace=>trace.points.length);if(analysisTraces.length<1)throw new Error(language==='zh'?'所選紀錄沒有可用結果':'The selected run has no usable results');latestAxis=analysisTraces[0].axis;latest=analysisTraces[0].points;selectBestChartMetric(latest,{measurement_family:String(records[0].metadata?.measurement_family||'')});renderComparisonControls();const isSingle=analysisTraces.length===1;$('#runMeta').textContent=language==='zh'?(isSingle?'查看 1 筆歷史量測（唯讀）':`比較 ${analysisTraces.length} 筆歷史量測（唯讀）`):(isSingle?'Viewing 1 historical run (read-only)':`Comparing ${analysisTraces.length} historical runs (read-only)`);$('#resultBadge').textContent=isSingle?'HISTORY':'COMPARE';const primaryTrace=renderHistoryDetail(records,analysisTraces);if(!isSingle)$('#runMeta').textContent+=language==='zh'?` · 明細與 artifacts 顯示第 1 筆：${primaryTrace.name}`:` · Detail table and artifacts show run 1: ${primaryTrace.name}`;activateTopTab('results');drawAnalysisChart()}catch(error){toast(error.message,'error')}finally{updateCompareSelection()}}
+async function compareSelectedRuns(){const button=$('#compareSelectedButton');button.disabled=true;try{const keys=[...selectedCompareKeys];const records=await Promise.all(keys.map(async key=>{const response=await fetch(`/api/runs/${encodeURIComponent(key)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||`Unable to load ${key}`);return record}));analysisTraces=records.map((record,index)=>{const summary=runHistory.find(run=>run.run_key===record.run_key)||{};const points=normalizeHistoricalPoints(record);return {id:record.run_key,name:summary.test_name||record.metadata?.test_name||record.metadata?.run_id||record.run_key,color:traceColors[index],visible:true,colorLocked:false,lineStyle:'solid',pointShape:'circle',axis:inferTraceAxis(points),compatibility:{bandwidth:summary.bandwidth_hz,route:summary.route,calibration:summary.calibration_profile,waveform:record.metadata?.waveform_file||record.metadata?.arb_waveform_file||'',mcs:record.metadata?.mcs||''},points}}).filter(trace=>trace.points.length);if(analysisTraces.length<1)throw new Error(language==='zh'?'所選紀錄沒有可用結果':'The selected run has no usable results');latestAxis=analysisTraces[0].axis;latest=analysisTraces[0].points;selectBestChartMetric(latest,{measurement_family:String(records[0].metadata?.measurement_family||'')});renderComparisonControls();const primaryTrace=renderHistoryDetail(records,analysisTraces);resultViewState={mode:'history',traceCount:analysisTraces.length,primaryName:primaryTrace.name};renderResultViewState();activateTopTab('results');drawAnalysisChart()}catch(error){toast(error.message,'error')}finally{updateCompareSelection()}}
 function compatibilityWarnings(){const fields=['bandwidth','waveform','mcs','route','calibration'];return fields.filter(field=>new Set(analysisTraces.map(trace=>trace.compatibility[field]).filter(Boolean)).size>1)}
 function renderComparisonControls(){$('#comparisonPanel').hidden=false;const axes=new Set(analysisTraces.map(trace=>trace.axis)),warnings=compatibilityWarnings();$('#comparisonHint').textContent=warnings.length?(language==='zh'?`相容性警告：${warnings.join('、')} 不一致，禁止直接做合規結論。`:`Compatibility warning: ${warnings.join(', ')} differ; do not infer compliance.`):axes.size>1?(language==='zh'?'資料包含不同掃描軸；請確認比較目的。':'Runs use different sweep axes; verify comparison intent.'):(language==='zh'?'EVM 越負通常越好；INVALID 點會中斷，不與正常資料連線。':'More-negative EVM is generally better; INVALID points break traces.');$('#traceList').innerHTML=analysisTraces.map((trace,index)=>`<div class="trace-control" draggable="true" data-trace-index="${index}"><button class="trace-drag" type="button" title="Drag to reorder">⋮⋮</button><input type="checkbox" data-trace-visible="${index}" ${trace.visible?'checked':''} title="Hide / Show"><input type="color" data-trace-color="${index}" value="${trace.color}" ${trace.colorLocked?'disabled':''}><input type="text" data-trace-name="${index}" value="${escapeHtml(trace.name)}"><select data-trace-line="${index}" title="Line style"><option value="solid" ${trace.lineStyle==='solid'?'selected':''}>Solid</option><option value="dash" ${trace.lineStyle==='dash'?'selected':''}>Dash</option><option value="dot" ${trace.lineStyle==='dot'?'selected':''}>Dot</option></select><select data-trace-point="${index}" title="Point shape"><option value="circle" ${trace.pointShape==='circle'?'selected':''}>●</option><option value="square" ${trace.pointShape==='square'?'selected':''}>■</option><option value="diamond" ${trace.pointShape==='diamond'?'selected':''}>◆</option></select><button type="button" data-trace-solo="${index}">Solo</button><button type="button" data-trace-lock="${index}" title="Color lock">${trace.colorLocked?'🔒':'🔓'}</button><button type="button" class="trace-remove" data-trace-remove="${index}" title="Remove">×</button><small>${trace.points.length} pts</small></div>`).join('')}
 $('#compareSelectedButton').onclick=compareSelectedRuns;
@@ -412,8 +416,8 @@ function p1dbMetrics(p1db){
   const result=p1db||{},status=result.status||'insufficient_points';
   // null 不可經 Number(null) 變成零；未找到與資料不足必須保留不同狀態。
   const value=(name,unit)=>{const number=finiteNumber(result[name]);return number===null?'—':number.toFixed(2)+unit};
-  return metric('Small-signal Gain',value('small_signal_gain_db',' dB'))
-    +metric('Max Compression',value('max_compression_db',' dB'))
+  return metric(uiText('小訊號增益','Small-signal gain'),value('small_signal_gain_db',' dB'))
+    +metric(uiText('最大壓縮量','Max compression'),value('max_compression_db',' dB'))
     +metric('IP1dB',status==='found'?value('ip1db_dbm',' dBm'):status)
     +metric('OP1dB',status==='found'?value('op1db_dbm',' dBm'):status);
 }
@@ -424,15 +428,41 @@ function paSummaryMetrics(points,axis,p1db){
   const mean=gains.length?gains.reduce((sum,value)=>sum+value,0)/gains.length:null;
   const format=value=>value===null?'—':value.toFixed(3)+' dB';
   const gainMetrics=axis==='power'?p1dbMetrics(p1db)
-    :metric('Mean Gain',format(mean))
-      +metric('Gain Peak-to-Peak Ripple',format(gains.length?Math.max(...gains)-Math.min(...gains):null))
-      +metric('Gain Std Dev',format(gains.length?Math.sqrt(gains.reduce((sum,value)=>sum+(value-mean)**2,0)/gains.length):null));
+    :metric(uiText('平均增益','Mean gain'),format(mean))
+      +metric(uiText('增益峰對峰漣波','Gain peak-to-peak ripple'),format(gains.length?Math.max(...gains)-Math.min(...gains):null))
+      +metric(uiText('增益標準差','Gain standard deviation'),format(gains.length?Math.sqrt(gains.reduce((sum,value)=>sum+(value-mean)**2,0)/gains.length):null));
   // Max Pout 取所有有效輸出中的最大值，不假設最高 Pin 的輸出必定最大。
-  return gainMetrics+metric('Max Pout',valid.length?Math.max(...valid.map(point=>Number(point.pout_dbm))).toFixed(2)+' dBm':'—')
-    +metric('Valid Points',`${valid.length}/${points.length}`);
+  return gainMetrics+metric(uiText('最大 Pout','Max Pout'),valid.length?Math.max(...valid.map(point=>Number(point.pout_dbm))).toFixed(2)+' dBm':'—')
+    +metric(uiText('有效點','Valid points'),`${valid.length}/${points.length}`);
+}
+function renderResultViewState(){
+  const notice=$('#resultNotice'),badge=$('#resultBadge'),meta=$('#runMeta'),state=resultViewState;
+  badge.className='pill neutral';
+  if(state.mode==='empty'){
+    badge.textContent='NO DATA';meta.textContent=uiText('尚未執行量測。','No measurement has been run.');notice.dataset.state='empty';
+    notice.textContent=uiText('尚無結果。請先執行示範量測，或從量測紀錄開啟既有資料。','No results yet. Run a demo measurement or open saved data from Run History.');
+    if(!latest.length&&!analysisTraces.length)$('#chart').innerHTML=`<text class="axis-label" x="450" y="150" text-anchor="middle">${uiText('尚無可顯示的量測資料','No measurement data to display')}</text>`;
+    return;
+  }
+  if(state.mode==='history'){
+    const compared=state.traceCount>1;
+    badge.textContent=compared?'COMPARE':'HISTORY';meta.textContent=compared
+      ?uiText(`比較 ${state.traceCount} 筆歷史量測（唯讀）`,`Comparing ${state.traceCount} historical runs (read-only)`)
+      :uiText('查看 1 筆歷史量測（唯讀）','Viewing 1 historical run (read-only)');
+    if(compared&&state.primaryName)meta.textContent+=uiText(` · 明細與檔案顯示第 1 筆：${state.primaryName}`,` · Details and files show run 1: ${state.primaryName}`);
+    notice.dataset.state='ready';notice.textContent=uiText('歷史資料為唯讀。比較前請確認頻寬、波形、MCS、接線與校正條件相容。','Historical data is read-only. Before comparison, verify bandwidth, waveform, MCS, route, and calibration compatibility.');
+    return;
+  }
+  const source=state.simulated?uiText('示範資料','DEMO DATA'):uiText('實機資料','HARDWARE');
+  const pointLabel=language==='zh'?'點':state.pointCount===1?'point':'points';
+  meta.textContent=`Run ${state.runId} · ${state.pointCount} ${pointLabel} · ${source}`;
+  if(state.validCount===0){badge.textContent='INVALID';badge.classList.add('danger');notice.dataset.state='error';notice.textContent=uiText('沒有有效量測點。請查看各點狀態、原始回應與收尾紀錄；此結果不可用於規格判定。','No valid measurement points. Review point status, raw responses, and cleanup records; do not use this result for specification decisions.');return;}
+  if(state.status!=='complete'||state.invalidCount>0){badge.textContent=state.status==='cancelled'?'CANCELLED':'PARTIAL';badge.classList.add('draft-limit');notice.dataset.state='warning';notice.textContent=uiText(`已保留 ${state.validCount} 個有效點，另有 ${state.invalidCount} 個無效或未完成點。請先查明原因再比較或判定。`,`Retained ${state.validCount} valid points; ${state.invalidCount} points are invalid or incomplete. Investigate before comparison or assessment.`);return;}
+  badge.textContent='COMPLETE';badge.classList.add('hardware-source');notice.dataset.state='ready';notice.textContent=uiText(`執行完成，共 ${state.validCount} 個有效點。完成狀態不等於規格通過，仍須查看有效性與適用限值。`,`Execution completed with ${state.validCount} valid ${state.validCount===1?'point':'points'}. Completion does not imply a specification pass; review validity and applicable limits.`);
 }
 // 量測完成與歷史回放共用同一套摘要／明細渲染；歷史紀錄丟回圖表時必須看到與當時相同的數值。
 function renderResultSummary(points,axis,context={},rawPoints=null){
+  lastSummaryContext={context,rawPoints};
   const source=Array.isArray(rawPoints)?rawPoints:points;
   const xField=xFieldFor(axis);
   $('#xAxisHeader').textContent=xUnitFor(axis);
@@ -442,14 +472,14 @@ function renderResultSummary(points,axis,context={},rawPoints=null){
   const worst=validEvm.length?Math.max(...validEvm):null;
   const pass=points.filter(point=>['PASS','DRAFT_PASS'].includes(point.limit_status)).length;
   const measured=points.filter(point=>point.valid&&point.limit_status==='MEASURED').length;
-  const fixedLabel=axis==='power'?'Frequency':'Power';
+  const fixedLabel=axis==='power'?uiText('固定頻率','Fixed frequency'):uiText('固定功率','Fixed power');
   // 歷史紀錄可能缺少固定軸欄位；取第一個有效值，缺值顯示破折號而不是補 0。
   const firstFrequency=points.map(point=>finiteNumber(point.frequency_hz)).find(value=>value!==null);
   const firstPower=points.map(point=>finiteNumber(point.generator_power_dbm)).find(value=>value!==null);
   const fixedValue=axis==='power'
     ?(firstFrequency===undefined?'—':(firstFrequency/1e6).toFixed(1)+' MHz')
     :(firstPower===undefined?'—':firstPower+' dBm');
-  const statusLabel=context.limit_profile?.lifecycle==='draft'?'DRAFT PASS':context.limit_profile?'PASS':'Measured';
+  const statusLabel=context.limit_profile?.lifecycle==='draft'?'DRAFT PASS':context.limit_profile?'PASS':uiText('已量測','Measured');
   // PASS 分母是「有效點數」而非全部點數：無效點沒有做過規格判定，不該被算進去。
   const validCount=points.filter(point=>point.valid).length;
   const invalidCount=points.length-validCount;
@@ -465,21 +495,21 @@ function renderResultSummary(points,axis,context={},rawPoints=null){
   // Demo 與實機共用 PA 欄位契約；只要結果含 Gain，就顯示 PA 摘要，不以量測來源阻擋 P1dB。
   const hasPa=source.some(point=>point&&Object.hasOwn(point,'gain_db'));
   $('#metrics').innerHTML=hasPa?paSummaryMetrics(points,axis,context.p1db)+metric(fixedLabel,fixedValue):isGprf&&powerStats
-    ? metric('Mean Analyzer Power (dBm arithmetic mean)',powerStats.avgMeasured.toFixed(3)+' dBm')
-    +metric('Mean Expected Analyzer Power',powerStats.avgExpected.toFixed(3)+' dBm')
-    +metric('Mean Error',(powerStats.meanError>=0?'+':'')+powerStats.meanError.toFixed(3)+' dB')
-    +metric('Max |Error|',powerStats.maxAbsError.toFixed(3)+' dB')
-    +metric('Analyzer Error Peak-to-Peak Ripple',powerStats.ripple.toFixed(3)+' dB')
-    +metric('Analyzer Error Std Dev',powerStats.stdDev.toFixed(3)+' dB')
-    +metric('Valid',`${powerStats.valid}/${powerStats.total}`)
+    ? metric(uiText('Analyzer 平均功率（dBm 算術平均）','Mean analyzer power (dBm arithmetic mean)'),powerStats.avgMeasured.toFixed(3)+' dBm')
+    +metric(uiText('Analyzer 平均期望功率','Mean expected analyzer power'),powerStats.avgExpected.toFixed(3)+' dBm')
+    +metric(uiText('平均誤差','Mean error'),(powerStats.meanError>=0?'+':'')+powerStats.meanError.toFixed(3)+' dB')
+    +metric(uiText('最大絕對誤差','Max |Error|'),powerStats.maxAbsError.toFixed(3)+' dB')
+    +metric(uiText('Analyzer 誤差峰對峰漣波','Analyzer error peak-to-peak ripple'),powerStats.ripple.toFixed(3)+' dB')
+    +metric(uiText('Analyzer 誤差標準差','Analyzer error standard deviation'),powerStats.stdDev.toFixed(3)+' dB')
+    +metric(uiText('有效點','Valid'),`${powerStats.valid}/${powerStats.total}`)
     +metric(fixedLabel,fixedValue)
-    : metric('Avg EVM',avg===null?'—':avg.toFixed(2)+' dB')
-    +metric('Worst EVM',worst===null?'—':worst.toFixed(2)+' dB')
-    +metric('Spec Limit',latestSpecLimitDb===null?'—':latestSpecLimitDb.toFixed(2)+' dB')
-    +metric('Avg Margin',avgMargin===null?'—':signed(avgMargin))
-    +metric('Worst Margin',worstMargin===null?'—':signed(worstMargin))
+    : metric(uiText('平均 EVM','Avg EVM'),avg===null?'—':avg.toFixed(2)+' dB')
+    +metric(uiText('最差 EVM','Worst EVM'),worst===null?'—':worst.toFixed(2)+' dB')
+    +metric(uiText('規格限值','Spec Limit'),latestSpecLimitDb===null?'—':latestSpecLimitDb.toFixed(2)+' dB')
+    +metric(uiText('平均餘裕','Avg Margin'),avgMargin===null?'—':signed(avgMargin))
+    +metric(uiText('最差餘裕','Worst Margin'),worstMargin===null?'—':signed(worstMargin))
     +metric(statusLabel,`${statusCount}/${statusTotal}`)
-    +metric('Invalid',`${invalidCount}`)
+    +metric(uiText('無效點','Invalid'),`${invalidCount}`)
     +metric(fixedLabel,fixedValue);
   // 只有真的存在 INVALID 點才提示，避免讓操作員誤以為本次量測含無效資料。
   const hint=$('#chartHint');
@@ -494,8 +524,8 @@ function renderResultSummary(points,axis,context={},rawPoints=null){
   // PA 使用明確參考面欄位；避免把 Analyzer 功率當作 DUT 輸出或空白 EVM 誤當量測失敗。
   const header=$('#resultRows').closest('table').querySelector('thead tr');
   header.innerHTML=`<th>#</th><th id="xAxisHeader">${xUnitFor(axis)}</th>`+(hasPa
-    ?'<th>PA Pin (dBm)</th><th>PA Pout (dBm)</th><th>PA Gain (dB)</th><th>Analyzer (dBm)</th><th>Status</th>'
-    :'<th>EVM (dB)</th><th>Power (dBm)</th><th>Power Error (dB)</th><th>Freq Error (Hz)</th><th>Status</th>');
+    ?`<th>PA Pin (dBm)</th><th>PA Pout (dBm)</th><th>PA Gain (dB)</th><th>Analyzer (dBm)</th><th>${uiText('狀態','Status')}</th>`
+    :`<th>EVM (dB)</th><th>Power (dBm)</th><th>Power Error (dB)</th><th>Freq Error (Hz)</th><th>${uiText('狀態','Status')}</th>`);
   if(hasPa){
     $('#resultRows').innerHTML=points.map(point=>`<tr><td>${point.point_index+1}</td><td>${Number.isFinite(point[xField])?xDisplayFor(axis,point[xField]):'—'}</td><td>${formatMeasured(point.pin_dbm)}</td><td>${formatMeasured(point.pout_dbm)}</td><td>${formatMeasured(point.gain_db,3)}</td><td>${formatMeasured(point.burst_power_dbm)}</td><td class="${String(point.limit_status||'').toLowerCase()}">${escapeHtml(point.limit_status||'—')}</td></tr>`).join('');
     return;
@@ -515,9 +545,9 @@ function render(data){
   });
   latestAxis=data.sweep_axis||'frequency';
   selectBestChartMetric(latest,data);
-  const sourceLabel=data.simulated?(language==='zh'?'示範資料':'DEMO DATA'):'HARDWARE';
-  $('#runMeta').textContent=`Run ${data.artifacts.run_id} · ${latest.length} points · ${sourceLabel}`;
-  $('#resultBadge').textContent=sourceLabel;
+  const validCount=latest.filter(point=>point.valid===true).length;
+  resultViewState={mode:'current',runId:data.artifacts.run_id,pointCount:latest.length,simulated:Boolean(data.simulated),status:String(data.status||'complete').toLowerCase(),validCount,invalidCount:latest.length-validCount};
+  renderResultViewState();
   renderResultSummary(latest,latestAxis,data,data.points);
   const urls=data.artifact_urls||{};
   $('#artifacts').innerHTML=['csv','json','report'].filter(key=>urls[key]).map(key=>`<a href="${urls[key]}" target="_blank" rel="noopener">${key==='report'?'HTML':key.toUpperCase()}</a>`).join(' · ');

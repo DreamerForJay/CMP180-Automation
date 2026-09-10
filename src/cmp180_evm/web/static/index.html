@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
-  <link rel="stylesheet" href="/design-system.css?v=route1">
+  <link rel="stylesheet" href="/design-system.css?v=feedback4">
   <link rel="stylesheet" href="/cmp180-viewer.css?v=1">
 </head>
 <body>
@@ -28,7 +28,7 @@
     <nav class="tabs" aria-label="Workspace">
       <button class="tab active" data-tab="home" data-i18n="homeTab">首頁</button>
       <button class="tab" data-tab="measurement" data-i18n="measurementTab">量測</button>
-      <button class="tab" data-tab="loopback">Loopback 驗證</button>
+      <button class="tab" data-tab="loopback" data-i18n="loopbackTab">Loopback 驗證</button>
       <button class="tab" data-tab="campaign" data-i18n="campaignTab">HIL 批次</button>
       <button class="tab" data-tab="calibration" data-i18n="calibrationTab">校正</button>
       <button class="tab" data-tab="results" data-i18n="resultsTab">結果與圖表</button>
@@ -78,15 +78,15 @@
       </div>
 
       <div class="home-status-grid">
-        <article><small>CONTROL</small><strong data-home="homeDetail25">本機 Web 控制</strong><span data-home="homeDetail26">可執行接線依後端設定</span></article>
-        <article><small>MEASUREMENT</small><strong>SingleShot 與 Sweep</strong><span data-home="homeDetail27">依設定檢查量測條件</span></article>
-        <article><small>RESULT</small><strong>28 欄 OFDM SISO</strong><span>EVM、Power、Frequency Error</span></article>
+        <article><small>CONTROL</small><strong data-i18n="homeControl">本機 Web 控制</strong><span data-i18n="homeControlDetail">可執行接線依後端設定</span></article>
+        <article><small>MEASUREMENT</small><strong data-i18n="homeMeasurement">SingleShot 與掃描</strong><span data-i18n="homeMeasurementDetail">依設定檢查量測條件</span></article>
+        <article><small>RESULT</small><strong data-i18n="homeResult">28 欄 OFDM SISO</strong><span data-i18n="homeResultDetail">EVM、功率與頻率誤差</span></article>
         <article><small>TRACEABILITY</small><strong data-home="homeDetail28">結果檔案</strong><span data-home="homeDetail29">檔案種類依量測流程</span></article>
       </div>
 
       <section class="home-section capability-envelope" aria-labelledby="capabilityEnvelopeTitle">
-        <div class="home-section-head"><p class="workspace-kicker">INSTRUMENT ENVELOPE</p><h3 id="capabilityEnvelopeTitle">CMP180 能力與目前執行範圍</h3><p>本表區分型錄規格、目前設定與既有 HIL 紀錄。列出的範圍不代表每個條件均已驗證；實際執行仍依所選流程檢查。</p></div>
-        <div class="table-wrap"><table><thead><tr><th>項目</th><th>CMP180 型錄</th><th>本機／選件</th><th>核准 Profile</th><th>HIL 證據</th></tr></thead><tbody id="capabilityRows"><tr><td colspan="5">Loading capability profile…</td></tr></tbody></table></div>
+        <div class="home-section-head"><p class="workspace-kicker">INSTRUMENT ENVELOPE</p><h3 id="capabilityEnvelopeTitle" data-i18n="capabilityTitle">CMP180 能力與目前執行範圍</h3><p data-i18n="capabilityIntro">本表區分型錄規格、目前設定與既有 HIL 紀錄。列出的範圍不代表每個條件均已驗證；實際執行仍依所選流程檢查。</p></div>
+        <div class="table-wrap"><table><thead><tr><th data-i18n="capItem">項目</th><th data-i18n="capCatalog">CMP180 型錄</th><th data-i18n="capInstalled">本機／選件</th><th data-i18n="capApproved">核准 Profile</th><th data-i18n="capHil">HIL 證據</th></tr></thead><tbody id="capabilityRows"><tr><td colspan="5">正在載入能力資料…</td></tr></tbody></table></div>
         <p id="capabilityGate" class="field-help"></p>
       </section>
 
@@ -104,13 +104,13 @@
 
       <section class="architecture-panel diagram-showcase" aria-labelledby="diagramShowcaseTitle">
         <div class="home-section-head"><p class="workspace-kicker">ANIMATED DIAGRAMS</p><h3 id="diagramShowcaseTitle" data-home="homeDetail8">系統架構與單點量測流程</h3><p data-home="homeDetail9">圖表說明系統組成與單點量測的狀態轉換。可選取節點或播放章節導覽；圖表操作不控制儀器。</p></div>
-        <div class="diagram-showcase-toolbar" role="group" aria-label="架構圖選擇與播放控制">
+        <div class="diagram-showcase-toolbar" role="group" aria-label="架構圖選擇與播放控制" data-i18n-aria-label="diagramControlsLabel">
           <button class="ghost active" type="button" data-diagram-path="/diagrams/system-architecture.html" data-home="homeLabel3">系統架構</button>
           <button class="ghost" type="button" data-diagram-path="/diagrams/single-measurement-lifecycle.html" data-home="homeLabel4">單點量測生命週期</button>
           <button id="restartDiagram" class="primary" type="button" data-home="homeDetail10">重新載入圖表</button>
           <button id="openDiagram" class="ghost" type="button" data-home="homeDetail11">另開圖表</button>
         </div>
-        <div class="diagram-frame-shell"><iframe id="diagramShowcaseFrame" src="/diagrams/system-architecture.html?present=1" title="CMP180 互動系統架構動畫" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe></div>
+        <div class="diagram-frame-shell"><iframe id="diagramShowcaseFrame" src="/diagrams/system-architecture.html?present=1" title="CMP180 互動系統架構動畫" data-i18n-title="diagramFrameTitle" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe></div>
         <p class="field-help" data-home="homeDetail12">使用圖內 Play story 播放或暫停章節。「重新載入圖表」會重設目前圖表，不會自動播放。</p>
       </section>
 
@@ -379,6 +379,7 @@
 
     <section id="results" class="panel">
       <div class="panel-head"><div><h2 data-i18n="resultTitle">量測結果</h2><p id="runMeta" data-i18n="empty">尚未執行 Mock 量測。</p></div><span id="resultBadge" class="pill neutral">NO DATA</span></div>
+      <div id="resultNotice" class="result-notice" data-state="empty" role="status" aria-live="polite">尚無結果。請先執行示範量測，或從量測紀錄開啟既有資料。</div>
       <div id="metrics" class="metrics"></div>
       <div id="limitProfileCard" class="limit-profile-card" hidden></div>
       <section id="comparisonPanel" class="comparison-panel" hidden><div><strong>歷史資料比較 / Historical comparison</strong><p id="comparisonHint">可調整曲線名稱、顏色與顯示狀態。</p></div><div id="traceList" class="trace-list"></div></section>
@@ -473,7 +474,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast"><div role="status" aria-live="polite" aria-atomic="true"><strong id="toastTitle"></strong><p id="toastMessage"></p></div><button type="button" id="dismissToast">關閉</button></div>
-  <script src="/app.js?v=console18"></script>
+  <script src="/app.js?v=feedback4"></script>
   <script src="/hardware.js?v=route1"></script>
   <script src="/campaign.js?v=5"></script>
   <script src="/calibration.js?v=route1"></script>

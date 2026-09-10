@@ -25,24 +25,26 @@ def test_pa_summary_reference_planes_and_missing_values():
     script = """
 const assert=require('node:assert/strict');
 const metric=(label,value)=>label+':'+value+'|';
+let language='en';
+const uiText=(zh,en)=>language==='zh'?zh:en;
 """ + numeric + functions + """
 const points=[
  {valid:true,pin_dbm:-80,pout_dbm:-49.9,gain_db:30.1},
  {valid:true,pin_dbm:-5,pout_dbm:25.55,gain_db:30.55},
  {valid:false,pin_dbm:0,pout_dbm:100,gain_db:100}];
 const freq=paSummaryMetrics(points,'frequency',null);
-assert.ok(freq.includes('Gain Peak-to-Peak Ripple:0.450 dB'));
-assert.ok(freq.includes('Gain Std Dev:0.225 dB'));
-assert.ok(freq.includes('Valid Points:2/3'));
+assert.ok(freq.includes('Gain peak-to-peak ripple:0.450 dB'));
+assert.ok(freq.includes('Gain standard deviation:0.225 dB'));
+assert.ok(freq.includes('Valid points:2/3'));
 const power=paSummaryMetrics(points,'power',{status:'not_found',small_signal_gain_db:30.3,max_compression_db:0.2});
 assert.ok(power.includes('Max Pout:25.55 dBm'));
 assert.ok(power.includes('IP1dB:not_found'));
 assert.ok(!power.includes('Ripple'));
 assert.ok(!power.includes('Average Power'));
 const missing=p1dbMetrics({status:'insufficient_points',small_signal_gain_db:null});
-assert.ok(missing.includes('Small-signal Gain:—'));
+assert.ok(missing.includes('Small-signal gain:—'));
 assert.ok(missing.includes('IP1dB:insufficient_points'));
-assert.ok(paSummaryMetrics([], 'frequency', null).includes('Mean Gain:—'));
+assert.ok(paSummaryMetrics([], 'frequency', null).includes('Mean gain:—'));
 assert.ok(p1dbMetrics({status:'found',ip1db_dbm:0,op1db_dbm:29}).includes('IP1dB:0.00 dBm'));
 """
     subprocess.run([node, "-e", script], check=True, capture_output=True, text=True)
