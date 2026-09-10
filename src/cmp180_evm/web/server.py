@@ -22,7 +22,19 @@ from cmp180_evm.calibration_adapters import (
     list_calibration_adapters,
 )
 from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_profile
+from cmp180_evm.constellation import (
+    MockConstellationConfig,
+    generate_mock_constellation,
+    save_constellation_artifacts,
+)
 from cmp180_evm.loopback import loopback_batch_requests, select_loopback_profile
+from cmp180_evm.mcs_sweep import (
+    MockMCSSweepConfig,
+    generate_mock_mcs_sweep,
+    parse_mcs_list,
+    save_mcs_sweep_artifacts,
+    validate_mcs_list,
+)
 from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.web.custom_plans import (
     build_custom_single_preview,
@@ -822,6 +834,69 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 return
             # 決定結果圖表 X 軸：頻率或功率掃描才不是 "frequency"（單點沿用預設）。
             sweep_axis = "frequency"
+            if path == "/api/mock/mcs-sweep":
+                # MCS 端點只執行 synthetic sweep；不建立 CMP180 session 或推測 waveform SCPI。
+                requested = data.get("selected_mcs", "0,1,2,3,4,5,6,7,8,9,10,11")
+                if isinstance(requested, str):
+                    selected_mcs = parse_mcs_list(requested)
+                elif isinstance(requested, list):
+                    selected_mcs = validate_mcs_list(
+                        [int(cast(str | int | float, value)) for value in requested]
+                    )
+                else:
+                    raise ValueError("selected_mcs must be a comma-separated string or list")
+                mcs_config = MockMCSSweepConfig(
+                    selected_mcs=selected_mcs,
+                    bandwidth_mhz=float(cast(str | int | float, data.get("bandwidth_mhz", 320.0))),
+                    frequency_hz=float(cast(str | int | float, data.get("frequency_hz", 6_105_000_000.0))),
+                    nominal_power_dbm=float(cast(str | int | float, data.get("nominal_power_dbm", -20.0))),
+                    evm_jitter_db=float(cast(str | int | float, data.get("evm_jitter_db", 0.35))),
+                    power_jitter_db=float(cast(str | int | float, data.get("power_jitter_db", 0.08))),
+                    frequency_error_std_hz=float(cast(str | int | float, data.get("frequency_error_std_hz", 25.0))),
+                    invalid_rate=float(cast(str | int | float, data.get("invalid_rate", 0.0))),
+                    seed=int(cast(str | int | float, data.get("seed", 180))),
+                )
+                mcs_sweep = generate_mock_mcs_sweep(mcs_config)
+                artifacts = save_mcs_sweep_artifacts(
+                    mcs_sweep,
+                    PROJECT_ROOT / "output",
+                    str(data.get("test_name", "mcs-sweep-mock")),
+                )
+                payload = mcs_sweep.public()
+                payload["artifacts"] = artifacts
+                payload["artifact_urls"] = self._artifact_urls(artifacts)
+                payload["output_location"] = self._output_location(artifacts)
+                self._json_response(payload)
+                return
+            if path == "/api/mock/constellation":
+                # Constellation 端點只產生 synthetic I/Q；不建立 CMP180 session 或載入 SCPI。
+                constellation_config = MockConstellationConfig(
+                    modulation=str(data.get("modulation", "256-QAM")),
+                    point_count=int(cast(str | int | float, data.get("point_count", 1024))),
+                    noise_db=float(cast(str | int | float, data.get("noise_db", 32.0))),
+                    phase_deg=float(cast(str | int | float, data.get("phase_deg", 0.0))),
+                    quadrature_error_deg=float(cast(str | int | float, data.get("quadrature_error_deg", 0.0))),
+                    gain_imbalance_db=float(cast(str | int | float, data.get("gain_imbalance_db", 0.0))),
+                    dc_i=float(cast(str | int | float, data.get("dc_i", 0.0))),
+                    dc_q=float(cast(str | int | float, data.get("dc_q", 0.0))),
+                    frequency_offset_hz=float(cast(str | int | float, data.get("frequency_offset_hz", 0.0))),
+                    symbol_rate_hz=float(cast(str | int | float, data.get("symbol_rate_hz", 1_000_000.0))),
+                    amplitude_scale=float(cast(str | int | float, data.get("amplitude_scale", 1.0))),
+                    invalid_rate=float(cast(str | int | float, data.get("invalid_rate", 0.0))),
+                    seed=int(cast(str | int | float, data.get("seed", 180))),
+                )
+                constellation = generate_mock_constellation(constellation_config)
+                artifacts = save_constellation_artifacts(
+                    constellation,
+                    PROJECT_ROOT / "output",
+                    str(data.get("test_name", "constellation-mock")),
+                )
+                payload = constellation.public()
+                payload["artifacts"] = artifacts
+                payload["artifact_urls"] = self._artifact_urls(artifacts)
+                payload["output_location"] = self._output_location(artifacts)
+                self._json_response(payload)
+                return
             if path == "/api/mock/pa-advanced":
                 # 進階 PA Demo 僅計算固定模型並保存本機 artifact，不建立儀器 session 或送出 SCPI。
                 advanced = simulate_advanced_pa(

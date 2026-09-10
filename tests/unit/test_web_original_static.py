@@ -226,6 +226,43 @@ def test_product_home_is_safe_bilingual_navigation() -> None:
     assert "/api/" not in navigation_code
 
 
+def test_constellation_workspace_is_scatter_only_and_hil_pending() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    javascript = (STATIC / "constellation.js").read_text(encoding="utf-8")
+    style = (STATIC / "constellation.css").read_text(encoding="utf-8")
+
+    assert 'data-tab="constellation"' in html
+    assert 'id="constellationChart"' in html
+    assert "SOFTWARE / MOCK VERIFIED" in html
+    assert "HIL PENDING" in html
+    assert "/api/mock/constellation" in javascript
+    assert "<circle class=\"constellation-point" in javascript
+    assert "<polyline" not in javascript
+    assert "<path class=\"constellation-ideal" in javascript
+    for feature in ("wheel", "pointerdown", "constellationReset", "constellationSvg", "constellationPng", "constellationCsv", "constellationJson"):
+        assert feature in javascript
+    assert "constellation-point.outlier" in style
+
+
+def test_mcs_sweep_workspace_supports_selected_lists_and_mock_artifacts() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    javascript = (STATIC / "mcs-sweep.js").read_text(encoding="utf-8")
+    style = (STATIC / "mcs-sweep.css").read_text(encoding="utf-8")
+
+    assert 'data-tab="mcs-sweep"' in html
+    assert 'name="selected_mcs"' in html
+    assert "SOFTWARE / MOCK VERIFIED" in html
+    assert "HIL PENDING" in html
+    assert "沒有 approved compliance limit" in html
+    assert "/api/mock/mcs-sweep" in javascript
+    assert "EVM (dB)" in javascript
+    assert "Power (dBm)" in javascript
+    for export in ("mcsSvg", "mcsPng", "mcsCsv", "mcsJson"):
+        assert export in javascript
+    assert ".mcs-line" in style
+    assert "tr.invalid" in style
+
+
 def test_operator_guide_uses_copyable_project_commands() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     design = (STATIC / "design-system.css").read_text(encoding="utf-8")
@@ -292,8 +329,8 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert 'name="output_attenuator_db"' in html
     assert 'id="loadPaProfileButton"' in html
     # 靜態資源版本必須跟著 profile UI 修正提升，避免現場瀏覽器沿用舊摘要與安全文案。
-    assert 'src="/app.js?v=feedback4"' in html
-    assert 'src="/hardware.js?v=route1"' in html
+    assert 'src="/app.js?v=merge1"' in html
+    assert 'src="/hardware.js?v=merge1"' in html
     assert 'src="/gprf-power.js?v=route1"' in html
     assert 'value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器' in html
     gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")

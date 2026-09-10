@@ -211,6 +211,25 @@ git status
 
 # CMP180 EVM Automation User Guide
 
+### Constellation 離線分析
+
+1. 以 `python -m cmp180_evm.web --demo-only` 啟動後，開啟 `Constellation` 分頁。
+2. 選擇 BPSK、QPSK 或 16／64／256／1024／4096-QAM，設定點數、AWGN 與 impairment，再按「產生 Mock Constellation」。
+3. `Raw I/Q` 顯示 impairment 後座標；`Normalized I/Q` 以有效點的平均 symbol power 正規化。兩種模式都只使用 scatter，不會把 symbol 以線相連。
+4. 滾輪縮放、拖曳平移，按 Reset 回復 equal-axis 視窗；hover 可查看 symbol、I、Q 與 EVM。
+5. SVG／PNG／CSV／JSON 可由圖表工具列匯出，完整 artifact 另保存於 `output/<run>/`。
+
+所有 Constellation 結果均標示 `simulated=true`、`source=mock`、`hil_status=HIL_PENDING`。`SIMULATED · DERIVED` 指標不等於 CMP180 measured value；目前沒有經驗證的 acquisition SCPI，禁止作為 HIL 或 DUT compliance 證據。
+
+### MCS Sweep 離線分析
+
+1. 在 `--demo-only` Web 開啟 `MCS Sweep` 分頁，輸入任意逗號分隔的 selected MCS list，例如 `0,3,5,7,9,11`；不要求連續範圍，但僅接受 EHT baseline 的 0–13。
+2. 設定頻寬（MHz）、中心頻率（Hz）、nominal power 與 Mock jitter，再按「產生 Mock MCS Sweep」。
+3. 主圖預設為 EVM vs MCS，可切換 Power vs MCS；逐點表保留 modulation、coding rate、frequency error、reliability 與 invalid，不把缺值改為 0。
+4. SVG／PNG／CSV／JSON 由工具列匯出，完整 artifact 保存為 `mcs_sweep.csv`、`mcs_sweep.json`、`mcs_sweep.svg`、`mcs_sweep.png` 與 `mcs_sweep_metadata.json`。
+
+MCS 結果固定標記 `simulated=true`、`source=mock`、`hil_status=HIL_PENDING`，而且沒有 approved compliance limit。Repository 尚未有已驗證的 CMP180 waveform／MCS SCPI mapping，因此不可以把本功能的 synthetic EVM trend 說成 CMP180 HIL 或 DUT 結果。
+
 ### 直接式實機控制
 
 實機頁面使用單點、頻率掃描與功率掃描三個直接分頁，不再顯示裝飾性 Generator／Analyzer／Flow 積木，也不要求從下拉選單選擇模式。頻率掃描預設帶入已核准的 5925→6125 MHz／320 MHz 區段，避免剛切到掃描軸就落入非 WLAN 空隙；若改成 5085 MHz 或其他未核准組合，畫面仍會拒絕並保持 RF Off。Run 仍會觸發既有安全表單與最終 RF 摘要確認。多點掃描可按 Pause，系統會等目前點 STOP 且 RF Off 後才顯示 `PAUSED`；Resume 從下一點繼續，Stop 則結束並保存 partial artifacts。SingleShot 不支援中途 Pause。

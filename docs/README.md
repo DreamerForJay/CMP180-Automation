@@ -44,6 +44,7 @@
 | [SCPI Command Matrix](scpi-command-matrix.md) | 命令來源、狀態、副作用與 schema |
 | [SingleShot 狀態機](single-measurement-state-machine.md) | 狀態轉換與 cleanup |
 | [架構圖](diagrams/README.md) | 互動式系統架構與 SingleShot 生命週期圖 |
+| [功能完成度 Checklist](FEATURE_COMPLETION_CHECKLIST.md) | 由資料來源自動計算 Software／Mock／HIL／Production 狀態 |
 | [結果視覺化規格](result-visualization-spec.md) | CSV／JSON／HTML 與圖表要求 |
 | [實習結案報告 PPT 規格](final-presentation-spec.md) | 12–15 頁期末簡報結構、講稿節奏、證據與能力邊界 |
 | [RF 工作站 UX](rf-workstation-ux-plan.md) | Runs、Trace、圖表與操作安全 UX |
