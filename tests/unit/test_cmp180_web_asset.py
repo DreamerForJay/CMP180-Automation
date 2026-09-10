@@ -47,7 +47,9 @@ def test_web_model_preserves_geometry_and_is_self_contained() -> None:
 def test_viewer_vendor_matches_manifest_and_includes_license() -> None:
     manifest = json.loads((STATIC / "assets" / "cmp180-web.manifest.json").read_text())
     vendor = STATIC / "vendor" / "model-viewer"
-    assert hashlib.sha256((vendor / "model-viewer.min.js").read_bytes()).hexdigest() == manifest["model_viewer_sha256"]
+    # Git for Windows 可能將文字換行改為 CRLF；完整性檢查先正規化為上游 LF。
+    viewer = (vendor / "model-viewer.min.js").read_text(encoding="utf-8").replace("\r\n", "\n").encode()
+    assert hashlib.sha256(viewer).hexdigest() == manifest["model_viewer_sha256"]
     assert "Apache License" in (vendor / "LICENSE").read_text()
 
 

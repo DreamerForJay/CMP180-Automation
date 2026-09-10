@@ -42,6 +42,7 @@ for (const name of ['three', 'lit', 'lit-element', 'lit-html', '@lit/reactive-el
 await writeFile(new URL('THIRD_PARTY_LICENSES.txt', vendor), notices.join('\n\n--------------------\n\n'));
 const originalBytes = await readFile(source);
 const webBytes = await readFile(target);
+const viewerText = (await readFile(new URL('model-viewer.min.js', vendor), 'utf8')).replace(/\r\n/g, '\n');
 const report = {
   source: 'assets/cmp180_3d/cmp180.glb',
   source_sha256: createHash('sha256').update(originalBytes).digest('hex'),
@@ -52,7 +53,8 @@ const report = {
   primitives: document.getRoot().listMeshes().reduce((count, mesh) => count + mesh.listPrimitives().length, 0),
   triangles: document.getRoot().listMeshes().reduce((count, mesh) => count + mesh.listPrimitives().reduce((sum, p) => sum + p.getIndices().getCount() / 3, 0), 0),
   model_viewer: pkg.version,
-  model_viewer_sha256: createHash('sha256').update(await readFile(new URL('model-viewer.min.js', vendor))).digest('hex'),
+  // Git 在 Windows checkout 可能改成 CRLF；固定以 LF 文字計算，避免內容相同卻誤判。
+  model_viewer_sha256: createHash('sha256').update(viewerText).digest('hex'),
   gltf_transform: '4.5.0',
   operations: ['strip-unused-uv-tangents', 'dedup', 'flatten', 'join', 'weld', 'quantize-position-16', 'prune'],
 };
