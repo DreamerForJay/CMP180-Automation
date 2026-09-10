@@ -171,6 +171,12 @@ EVM limit 判定使用「dB 越負通常越好」的方向：量測 EVM 必須�
 
 重設 Campaign 只重設矩陣狀態，不刪除既有量測 artifacts。新增 route、bandwidth 或 waveform 的 RF 權限仍須先補入正式 command registry、workflow 與 capability profile；介面按鈕本身不會繞過後端限制。
 
+### 2026-09-10 校正表單與匯出防呆更新
+
+校正頁 7 個欄位改為明確的 `label for` 綁定，點欄位名稱會直接聚焦到輸入框；`?` 說明按鈕移到欄位右上角，功能不變。校正工具列的 adapter 下拉在 640px 以下獨佔一行，390px 手機不再整頁橫向捲動。
+
+結果頁的 SVG、Web PNG 與 CSV 匯出在圖表沒有測點時會停用並顯示「目前沒有可匯出的測點」，避免匯出空白但看似正式的報告；取得測點後自動恢復。此變更只影響瀏覽器端匯出行為，不改變任何量測、SCPI 或 RF 邏輯。
+
 ## English Version
 
 ### Current interface hierarchy

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
-  <link rel="stylesheet" href="/design-system.css?v=console16">
+  <link rel="stylesheet" href="/design-system.css?v=console18">
   <link rel="stylesheet" href="/cmp180-viewer.css?v=1">
 </head>
 <body>
@@ -362,13 +362,13 @@
       <div class="panel-head"><div><h2 data-i18n="calibrationTitle">Path Loss 校正 SOP</h2><p data-i18n="calibrationHelp">輸入校正設備的參考面讀值，建立待審查 Draft Profile；此頁不會控制儀器或開啟 RF。</p></div><span class="pill draft-limit">DRAFT ONLY</span></div>
       <ol class="sop-steps calibration-steps"><li><strong>01</strong><span data-i18n="calibrationSop1">登錄器材</span></li><li><strong>02</strong><span data-i18n="calibrationSop2">取得讀值</span></li><li><strong>03</strong><span data-i18n="calibrationSop3">檢查線損</span></li><li><strong>04</strong><span data-i18n="calibrationSop4">送交核准</span></li></ol>
       <form id="calibrationForm" class="form-grid">
-        <label><span>Profile ID</span><input name="profile_id" value="rf1.1-rf1.5-cable" required></label>
-        <label><span>Revision</span><input name="revision" value="0.1-draft" required></label>
-        <label><span>Route / 路徑</span><input name="route" value="RF1.1-RF1.5" required></label>
-        <label><span>Equipment references / 器材識別</span><input name="equipment_reference" placeholder="cable:C01; adapter:A01; power-meter:P01" required></label>
-        <label><span>Calibrated date / 校正日期</span><input name="calibrated_at" type="date" required></label>
-        <label><span>Expiry date / 到期日</span><input name="expires_at" type="date" required></label>
-        <label class="wide-field"><span>Readings CSV / 讀值</span><textarea name="readings" rows="6" required>frequency_hz,source_reference_dbm,receiver_reading_dbm
+        <label for="calProfileId"><span>Profile ID</span><input id="calProfileId" name="profile_id" value="rf1.1-rf1.5-cable" required></label>
+        <label for="calRevision"><span>Revision</span><input id="calRevision" name="revision" value="0.1-draft" required></label>
+        <label for="calRoute"><span>Route / 路徑</span><input id="calRoute" name="route" value="RF1.1-RF1.5" required></label>
+        <label for="calEquipmentReference"><span>Equipment references / 器材識別</span><input id="calEquipmentReference" name="equipment_reference" placeholder="cable:C01; adapter:A01; power-meter:P01" required></label>
+        <label for="calCalibratedAt"><span>Calibrated date / 校正日期</span><input id="calCalibratedAt" name="calibrated_at" type="date" required></label>
+        <label for="calExpiresAt"><span>Expiry date / 到期日</span><input id="calExpiresAt" name="expires_at" type="date" required></label>
+        <label for="calReadings" class="wide-field"><span>Readings CSV / 讀值</span><textarea id="calReadings" name="readings" rows="6" required>frequency_hz,source_reference_dbm,receiver_reading_dbm
 6085000000,-40.000,-40.850
 6105000000,-40.000,-40.870
 6125000000,-40.000,-40.890</textarea><small class="field-help">目前支援貼上 adapter／功率計匯出的 CSV。範例值僅供軟體驗證，不是正式校正資料。</small></label>
@@ -382,7 +382,7 @@
       <div id="metrics" class="metrics"></div>
       <div id="limitProfileCard" class="limit-profile-card" hidden></div>
       <section id="comparisonPanel" class="comparison-panel" hidden><div><strong>歷史資料比較 / Historical comparison</strong><p id="comparisonHint">可調整曲線名稱、顏色與顯示狀態。</p></div><div id="traceList" class="trace-list"></div></section>
-      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="pin_dbm">PA Pin (dBm)</option><option value="pout_dbm">PA Pout (dBm)</option><option value="gain_db">PA Gain (dB)</option><option value="power_error_db">Power Error (dB)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button" title="匯出目前前端互動圖">Web PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 390" role="img" aria-label="量測結果趨勢圖，含完整橫軸、縱軸標題與刻度"></svg></div>
+      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric" aria-label="圖表顯示指標 / Chart metric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="pin_dbm">PA Pin (dBm)</option><option value="pout_dbm">PA Pout (dBm)</option><option value="gain_db">PA Gain (dB)</option><option value="power_error_db">Power Error (dB)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button" title="匯出目前前端互動圖">Web PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 390" role="img" aria-label="量測結果趨勢圖，含完整橫軸、縱軸標題與刻度"></svg></div>
       <section id="matplotlibGallery" class="matplotlib-gallery" hidden><div class="panel-head"><div><h3>Pandas DataFrame + Matplotlib PNG</h3><p id="matplotlibDescription">由本次 Run 已保存的 CSV 產生；選擇指標後可開啟原始 160 DPI PNG。</p></div><span class="pill">OFFLINE REPORT</span></div><div class="matplotlib-toolbar"><label><span>Matplotlib metric</span><select id="matplotlibMetric"></select></label><a id="matplotlibOpen" class="ghost" href="#" target="_blank" rel="noopener">開啟原圖</a></div><div id="matplotlibPlots" class="matplotlib-plots"></div></section>
       <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Power Error (dB)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
@@ -471,12 +471,12 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=console17"></script>
+  <script src="/app.js?v=console18"></script>
   <script src="/hardware.js?v=single-range9"></script>
   <script src="/campaign.js?v=5"></script>
-  <script src="/calibration.js?v=2"></script>
+  <script src="/calibration.js?v=3"></script>
   <script src="/custom-plan.js?v=4"></script>
-  <script src="/gprf-power.js?v=5"></script>
+  <script src="/gprf-power.js?v=6"></script>
   <script src="/loopback.js?v=4"></script>
   <script type="module" src="/cmp180-viewer.js?v=1"></script>
 </body>

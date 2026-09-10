@@ -273,3 +273,13 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 /* 進階 PA Demo 的三張圖分開呈現量測原理；所有資料均為模擬，不共用實機結果狀態。 */
 .advanced-pa-result{margin-top:28px;padding-top:22px;border-top:1px solid var(--console-line)}.advanced-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.advanced-chart-grid .chart-card{margin:0}.advanced-chart-grid .chart-card:last-child{grid-column:1/-1}.advanced-chart-grid h3{margin:0;font-size:16px}.advanced-chart-grid p{margin:2px 0 10px;color:var(--console-muted);font-size:12px}.advanced-chart-grid svg{display:block;width:100%;height:auto;cursor:default}.advanced-bar{fill:var(--console-cyan);opacity:.82}.bar-value{fill:var(--console-text);font:800 12px var(--console-mono)}.mini-axis{font-size:13px}
 @media(max-width:720px){.advanced-chart-grid{grid-template-columns:1fr}.advanced-chart-grid .chart-card:last-child{grid-column:auto}}
+
+/* A04：校正工具列的 adapter 名稱可能很長；限制寬度並允許換行，避免 390px 畫面整頁橫向溢出。 */
+.calibration-toolbar{max-width:100%}
+.calibration-toolbar select{flex:0 1 320px;min-width:0;max-width:100%;text-overflow:ellipsis}
+@media(max-width:640px){.calibration-toolbar select{flex-basis:100%}.calibration-toolbar .ghost{flex:1 1 auto}}
+
+/* A05：說明按鈕移出 label 後，用 wrapper 定位到欄位右上角，維持原本的視覺位置與 grid 版面。 */
+.field-with-help{position:relative;min-width:0}
+.field-with-help>label{display:block}
+.field-with-help>.help-button{position:absolute;top:0;right:0;margin-left:0}

@@ -292,9 +292,9 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert 'name="output_attenuator_db"' in html
     assert 'id="loadPaProfileButton"' in html
     # 靜態資源版本必須跟著 profile UI 修正提升，避免現場瀏覽器沿用舊摘要與安全文案。
-    assert 'src="/app.js?v=console17"' in html
+    assert 'src="/app.js?v=console18"' in html
     assert 'src="/hardware.js?v=single-range9"' in html
-    assert 'src="/gprf-power.js?v=5"' in html
+    assert 'src="/gprf-power.js?v=6"' in html
     assert 'value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器' in html
     gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
     assert "function loadApprovedPaProfile" in gprf
@@ -362,3 +362,92 @@ def test_operator_guide_covers_clone_cli_and_artifacts() -> None:
     assert "test-connection" in html
     assert "scripts\\plot_results.py" in html
     assert "scripts\\build_report.py" in html
+
+
+def test_calibration_fields_have_explicit_labels_and_no_mobile_overflow() -> None:
+    """A04/A05：校正欄位必須明確綁定 label，說明按鈕不得留在 label 內。"""
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    calibration = (STATIC / "calibration.js").read_text(encoding="utf-8")
+    design = (STATIC / "design-system.css").read_text(encoding="utf-8")
+
+    # 7 個校正欄位都要有顯式 for/id，點欄位名稱才會聚焦到輸入框而不是說明按鈕。
+    for field_id in (
+        "calProfileId",
+        "calRevision",
+        "calRoute",
+        "calEquipmentReference",
+        "calCalibratedAt",
+        "calExpiresAt",
+        "calReadings",
+    ):
+        assert f'<label for="{field_id}"' in html
+        assert f'id="{field_id}"' in html
+
+    # 說明按鈕改掛在 label 外的 wrapper，隱含標籤不再指向按鈕。
+    assert "label.replaceWith(wrapper)" in calibration
+    assert "wrapper.append(label, button)" in calibration
+    assert "labelText.append(button)" not in calibration
+    assert ".field-with-help" in design
+
+    # 圖表指標選單需要可存取名稱。
+    assert 'id="chartMetric" aria-label=' in html
+
+    # A04：adapter select 不得撐破 390px 畫面。
+    assert ".calibration-toolbar select{flex:0 1 320px;min-width:0;max-width:100%" in design
+
+
+def test_chart_exports_are_disabled_without_measured_points() -> None:
+    """A08：沒有測點時不得匯出，避免產生空白但看似正式的報告檔。"""
+    javascript = (STATIC / "app.js").read_text(encoding="utf-8")
+
+    assert "function chartHasExportableData()" in javascript
+    assert "function updateExportAvailability()" in javascript
+    # 三個匯出入口都要有 guard，即使按鈕狀態被繞過也不會輸出空檔。
+    for handler in ("#exportSvg", "#exportPng", "#exportCompareCsv"):
+        assert f"$('{handler}').onclick=()=>{{if(!chartHasExportableData())return;" in javascript
+    # 原始 title 需保留，停用後再啟用不能遺失提示文字。
+    assert "button.dataset.exportTitle===undefined" in javascript
+    # 兩種繪圖路徑與初次載入都要同步按鈕狀態。
+    assert javascript.count("updateExportAvailability();") >= 3
+
+
+def test_gprf_form_exposes_converter_and_dut_input_controls() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
+
+    # 損耗型 DUT 必須填得進負增益；min="0" 會讓 converter 在前端就卡住。
+    assert 'name="expected_dut_gain_db" type="number" value="25" min="-120"' in html
+    assert 'name="dut_max_input_dbm"' in html
+    assert 'id="gprfConversionToggle"' in html
+    assert 'name="conversion_direction"' in html
+    assert 'name="conversion_sideband"' in html
+    assert 'name="conversion_lo_mhz"' in html
+    assert 'id="loadUdboxPlanButton"' in html
+    assert "function configureConversionFields" in gprf
+    assert "function loadUdboxPlan" in gprf
+    assert "window.loadUdboxPlan" in gprf
+
+
+def test_gprf_form_reflects_the_cmp180_generator_ceiling() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
+
+    # CMP180 generator 上限 +8 dBm；表單與預設值都不得再允許 +20。
+    assert 'name="power_dbm" type="number" value="-40" min="-80" max="8"' in html
+    assert "form.stop.value = frequencyAxis ? 8000 : -25;" in gprf
+
+
+def test_udbox_preset_matches_the_yaml_example() -> None:
+    import yaml
+
+    gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
+    config = yaml.safe_load(
+        Path("configs/udbox_sweep.example.yaml").read_text(encoding="utf-8")
+    )
+
+    # UI 快速鍵與 YAML 範例必須同步，否則現場兩個入口會給出不同的功率計畫。
+    assert f"stop: {config['stop_dbm']:g}," in gprf
+    assert f"expected_dut_gain_db: {config['expected_dut_gain_db']:g}," in gprf
+    assert f"output_attenuator_db: {config['output_attenuator_db']:g}," in gprf
+    assert f"dut_max_input_dbm: {config['dut_max_input_dbm']:g}," in gprf
+    assert f"conversion_lo_mhz: {config['conversion']['lo_frequency_hz'] / 1e6:g}" in gprf

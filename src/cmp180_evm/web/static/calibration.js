@@ -44,14 +44,18 @@ calibrationForm.elements.calibrated_at.value ||= calibrationToday.toISOString().
 calibrationForm.elements.expires_at.value ||= calibrationExpiry.toISOString().slice(0, 10);
 Object.entries(calibrationHelp).forEach(([name, help]) => {
   const field = calibrationForm.elements[name];
-  const labelText = field.closest('label').querySelector('span');
+  const label = field.closest('label');
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'help-button';
   button.textContent = '?';
   button.setAttribute('aria-label', `說明 ${help[0]}`);
   button.onclick = () => showCalibrationHelp(help[0], help[1]);
-  labelText.append(button);
+  // A05：說明按鈕不可留在 label 內，否則隱含標籤會指向按鈕而不是輸入欄位。
+  const wrapper = document.createElement('div');
+  wrapper.className = label.classList.contains('wide-field') ? 'field-with-help wide-field' : 'field-with-help';
+  label.replaceWith(wrapper);
+  wrapper.append(label, button);
 });
 
 const calibrationToolbar = document.createElement('div');
