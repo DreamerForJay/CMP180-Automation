@@ -137,6 +137,12 @@ Web 的歷史分析可勾選一筆直接查看圖表，或選取 2–8 筆比較
 
 實機「單點」分頁可在 CMP180 400–8000 MHz envelope 內執行中心頻率，並選擇 20／40／80／160／320 MHz 頻寬與 -55～-30 dBm Generator 功率。先按「檢查單點計畫」，再完成 RF1.1 → RF1.5 接線、無額外衰減器、操作員在場及最後 RF 確認。落在已核准 WLAN section 的點標示 `APPROVED`；區段外單點沿用已驗證的 EHT／B6GHz measurement template，實際 Generator 與 Analyzer center frequency 仍採輸入值並 readback，結果標示 `HIL_PENDING`。這項放寬只適用單點；頻率與功率掃描仍受 approved section gate 保護。後端會以 fingerprint 重新驗證同一組值後才建立 CMP180 session。`HIL_PENDING`、未校正或沒有正式 Limit Profile 的結果不得作為 DUT compliance。
 
+2026-09-10 的 400 MHz／320 MHz／-40 dBm 實機測試證實兩端可設定並回讀
+400 MHz，但 EHT／B6GH template 回傳 reliability `74` 且所有量測欄位為 `INV`。
+因此 Web 允許執行不代表該組合可有效解調；遇到 `INV` 後應停止，不可自行提高功率
+或連續重試。該次 artifact run ID 為 `8ad94d4884`，最終 RF `OFF`、measurement
+`RDY`、error queue empty。
+
 ## 8. 第一次連接 CMP180
 
 只有在以下條件都滿足後才需要接實機：
@@ -278,19 +284,34 @@ WLAN section 內，之後要改量 WLAN EVM 不必另開 section；不要的邊�
 與 LO 洩漏 6000 MHz 也都在 CMP180 範圍內，同一次接線就能順便觀測。Preview 會用
 `mirror_observable` 與 `lo_leakage_observable` 標示這兩個頻率是否看得到。
 
-Converter 是淨損耗元件，`expected_dut_gain_db` 必須能填負值（UD Box 0630 datasheet
-conversion loss 10 dB typ）。安全設定要注意兩件事：
+Web 操作：切到 `RF 功率讀值（GPRF）`，按「載入 UDBox 0630 範例」會一次帶入上述頻率
+計畫與功率設定並自動勾選轉換器選項。手動填寫時，勾選「DUT 是頻率轉換器」才會出現
+direction、sideband 與 LO frequency 三個欄位；未勾選就不送出 `conversion`，兩端維持同頻。
 
-- UDBox RF 輸出端建議實體加掛 10 dB 衰減器。理由不是增益過大，而是 datasheet 的
-  Tx Output P1dB 就落在 0 dBm，與 RF1.5 的 `sa_safe_limit_dbm` 沒有任何餘裕；加 pad
-  之後壓縮點在 analyzer 端只有 −10 dBm，才掃得過 P1dB 而不會誤觸 `SA_LIMIT` 中止。
+Converter 是淨損耗元件，`expected_dut_gain_db` 必須能填負值（UD Box 0630 datasheet
+conversion loss 10 dB typ）。安全設定要注意三件事：
+
+- **CMP180 generator 最大輸出是 +8 dBm**，GPRF 規劃上限已對齊此值。這代表
+  **UD Box 0630 的 P1dB 量不到**：datasheet Tx Output P1dB ≥ 0 dBm、conversion loss
+  10 dB，反推 IF 端要約 +10 dBm 才進入壓縮，至少差 2 dB（P1dB 是「Min.」值，實際
+  只會更高）。因此這條路徑只量得到 conversion gain 與平坦度；要量 P1dB 必須在 IF
+  路徑外加驅動放大器，那是另一組接線與安全分析。
+- UDBox RF 輸出端建議實體加掛 10 dB 衰減器。generator 上限 +8 dBm、conversion loss
+  10 dB，最高輸出約 −2 dBm，距離 `sa_safe_limit_dbm` 只有 2 dB，對首次上線的未驗證
+  route 太薄；加 pad 後 analyzer 端最高約 −12 dBm，保留 12 dB 餘裕，低端 −40 dBm 仍在
+  已驗證的量測功率範圍內。
 - `dut_max_input_dbm` 必填。UD Box 0630 datasheet 的 RF Specifications 表只給 P1dB
   （線性度），**沒有 absolute maximum rating**，因此範例值由 Tx Output P1dB 0 dBm 加回
   10 dB conversion loss 再留 3 dB 觀測餘裕得到，屬於工作上限而非損傷閾值。真正的
   absolute max 仍應向原廠索取後更新該欄。
 
-目前沒有任何 UDBox route 的 HIL 證據，也沒有 RF owner 核准；上述設定只是規劃輸入，
-不得當成已驗證 profile。
+建議在插入 UDBox 之前，先以 RF1.1 → RF1.5 直接對接、同一個 IF 頻率跑一次 back-to-back
+基準掃描。這條基準讓你之後能把線損與 CMP180 絕對功率誤差從 conversion gain 中扣掉；
+沒有它，量到的增益會混入未知線損。基準掃描是同頻量測，不需要勾選轉換器選項。
+
+RF owner 已核准 UDBox route（2026-09-09）。但仍沒有該 route 的 HIL 證據，
+`dut_max_input_dbm` 也還是 P1dB 推導的工作上限而非原廠損傷閾值，因此結果只能標
+`MEASURED`，不得作為 compliance 宣稱。
 
 ## Loopback 驗證
 

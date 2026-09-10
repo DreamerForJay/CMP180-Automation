@@ -574,3 +574,53 @@ def test_validate_pa_sweep_cli_reports_the_dut_input_limit(capsys):
     # 兩條保護必須同時出現，操作員才不會把 SA safe limit 當成 DUT 的上限。
     assert "SA safe limit: 0 dBm" in output
     assert "DUT max input: -20 dBm" in output
+
+
+def test_planning_range_matches_the_cmp180_generator_ceiling():
+    from cmp180_evm.web.gprf_service import GPRF_MAX_POWER_DBM
+
+    # 規劃上限必須貼齊儀器實際輸出能力，否則會規劃出送不出來的功率點。
+    assert GPRF_MAX_POWER_DBM == 8.0
+
+
+def test_power_sweep_above_the_generator_ceiling_is_blocked():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "power",
+            "frequency_hz": 1_000_000_000,
+            "start_dbm": -20,
+            "stop_dbm": 10,
+            "step_dbm": 1,
+            "dwell_ms": 200,
+            "expected_dut_gain_db": -10,
+            "dut_max_input_dbm": 13,
+            "sa_safe_limit_dbm": 0,
+        }
+    )
+
+    assert preview.execution_allowed is False
+    assert "8 dBm planning range" in preview.rejection_reason
+
+
+def test_fixed_generator_power_above_the_ceiling_is_blocked():
+    preview = build_gprf_power_preview(
+        {
+            "axis": "frequency",
+            "start_hz": 1_000_000_000,
+            "stop_hz": 1_200_000_000,
+            "step_hz": 100_000_000,
+            "power_dbm": 12,
+            "dwell_ms": 200,
+        }
+    )
+
+    assert preview.execution_allowed is False
+    assert "Generator power must stay within" in preview.rejection_reason
+
+
+def test_udbox_example_stays_inside_the_generator_ceiling():
+    request = _udbox_request()
+
+    # 範例的 stop 必須就是 generator 上限；超過的話現場會在最後幾點才失敗。
+    assert request["stop_dbm"] == 8
+    assert build_gprf_power_preview(request).execution_allowed is True

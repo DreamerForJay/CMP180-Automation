@@ -904,3 +904,24 @@ had empty instrument and cleanup error lists; final auditing confirmed RF `OFF`,
 measurement `RDY`, and error queue `[]`. This is a new complete Python live RF
 measurement, not Mock data or stored-only `FETCh`. This evidence does not cover other RF
 ports.
+
+## 2026-09-10 400 MHz／320 MHz SingleShot HIL
+
+操作員確認 RF1.1 → RF1.5 為 50 Ω 同軸直連，路徑中沒有 DUT、UD Box、衰減器
+或其他轉接設備。第一次 query-only preflight 發現 Generator 留在 `ON`：1250 MHz、
+-30 dBm；在啟動新量測前已立即使用 command map 的既有 `generator.rf_off` 關閉，
+回讀 RF `OFF`、measurement `OFF`、error queue `0,"No error"`。
+
+隨後以正式 `run_custom_real_single` workflow 執行 400 MHz、320 MHz、Generator
+-40 dBm、Analyzer expected nominal power -20 dBm 的完整 Python SingleShot。Generator
+與 WLAN Analyzer center frequency 均成功回讀 400 MHz；Analyzer 使用 EHT、BW32、
+B6GH measurement template。量測狀態為 `RUN → RDY`，但五組 28 欄結果全部回傳
+reliability `74` 與 `INV`，因此 EVM、Burst Power 與 Frequency Error 均判為
+`INVALID`，不得宣稱 400 MHz／320 MHz 可取得有效 WLAN EVM。
+
+實機 artifact 為 `output/20260910T081548Z_web-real-single-400mhz_8ad94d4884`，run ID
+`8ad94d4884`，不是 Mock 或 stored-only `FETCh`。獨立量測後查詢確認 Generator
+400 MHz／-40 dBm／RF `OFF`，Analyzer 400 MHz／BW32／B6GH／measurement `RDY`，
+所有查詢的 error queue 均為 `0,"No error"`。本次結果證明 400 MHz 設定與 cleanup
+路徑可執行，但 B6GH template 無法在該條件產生有效解調；未經新的受控探索不得
+自動重跑、提高功率或把此頻點加入 approved profile。

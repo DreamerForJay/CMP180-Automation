@@ -54,6 +54,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 離線圖表同時支援 dependency-free SVG 與 Pandas／Matplotlib `Agg` PNG；query-only 連線診斷具 0–5 次 bounded transient retry，每次重試前關閉 session，且不會自動重送 RF／SCPI write。
 - 新 Web Run 會從保存後的 CSV 自動產生 `plots-matplotlib/*.png`，並在「結果與圖表」以選單切換單張 Matplotlib PNG 預覽與原圖連結；互動圖的 X／Y 軸標題、工程單位與完整刻度已分離排版，並支援滑鼠拖曳水平平移。
 - 實機 SingleShot 可直接在 CMP180 400–8000 MHz envelope 內送出單點：已核准 WLAN section 標示 `APPROVED`，區段外則沿用已驗證的 EHT/B6GHz measurement template 並標示 `HIL_PENDING`。兩者都保留 RF1.1 → RF1.5、-55～-30 dBm、readback 與 cleanup 限制；掃描仍只允許 approved section。CMsquares 只保留探索／除錯用途。
+- 2026-09-10 首次 400 MHz／320 MHz／-40 dBm 實機 SingleShot 已確認 Generator 與 Analyzer 都能設定並回讀 400 MHz，且最後 RF `OFF`、measurement `RDY`、error queue empty；但 B6GH measurement template 的五組結果皆為 reliability `74`／`INV`，所以此點仍是 `HIL_PENDING`，不能視為有效 WLAN EVM。
 
 ### 功能狀態
 

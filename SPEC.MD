@@ -1347,6 +1347,10 @@ generator 上限，形成只保護儀器、不保護 DUT 的缺口。
 P1dB 是線性度指標，不是損傷閾值；以 P1dB 推導出的值只能當工作上限，並必須在設定檔
 註明來源與推導方式。
 
+GPRF 的規劃功率上限必須貼齊 CMP180 generator 的實際最大輸出 **+8 dBm**，不得沿用
+較寬鬆的軟體預設值。規劃範圍比儀器能力寬時，計畫會在現場跑到最後幾點才失敗；
+更嚴重的是它會讓人誤以為某個 DUT 的 P1dB 量得到，實際上 generator 根本推不上去。
+
 ### Converter DUT 的頻率解耦
 
 Up/Down converter 的輸入與輸出不同頻，generator 與 analyzer 不得再共用同一個頻率設定。

@@ -432,3 +432,11 @@ Before live work, run connection and query-only Generator discovery, confirm RF 
 - 查閱既有 stored `output/20260909T063313Z_gprf-power-sweep_9179dd51be/results.json`：16/17 有效，Gain 30.117332～30.566660 dB，峰對峰 0.449328 dB、母體標準差 0.098158 dB，Max Pout 25.223098 dBm。Analyzer 平均讀值 -42.2473225 dBm，並非 Pin。
 - 0 dBm 點 `status=SA_LIMIT`：Analyzer 0.06820796 dBm 超過 `sa_safe_limit_dbm=0`；reliability=0，error queue 空，raw `0,6.820796E-02`。未調高安全上限，未執行新 RF 量測。
 - 驗證：完整 pytest 292 passed；兩份 YAML validation、JavaScript 語法與 `git diff --check` 通過。測試使用合成／Mock 資料，另查閱上述 stored 證據。
+
+### 2026-09-10 400 MHz／320 MHz SingleShot 實機 HIL
+
+- 操作員確認 RF1.1 → RF1.5 為無 DUT／UD Box／衰減器／其他轉接設備的 50 Ω 同軸直連。
+- Preflight 發現既有 Generator 為 `ON`（1250 MHz、-30 dBm）；先以 registry 的 `generator.rf_off` 關閉並確認 RF `OFF`、measurement `OFF`、error queue empty，未 Reset 儀器或 Workspace。
+- 完整 Python `run_custom_real_single` 使用 400 MHz、320 MHz、-40 dBm、expected -20 dBm；Generator 與 Analyzer 都成功回讀 400 MHz，狀態為 `RUN → RDY`。
+- 五組 28 欄結果均為 reliability `74`／`INV`，EVM、Burst Power、Frequency Error 判為 `INVALID`。Run `8ad94d4884`，artifact：`output/20260910T081548Z_web-real-single-400mhz_8ad94d4884`。
+- 獨立收尾查詢確認 RF `OFF`、measurement `RDY`、所有 error queue 為 `0,"No error"`。此證據只證明 400 MHz 設定與 cleanup 可執行，不證明 B6GH template 可在 400 MHz 取得有效 WLAN EVM；不得自動重跑、提高功率或升級 approved profile。
