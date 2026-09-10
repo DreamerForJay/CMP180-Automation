@@ -1,5 +1,11 @@
 下面這份 SPEC 會以你目前實際狀況為基礎來規劃，不把尚未確認的 CMP180 SCPI 命令、Option 名稱、量測 Query 路徑硬寫成「已知事實」。
 
+## Constellation software boundary（2026-09-11）
+
+Constellation 目前是 hardware-independent software stack：支援標準 I/Q model、已知 interleaved 格式 parser、BPSK 至 4096-QAM synthetic generator、derived analysis、Web scatter 與 CSV／JSON／SVG／PNG artifact。Mock metadata 必須保存 `simulated=true`、`source=mock`、`hil_status=HIL_PENDING`；invalid 值保持 `null`／`valid=false`，不得轉為 0。
+
+Repository 尚無已驗證的 CMP180 Constellation query、trace 類型與 I/Q 回傳格式。`CMP180ConstellationSource` 只保留 interface 並拒絕 acquisition；在官方 CMP180 help、既有 query evidence 或新實機 discovery 完成前，不得新增或猜測 SCPI，也不得宣稱 HIL／DUT approval。
+
 新增 Loopback baseline 能力：正式 DUT 判定前，以獨立 SingleShot repeats 驗證 Tester path。Validity、Stability 與 Reasonableness 必須分層；Draft 或未指定 threshold 不得產生正式 `LOOPBACK_READY`。Raw repeats、outlier 標記、profile snapshot、統計與 cleanup evidence 必須可追溯。第一版為單頻點 repeats，多頻點 frequency × repeat 後續增量加入。2026-09-03 Repeat=10 實機 HIL 已核准 6105 MHz／320 MHz／−40 dBm／RF1.1-RF1.5 固定 baseline；只有相同門檻與至少 10 repeats 可使用該 approved profile，其他條件維持 draft。
 
 全 WLAN section Loopback 批次固定涵蓋 11 個已核准 section 代表點，每點 Repeat=10 且逐 profile 保存 artifact。執行只能使用 RF1.1-RF1.5 direct-cable route；任一 SCPI／cleanup error 必須停止後續 profile。2026-09-03 的 110/110 valid HIL 已讓各代表點取得獨立 source evidence 並升級為 approved。這不授權其他頻率、功率、route 或 UD Box path。

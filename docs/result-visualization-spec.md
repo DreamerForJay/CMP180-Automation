@@ -94,6 +94,12 @@ Matplotlib `Agg` backend 產生 160 DPI PNG；`--engine both` 同時保留 SVG �
 - 使用固定 fixture 執行視覺化腳本，檢查輸出檔存在、欄位映射與資料點數。
 - 功能實作時同步更新 `README.md`、`docs/user-guide.md`、GUI 規格與測試。
 
+### 8. Constellation 離線視覺化
+
+Constellation 工作區只使用 synthetic I/Q，不建立 CMP180 session。X 軸為 I、Y 軸為 Q，採 scatter 呈現且不得以折線連接 symbol。理想點與量測點分層繪製，X／Y 使用相同比例；圖表支援縮放、平移、重設、hover、invalid／outlier 區分與 raw／normalized I/Q 切換。
+
+每次 Mock run 保存 `constellation.csv`、`constellation.json`、`constellation.svg`、`constellation.png` 與 `constellation_metadata.json`。Metadata 固定標記 `source=mock`、`simulated=true`、`hil_status=HIL_PENDING` 與 `compliance_claim=false`，不可當成 HIL evidence。
+
 ---
 
 ## English Version

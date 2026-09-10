@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/console-theme.css">
   <link rel="stylesheet" href="/design-system.css?v=console18">
   <link rel="stylesheet" href="/cmp180-viewer.css?v=1">
+  <link rel="stylesheet" href="/constellation.css?v=1">
 </head>
 <body>
   <header class="topbar">
@@ -28,6 +29,7 @@
     <nav class="tabs" aria-label="Workspace">
       <button class="tab active" data-tab="home" data-i18n="homeTab">首頁</button>
       <button class="tab" data-tab="measurement" data-i18n="measurementTab">量測</button>
+      <button class="tab" data-tab="constellation">Constellation</button>
       <button class="tab" data-tab="loopback">Loopback 驗證</button>
       <button class="tab" data-tab="campaign" data-i18n="campaignTab">HIL 批次</button>
       <button class="tab" data-tab="calibration" data-i18n="calibrationTab">校正</button>
@@ -321,6 +323,44 @@
     </section>
     </section>
 
+    <section id="constellation" class="panel constellation-panel">
+      <div class="panel-head">
+        <div><p class="workspace-kicker">OFFLINE I/Q ANALYSIS</p><h2>Constellation 星座圖</h2><p>使用可重現的 synthetic I/Q 驗證資料模型、分析、視覺化與 artifact；不連接 CMP180。</p></div>
+        <div class="constellation-status"><span class="pill neutral">SOFTWARE / MOCK VERIFIED</span><span class="pill pending">HIL PENDING</span></div>
+      </div>
+      <div class="inline-alert"><strong>資料邊界</strong><span>所有新資料永久標記 <code>simulated=true</code>、<code>source=mock</code>；尚無經驗證的 CMP180 Constellation SCPI，不能作為 HIL 或 DUT compliance 證據。</span></div>
+      <div class="constellation-layout">
+        <form id="constellationForm" class="form-grid constellation-form">
+          <label><span>Modulation</span><select name="modulation"><option>BPSK</option><option>QPSK</option><option>16-QAM</option><option>64-QAM</option><option selected>256-QAM</option><option>1024-QAM</option><option>4096-QAM</option></select></label>
+          <label><span>Point count</span><input name="point_count" type="number" value="1024" min="1" max="20000" required></label>
+          <label><span>AWGN SNR</span><div class="input-unit"><input name="noise_db" type="number" value="32" step="0.1" required><b>dB</b></div></label>
+          <label><span>Phase error</span><div class="input-unit"><input name="phase_deg" type="number" value="1" step="0.1" required><b>deg</b></div></label>
+          <label><span>Gain imbalance</span><div class="input-unit"><input name="gain_imbalance_db" type="number" value="0.2" step="0.01" required><b>dB</b></div></label>
+          <label><span>Quadrature error</span><div class="input-unit"><input name="quadrature_error_deg" type="number" value="0.4" step="0.1" required><b>deg</b></div></label>
+          <label><span>Frequency offset</span><div class="input-unit"><input name="frequency_offset_hz" type="number" value="0" step="1" required><b>Hz</b></div></label>
+          <label><span>Symbol rate</span><div class="input-unit"><input name="symbol_rate_hz" type="number" value="1000000" min="1" step="1" required><b>sym/s</b></div></label>
+          <label><span>Amplitude scale</span><input name="amplitude_scale" type="number" value="1" min="0.01" step="0.01" required></label>
+          <label><span>DC I</span><input name="dc_i" type="number" value="0" step="0.001" required></label>
+          <label><span>DC Q</span><input name="dc_q" type="number" value="0" step="0.001" required></label>
+          <label><span>Invalid ratio</span><input name="invalid_rate" type="number" value="0.01" min="0" max="0.99" step="0.01" required></label>
+          <label><span>Seed</span><input name="seed" type="number" value="180" step="1" required></label>
+          <label><span>View</span><select id="constellationCoordinateMode"><option value="normalized">Normalized I/Q</option><option value="raw">Raw I/Q</option></select></label>
+          <label class="wide-field"><span>Test name</span><input name="test_name" value="constellation-mock" required></label>
+          <button id="runConstellation" class="primary submit wide-field" type="submit">產生 Mock Constellation</button>
+        </form>
+        <div class="constellation-workbench">
+          <div id="constellationMetrics" class="metrics"></div>
+          <div class="chart-card constellation-chart-card">
+            <div class="chart-title"><div><strong id="constellationChartTitle">Constellation</strong><small id="constellationChartHint">X = I · Y = Q · equal axis</small></div><div class="chart-tools"><button id="constellationReset" class="ghost" type="button">Reset</button><button id="constellationSvg" class="ghost" type="button" disabled>SVG</button><button id="constellationPng" class="ghost" type="button" disabled>PNG</button><button id="constellationCsv" class="ghost" type="button" disabled>CSV</button><button id="constellationJson" class="ghost" type="button" disabled>JSON</button></div></div>
+            <svg id="constellationChart" viewBox="0 0 760 760" role="img" aria-label="I and Q constellation scatter plot"></svg>
+            <div id="constellationHover" class="constellation-hover" hidden></div>
+          </div>
+          <div id="constellationArtifacts" class="artifacts"></div>
+          <div class="table-wrap constellation-table-wrap"><table><thead><tr><th>Symbol</th><th>I</th><th>Q</th><th>Ideal I</th><th>Ideal Q</th><th>EVM</th><th>Validity</th></tr></thead><tbody id="constellationRows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
     <section id="loopback" class="panel">
       <div class="panel-head"><div><p class="workspace-kicker">TESTER BASELINE</p><h2 data-i18n="loopbackTitle">Loopback RF 效能驗證</h2><p data-i18n="loopbackHelp">固定條件下執行獨立 SingleShot repeats；先驗證 Tester／Cable／UD Box／RF path，不代表 DUT PASS。</p></div><span id="loopbackOverall" class="pill neutral">LOOPBACK_UNVERIFIED</span></div>
       <div class="warning-card"><strong data-i18n="loopbackWarning">穩定不等於合理</strong><p data-i18n="loopbackWarningHelp">Stability 評估重複性；Reasonableness 比較 Analyzer input reference plane 的 Expected RX Power。相同代表點、門檻且至少 Repeat 10 使用 approved baseline；其他條件仍為 draft。</p></div>
@@ -471,13 +511,14 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=console18"></script>
+  <script src="/app.js?v=console19"></script>
   <script src="/hardware.js?v=single-range9"></script>
   <script src="/campaign.js?v=5"></script>
   <script src="/calibration.js?v=3"></script>
   <script src="/custom-plan.js?v=4"></script>
   <script src="/gprf-power.js?v=6"></script>
   <script src="/loopback.js?v=4"></script>
+  <script src="/constellation.js?v=1"></script>
   <script type="module" src="/cmp180-viewer.js?v=1"></script>
 </body>
 </html>

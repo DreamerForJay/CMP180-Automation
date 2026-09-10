@@ -2,7 +2,18 @@
 
 ## 中文版本
 
-### 狀態（2026-08-27）
+### 狀態（更新至 2026-09-11）
+
+- 2026-09-11 完成純軟體 Constellation stack：標準 point／metadata model、通用 interleaved
+  I/Q parser、BPSK 至 4096-QAM 單位功率理想點、可重現的 AWGN／phase／quadrature／gain
+  imbalance／DC／frequency offset Mock、valid-only EVM 與 I/Q 分析、五種 artifact，以及正式
+  Web scatter 工作區。所有新資料固定標記 `source=mock`、`simulated=true`、
+  `hil_status=HIL_PENDING`；`CMP180ConstellationSource.acquire()` 因沒有已驗證的 CMP180
+  Constellation SCPI 而明確拒絕執行。本輪也以單一 YAML 來源建立自動計分的功能完成度
+  Dashboard、重整繁體中文 README，並更新系統架構圖中的離線 Constellation 路徑。
+  Browser Mock 驗證成功產生 CSV／JSON／SVG／PNG／metadata；完整軟體檢查為 355 tests 與
+  兩份 YAML validation 通過，架構圖 9/9 showcase checks、0 error、0 warning。本批沒有連接
+  CMP180、沒有送 SCPI write、沒有 RF On，也沒有新增 HIL evidence。
 
 - 2026-09-09 在操作員當次確認 RF1.1 → RF1.5 直連、無衰減器且人在場後，執行 GPRF
   power-axis sweep 作為 PA Gain／P1dB HIL。計畫固定 6105 MHz、Generator -55／-50／

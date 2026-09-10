@@ -22,6 +22,11 @@ from cmp180_evm.calibration_adapters import (
     list_calibration_adapters,
 )
 from cmp180_evm.calibration_workflow import CalibrationReading, build_draft_profile
+from cmp180_evm.constellation import (
+    MockConstellationConfig,
+    generate_mock_constellation,
+    save_constellation_artifacts,
+)
 from cmp180_evm.loopback import loopback_batch_requests, select_loopback_profile
 from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.web.custom_plans import (
@@ -796,6 +801,35 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 return
             # 決定結果圖表 X 軸：頻率或功率掃描才不是 "frequency"（單點沿用預設）。
             sweep_axis = "frequency"
+            if path == "/api/mock/constellation":
+                # Constellation 端點只產生 synthetic I/Q；不建立 CMP180 session 或載入 SCPI。
+                config = MockConstellationConfig(
+                    modulation=str(data.get("modulation", "256-QAM")),
+                    point_count=int(cast(str | int | float, data.get("point_count", 1024))),
+                    noise_db=float(cast(str | int | float, data.get("noise_db", 32.0))),
+                    phase_deg=float(cast(str | int | float, data.get("phase_deg", 0.0))),
+                    quadrature_error_deg=float(cast(str | int | float, data.get("quadrature_error_deg", 0.0))),
+                    gain_imbalance_db=float(cast(str | int | float, data.get("gain_imbalance_db", 0.0))),
+                    dc_i=float(cast(str | int | float, data.get("dc_i", 0.0))),
+                    dc_q=float(cast(str | int | float, data.get("dc_q", 0.0))),
+                    frequency_offset_hz=float(cast(str | int | float, data.get("frequency_offset_hz", 0.0))),
+                    symbol_rate_hz=float(cast(str | int | float, data.get("symbol_rate_hz", 1_000_000.0))),
+                    amplitude_scale=float(cast(str | int | float, data.get("amplitude_scale", 1.0))),
+                    invalid_rate=float(cast(str | int | float, data.get("invalid_rate", 0.0))),
+                    seed=int(cast(str | int | float, data.get("seed", 180))),
+                )
+                constellation = generate_mock_constellation(config)
+                artifacts = save_constellation_artifacts(
+                    constellation,
+                    PROJECT_ROOT / "output",
+                    str(data.get("test_name", "constellation-mock")),
+                )
+                payload = constellation.public()
+                payload["artifacts"] = artifacts
+                payload["artifact_urls"] = self._artifact_urls(artifacts)
+                payload["output_location"] = self._output_location(artifacts)
+                self._json_response(payload)
+                return
             if path == "/api/mock/pa-advanced":
                 # 進階 PA Demo 僅計算固定模型並保存本機 artifact，不建立儀器 session 或送出 SCPI。
                 advanced = simulate_advanced_pa(

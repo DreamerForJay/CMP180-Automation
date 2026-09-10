@@ -6,7 +6,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/DreamerForJay/CMP180-Automation",
-      "revision": "bfe8e7edb7248826f0eeff6703f8f31b3e6ebc08"
+      "revision": "7f87d2d355e8d49de281d1e5677f8c74366c486a"
     },
     "views": [
       {
@@ -20,6 +20,18 @@
           "safety"
         ],
         "note": "從瀏覽器到 Web API，再進入非同步 Job 與安全閘門。"
+      },
+      {
+        "id": "offline-constellation",
+        "label": "離線 Constellation",
+        "focus": [
+          "operator",
+          "webui",
+          "httpapi",
+          "constellation",
+          "artifacts"
+        ],
+        "note": "Synthetic I/Q 走 Mock API、分析與 artifacts；不進 RF 安全區，也不接觸 CMP180。"
       },
       {
         "id": "rf-boundary",
@@ -272,6 +284,21 @@
       ]
     },
     {
+      "id": "constellation",
+      "type": "backend",
+      "label": "Constellation Stack",
+      "sublabel": "Model／Mock／Analysis",
+      "tag": "HIL PENDING",
+      "pos": [
+        680,
+        500
+      ],
+      "size": [
+        170,
+        62
+      ]
+    },
+    {
       "id": "scpimap",
       "type": "database",
       "label": "SCPI Command Map",
@@ -287,7 +314,6 @@
       "sources": [
         {
           "path": "src/cmp180_evm/scpi/registry.py",
-          "line": 172,
           "label": "指令表載入"
         }
       ]
@@ -306,6 +332,7 @@
         "instrument",
         "configs",
         "artifacts",
+        "constellation",
         "scpimap"
       ],
       "pad": 22
@@ -376,6 +403,24 @@
       "label": "載入並驗證"
     },
     {
+      "from": "httpapi",
+      "to": "constellation",
+      "label": "Synthetic I/Q API",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "constellation",
+      "to": "artifacts",
+      "label": "CSV／JSON／SVG／PNG",
+      "variant": "dashed",
+      "labelAt": [
+        655,
+        580
+      ]
+    },
+    {
       "from": "scpimap",
       "to": "workflow",
       "label": "集中式指令"
@@ -384,7 +429,22 @@
       "from": "workflow",
       "to": "artifacts",
       "label": "寫入量測結果",
-      "fromSide": "bottom"
+      "fromSide": "right",
+      "toSide": "bottom",
+      "via": [
+        [
+          1090,
+          341
+        ],
+        [
+          1090,
+          610
+        ],
+        [
+          545,
+          610
+        ]
+      ]
     },
     {
       "from": "artifacts",
@@ -419,6 +479,7 @@
         "SCPI 指令集中於 configs/scpi_command_map.yaml",
         "每次 Run 輸出 CSV、JSON、metadata 與 report.html",
         "歷史分析只讀既有 artifacts，不送 RF"
+        ,"Constellation Mock 不進 RF 授權區，hardware adapter 維持 HIL_PENDING"
       ]
     }
   ]

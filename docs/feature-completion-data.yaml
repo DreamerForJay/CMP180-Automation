@@ -1,0 +1,205 @@
+schema_version: 1
+weights:
+  architecture: 15
+  software: 25
+  unit_tests: 15
+  mock: 15
+  hil: 20
+  approved: 5
+  documented: 5
+features:
+  - name: Core Instrument Control
+    priority: P0
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: true
+    approved: true
+    documented: true
+    current: InstrumentSession、typed registry、setter 與 lifecycle 已有 Mock 與實機證據。
+    evidence: src/cmp180_evm/instrument/；src/cmp180_evm/scpi/；docs/hardware-discovery.md
+    missing: 無本輪缺口；新增命令仍須逐條取得 CMP180 證據。
+  - name: WLAN SingleShot
+    priority: P0
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: true
+    approved: true
+    documented: true
+    current: 28 欄五統計、Web guarded execution、artifact 與 deterministic cleanup 已完成。
+    evidence: src/cmp180_evm/workflow/single_measurement.py；docs/v1-acceptance-report.md
+    missing: 區段外中心頻率仍逐點 HIL_PENDING，不擴張已核准 profile。
+  - name: Frequency Sweep
+    priority: P0
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: true
+    approved: true
+    documented: true
+    current: 固定與 guarded Web 掃描、取消、partial artifact 與 11 WLAN section 已有證據。
+    evidence: src/cmp180_evm/workflow/frequency_sweep.py；docs/hardware-discovery.md
+    missing: 自訂範圍不自動繼承已核准矩陣，仍需各條件 HIL。
+  - name: Power Sweep
+    priority: P0
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: true
+    approved: true
+    documented: true
+    current: INVALID fail-fast、-55 至 -40 dBm 與 approved V1 evidence 已完成。
+    evidence: src/cmp180_evm/workflow/power_sweep.py；docs/v1-acceptance-report.md
+    missing: 其他功率、route 與 DUT 條件不在現行 approval 範圍。
+  - name: Constellation
+    priority: P0
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: false
+    approved: false
+    documented: true
+    current: 標準 model、I/Q parser、BPSK 至 4096-QAM Mock、分析、Web scatter 與五種 artifact 已完成。
+    evidence: src/cmp180_evm/constellation/；tests/unit/test_constellation.py；Web Constellation tab
+    missing: CMP180 acquisition SCPI、回傳格式驗證、實機 HIL 與 DUT profile approval。
+  - name: MCS Sweep
+    priority: P1
+    kind: rf_acquisition
+    architecture: false
+    software: false
+    unit_tests: false
+    mock: false
+    hil: false
+    approved: false
+    documented: true
+    current: 僅有既有 EHT MCS11 baseline，尚無 multi-MCS framework。
+    evidence: docs/project-development-log.md
+    missing: Data model、selected-list validation、Mock、chart、artifact、SCPI evidence 與 HIL。
+  - name: PA Offline Analysis
+    priority: P1
+    kind: offline
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: null
+    approved: false
+    documented: true
+    current: Demo P1dB 與 OIP3／IM3、H2／H3、ACP／ACLR 已有軟體與測試。
+    evidence: src/cmp180_evm/web/mock_service.py；tests/unit/test_web_mock_service.py
+    missing: 統一 MEASURED／DERIVED／SIMULATED offline schema 與完整 Psat／insufficient_data framework。
+  - name: Calibration
+    priority: P1
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: true
+    approved: true
+    documented: true
+    current: Profile lifecycle、內插、禁止外插、adapter 與 V1 approval gate 已完成。
+    evidence: src/cmp180_evm/calibration.py；configs/calibration.example.yaml；docs/v1-acceptance-report.md
+    missing: 新 fixture／cable／route 必須個別校正與核准。
+  - name: DUT Model
+    priority: P1
+    kind: rf_acquisition
+    architecture: false
+    software: false
+    unit_tests: false
+    mock: false
+    hil: false
+    approved: false
+    documented: true
+    current: GPRF 表單已有部分 DUT 參考面欄位，尚無獨立 DUT profile schema。
+    evidence: docs/dut-udbox-measurement-spec.md；src/cmp180_evm/web/static/index.html
+    missing: dut_profile.example.yaml、驗證、Mock、artifact 與真實 DUT HIL。
+  - name: UDBox
+    priority: P1
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: false
+    hil: false
+    approved: false
+    documented: true
+    current: GPRF conversion 計畫、YAML 範例與 UI preset 已存在，但不是完整 UDBox stack。
+    evidence: configs/udbox_sweep.example.yaml；src/cmp180_evm/web/gprf_service.py
+    missing: 獨立資料模型、Mock、artifact、UI 分析與真實 UDBox HIL。
+  - name: 5G NR FR1
+    priority: P2
+    kind: rf_acquisition
+    architecture: false
+    software: false
+    unit_tests: false
+    mock: false
+    hil: false
+    approved: false
+    documented: true
+    current: 僅列為 scope gap，沒有 production command 或量測 workflow。
+    evidence: docs/project-development-log.md
+    missing: Profile、result model、Mock、chart、artifact、官方 CMP180 command evidence 與 HIL。
+  - name: Reporting
+    priority: P1
+    kind: offline
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: null
+    approved: null
+    documented: true
+    current: CSV／JSON／HTML／Matplotlib 與 acceptance report builder 已完成。
+    evidence: src/cmp180_evm/results/；scripts/build_report.py；tests/unit/test_result_visualization.py
+    missing: 新 measurement family 必須沿用 provenance 與 artifact schema。
+  - name: Web UI
+    priority: P0
+    kind: offline
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: null
+    approved: null
+    documented: true
+    current: 正式 static/ 工作區具響應式 UI、Mock、guarded hardware、history、chart 與 Constellation。
+    evidence: src/cmp180_evm/web/static/；tests/unit/test_web_original_static.py
+    missing: 新功能仍須維持窄螢幕與無 RF 的 CI 驗收。
+  - name: RF Safety
+    priority: P0
+    kind: rf_acquisition
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
+    hil: true
+    approved: true
+    documented: true
+    current: Route／profile／power gate 與 success/error/timeout/cancel cleanup 已有測試及 HIL。
+    evidence: src/cmp180_evm/workflow/；docs/hardware-test-sop.md；docs/v1-acceptance-report.md
+    missing: 每個新增 RF workflow 都必須重新驗證，不可繼承 unrelated HIL。
+  - name: User Access Model
+    priority: P0
+    kind: offline
+    architecture: true
+    software: true
+    unit_tests: null
+    mock: null
+    hil: null
+    approved: null
+    documented: true
+    current: Single Permission Model；RF safety 與使用者角色分離。
+    evidence: SPEC.MD；docs/FEATURE_COMPLETION_CHECKLIST.md
+    missing: 無；權限模型已定義完成，RF safety gate 獨立保留。
