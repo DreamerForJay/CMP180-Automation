@@ -36,7 +36,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 已用同一支 Python 工具完成 11 個 WLAN 區段：2.4／5／6 GHz 搭配合法的 20／40／80／160／320 MHz 組合，共 176/176 個 channel center 有效；完整 400 MHz–8 GHz 仍不是 WLAN 頻段。
 - 解析 28 欄 OFDM SISO，輸出 CSV、JSON、metadata、raw response 與 HTML report。
 - 雙語響應式橫向量測工作區：Dark／Light、依分頁切換的專業工作區標題、整合式 Demo／實機量測、量測紀錄、多 Run 疊圖比較、可自訂 Trace 名稱／顏色／顯示、Draft 校正 SOP，以及完整 artifacts 與可復原紀錄管理。歷史分析會預先讀取既有 CSV／JSON，不會送出 RF。
-- 首頁以本機 Blender CMP180 立體渲染作為主視覺，並提供產品定位、量測能力、安全邊界、五步流程與操作手冊入口；首頁 CTA 只切換工作區，不呼叫任何量測或 RF API。圖片與動畫皆為本機資產，無外部影音依賴。
+- 首頁提供 CMP180 360° 立體檢視：點擊載入後可拖曳／觸控旋轉、縮放、切換正面／背面／側面、重設、手動開啟自轉與全螢幕；載入失敗保留靜態圖並可重試。模型與固定版本檢視器皆為本機資產，首頁互動不呼叫量測或 RF API。操作與重建方式見 [3D 檢視器](docs/cmp180-3d-viewer.md)，全站改善順序見 [網站檢視與改進計畫](docs/web-audit-2026-09-10.md)。
 - 首頁直接嵌入 `docs/diagrams/` 的系統架構與 SingleShot 生命週期互動圖，使用 `present=1` 互動／簡報模式；可切換、重新載入或全頁開啟，圖表操作不會呼叫量測 API。
 - 導覽明確區分示範與實機量測；一般本機啟動直接提供受保護的實機控制，`--demo-only` 才會停用儀器連線。結果頁顯示安全的相對輸出位置。
 - 實機與示範量測共用單點／頻率掃描／功率掃描分頁；結果圖表提供固定座標、受限水平 Zoom／Pan、十字游標與完整點位標值。說明頁涵蓋 GitHub clone、安裝、CLI、Web 與離線報告流程。
@@ -190,7 +190,7 @@ The editable CMP180 Blender exterior model, GLB, and validation render are avail
 - One Python tool completed 11 legal WLAN band/bandwidth sections across 2.4, 5, and 6 GHz, with 176/176 valid channel centers for 20/40/80/160/320 MHz. The non-WLAN gaps in the 400 MHz–8 GHz tuning range remain out of scope.
 - 28-field OFDM SISO parsing with CSV, JSON, metadata, raw-response, and HTML artifacts.
 - Bilingual responsive horizontal workspace with working Dark/Light themes, contextual workspace headings, integrated demo/guarded-hardware measurement, eagerly loaded run history, multi-run overlays, editable trace names/colours/visibility, a Draft calibration SOP, artifacts, and recoverable run management.
-- The product home uses the local Blender CMP180 render as its hero visual and explains capabilities, safety boundaries, the five-step workflow, and operator-manual entry points. Home-page CTAs only navigate between workspaces and call no measurement or RF API. Imagery and motion are local assets with no external media dependency.
+- The home page provides an opt-in CMP180 360° viewer with mouse/touch orbit, zoom, front/rear/side presets, reset, optional auto-rotation, and fullscreen. A failed load preserves the still image and offers retry. The model and pinned viewer are local assets; home interactions call no measurement or RF API. See the [3D viewer guide](docs/cmp180-3d-viewer.md) and [website review and improvement plan](docs/web-audit-2026-09-10.md).
 - The home page embeds the interactive system-architecture and SingleShot-lifecycle diagrams from `docs/diagrams/` in `present=1` interaction/presentation mode. Users can switch, reload, or open them full-page; diagram actions call no measurement API.
 - Dependency-free offline `results.csv` to SVG charts and a self-contained bilingual HTML report; Web comparisons support drag-to-reorder, rename/style controls, and SVG/PNG/CSV export.
 - The operator-approved horizontal workspace in `static/` is the served frontend. It supports read-only comparison of 2–8 saved runs with editable trace names, colours, visibility, and discontinuities at invalid points; this analysis never transmits RF.
