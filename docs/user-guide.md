@@ -2,7 +2,7 @@
 
 本文件說明目前工具。除了設定、Mock、連線與唯讀探索外，固定安全 profile 的 Python 實機 SingleShot、頻率／功率掃描與本機 Web GUI 已完成 HIL。自訂兩點頻率 HIL 曾在第二點收到 `INV` 並安全停止，因此自訂實機掃描仍須重新驗收；不得把該次結果描述為通過。完成一次量測後，仍可使用下列唯讀工具擷取上一筆 28 欄 OFDM SISO 結果：
 
-首頁右側使用本機 Blender CMP180 渲染圖呈現儀器外觀。此圖片僅供導覽與辨識，不會建立儀器連線、送出 SCPI 或啟用 RF。
+首頁右側先顯示 CMP180 靜態渲染圖。按「啟用 360° 檢視」後可用滑鼠或觸控拖曳旋轉、滾輪／雙指縮放；下方提供正面、背面、側面、重設、自動旋轉與全螢幕。「靜態圖」會結束 3D 檢視；載入失敗可以重試。此元件只呈現外觀，不會建立儀器連線、送出 SCPI 或啟用 RF。完整操作與離線資產說明見 [3D 檢視器指南](cmp180-3d-viewer.md)。
 
 ```powershell
 python scripts\cmp180_wlan_result_discover.py
@@ -276,7 +276,7 @@ validation. A custom two-point frequency HIL returned `INV` at its second point 
 stopped safely, so custom live execution still requires trigger/ranging review and a new
 HIL. It must not be reported as a passing run.
 
-The home page uses a local Blender render of the CMP180 for instrument recognition and navigation. This image does not create an instrument connection, transmit SCPI, or enable RF.
+The home page initially displays a CMP180 still render. Select “Explore in 360°” for mouse/touch orbit and wheel/pinch zoom. Controls provide front, rear, side, reset, auto-rotation, and fullscreen. “Still image” ends the 3D session; failed loads can be retried. This exterior viewer does not connect to an instrument, transmit SCPI, or enable RF. See the [3D viewer guide](cmp180-3d-viewer.md) for operation and offline assets.
 
 ### 1. Open the project
 

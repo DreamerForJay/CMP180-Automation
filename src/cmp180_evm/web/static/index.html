@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
   <link rel="stylesheet" href="/design-system.css?v=console16">
+  <link rel="stylesheet" href="/cmp180-viewer.css?v=1">
 </head>
 <body>
   <header class="topbar">
@@ -49,14 +50,30 @@
           <div class="hero-actions"><button class="primary" type="button" data-go-tab="measurement" data-home="enterConsole">進入量測控制台</button><button class="ghost" type="button" data-go-tab="guide" data-home="openManual">查看操作手冊</button></div>
           <div class="hero-tags"><span>Python 3.11+</span><span>SCPI / TCP 5025</span><span>Wi-Fi 6 / 6E / 7</span><span>中英雙語</span></div>
         </div>
-        <figure class="cmp180-visual" aria-labelledby="cmp180VisualTitle">
-          <span class="model-badge">3D MODEL</span>
-          <div class="cmp180-image-stage">
+        <figure id="cmp180Viewer" class="cmp180-visual cmp180-viewer" data-state="idle" aria-labelledby="cmp180VisualTitle">
+          <span class="model-badge">CMP180 / 360°</span>
+          <div class="cmp180-image-stage" id="cmp180ViewerStage">
             <img src="/assets/cmp180-hero.png" width="1200" height="720" fetchpriority="high" alt="R&amp;S CMP180 3D 外觀模型 / 3D exterior model">
+            <div class="viewer-launch"><button id="cmp180Load" class="primary" type="button" data-viewer-text="load">啟用 360° 檢視</button></div>
           </div>
+          <div id="cmp180Controls" class="viewer-controls" hidden>
+            <div class="viewer-views" role="group" aria-label="模型視角 / Model views">
+              <button type="button" data-viewer-orbit="0deg 82deg 105%" data-viewer-text="front">正面</button>
+              <button type="button" data-viewer-orbit="180deg 82deg 105%" data-viewer-text="rear">背面</button>
+              <button type="button" data-viewer-orbit="-90deg 75deg 105%" data-viewer-text="side">側面</button>
+              <button type="button" id="cmp180Reset" data-viewer-text="reset">重設視角</button>
+            </div>
+            <div class="viewer-tools" role="group" aria-label="3D 檢視控制 / 3D viewer controls">
+              <button type="button" id="cmp180ZoomIn" aria-label="放大 / Zoom in">＋</button>
+              <button type="button" id="cmp180ZoomOut" aria-label="縮小 / Zoom out">−</button>
+              <button type="button" id="cmp180Rotate" aria-pressed="false" data-viewer-text="rotate">自動旋轉</button>
+              <button type="button" id="cmp180Fullscreen" data-viewer-text="fullscreen">全螢幕</button>
+              <button type="button" id="cmp180Static" data-viewer-text="static">靜態圖</button>
+            </div>
+          </div>
+          <p id="cmp180ViewerStatus" class="viewer-status" role="status" aria-live="polite" data-viewer-text="idle">按一下載入立體模型，拖曳查看各個角度。</p>
           <figcaption id="cmp180VisualTitle"><strong>R&amp;S CMP180</strong><span>2 HU × 19″ · 16 RF PORTS</span></figcaption>
-          <span class="model-callout callout-front">2 × 8 RF</span>
-          <span class="model-callout callout-side">500 MHz BW</span>
+          <p class="viewer-note" data-viewer-text="note">外觀參考模型；接口細節依照片估算。</p>
         </figure>
       </div>
 
@@ -433,5 +450,6 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
   <script src="/custom-plan.js?v=3"></script>
   <script src="/gprf-power.js?v=3"></script>
   <script src="/loopback.js?v=4"></script>
+  <script type="module" src="/cmp180-viewer.js?v=1"></script>
 </body>
 </html>

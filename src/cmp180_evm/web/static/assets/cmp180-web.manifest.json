@@ -1,0 +1,22 @@
+{
+  "source": "assets/cmp180_3d/cmp180.glb",
+  "source_sha256": "52c9d17d6dd7a01e5b5b835f36509a54eac71175efd893aa8781a1efcf382d83",
+  "source_bytes": 10698916,
+  "web_bytes": 7210932,
+  "web_sha256": "40408ad785991afa02508476a060aebea9f4b231c2c0e4b5aebde4fa48e8b6ec",
+  "meshes": 21,
+  "primitives": 21,
+  "triangles": 316668,
+  "model_viewer": "4.3.1",
+  "model_viewer_sha256": "283b0672384614b4847636c306fc93fe4b1fcadc76d668b4e47f0ca76bcf033b",
+  "gltf_transform": "4.5.0",
+  "operations": [
+    "strip-unused-uv-tangents",
+    "dedup",
+    "flatten",
+    "join",
+    "weld",
+    "quantize-position-16",
+    "prune"
+  ]
+}
