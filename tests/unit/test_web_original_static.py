@@ -277,6 +277,7 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
 def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     javascript = (STATIC / "app.js").read_text(encoding="utf-8")
+    hardware = (STATIC / "hardware.js").read_text(encoding="utf-8")
     design = (STATIC / "design-system.css").read_text(encoding="utf-8")
 
     assert 'data-i18n="measurementTab"' in html
@@ -290,11 +291,19 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert 'name="expected_dut_gain_db"' in html
     assert 'name="output_attenuator_db"' in html
     assert 'id="loadPaProfileButton"' in html
+    # 靜態資源版本必須跟著 profile UI 修正提升，避免現場瀏覽器沿用舊摘要與安全文案。
+    assert 'src="/app.js?v=console17"' in html
+    assert 'src="/hardware.js?v=single-range9"' in html
+    assert 'src="/gprf-power.js?v=5"' in html
     assert 'value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器' in html
     gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
     assert "function loadApprovedPaProfile" in gprf
     assert "stopWithoutAttenuator: -25" in gprf
     assert "window.loadApprovedPaProfile" in gprf
+    # Loader 填值後必須刷新摘要；GPRF 文案允許已登錄的 fixture 衰減器。
+    assert gprf.count("updateHardwareSummary();") >= 3
+    assert "safetyCheckHelpGprf:'目前只核准 RF1.1 → RF1.5。確認線材、衰減器與轉接件都已登錄於計畫" in javascript
+    assert 'translations[language].safetyCheckHelpGprf' in hardware
     assert 'name="sa_safe_limit_dbm"' in html
     assert "external_attenuation_db: 0" in gprf
     assert 'value="gain_db"' in html

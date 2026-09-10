@@ -260,15 +260,15 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 .loopback-charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}.loopback-charts>div{padding:12px;border:1px solid var(--console-line);border-radius:12px;background:var(--console-surface-2)}.loopback-charts svg{display:block;width:100%;margin-top:8px}.loopback-charts circle{fill:var(--console-cyan)}.loopback-charts circle.loopback-outlier-dot{fill:#ff837a;stroke:#ff837a;stroke-width:2}.loopback-invalid{fill:#ff837a;font-size:20px;font-weight:900}.loopback-abnormal{background:rgba(255,131,122,.12);color:#ff837a}
 @media(max-width:900px){.loopback-charts{grid-template-columns:1fr}}
 
-/* 固定字級與清楚線條，縮放資料時不放大軸文字；減少粗體及發光造成的視覺雜訊。 */
-#chart .axis-label{font-size:12px;font-weight:500}
-#chart .axis-title{font-size:14px;font-weight:600}
-#chart .plot-line{stroke-width:2.2;filter:none}
-#chart .plot-dot{stroke-width:2;fill:var(--console-surface)}
-#chart .grid-line{stroke-width:1;opacity:.45}
+/* 主結果圖保留較大的固定字級；縮放只改資料視窗，不改文字比例。 */
+#chart .axis-label{font-size:16px;font-weight:800}
+#chart .axis-title{font-size:20px;font-weight:900}
+#chart .plot-line{stroke-width:3;filter:none}
+#chart .plot-dot{stroke-width:3;fill:var(--console-surface)}
+#chart .grid-line{stroke-width:1.15;opacity:.55}
 
-/* 游標讀值保留小幅固定空間，避免大面積空白及 hover 時圖面跳動。 */
-.chart-cursor-readout{min-height:26px;margin:4px 0;padding:3px 8px;font-size:12px;line-height:1.5}
+/* 游標讀值保留固定空間，避免 hover 數值出現時把圖面往下擠。 */
+.chart-cursor-readout{min-height:58px;margin:12px 0;padding:13px 16px;font-size:14px;line-height:1.7}
 
 /* 進階 PA Demo 的三張圖分開呈現量測原理；所有資料均為模擬，不共用實機結果狀態。 */
 .advanced-pa-result{margin-top:28px;padding-top:22px;border-top:1px solid var(--console-line)}.advanced-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.advanced-chart-grid .chart-card{margin:0}.advanced-chart-grid .chart-card:last-child{grid-column:1/-1}.advanced-chart-grid h3{margin:0;font-size:16px}.advanced-chart-grid p{margin:2px 0 10px;color:var(--console-muted);font-size:12px}.advanced-chart-grid svg{display:block;width:100%;height:auto;cursor:default}.advanced-bar{fill:var(--console-cyan);opacity:.82}.bar-value{fill:var(--console-text);font:800 12px var(--console-mono)}.mini-axis{font-size:13px}

@@ -144,6 +144,10 @@ function updateHardwareSummary() {
       : 'GPRF: RF power only, not WLAN EVM and not a compliance claim';
   }
   $('#hardwareProfileSummary').innerHTML = `<small>${language === 'zh' ? '目前設定' : 'Current plan'}</small><strong>${title}</strong><span>${detail}</span>`;
+  // GPRF 可使用已登錄的 fixture loss；WLAN profile 仍維持直接線路、不得額外衰減的限制。
+  $('[data-i18n="safetyCheckHelp"]').textContent = action === 'gprf'
+    ? translations[language].safetyCheckHelpGprf
+    : translations[language].safetyCheckHelp;
   // Review 文案跟著量測模式更新，避免操作員誤把 GPRF 掃描當成 WLAN EVM。
   $('#planCheckText').textContent = planCheck;
   updatePageHeading();

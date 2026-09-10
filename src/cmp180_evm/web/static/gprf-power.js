@@ -86,6 +86,8 @@ function loadUdboxPlan() {
   gprfPlanPayload = null;
   gprfPlanResult = null;
   $('#gprfPowerPreview').hidden = true;
+  // 程式化填值不會觸發 input；最後統一刷新摘要，避免顯示載入前的掃描範圍。
+  updateHardwareSummary();
   toast(language === 'zh'
     ? ' 已載入 UDBox 0630 規劃範例：IF 1000 MHz + LO 6000 MHz → RF 7000 MHz。此範例量得到 conversion gain 與平坦度，但 generator 上限 +8 dBm 不足以推到 P1dB。'
     : 'UD Box 0630 planning example loaded: IF 1000 MHz + LO 6000 MHz to RF 7000 MHz. It measures conversion gain and flatness; the +8 dBm generator ceiling cannot reach P1dB.');
@@ -114,6 +116,8 @@ function loadApprovedPaProfile() {
   gprfPlanPayload = null;
   gprfPlanResult = null;
   $('#gprfPowerPreview').hidden = true;
+  // 程式化填值不會觸發 input；最後統一刷新摘要，避免顯示載入前的掃描範圍。
+  updateHardwareSummary();
   toast(language === 'zh'
     ? `已載入 approved PA profile：未接衰減器先掃 ${approvedPaProfile.start} → ${approvedPaProfile.stopWithoutAttenuator} dBm；若現場有受控衰減器，可調整 Output attenuator 後再檢查計畫。`
     : `Approved PA profile loaded: without an output attenuator, sweep ${approvedPaProfile.start} to ${approvedPaProfile.stopWithoutAttenuator} dBm first. Adjust Output attenuator for a controlled fixture before reviewing the plan.`);
