@@ -121,6 +121,7 @@ python scripts\cmp180_pa_sweep_validate.py `
 |---|---|
 | [使用者指南](docs/user-guide.md) | 安裝、CLI、GUI、Mock 與實機操作 |
 | [硬體 SOP](docs/hardware-test-sop.md) | 接線、安全與執行順序 |
+| [ADL5611 PA／P1dB SOP](docs/adl5611-pa-p1db-sop.md) | ADL5611 現場 PA Gain／P1dB 量測前檢查與判讀 |
 | [Web GUI](docs/web-gui-guide.md) | 啟動、硬體鎖定與 artifacts |
 | [CMsquares Workspace 借鑑](docs/cmsquares-workspace-lessons.md) | 安全 Pause、狀態回饋與 `RDY,ADJ,INV` 診斷；不複製其積木排版 |
 | [Google Apps Script 分享版](docs/google-apps-script-deployment.md) | 固定網址部署、更新與去識別化歷史分析 |
