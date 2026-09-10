@@ -51,11 +51,22 @@ Object.entries(calibrationHelp).forEach(([name, help]) => {
   button.textContent = '?';
   button.setAttribute('aria-label', `說明 ${help[0]}`);
   button.onclick = () => showCalibrationHelp(help[0], help[1]);
-  // A05：說明按鈕不可留在 label 內，否則隱含標籤會指向按鈕而不是輸入欄位。
   const wrapper = document.createElement('div');
   wrapper.className = label.classList.contains('wide-field') ? 'field-with-help wide-field' : 'field-with-help';
+  const head = document.createElement('div');
+  head.className = 'field-head';
   label.replaceWith(wrapper);
-  wrapper.append(label, button);
+  // 說明按鈕緊貼標題文字，不再絕對定位到格子右上角變成孤兒。
+  // A05：按鈕與輸入欄位都移出 label；label 已有明確 for 屬性，隱含標籤不會
+  // 把按鈕或說明文字算進欄位名稱。
+  const titleSpan = label.querySelector(':scope > span');
+  Array.from(label.childNodes)
+    .filter(node => node !== titleSpan)
+    .forEach(node => wrapper.append(node));
+  Array.from(titleSpan.childNodes).forEach(node => label.append(node));
+  titleSpan.remove();
+  head.append(label, button);
+  wrapper.prepend(head);
 });
 
 const calibrationToolbar = document.createElement('div');

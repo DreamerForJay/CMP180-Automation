@@ -1,13 +1,24 @@
 import pytest
 
-from cmp180_evm.workflow.rf_routes import normalize_route, parse_route, validate_route
+from cmp180_evm.workflow.rf_routes import (
+    normalize_route,
+    parse_route,
+    route_is_hil_verified,
+    validate_route,
+)
 
-INSTALLED = ["RF1.1", "RF1.2", "RF1.5", "RF2.1"]
-APPROVED = ["RF1.1-RF1.5"]
+INSTALLED = ["RF1.1", "RF1.2", "RF1.5", "RF1.6", "RF2.1"]
+# Generator 輸出無法遠端切換，只有 workspace 既有的 RF1.1 驅動得動。
+COMMANDABLE_GENERATOR = ["RF1.1"]
+HIL_VERIFIED = ["RF1.1-RF1.5"]
 
 
 def check(value):
-    return validate_route(value, approved_routes=APPROVED, installed_ports=INSTALLED)
+    return validate_route(
+        value,
+        installed_ports=INSTALLED,
+        commandable_generator_ports=COMMANDABLE_GENERATOR,
+    )
 
 
 def test_operator_text_variants_normalize_to_one_canonical_route():
@@ -44,18 +55,27 @@ def test_port_absent_from_this_instrument_is_refused():
         check("RF1.1-RF2.8")
 
 
-def test_installed_but_unapproved_route_still_blocks_rf():
-    # RF1.2 存在於儀器上，但該路徑未完成 HIL，仍不得送 RF。
-    with pytest.raises(ValueError, match="not hardware-verified"):
-        check("RF1.1-RF1.2")
+def test_analyzer_port_without_hil_evidence_still_executes():
+    """Analyzer 端可由 ROUTe:WLAN:MEAS:SPATh 切換，未做過 HIL 也必須跑得起來蒐證。"""
+    route = check("RF1.1-RF1.6")
+    assert route.generator_port == "RF1.1"
+    assert route.analyzer_port == "RF1.6"
+    # 執行不受阻，但證據等級仍必須誠實標示。
+    assert route_is_hil_verified(route.label, HIL_VERIFIED) is False
 
 
-def test_adding_a_verified_route_to_the_profile_unlocks_it():
-    """新增一條已完成 HIL 的 route 只需改 capability profile，不必改程式。"""
-    unlocked = validate_route(
-        "RF1.2-RF2.1",
-        approved_routes=["RF1.1-RF1.5", "RF1.2-RF2.1"],
-        installed_ports=INSTALLED,
-    )
-    assert unlocked.generator_port == "RF1.2"
-    assert unlocked.analyzer_port == "RF2.1"
+def test_generator_port_that_cannot_be_switched_remotely_is_refused():
+    """沒有已驗證的 generator RF path setter，輸出切不過去，硬送只會量到空氣。"""
+    with pytest.raises(ValueError, match="cannot be selected remotely"):
+        check("RF1.2-RF1.5")
+
+
+def test_calibration_style_check_skips_the_generator_capability_gate():
+    """校正不送 RF，只需要 port 存在且兩端不同。"""
+    route = validate_route("RF1.2-RF1.5", installed_ports=INSTALLED)
+    assert route.label == "RF1.2-RF1.5"
+
+
+def test_hil_verification_is_a_label_not_a_gate():
+    assert route_is_hil_verified(" rf1.1 → rf1.5 ", HIL_VERIFIED) is True
+    assert route_is_hil_verified("RF1.1-RF1.6", HIL_VERIFIED) is False

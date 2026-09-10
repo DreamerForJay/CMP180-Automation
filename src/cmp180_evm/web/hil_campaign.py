@@ -8,7 +8,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
 
+from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
+from cmp180_evm.workflow.rf_routes import validate_route
 
 DEFAULT_CASES: tuple[dict[str, object], ...] = (
     {"case_id": "b24-bw20", "category": "bandwidth", "label": "2.4 GHz / 20 MHz", "route": "RF1.1-RF1.5", "request": {"axis": "frequency", "start_hz": 2_412_000_000, "stop_hz": 2_472_000_000, "step_hz": 30_000_000, "bandwidth_hz": 20_000_000, "generator_power_dbm": -45, "dwell_ms": 100}},
@@ -26,6 +28,26 @@ DEFAULT_CASES: tuple[dict[str, object], ...] = (
 )
 
 REFERENCE_REQUEST = {"axis": "frequency", "start_hz": 6_105_000_000, "stop_hz": 6_105_000_000, "step_hz": 20_000_000, "bandwidth_hz": 320_000_000, "generator_power_dbm": -45, "dwell_ms": 100}
+
+# CMP180 沒有已驗證的 generator RF path setter，Generator 輸出固定在 workspace
+# 既有的 RF1.1；Analyzer 端則可遠端切換。詳見 workflow/rf_routes.py。
+GENERATOR_PORT = "RF1.1"
+
+
+def _route_executable(route: str) -> tuple[bool, str]:
+    """Decide whether this software can actually drive the wiring a case describes."""
+    profile = load_capability_profile(
+        Path(__file__).resolve().parents[3] / "configs" / "instrument_capabilities.example.yaml"
+    )
+    try:
+        validate_route(
+            route,
+            installed_ports=profile.installed.rf_ports,
+            commandable_generator_ports=profile.installed.commandable_generator_ports,
+        )
+    except ValueError as exc:
+        return False, str(exc)
+    return True, ""
 
 
 class HilCampaignStore:
@@ -53,12 +75,15 @@ class HilCampaignStore:
             case.update({"state": "pending", "reason": "", "job_id": None, "artifacts": {}})
             cases.append(case)
         ports = [f"RF{bank}.{index}" for bank in (1, 2) for index in range(1, 9)]
+        # Analyzer 端可由 `ROUTe:WLAN:MEAS:SPATh` 遠端切換，因此 RF1.1 → 其他 port
+        # 都是真的跑得起來的 HIL 案例。排除 RF1.1 本身（同 port 不合法）與 RF1.5
+        # （已是 baseline 案例，不重複列）。
         for port in ports:
-            if port != "RF1.5":
-                cases.append({"case_id": f"route-rf11-{port.lower().replace('.', '')}", "category": "route", "label": f"RF1.1 → {port}", "route": f"RF1.1-{port}", "request": deepcopy(REFERENCE_REQUEST), "state": "pending", "reason": "", "job_id": None, "artifacts": {}})
-        for port in ports:
-            if port not in {"RF1.1", "RF1.5"}:
-                cases.append({"case_id": f"route-{port.lower().replace('.', '')}-rf15", "category": "route", "label": f"{port} → RF1.5", "route": f"{port}-RF1.5", "request": deepcopy(REFERENCE_REQUEST), "state": "pending", "reason": "", "job_id": None, "artifacts": {}})
+            if port not in {GENERATOR_PORT, "RF1.5"}:
+                cases.append({"case_id": f"route-rf11-{port.lower().replace('.', '')}", "category": "route", "label": f"{GENERATOR_PORT} → {port}", "route": f"{GENERATOR_PORT}-{port}", "request": deepcopy(REFERENCE_REQUEST), "state": "pending", "reason": "", "job_id": None, "artifacts": {}})
+        # Generator 端換 port 的案例不再自動產生：command map 沒有已驗證的
+        # generator RF path setter，軟體無法把輸出切離 RF1.1，這些案例只會是
+        # 永遠 blocked 的假待辦。找到並驗證 setter 後才應該加回來。
         cases.extend((
             {"case_id": "analysis-bw500", "category": "analysis", "label": "500 MHz analysis bandwidth", "route": "RF1.1-RF1.5", "request": {**deepcopy(REFERENCE_REQUEST), "bandwidth_hz": 500_000_000}, "state": "pending", "reason": "", "job_id": None, "artifacts": {}},
             {"case_id": "dual-vsa-vsg", "category": "parallel", "label": "Dual VSA/VSG parallel", "route": "TWO-INDEPENDENT-ROUTES", "request": None, "state": "pending", "reason": "", "job_id": None, "artifacts": {}},
@@ -103,7 +128,9 @@ class HilCampaignStore:
                 continue
             preview = build_custom_sweep_preview(case["request"])
             case["preview"] = preview.public()
-            route_allowed = case["route"] == "RF1.1-RF1.5"
+            # 判定依據是「這條路徑軟體驅動得動嗎」，不是「它做過 HIL 沒」——
+            # 後者是這個 campaign 要產出的結果，拿來當前提會變成死結。
+            route_allowed, route_reason = _route_executable(case["route"])
             requirement = case.get("requires")
             requirement_complete = not requirement or any(
                 item["case_id"] == requirement and item["state"] == "complete"
@@ -116,7 +143,7 @@ class HilCampaignStore:
             )
             case["reason"] = (
                 preview.rejection_reason
-                or ("Route backend/profile is not verified" if not route_allowed else "")
+                or (route_reason if not route_allowed else "")
                 or (f"Requires successful case {requirement}" if not requirement_complete else "")
             )
             changed = True

@@ -142,8 +142,12 @@ window.reviewAndExecuteCustomHardwarePlan = async function(button) {
     return;
   }
   const hardwareForm = $('#hardwareForm').elements;
-  if (normalizeRoute(hardwareForm.cable_confirmation.value) !== 'RF1.1-RF1.5' || !hardwareForm.operator_present.checked) {
-    toast(language === 'zh' ? '請先完成接線與人在現場確認。' : 'Complete cabling and operator preflight first.', 'error');
+  // 與 hardware.js 同一份能力判定：只擋軟體驅動不了的接線，不再比對單一路徑。
+  const routeCheck = checkRoute(hardwareForm.cable_confirmation.value);
+  if (!routeCheck.ok || !hardwareForm.operator_present.checked) {
+    toast(routeCheck.ok
+      ? (language === 'zh' ? '請先確認操作員在現場。' : 'Confirm operator presence first.')
+      : routeCheck.reason, 'error');
     return;
   }
   // 最後確認保留在 Web 內；後端仍會用 fingerprint 重新確認參數未被竄改。

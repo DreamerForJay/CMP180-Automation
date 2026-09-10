@@ -17,7 +17,9 @@ from cmp180_evm.web.server import (
     Cmp180WebHandler,
     ExclusiveThreadingHTTPServer,
     list_run_history,
+    route_hil_verified,
     validate_cable_route,
+    validate_calibration_route,
     validate_custom_hardware_startup,
     validate_hardware_bind,
 )
@@ -189,10 +191,22 @@ def test_web_hardware_endpoint_is_enabled_for_local_workstation_by_default():
     assert Cmp180WebHandler.custom_hardware_enabled is True
 
 
-def test_cable_route_accepts_verified_variants_and_blocks_custom_route():
+def test_cable_route_gate_blocks_only_what_the_software_cannot_drive():
     assert validate_cable_route(" RF1.1 → RF1.5 ") == "RF1.1-RF1.5"
-    with pytest.raises(ValueError, match="not hardware-verified"):
+    # Analyzer 端可遠端切換，未做過 HIL 的路徑仍可執行以蒐證。
+    assert validate_cable_route("RF1.1-RF1.6") == "RF1.1-RF1.6"
+    # Generator 端沒有已驗證的 RF path setter，切不過去就必須擋下。
+    with pytest.raises(ValueError, match="cannot be selected remotely"):
         validate_cable_route("RF1.2-RF1.6")
+
+
+def test_calibration_route_gate_allows_paths_that_have_no_hil_evidence_yet():
+    """校正只算 CSV、不送 RF，不得套用 RF 執行閘門，否則新路徑永遠無法建檔。"""
+    assert validate_calibration_route("RF1.2-RF1.6") == "RF1.2-RF1.6"
+    assert route_hil_verified("RF1.1-RF1.5") is True
+    assert route_hil_verified("RF1.1-RF1.6") is False
+    with pytest.raises(ValueError, match="is not present"):
+        validate_calibration_route("RF1.1-RF9.9")
 
 
 def test_hardware_mode_must_not_bind_to_network_interfaces():

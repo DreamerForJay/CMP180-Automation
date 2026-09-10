@@ -35,6 +35,22 @@ class InstalledCapabilities(RangeLayer):
     analyzer_count: int = Field(ge=1)
     generator_count: int = Field(ge=1)
     rf_ports: list[str]
+    # Generator 輸出 port 目前無已驗證的 SCPI setter，只能沿用儀器 workspace 既有值；
+    # 這是能力限制而非安全政策，找到並驗證 setter 後才可擴充此清單。
+    commandable_generator_ports: list[str] = Field(default_factory=lambda: ["RF1.1"])
+
+    @model_validator(mode="after")
+    def validate_commandable_ports(self) -> InstalledCapabilities:
+        installed = {port.strip().upper() for port in self.rf_ports}
+        missing = [
+            port for port in self.commandable_generator_ports
+            if port.strip().upper() not in installed
+        ]
+        if missing:
+            raise ValueError(
+                f"commandable_generator_ports not installed on this instrument: {missing}"
+            )
+        return self
 
 
 class ApprovedSection(RangeLayer):

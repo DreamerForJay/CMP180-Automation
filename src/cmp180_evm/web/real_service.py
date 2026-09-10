@@ -42,8 +42,25 @@ from cmp180_evm.workflow.cmp180_single_backend import (
 )
 from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan, run_frequency_sweep
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
+from cmp180_evm.workflow.rf_routes import parse_route, route_is_hil_verified
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
 from cmp180_evm.workflow.wlan_bands import WLAN_BANDS, band_for_frequency
+
+DEFAULT_ROUTE = "RF1.1-RF1.5"
+# 已完成 HIL 的路徑；僅供 artifact 標示，不參與執行判定。
+HIL_VERIFIED_ROUTES = ["RF1.1-RF1.5"]
+
+
+def _ports_from_request(request: dict[str, object]) -> tuple[str, str]:
+    """Resolve the operator-confirmed route into the ports the plan will command.
+
+    route 必須真的決定 `ROUTe:WLAN:MEAS:SPATh` 寫入的 analyzer port，否則接線換到
+    別的 port 時分析儀仍停在舊 port，量測必然收不到訊號。伺服器端已先用
+    `validate_cable_route()` 擋掉未安裝或無法遠端切換的 port，此處只負責拆解。
+    """
+    route = parse_route(request.get("cable_confirmation") or DEFAULT_ROUTE)
+    return route.generator_port, route.analyzer_port
+
 
 VERIFIED_ARB_WAVEFORM = waveform_for_bandwidth(320_000_000)
 # 2026-08-20 HIL 已驗證的 analyzer 接收參考面；讓它跟隨 generator 功率會導致 INV。
@@ -333,9 +350,10 @@ def run_custom_real_sweep(
     try:
         # 掃描每點保留 60 秒 acquisition 窗口，不放寬任何 RF 安全限制。
         backend = Cmp180SingleMeasurementBackend(instrument, registry, timeout_s=60.0)
+        generator_port, analyzer_port = _ports_from_request(request)
         single = SingleMeasurementPlan(
-            generator_port="RF1.1",
-            analyzer_port="RF1.5",
+            generator_port=generator_port,
+            analyzer_port=analyzer_port,
             center_frequency_hz=(
                 preview.points[0]
                 if preview.axis == "frequency"
@@ -573,6 +591,12 @@ def _run_real_single_plan(
                 "expected_nominal_power_dbm": plan.expected_nominal_power_dbm,
                 "generator_port": plan.generator_port,
                 "analyzer_port": plan.analyzer_port,
+                "route": f"{plan.generator_port}-{plan.analyzer_port}",
+                # 未完成 HIL 的路徑仍可量測蒐證，但 artifact 必須留下標記，
+                # 離線判讀與 compliance 審查才不會誤用未驗證路徑的數據。
+                "route_hil_verified": route_is_hil_verified(
+                    f"{plan.generator_port}-{plan.analyzer_port}", HIL_VERIFIED_ROUTES
+                ),
                 "arb_waveform_file": waveform_for_bandwidth(plan.bandwidth_hz),
                 **(extra_metadata or {}),
                 **_measurement_diagnostics(backend, plan),
@@ -661,15 +685,17 @@ def run_custom_real_single(
         # API 可能被直接呼叫，真正建立 session 前必須再次套用 approved profile。
         raise SafetyGuardError(preview.rejection_reason or "Custom SingleShot is not approved")
     frequency_hz = preview.points[0]
+    generator_port, analyzer_port = _ports_from_request(request)
+    # 校正 profile 必須對應實際接線路徑；換 port 就不能沿用舊路徑的 path loss。
     calibration = resolve_calibration(
         calibration_profile,
-        route="RF1.1-RF1.5",
+        route=f"{generator_port}-{analyzer_port}",
         frequencies_hz=(frequency_hz,),
     )
     external_attenuation_db = calibration.loss_for(frequency_hz) if calibration else 0.0
     plan = SingleMeasurementPlan(
-        generator_port="RF1.1",
-        analyzer_port="RF1.5",
+        generator_port=generator_port,
+        analyzer_port=analyzer_port,
         center_frequency_hz=frequency_hz,
         bandwidth_hz=preview.bandwidth_hz,
         generator_power_dbm=float(preview.generator_power_dbm),

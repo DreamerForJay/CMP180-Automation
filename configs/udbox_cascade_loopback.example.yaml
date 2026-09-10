@@ -1,0 +1,71 @@
+# UD Box「Up + Down 級聯迴路」的 GPRF request 範例（無 DUT）。
+#
+# 接線：
+#   CMP180 RF1.1 → UD Box IF1        (Up channel 輸入)
+#   UD Box RF1   → UD Box RF2        (RF 迴路線，訊號在此為 LO + IF)
+#   UD Box IF2   → CMP180 RF1.5      (Down channel 輸出)
+#
+# 這是「規劃用」payload，不是已核准的 RF profile：此 route 沒有任何 HIL 證據，
+# 結果只能標 MEASURED，不得作 compliance 宣稱。送到
+# /api/jobs/hardware/gprf-power-sweep 前仍需 --enable-hardware、接線確認與現場操作員。
+#
+# 與 udbox_sweep.example.yaml 的根本差異：那一份是「單次轉換」（CMP180 送 IF、收 RF），
+# 本檔是「兩次轉換級聯」，兩者的頻率關係完全不同，不可互相套用。
+#
+# ── 為什麼沒有 conversion 區塊 ────────────────────────────────────────────────
+# Up 走高側 RF = LO + IF，Down 走高側 IF = RF − LO，兩個 channel 共用同一顆 LO 時：
+#     IF_out = (LO + IF_in) − LO = IF_in
+# 也就是 analyzer 頻率 = generator 頻率，與直連 loopback 相同。frequency_conversion.py
+# 的 conversion 區塊模型的是「單次」轉換（兩端不同頻），級聯後兩端同頻，送出 conversion
+# 反而會把 analyzer 調到錯誤頻率。因此本檔刻意不含 conversion。
+#
+# 前提（操作員必須先在 TLKCore／UDBox GUI 確認，軟體無法讀回）：
+#   1. 兩個 channel 共用同一顆 LO；若為獨立雙 LO，兩者的差頻會直接成為頻率誤差。
+#   2. Down channel 的 sideband 設定為高側（IF = RF − LO），否則收不到訊號。
+#   3. LO = 6000 MHz、兩個 channel 均已 enable。
+axis: power
+# 6105 MHz 是本專案唯一完成 HIL 的 WLAN 頻率（見 docs/hardware-discovery.md），
+# 用同一個頻率才能把本次結果直接對比直連基準，差異即為 UD Box 造成的劣化。
+# 頻率預算：IF 6105 MHz 落在 UD Box IF 1–8 GHz 內；LO 6000 MHz 使
+# RF = 12105 MHz 落在 RF 6–30 GHz 內。兩端 6105 MHz 也都在 CMP180 400 MHz–8 GHz 內。
+frequency_hz: 6105000000
+
+# 起點 −30 dBm 就是 Stage 2「通不通」那一點：把 stop 也改成 −30 先跑單點，
+# 確認 analyzer 讀到的不是底噪，再放開成完整掃描。
+start_dbm: -30
+# 終點 0 dBm 是本次的安全守門，不是 generator 能力上限（generator 可到 +8 dBm）。
+#
+# 理由：軟體只擋得到 UD Box 的 IF1 輸入，擋不到迴路中真正的瓶頸——Down channel 的
+# RF2 輸入。把 RF2 的限制換算回 IF1：RF2 電平 ≈ IF1 − 10 dB（Up conversion loss）
+# − 迴路線損。IF1 = 0 dBm 時 RF2 約為 −11 dBm，對 down-converter 的 RF 輸入是保守的。
+# 取得 TMYTEK 提供的 RF2 額定值之前，不要把這個值往上調。
+stop_dbm: 0
+step_dbm: 2
+dwell_ms: 200
+# 注意：parse_route() 只接受 GENERATOR-ANALYZER 兩段格式，無法表達路徑中的 UD Box。
+# 這個標籤描述的是 CMP180 兩端的實體 port，不代表直連；本次路徑含 UD Box 級聯。
+cable_confirmation: RF1.1-RF1.5
+
+# 級聯是淨損耗：Up 10 dB + Down 10 dB（datasheet conversion loss typ）+ 12 GHz 迴路
+# 線損約 1 dB。此值只影響 analyzer ranging 與離線 Pout/Gain 計算，不放寬任何安全上限。
+# 實測值就是 Stage 3 要量出來的東西；量完後應回填此欄。
+expected_dut_gain_db: -21
+input_cable_loss_db: 0
+output_cable_loss_db: 0
+
+# 刻意為 0：IF2 → RF1.5 不加衰減器。
+#
+# 級聯已經有約 21 dB 損耗，analyzer 在 stop = 0 dBm 時也只收到約 −21 dBm，
+# 距離 sa_safe_limit_dbm 有 21 dB 餘裕，不需要 pad;再加 pad 只會把低功率端推進底噪。
+# 本路徑的保護手段是上面的 stop_dbm 上限，不是實體衰減器。
+output_attenuator_db: 0
+# 儀器端 EATT 保持 0：讓 sa_safe_limit_dbm 直接守住 RF1.5 接頭的真實功率。
+external_attenuation_db: 0
+
+# 保護 CMP180 analyzer 輸入。即使 generator 意外開到 +8 dBm，analyzer 也只會收到
+# 約 −13 dBm，不會觸及此限；此欄在本路徑是餘裕確認而非瓶頸。
+sa_safe_limit_dbm: 0
+# 保護 UD Box 的 IF1 輸入。與 stop_dbm 相同，使規劃階段就擋在同一個上限上。
+# 注意：datasheet RF Specifications 只給 P1dB（線性度），沒有 Absolute Maximum Rating，
+# 因此這是工作上限而非損傷閾值；真正的 absolute max 仍應向 TMYTEK 索取後更新本欄。
+dut_max_input_dbm: 0

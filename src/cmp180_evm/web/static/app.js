@@ -28,9 +28,144 @@ Object.assign(translations.en,{homeTab:'Home',measurementTab:'Measure',calibrati
 let language='zh';let latest=[];let runHistory=[];let analysisTraces=[];const selectedCompareKeys=new Set();
 let expandedRunKey=null;
 const $=selector=>document.querySelector(selector);
+// 紀錄狀態與篩選文案同步語系，保留後端狀態碼原義。
+Object.assign(translations.zh,{"historyUi0": "搜尋", "historyUi1": "日期", "historyUi2": "來源", "historyUi3": "狀態", "historyUi4": "排序", "historyUi5": "全部日期", "historyUi6": "今天", "historyUi7": "最近 7 天", "historyUi8": "最近 30 天", "historyUi9": "全部來源", "historyUi10": "Hardware", "historyUi11": "Demo", "historyUi12": "全部狀態", "historyUi13": "Complete", "historyUi14": "Partial", "historyUi15": "Failed", "historyUi16": "時間：新到舊", "historyUi17": "時間：舊到新", "historyUi18": "點數：多到少", "historyUi19": "頻率：低到高", "historyUi20": "功率：低到高", "historyUi21": "Worst EVM：較差優先", "historyUi22": "比較", "historyUi23": "Actions", "historyRunNote": "執行完成不代表量測有效或規格通過；請查看結果有效性與判定門檻。", "historySearchHint": "測試名稱、Run ID、DUT、操作員、註記"});
+Object.assign(translations.en,{"historyUi0": "Search", "historyUi1": "Date", "historyUi2": "Source", "historyUi3": "Status", "historyUi4": "Sort", "historyUi5": "All dates", "historyUi6": "Today", "historyUi7": "Last 7 days", "historyUi8": "Last 30 days", "historyUi9": "All sources", "historyUi10": "Hardware", "historyUi11": "Demo", "historyUi12": "All statuses", "historyUi13": "Complete", "historyUi14": "Partial", "historyUi15": "Failed", "historyUi16": "Time: newest first", "historyUi17": "Time: oldest first", "historyUi18": "Points: most first", "historyUi19": "Frequency: ascending", "historyUi20": "Power: ascending", "historyUi21": "Worst EVM: worst first", "historyUi22": "Compare", "historyUi23": "Actions", "historyRunNote": "Completion does not imply valid results or a specification pass. Review validity and applicable limits.", "historySearchHint": "Test name, Run ID, DUT, operator, notes"});
+Object.assign(translations.zh,{homeControl:'本機 Web 控制',homeControlDetail:'可執行接線依後端設定',homeMeasurement:'SingleShot 與掃描',homeMeasurementDetail:'依設定檢查量測條件',homeResult:'28 欄 OFDM SISO',homeResultDetail:'EVM、功率與頻率誤差',capabilityTitle:'CMP180 能力與目前執行範圍',capabilityIntro:'本表區分型錄規格、目前設定與既有 HIL 紀錄。列出的範圍不代表每個條件均已驗證；實際執行仍依所選流程檢查。',capItem:'項目',capCatalog:'CMP180 型錄',capInstalled:'本機／選件',capApproved:'核准 Profile',capHil:'HIL 證據'});
+Object.assign(translations.en,{homeControl:'Local Web control',homeControlDetail:'Available routes depend on server configuration',homeMeasurement:'SingleShot and sweeps',homeMeasurementDetail:'Measurement conditions are checked against configuration',homeResult:'28-field OFDM SISO',homeResultDetail:'EVM, power, and frequency error',capabilityTitle:'CMP180 capability and current execution scope',capabilityIntro:'This table separates catalog specifications, local configuration, and existing HIL evidence. A listed range does not mean every condition has been verified; each workflow still checks the requested plan.',capItem:'Item',capCatalog:'CMP180 catalog',capInstalled:'Local installation / options',capApproved:'Approved profile',capHil:'HIL evidence'});
 const homeCopy={
-  zh:{heroTitle:'讓 RF 量測成為<br><span>可重現的工程流程</span>',heroIntro:'Web 現已支援自訂 SingleShot、頻率／功率掃描、完整座標圖表、Pandas／Matplotlib PNG 與可稽核 artifacts；正式 Path Loss、DUT／UDBox 仍須現場核准後 HIL。',enterConsole:'進入量測控制台',openManual:'查看操作手冊',capabilityTitle:'工程師真正需要的功能',capabilityIntro:'保留 CMsquares 作為探索與除錯參考，把重複操作轉成可驗證、可比較、可交接的自動化流程。',f1t:'安全實機量測',f1p:'Route、操作員、頻率、頻寬與功率通過檢查後，Web 直接設定並控制 CMP180 workflow。',f2t:'頻率與功率掃描',f2p:'逐點進度、取消、partial artifacts，以及任何異常立即停止整批。',f3t:'EVM 結果分析',f3p:'完整軸標題與刻度、EVM／Power／Error，以及由 DataFrame 產生的 Matplotlib PNG。',f4t:'歷史 Run 比較',f4p:'搜尋、篩選、排序並比較 2–8 筆量測，調整 Trace 樣式與匯出圖表。',f5t:'Path Loss 校正',f5p:'軟體管理流程已備妥；正式 Profile 仍需器材、參考面資料與 RF owner 核准。',f6t:'可稽核與可交接',f6p:'原始回應、設定快照、cleanup 狀態、報告與中英操作文件一起保存。',workflowTitle:'五步完成一次可靠量測',manualTitle:'從這裡開始操作',manualIntro:'首頁只說明與導覽；只有進入量測頁並完成最後確認才可能送出 RF。'},
-  en:{heroTitle:'Turn RF measurement into<br><span>a reproducible engineering workflow</span>',heroIntro:'The Web now supports custom SingleShot, frequency/power sweeps, fully labelled charts, Pandas/Matplotlib PNG reports, and auditable artifacts. Formal Path Loss and DUT/UDBox HIL still require on-site approval.',enterConsole:'Open measurement console',openManual:'Open operator manual',capabilityTitle:'The capabilities RF engineers need',capabilityIntro:'Keep CMsquares for discovery and troubleshooting while turning repetitive actions into verifiable, comparable, and transferable automation.',f1t:'Safe hardware measurement',f1p:'After route, operator, frequency, bandwidth, and power checks, the Web directly configures the guarded CMP180 workflow.',f2t:'Frequency and power sweeps',f2p:'Per-point progress, cancellation, partial artifacts, and immediate batch stop on abnormal results.',f3t:'EVM result analysis',f3p:'Fully labelled axes and ticks, EVM/Power/Error views, plus DataFrame-generated Matplotlib PNG reports.',f4t:'Historical run comparison',f4p:'Search, filter, sort, and compare 2–8 runs with editable trace styles and chart export.',f5t:'Path Loss calibration',f5p:'The software workflow is ready; formal profiles still require equipment, reference-plane data, and RF-owner approval.',f6t:'Auditable and transferable',f6p:'Preserve raw responses, setting snapshots, cleanup state, reports, and bilingual operator documentation.',workflowTitle:'Five steps to a reliable measurement',manualTitle:'Start here',manualIntro:'The home page only explains and navigates. RF is possible only after entering Measurement and completing final confirmation.'}
+  "zh": {
+    "heroTitle": "CMP180 WLAN<br><span>自動化量測與分析</span>",
+    "heroIntro": "設定單點量測與頻率／功率掃描，檢視 WLAN EVM、功率及頻率誤差，並保存量測結果。實機可執行範圍依目前設定與後端檢查決定；驗證狀態請見下方能力表。",
+    "enterConsole": "進入量測控制台",
+    "openManual": "查看操作指南",
+    "capabilityTitle": "量測與資料分析功能",
+    "capabilityIntro": "整合量測設定、執行狀態、結果檢視與檔案管理。CMsquares 保留作為儀器設定探索與除錯工具。",
+    "f1t": "實機量測控制",
+    "f1p": "依所選流程檢查頻率、頻寬、功率與接線確認；操作員完成最後確認後執行量測。",
+    "f2t": "頻率與功率掃描",
+    "f2p": "顯示逐點進度並支援取消。WLAN 掃描遇關鍵結果無效、儀器或收尾錯誤時停止後續點位，保留已取得的結果。",
+    "f3t": "WLAN EVM 分析",
+    "f3p": "檢視 EVM、功率與頻率誤差，支援互動圖表及圖檔匯出；無效結果以 INVALID 標示。",
+    "f4t": "歷史量測比較",
+    "f4p": "搜尋與篩選量測紀錄，選取 2–8 筆進行疊圖比較，調整曲線樣式並匯出圖表。",
+    "f5t": "路徑損耗資料管理",
+    "f5p": "匯入參考讀值並建立校正草稿。正式套用須確認器材、參考面、有效範圍與核准狀態。",
+    "f6t": "量測檔案與執行紀錄",
+    "f6p": "依量測流程保存結果、設定與執行資訊；實機結果另記錄原始回應及 RF 收尾狀態。可用檔案以該筆紀錄為準。",
+    "workflowTitle": "量測操作流程",
+    "manualTitle": "操作入口",
+    "manualIntro": "首頁提供功能導覽。實機量測、Loopback 與 HIL 批次須在各自頁面完成檢查與執行確認；示範模式不送出 RF。",
+    "homeDetail0": "系統資料流程",
+    "homeDetail1": "選取節點查看量測計畫、執行檢查、儀器控制與結果保存的處理方式。",
+    "homeDetail2": "執行條件檢查",
+    "homeDetail3": "接線確認、操作員與設定限制",
+    "homeDetail4": "SCPI 控制與 RF 關閉處理",
+    "homeDetail5": "結果解析",
+    "homeDetail6": "EVM、功率、誤差與有效性",
+    "homeDetail7": "量測檔案與歷史曲線",
+    "homeDetail8": "系統架構與單點量測流程",
+    "homeDetail9": "圖表說明系統組成與單點量測的狀態轉換。可選取節點或播放章節導覽；圖表操作不控制儀器。",
+    "homeDetail10": "重新載入圖表",
+    "homeDetail11": "另開圖表",
+    "homeDetail12": "使用圖內 Play story 播放或暫停章節。「重新載入圖表」會重設目前圖表，不會自動播放。",
+    "homeDetail13": "確認接線、輸入限制與操作員在場",
+    "homeDetail14": "確認後執行，查看進度或取消",
+    "homeDetail15": "檢查結果有效性及量測數值",
+    "homeDetail16": "查看結果檔案並匯出圖表",
+    "homeDetail17": "選擇量測類型與測試條件",
+    "homeDetail18": "校正資料",
+    "homeDetail19": "參考讀值匯入與校正草稿",
+    "homeDetail20": "量測紀錄",
+    "homeDetail21": "結果比較",
+    "homeDetail22": "曲線比較、條件差異與圖表匯出",
+    "homeDetail23": "操作指南",
+    "homeDetail24": "啟動方式、執行檢查與結果說明",
+    "homeDetail25": "本機 Web 控制",
+    "homeDetail26": "可執行接線依後端設定",
+    "homeDetail27": "依設定檢查量測條件",
+    "homeDetail28": "結果檔案",
+    "homeDetail29": "檔案種類依量測流程",
+    "homeLabel0": "量測計畫",
+    "homeLabel1": "頻率、功率、頻寬與掃描軸",
+    "homeLabel2": "報告與比較",
+    "homeLabel3": "系統架構",
+    "homeLabel4": "單點量測生命週期",
+    "homeLabel5": "建立計畫",
+    "homeLabel6": "安全預檢",
+    "homeLabel7": "執行量測",
+    "homeLabel8": "分析結果",
+    "homeLabel9": "保存報告",
+    "homeLabel10": "實機、示範、SingleShot 與 Sweep",
+    "homeLabel11": "搜尋、篩選、詳情與輸出檔案",
+    "homeLabel12": "中英雙語"
+  },
+  "en": {
+    "heroTitle": "CMP180 WLAN<br><span>Measurement and Analysis</span>",
+    "heroIntro": "Configure single measurements and frequency or power sweeps, review WLAN EVM, power and frequency error, and save results. Execution depends on the current configuration and server checks; see the capability table for validation status.",
+    "enterConsole": "Open measurement console",
+    "openManual": "Open operator guide",
+    "capabilityTitle": "Measurement and analysis",
+    "capabilityIntro": "Measurement setup, execution status, result review and file management. CMsquares remains available for instrument discovery and troubleshooting.",
+    "f1t": "Hardware measurement control",
+    "f1p": "The selected workflow checks frequency, bandwidth, power and wiring confirmations. Measurement starts after final operator confirmation.",
+    "f2t": "Frequency and power sweeps",
+    "f2p": "View point progress and request cancellation. WLAN sweeps stop subsequent points on invalid critical results, instrument errors or cleanup errors, retaining available results.",
+    "f3t": "WLAN EVM analysis",
+    "f3p": "Review EVM, power and frequency error with interactive plots and image export. Invalid results are marked INVALID.",
+    "f4t": "Historical measurement comparison",
+    "f4p": "Search and filter records; overlay 2–8 runs, adjust trace styles and export plots.",
+    "f5t": "Path loss data management",
+    "f5p": "Import reference readings and create calibration drafts. Application requires verified equipment, reference planes, valid ranges and approval status.",
+    "f6t": "Measurement files and execution records",
+    "f6p": "Save results, settings and execution details according to the workflow. Hardware results also record raw responses and RF cleanup status. Available files depend on the run.",
+    "workflowTitle": "Measurement workflow",
+    "manualTitle": "Workspace shortcuts",
+    "manualIntro": "Use the relevant Measurement, Loopback or HIL page for hardware checks and execution confirmation. Demo mode transmits no RF.",
+    "homeDetail0": "System data flow",
+    "homeDetail1": "Select a node to review planning, execution checks, instrument control and result storage.",
+    "homeDetail2": "Execution checks",
+    "homeDetail3": "Wiring confirmation, operator and limits",
+    "homeDetail4": "SCPI control and RF cleanup",
+    "homeDetail5": "Result parsing",
+    "homeDetail6": "EVM, power, error and validity",
+    "homeDetail7": "Measurement files and historical traces",
+    "homeDetail8": "System architecture and single measurement sequence",
+    "homeDetail9": "Explore system components and single measurement state transitions. Select nodes or play chapter navigation; diagram controls do not operate the instrument.",
+    "homeDetail10": "Reload diagram",
+    "homeDetail11": "Open diagram",
+    "homeDetail12": "Use Play story inside the diagram to play or pause chapters. Reload diagram resets the view without starting playback.",
+    "homeDetail13": "Confirm wiring, input limits and operator presence",
+    "homeDetail14": "Confirm execution, monitor progress or cancel",
+    "homeDetail15": "Check validity and measured values",
+    "homeDetail16": "Review result files and export plots",
+    "homeDetail17": "Select measurement type and test conditions",
+    "homeDetail18": "Calibration data",
+    "homeDetail19": "Reference reading import and calibration drafts",
+    "homeDetail20": "Measurement records",
+    "homeDetail21": "Result comparison",
+    "homeDetail22": "Trace comparison, condition differences and plot export",
+    "homeDetail23": "Operator guide",
+    "homeDetail24": "Startup, execution checks and result interpretation",
+    "homeDetail25": "Local Web control",
+    "homeDetail26": "Routes depend on server configuration",
+    "homeDetail27": "Measurement conditions checked against configuration",
+    "homeDetail28": "Result files",
+    "homeDetail29": "File types depend on workflow",
+    "homeLabel0": "Measurement plan",
+    "homeLabel1": "Frequency, power, bandwidth and sweep axis",
+    "homeLabel2": "Reports and comparison",
+    "homeLabel3": "System architecture",
+    "homeLabel4": "Single measurement sequence",
+    "homeLabel5": "Create plan",
+    "homeLabel6": "Preflight checks",
+    "homeLabel7": "Run measurement",
+    "homeLabel8": "Review results",
+    "homeLabel9": "Save reports",
+    "homeLabel10": "Hardware and demo single measurements and sweeps",
+    "homeLabel11": "Search, filters, details and result files",
+    "homeLabel12": "Chinese / English"
+  }
 };
 const pageCopy={zh:{home:['RF AUTOMATION PLATFORM','CMP180 自動化量測','安全、可重現、可分析的 WLAN TX EVM 工程工作站'],measurement:['WLAN TX MEASUREMENT','量測控制台','RF1.1 → RF1.5 · 6105 MHz · 320 MHz · -40 dBm'],campaign:['HIL CAMPAIGN','分類實機驗收','持久化頻段、頻寬、功率、Route 與能力驗收進度'],calibration:['PATH LOSS & CALIBRATION','路徑損耗校正','建立可追溯的線材、轉接頭與參考面補償資料'],results:['RESULT ANALYSIS','結果分析台','檢視 EVM、功率與頻率誤差，或比較多筆歷史量測'],history:['RUN ARCHIVE','量測紀錄庫','搜尋、開啟、比較與管理本機保存的量測成果'],guide:['OPERATOR PLAYBOOK','操作指南','從啟動服務、安全檢查到取得報告的標準流程']},en:{home:['RF AUTOMATION PLATFORM','CMP180 Automation','A safe, reproducible, and analyzable WLAN TX EVM engineering workstation'],measurement:['WLAN TX MEASUREMENT','Measurement Console','RF1.1 → RF1.5 · 6105 MHz · 320 MHz · -40 dBm'],campaign:['HIL CAMPAIGN','Categorized Hardware Acceptance','Persistent band, bandwidth, power, route, and capability acceptance progress'],calibration:['PATH LOSS & CALIBRATION','Path Loss Calibration','Build traceable compensation data for cables, adapters, and reference planes'],results:['RESULT ANALYSIS','Results & Analysis','Review EVM, power, and frequency error or compare historical runs'],history:['RUN ARCHIVE','Run Archive','Search, open, compare, and manage locally stored measurement results'],guide:['OPERATOR PLAYBOOK','Operator Guide','Standard workflow from service startup and safety checks to reports']}};
 let activeTopTab='home';
@@ -54,7 +189,57 @@ function measurementPageCopy(){
   return language==='zh'?['DEMO SINGLE','示範單點量測','僅產生示範資料，不送出 RF']:['DEMO SINGLE','Demo Single Measurement','Demo data only; no RF transmitted'];
 }
 function updatePageHeading(){const loopbackCopy=language==='zh'?['LOOPBACK BASELINE','Loopback 驗證','Tester／Cable／UD Box／RF Path 的重複性與合理性']:['LOOPBACK BASELINE','Loopback Validation','Repeatability and reasonableness of the tester, cable, UD Box, and RF path'];const copy=activeTopTab==='measurement'?measurementPageCopy():activeTopTab==='loopback'?loopbackCopy:pageCopy[language][activeTopTab];$('#pageKicker').textContent=copy[0];$('#pageTitle').textContent=copy[1];$('#pageContext').textContent=copy[2]}
-function applyLanguage(){document.documentElement.lang=language==='zh'?'zh-Hant':'en';document.querySelectorAll('[data-i18n]').forEach(el=>{const value=translations[language][el.dataset.i18n];if(value)el.textContent=value});document.querySelectorAll('[data-home]').forEach(el=>{const value=homeCopy[language][el.dataset.home];if(value){if(el.dataset.home==='heroTitle')el.innerHTML=value;else el.textContent=value}});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const value=translations[language][el.dataset.i18nPlaceholder];if(value)el.placeholder=value});$('#languageButton').textContent=language==='zh'?'EN':'中文';updatePageHeading();if(window.updateHardwareSummary)window.updateHardwareSummary();if(window.configureGprfFields)window.configureGprfFields();if(runHistory.length)renderRunHistory();
+const heroTypewriterStates=new WeakMap();
+function renderHeroTypewriter(element, markup){
+  const previous=heroTypewriterStates.get(element);
+  // 狀態更新會重套語系；內容相同時不可重啟動畫。
+  if(previous?.markup===markup)return;
+  if(previous)clearTimeout(previous.timer);
+  const state={markup,timer:null};
+  heroTypewriterStates.set(element,state);
+  element.innerHTML=markup;
+  element.classList.add('typewriter-title');
+  // 保留完整標題供輔助工具一次朗讀；逐字動畫不使用 live region。
+  element.setAttribute('aria-label',element.innerText.replace(/\n/g,' '));
+  const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);
+  const nodes=[];
+  while(walker.nextNode())nodes.push(walker.currentNode);
+  const glyphs=[];
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  for(const node of nodes){
+    const fragment=document.createDocumentFragment();
+    // 以 Unicode 字元切分，保留原有換行與漸層容器，避免逐字出現造成版面跳動。
+    const characters=Array.from(node.textContent);
+    for(const [position,character] of characters.entries()){
+      const glyph=document.createElement('i');
+      glyph.className='typewriter-glyph';
+      glyph.setAttribute('aria-hidden','true');
+      glyphs.push(glyph);
+      // 每字直接著色，避免透明子元素使父層 background-clip 漸層文字消失。
+      glyph.style.setProperty('--type-progress',`${position/Math.max(1,characters.length-1)*100}%`);
+      glyph.textContent=character;
+      fragment.append(glyph);
+    }
+    node.replaceWith(fragment);
+  }
+  // CSS 預設可見；只在啟動動畫時隱藏，結束後移除暫時狀態，不依賴 CSS 動畫保留畫面。
+  if(reducedMotion.matches)return;
+  glyphs.forEach(glyph=>{glyph.style.visibility='hidden'});
+  let shown=0;
+  const started=Date.now();
+  const tick=()=>{
+    if(heroTypewriterStates.get(element)!==state)return;
+    element.querySelector('.typewriter-current')?.classList.remove('typewriter-current');
+    // 背景分頁計時器延後時按實際經過時間補齊，避免返回頁面仍卡在半句。
+    const count=reducedMotion.matches?glyphs.length:Math.min(glyphs.length,Math.max(0,Math.floor((Date.now()-started-350)/160)+1));
+    while(shown<count)glyphs[shown++].style.removeProperty('visibility');
+    if(shown===glyphs.length){state.timer=null;return;}
+    if(shown)glyphs[shown-1].classList.add('typewriter-current');
+    state.timer=setTimeout(tick,40);
+  };
+  state.timer=setTimeout(tick,350);
+}
+function applyLanguage(){document.documentElement.lang=language==='zh'?'zh-Hant':'en';document.querySelectorAll('[data-i18n]').forEach(el=>{const value=translations[language][el.dataset.i18n];if(value)el.textContent=value});document.querySelectorAll('[data-home]').forEach(el=>{const value=homeCopy[language][el.dataset.home];if(value){if(el.dataset.home==='heroTitle')renderHeroTypewriter(el,value);else el.textContent=value}});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const value=translations[language][el.dataset.i18nPlaceholder];if(value)el.placeholder=value});$('#languageButton').textContent=language==='zh'?'EN':'中文';updatePageHeading();if(window.updateHardwareSummary)window.updateHardwareSummary();if(window.configureGprfFields)window.configureGprfFields();renderRunHistory(false);renderCapabilityProfile();updateThemeLabel();renderToast();if(analysisTraces.length)renderComparisonControls();if(latest.length||analysisTraces.length)redrawActiveChart();
   // 已顯示的 Review／Preview 也要即時換語言，避免操作員讀到上一個語言的安全計畫。
   window.dispatchEvent(new CustomEvent('cmp180-language-change',{detail:{language}}));
 }
@@ -67,8 +252,40 @@ document.querySelectorAll('[data-measure-view]').forEach(button=>button.onclick=
 document.querySelectorAll('[data-demo-tab]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-demo-tab],.demo-panel').forEach(el=>el.classList.remove('active'));button.classList.add('active');$('#'+button.dataset.demoTab).classList.add('active');updatePageHeading()});
 function historyLink(url,label){return url?`<a href="${url}" target="_blank" rel="noopener">${label}</a>`:''}
 function filteredRuns(){const query=$('#runSearch').value.trim().toLowerCase(),dateFilter=$('#runDateFilter').value,sourceFilter=$('#runSourceFilter').value,statusFilter=$('#runStatusFilter').value,now=Date.now();const filtered=runHistory.filter(run=>{const haystack=[run.test_name,run.run_id,run.dut,run.operator,run.notes,run.route,run.calibration_profile].join(' ').toLowerCase();if(query&&!haystack.includes(query))return false;if(sourceFilter!=='all'&&(sourceFilter==='demo')!==Boolean(run.simulated))return false;if(statusFilter!=='all'&&String(run.status).toLowerCase()!==statusFilter)return false;if(dateFilter!=='all'){const created=Date.parse(run.created_at);if(!Number.isFinite(created))return false;const days=dateFilter==='today'?1:Number(dateFilter);if(now-created>days*86400000)return false}return true});const sort=$('#runSort').value,number=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;return filtered.sort((a,b)=>sort==='time-asc'?Date.parse(a.created_at)-Date.parse(b.created_at):sort==='points-desc'?number(b.completed_points)-number(a.completed_points):sort==='frequency-asc'?number(a.frequency_hz,Infinity)-number(b.frequency_hz,Infinity):sort==='power-asc'?number(a.generator_power_dbm,Infinity)-number(b.generator_power_dbm,Infinity):sort==='evm-desc'?number(b.worst_evm_db,-Infinity)-number(a.worst_evm_db,-Infinity):Date.parse(b.created_at)-Date.parse(a.created_at))}
-function renderRunHistory(){const labels=language==='zh'?{load:'查看詳情',close:'收合詳情',open:'開啟輸出',trash:'刪除'}:{load:'View details',close:'Close details',open:'Open output',trash:'Delete'};const rows=filteredRuns();$('#historyEmpty').hidden=rows.length>0;$('#historyEmpty').textContent=language==='zh'?'沒有符合條件的量測紀錄。':'No runs match the current filters.';$('#historyRows').innerHTML=rows.map(run=>{const files=run.artifact_urls||{};const links=[historyLink(files.report,'HTML'),historyLink(files.csv,'CSV'),historyLink(files.json,'JSON'),historyLink(files.metadata,'Metadata')].filter(Boolean).join(' · ');const source=run.simulated?'DEMO':'HARDWARE',checked=selectedCompareKeys.has(run.run_key)?'checked':'',expanded=expandedRunKey===run.run_key,openUrl=files.report||files.json||files.csv||files.metadata||'';return `<tr class="run-main-row"><td class="select-column"><input class="run-select" type="checkbox" data-compare-run="${escapeHtml(run.run_key)}" ${checked} aria-label="Select ${escapeHtml(run.test_name)} for comparison"></td><td>${run.created_at?new Date(run.created_at).toLocaleString():'—'}</td><td>${escapeHtml(run.test_name)}</td><td><code>${escapeHtml(run.run_id)}</code></td><td><span class="pill ${run.simulated?'neutral':'hardware-source'}">${source}</span></td><td>${escapeHtml(String(run.status).toUpperCase())}</td><td>${run.completed_points}</td><td class="history-links">${links||'—'}</td><td class="record-actions"><button type="button" data-record-action="load" data-run-key="${escapeHtml(run.run_key)}">${expanded?labels.close:labels.load}</button><button type="button" data-record-action="open" data-open-url="${escapeHtml(openUrl)}" ${openUrl?'':'disabled'}>${labels.open}</button><button type="button" class="danger-mini" data-record-action="trash" data-run-key="${escapeHtml(run.run_key)}" data-run-id="${escapeHtml(run.run_id)}">${labels.trash}</button></td></tr><tr class="run-detail-row" data-detail-row="${escapeHtml(run.run_key)}" ${expanded?'':'hidden'}><td colspan="9"><div class="inline-run-detail">${expanded?'<div class="detail-loading">Loading…</div>':''}</div></td></tr>`}).join('');updateCompareSelection();if(expandedRunKey)loadRunRecord(expandedRunKey,true)}
-async function loadRunHistory(){const button=$('#refreshHistoryButton');button.disabled=true;try{const response=await fetch('/api/runs',{cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load run history');runHistory=Array.isArray(data.runs)?data.runs:[];const validKeys=new Set(runHistory.map(run=>run.run_key));[...selectedCompareKeys].forEach(key=>{if(!validKeys.has(key))selectedCompareKeys.delete(key)});renderRunHistory()}catch(error){$('#historyEmpty').hidden=false;$('#historyEmpty').textContent=language==='zh'?`無法載入紀錄：${error.message}`:`Unable to load runs: ${error.message}`;toast(error.message,'error')}finally{button.disabled=false}}
+const historyFeedback={phase:'idle',detail:''};
+const runDetailCache=new Map();
+function uiText(zh,en){return language==='zh'?zh:en}
+function renderHistoryFeedback(){
+  const busy=historyFeedback.phase==='loading',failed=historyFeedback.phase==='error';
+  const button=$('#refreshHistoryButton'),notice=$('#historyNotice');
+  button.disabled=busy;
+  button.textContent=busy?uiText('載入中…','Loading…'):translations[language].refreshHistory;
+  $('#history').setAttribute('aria-busy',String(busy));
+  notice.hidden=!busy&&!failed;
+  notice.dataset.state=historyFeedback.phase;
+  notice.textContent=busy?uiText('正在讀取量測紀錄…','Loading measurement records…'):failed?uiText('無法更新紀錄。可按「重新整理」重試；下方如有資料，為上次載入內容。','Unable to refresh records. Use Refresh to retry; any rows below are from the previous load.')+' '+historyFeedback.detail:'';
+  const empty=$('#historyEmpty');
+  empty.hidden=busy||failed||filteredRuns().length>0;
+  empty.textContent=runHistory.length?uiText('沒有符合篩選條件的紀錄，請調整搜尋或篩選。','No records match. Adjust the search or filters.'):uiText('尚無量測紀錄。完成量測後，可在此查看結果。','No measurement records yet. Completed measurements will appear here.');
+}
+function renderRunHistory(loadDetail=true){const labels=language==='zh'?{load:'查看詳情',close:'收合詳情',open:'開啟輸出',trash:'刪除'}:{load:'View details',close:'Close details',open:'Open output',trash:'Delete'};const rows=filteredRuns();$('#historyEmpty').hidden=rows.length>0;$('#historyEmpty').textContent=language==='zh'?'沒有符合條件的量測紀錄。':'No runs match the current filters.';$('#historyRows').innerHTML=rows.map(run=>{const files=run.artifact_urls||{};const links=[historyLink(files.report,'HTML'),historyLink(files.csv,'CSV'),historyLink(files.json,'JSON'),historyLink(files.metadata,'Metadata')].filter(Boolean).join(' · ');const source=run.simulated?uiText('示範','DEMO'):uiText('實機','HARDWARE'),checked=selectedCompareKeys.has(run.run_key)?'checked':'',expanded=expandedRunKey===run.run_key,openUrl=files.report||files.json||files.csv||files.metadata||'';return `<tr class="run-main-row"><td class="select-column"><input class="run-select" type="checkbox" data-compare-run="${escapeHtml(run.run_key)}" ${checked} aria-label="Select ${escapeHtml(run.test_name)} for comparison"></td><td>${run.created_at?new Date(run.created_at).toLocaleString(language==='zh'?'zh-TW':'en-US'):'—'}</td><td>${escapeHtml(run.test_name)}</td><td><code>${escapeHtml(run.run_id)}</code></td><td><span class="pill ${run.simulated?'neutral':'hardware-source'}">${source}</span></td><td>${escapeHtml(uiText(({complete:'執行完成',partial:'部分完成',failed:'執行失敗',cancelled:'已取消'})[String(run.status).toLowerCase()]||String(run.status).toUpperCase(),String(run.status).toUpperCase()))}</td><td>${run.completed_points}</td><td class="history-links">${links||'—'}</td><td class="record-actions"><button type="button" data-record-action="load" data-run-key="${escapeHtml(run.run_key)}">${expanded?labels.close:labels.load}</button><button type="button" data-record-action="open" data-open-url="${escapeHtml(openUrl)}" ${openUrl?'':'disabled'}>${labels.open}</button><button type="button" class="danger-mini" data-record-action="trash" data-run-key="${escapeHtml(run.run_key)}" data-run-id="${escapeHtml(run.run_id)}">${labels.trash}</button></td></tr><tr class="run-detail-row" data-detail-row="${escapeHtml(run.run_key)}" ${expanded?'':'hidden'}><td colspan="9"><div class="inline-run-detail">${expanded?'<div class="detail-loading">'+uiText('載入詳情中…','Loading details…')+'</div>':''}</div></td></tr>`}).join('');updateCompareSelection();renderHistoryFeedback();if(expandedRunKey&&(loadDetail||runDetailCache.has(expandedRunKey)))loadRunRecord(expandedRunKey,true)}
+async function loadRunHistory(){
+  // 僅手動或導覽讀取紀錄；阻擋重複請求，不對 RF 操作套用重試。
+  if(historyFeedback.phase==='loading')return;
+  historyFeedback.phase='loading';historyFeedback.detail='';renderHistoryFeedback();
+  try{
+    const response=await fetch('/api/runs',{cache:'no-store',signal:AbortSignal.timeout(15000)});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`);
+    runHistory=Array.isArray(data.runs)?data.runs:[];
+    const validKeys=new Set(runHistory.map(run=>run.run_key));
+    [...selectedCompareKeys].forEach(key=>{if(!validKeys.has(key))selectedCompareKeys.delete(key)});
+    historyFeedback.phase='ready';renderRunHistory();
+  }catch(error){
+    // 失敗保留上次資料並標示過期狀態，不能當作空清單或成功載入。
+    historyFeedback.phase='error';historyFeedback.detail=String(error.message||error);
+  }finally{renderHistoryFeedback();}
+}
 function escapeHtml(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
 // 全頁共用的頻率單位轉換／顯示格式；原本在 custom-plan.js／gprf-power.js／hardware.js 各自重複一份，統一成單一來源。
 function frequencyToHz(value,unit){return Number(value)*(unit==='GHz'?1e9:1e6)}
@@ -109,12 +326,25 @@ $('#traceList').onclick=event=>{const solo=event.target.closest('[data-trace-sol
 let draggedTraceIndex=null;$('#traceList').ondragstart=event=>{const item=event.target.closest('[data-trace-index]');if(item)draggedTraceIndex=Number(item.dataset.traceIndex)};$('#traceList').ondragover=event=>event.preventDefault();$('#traceList').ondrop=event=>{event.preventDefault();const target=event.target.closest('[data-trace-index]');if(target&&draggedTraceIndex!==null){const [trace]=analysisTraces.splice(draggedTraceIndex,1);analysisTraces.splice(Number(target.dataset.traceIndex),0,trace);renderComparisonControls();drawAnalysisChart()}draggedTraceIndex=null};
 $('#refreshHistoryButton').onclick=loadRunHistory;
 function metadataTable(metadata){return `<dl class="settings-list">${Object.entries(metadata).map(([key,value])=>`<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl>`}
-async function loadRunRecord(runKey,alreadyExpanded=false){if(!alreadyExpanded&&expandedRunKey===runKey){expandedRunKey=null;renderRunHistory();return}expandedRunKey=runKey;if(!alreadyExpanded)renderRunHistory();const row=document.querySelector(`[data-detail-row="${CSS.escape(runKey)}"]`),container=row?.querySelector('.inline-run-detail');if(!container)return;const response=await fetch(`/api/runs/${encodeURIComponent(runKey)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||'Unable to load record');const waveform=record.waveform_recorded?escapeHtml(record.waveform_reference):(language==='zh'?'未保存 Waveform reference':'Waveform reference not saved');container.innerHTML=`<div class="inline-detail-head"><div><strong>Run ${escapeHtml(record.metadata.run_id||runKey)}</strong><code>${escapeHtml(record.output_location)}</code></div><span>${language==='zh'?'詳情顯示於原紀錄下方':'Details shown under the selected run'}</span></div><div class="history-detail-grid"><div><h4>Settings / 設定</h4>${metadataTable(record.metadata)}</div><div><h4>Waveform / 波形</h4><p>${waveform}</p><h4>Raw files</h4><p>${record.raw_files.length?escapeHtml(record.raw_files.join(', ')):(language==='zh'?'無 raw 檔案':'No raw files')}</p></div></div><details><summary>Results JSON / 過去量測值</summary><pre>${escapeHtml(JSON.stringify(record.results,null,2))}</pre></details>`}
+async function loadRunRecord(runKey,alreadyExpanded=false){if(!alreadyExpanded&&expandedRunKey===runKey){expandedRunKey=null;renderRunHistory();return}expandedRunKey=runKey;if(!alreadyExpanded)renderRunHistory();const row=document.querySelector(`[data-detail-row="${CSS.escape(runKey)}"]`),container=row?.querySelector('.inline-run-detail');if(!container)return;try{let record=runDetailCache.get(runKey);if(!record){const response=await fetch(`/api/runs/${encodeURIComponent(runKey)}`,{signal:AbortSignal.timeout(15000)});record=await response.json();if(!response.ok)throw new Error(record.error||`HTTP ${response.status}`);runDetailCache.set(runKey,record);}const waveform=record.waveform_recorded?escapeHtml(record.waveform_reference):(language==='zh'?'未保存 Waveform reference':'Waveform reference not saved');container.innerHTML=`<div class="inline-detail-head"><div><strong>Run ${escapeHtml(record.metadata.run_id||runKey)}</strong><code>${escapeHtml(record.output_location)}</code></div><span>${language==='zh'?'詳情顯示於原紀錄下方':'Details shown under the selected run'}</span></div><div class="history-detail-grid"><div><h4>${uiText('設定','Settings')}</h4>${metadataTable(record.metadata)}</div><div><h4>${uiText('波形','Waveform')}</h4><p>${waveform}</p><h4>${uiText('原始回應檔案','Raw response files')}</h4><p>${record.raw_files.length?escapeHtml(record.raw_files.join(', ')):(language==='zh'?'無 raw 檔案':'No raw files')}</p></div></div><details><summary>${uiText('量測結果 JSON','Results JSON')}</summary><pre>${escapeHtml(JSON.stringify(record.results,null,2))}</pre></details>`}catch(error){container.textContent=uiText('無法載入詳情，請收合後重新開啟：','Unable to load details. Close and reopen to retry: ')+String(error.message||error);}}
 async function postRecordAction(runKey,action,payload={}){const response=await fetch(`/api/runs/${encodeURIComponent(runKey)}/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Record action failed');return data}
 $('#historyRows').onclick=async event=>{const checkbox=event.target.closest('[data-compare-run]');if(checkbox){checkbox.checked?selectedCompareKeys.add(checkbox.dataset.compareRun):selectedCompareKeys.delete(checkbox.dataset.compareRun);updateCompareSelection();return}const button=event.target.closest('[data-record-action]');if(!button)return;const action=button.dataset.recordAction,runKey=button.dataset.runKey;button.disabled=true;try{if(action==='load')await loadRunRecord(runKey);if(action==='open'){const url=button.dataset.openUrl;if(!url)throw new Error(language==='zh'?'此紀錄沒有可開啟的輸出檔案':'This run has no browser-readable output');window.open(url,'_blank','noopener');toast(language==='zh'?'已在新分頁開啟輸出':'Output opened in a new tab')}if(action==='trash'){const runId=button.dataset.runId;const typed=prompt(language==='zh'?`刪除防呆：輸入 Run ID ${runId}，紀錄將移至可復原 Trash。`:`Safety check: type Run ID ${runId}; the run will move to recoverable Trash.`);if(typed!==runId){toast(language==='zh'?'Run ID 不符，已取消刪除':'Run ID mismatch; deletion cancelled','error');return}if(!confirm(language==='zh'?'確定將此完整 Run 與 artifacts 移至 Trash？':'Move this complete run and its artifacts to Trash?'))return;await postRecordAction(runKey,'trash',{confirm_run_id:typed});expandedRunKey=null;await loadRunHistory();toast(language==='zh'?'紀錄已移至可復原 Trash':'Run moved to recoverable Trash')}}catch(error){toast(error.message,'error')}finally{button.disabled=false}};
 $('#closeHistoryDetail').onclick=()=>{$('#historyDetail').hidden=true};
 ['runSearch','runDateFilter','runSourceFilter','runStatusFilter','runSort'].forEach(id=>{$('#'+id).addEventListener(id==='runSearch'?'input':'change',renderRunHistory)});
-function toast(message,type='info'){const node=$('#toast');node.textContent=message;node.dataset.type=type;node.classList.add('show');setTimeout(()=>node.classList.remove('show'),4800)}
+let toastTimer=null,toastState=null;
+function renderToast(){
+  if(!toastState)return;
+  $('#toastTitle').textContent=toastState.type==='error'?uiText('操作未完成','Action not completed'):uiText('操作提示','Notification');
+  $('#toastMessage').textContent=typeof toastState.message==='object'?toastState.message[language]:toastState.message;
+  $('#dismissToast').textContent=uiText('關閉','Dismiss');
+}
+function toast(message,type='info'){
+  // 新提示取代舊計時器；錯誤保留到手動關閉，避免重要診斷資訊消失。
+  clearTimeout(toastTimer);toastState={message,type};renderToast();
+  const node=$('#toast');node.dataset.type=type;node.classList.add('show');
+  if(type!=='error')toastTimer=setTimeout(()=>{node.classList.remove('show');toastState=null},4800);
+}
+$('#dismissToast').onclick=()=>{clearTimeout(toastTimer);$('#toast').classList.remove('show');toastState=null};
 async function send(path,payload,button){button.disabled=true;try{const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Request failed');render(data);document.querySelector('[data-tab="results"]').click();return data}catch(error){toast(error.message,'error');return null}finally{button.disabled=false}}
 let activeJobId=null,latestJobState='ready';
 function renderLiveMeasurement(job){const panel=$('#liveMeasurementPanel');if(!panel)return;const points=job.live_points||[];panel.hidden=false;$('#liveMeasurementCount').textContent=`${job.completed_points} / ${job.total_points}`;const last=points.at(-1),value=last?.evm_all_db;$('#liveMeasurementValue').textContent=last?`EVM All ${Number.isFinite(Number(value))?Number(value).toFixed(3)+' dB':'INVALID'} · ${job.message}`:'等待第一個量測點';const svg=$('#liveMeasurementChart');if(!points.length){svg.innerHTML='<text x="450" y="110" text-anchor="middle" class="axis-label">Waiting for first completed point</text>';return}const valid=points.map((point,index)=>({index,value:Number(point.evm_all_db),valid:point.valid!==false&&Number.isFinite(Number(point.evm_all_db))})).filter(point=>point.valid);if(!valid.length){svg.innerHTML='<text x="450" y="110" text-anchor="middle" class="axis-label">INVALID — batch will stop safely</text>';return}const min=Math.min(...valid.map(point=>point.value)),max=Math.max(...valid.map(point=>point.value)),span=Math.max(max-min,.5),x=index=>70+(index/Math.max(points.length-1,1))*790,y=value=>180-((value-(min-span*.15))/(span*1.3))*140;let path='',open=false;points.forEach((point,index)=>{const value=Number(point.evm_all_db),ok=point.valid!==false&&Number.isFinite(value);if(!ok){open=false;return}path+=`${open?'L':'M'}${x(index).toFixed(1)},${y(value).toFixed(1)} `;open=true});svg.innerHTML=`<line x1="70" y1="180" x2="860" y2="180" class="grid-line"/><path d="${path}" class="plot-line"/>${points.map((point,index)=>{const value=Number(point.evm_all_db),ok=point.valid!==false&&Number.isFinite(value);return ok?`<circle cx="${x(index)}" cy="${y(value)}" r="5" class="plot-dot"><title>Point ${index+1} · EVM ${value.toFixed(3)} dB</title></circle>`:''}).join('')}`}
@@ -414,7 +644,7 @@ function drawChart(points,axis='frequency',preserveView=false){
   const xs=points.map(point=>point[xField]).filter(Number.isFinite);
   const validPoints=points.filter(point=>point.valid&&Number.isFinite(point[metric]));
   const ys=validPoints.map(point=>point[metric]);
-  if(!xs.length||!ys.length){svg.innerHTML='<text class="axis-label" x="450" y="150" text-anchor="middle">No valid numeric data</text>';return}
+  if(!xs.length||!ys.length){svg.innerHTML=`<text class="axis-label" x="450" y="150" text-anchor="middle">${uiText('此指標沒有有效數值；請查看結果表與執行狀態','No valid values for this metric; review the results and run status')}</text>`;return}
   // EVM 圖需要把 spec limit 一起納入 Y 範圍，否則 limit line 會被裁切在圖外。
   const specLimit=metric==='evm_all_db'&&Number.isFinite(latestSpecLimitDb)?latestSpecLimitDb:null;
   const expectedReference=expectedReferenceForPowerMetric(validPoints,axis,metric);
@@ -515,13 +745,13 @@ $('#chart').addEventListener('pointerleave',clearHoverPoint);
 
 // 架構節點只切換說明，不呼叫任何儀器 API，也不會改變 RF 狀態。
 const architectureCopy={
-  plan:'先建立量測條件；此步驟只定義計畫，不會送出 RF。',
-  safety:'伺服器會再次檢查接線、操作員在場、安全 Profile、頻率、功率與頻寬。',
-  instrument:'通過最後確認後才建立 SCPI session；任何錯誤、取消或逾時都會執行 STOP／ABORT 與 RF Off。',
-  result:'保存 raw response，再正規化 EVM、功率與誤差；INVALID 點不與有效資料連線。',
-  artifact:'每次 Run 保留 CSV、JSON、HTML 與 Metadata，供搜尋、追溯及跨 Run 比較。'
+  zh:{plan:'設定量測類型、頻率、頻寬與功率，建立待檢查的計畫。',safety:'後端檢查參數與操作員提交的接線確認；軟體無法判斷實際線材是否接妥。',instrument:'量測流程在結束或例外時嘗試停止量測並關閉 RF，並記錄收尾錯誤；異常時仍須由現場操作員確認儀器狀態。',result:'解析原始回應並標示有效性；圖表不連接 INVALID 點，未核准判定門檻時不宣稱 PASS。',artifact:'依執行結果提供可用檔案。中止或失敗時可能只有部分結果；啟動前被拒絕的計畫不代表已完成量測。'},
+  en:{plan:'Set measurement type, frequency, bandwidth and power to build a plan for review.',safety:'The server checks parameters and submitted wiring confirmations; software cannot verify physical cable connections.',instrument:'On completion or exceptions, the workflow attempts measurement stop and RF off and records cleanup errors. An on-site operator must confirm instrument state after a failure.',result:'Parse raw responses and mark validity. Plots do not connect INVALID points; no PASS claim is made without approved limits.',artifact:'Available files depend on the execution outcome. Cancelled or failed runs may contain partial results; a plan rejected before execution is not a completed measurement.'}
 };
-document.querySelectorAll('[data-architecture]').forEach(node=>node.addEventListener('click',()=>{document.querySelectorAll('[data-architecture]').forEach(item=>item.classList.toggle('active',item===node));$('#architectureDetail').textContent=architectureCopy[node.dataset.architecture]}));
+function renderArchitectureDetail(){const key=document.querySelector('[data-architecture].active')?.dataset.architecture||'plan';$('#architectureDetail').textContent=architectureCopy[language][key]}
+// 語言切換只更新節點說明，不重載圖表或送出量測請求。
+window.addEventListener('cmp180-language-change',renderArchitectureDetail);
+document.querySelectorAll('[data-architecture]').forEach(node=>node.addEventListener('click',()=>{document.querySelectorAll('[data-architecture]').forEach(item=>item.classList.toggle('active',item===node));renderArchitectureDetail()}));
 
 // 首頁 iframe 僅載入 server 白名單內的兩份文件；播放與切換不會呼叫任何量測 API。
 let activeDiagramPath='/diagrams/system-architecture.html';
@@ -541,7 +771,7 @@ function redrawActiveChart(){
 function resetChartView(){Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]});redrawActiveChart();$('#chartCursorReadout').hidden=true;$('#chart').querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove())}
 function renderChartCursors(){const svg=$('#chart');svg.querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove());chartView.cursors.forEach((cursor,index)=>{const ns='http://www.w3.org/2000/svg',line=document.createElementNS(ns,'line'),label=document.createElementNS(ns,'text');line.setAttribute('class','chart-ab-line');line.setAttribute('x1',cursor.x);line.setAttribute('x2',cursor.x);line.setAttribute('y1',chartFrame.top);line.setAttribute('y2',chartFrame.height-chartFrame.bottom);label.setAttribute('class','chart-ab-label');label.setAttribute('x',cursor.x+5);label.setAttribute('y',chartFrame.top-5);label.textContent=index?'B':'A';svg.append(line,label)});const readout=$('#chartCursorReadout');if(chartView.cursors.length){readout.hidden=false;readout.textContent=chartView.cursors.map((cursor,index)=>`${index?'B':'A'}: ${cursor.label}`).join('  |  ')+(chartView.cursors.length===2?`  |  ΔX(view): ${Math.abs(chartView.cursors[1].x-chartView.cursors[0].x).toFixed(1)}`:'')}else readout.hidden=true}
 $('#chartReset').onclick=resetChartView;
-$('#chartCursorMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?'A/B 游標已啟用：點選圖上測點':'A/B 游標已關閉')};
+$('#chartCursorMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?{zh:'A/B 游標已啟用：點選圖上測點',en:'A/B cursors enabled: select measured points'}:{zh:'A/B 游標已關閉',en:'A/B cursors disabled'})};
 function chartPointer(event){
   // 用 SVG 螢幕矩陣處理響應式尺寸與瀏覽器縮放，不以 DOM 寬度猜測圖內座標。
   const matrix=event.currentTarget.getScreenCTM();
@@ -586,7 +816,8 @@ $('#chart').addEventListener('dblclick',resetChartView);
 const sunIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
 const moonIcon='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.7 15.3A8.7 8.7 0 0 1 9.7 4.3a.6.6 0 0 0-.75-.8A10 10 0 1 0 21.5 16a.6.6 0 0 0-.8-.7z"/></svg>';
 let theme=localStorage.getItem('cmp180-theme')||'dark';
-function applyTheme(){document.documentElement.dataset.theme=theme;const button=$('#themeButton');button.innerHTML=theme==='dark'?sunIcon:moonIcon;const label=theme==='dark'?'Switch to light theme':'Switch to dark theme';button.title=label;button.setAttribute('aria-label',label)}
+function updateThemeLabel(){const label=document.documentElement.dataset.theme==='dark'?uiText('切換至亮色模式','Switch to light theme'):uiText('切換至暗色模式','Switch to dark theme');$('#themeButton').title=label;$('#themeButton').setAttribute('aria-label',label)}
+function applyTheme(){document.documentElement.dataset.theme=theme;$('#themeButton').innerHTML=theme==='dark'?sunIcon:moonIcon;updateThemeLabel();const frame=$('#diagramShowcaseFrame');if(frame)frame.src=diagramPlaybackUrl(activeDiagramPath);}
 $('#themeButton').onclick=()=>{theme=theme==='dark'?'light':'dark';localStorage.setItem('cmp180-theme',theme);applyTheme()};
 applyTheme();
 applyLanguage();

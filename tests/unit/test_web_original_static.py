@@ -293,8 +293,8 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert 'id="loadPaProfileButton"' in html
     # 靜態資源版本必須跟著 profile UI 修正提升，避免現場瀏覽器沿用舊摘要與安全文案。
     assert 'src="/app.js?v=console18"' in html
-    assert 'src="/hardware.js?v=single-range9"' in html
-    assert 'src="/gprf-power.js?v=6"' in html
+    assert 'src="/hardware.js?v=route1"' in html
+    assert 'src="/gprf-power.js?v=route1"' in html
     assert 'value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器' in html
     gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
     assert "function loadApprovedPaProfile" in gprf
@@ -385,8 +385,11 @@ def test_calibration_fields_have_explicit_labels_and_no_mobile_overflow() -> Non
 
     # 說明按鈕改掛在 label 外的 wrapper，隱含標籤不再指向按鈕。
     assert "label.replaceWith(wrapper)" in calibration
-    assert "wrapper.append(label, button)" in calibration
-    assert "labelText.append(button)" not in calibration
+    # 標題與說明按鈕改為同一行的 .field-head；按鈕不再絕對定位到格子右上角，
+    # 但仍留在 label 之外，隱含標籤不會把按鈕算進欄位名稱。
+    assert "head.append(label, button)" in calibration
+    assert "wrapper.prepend(head)" in calibration
+    assert ".field-with-help>.field-head>.help-button{position:static" in design
     assert ".field-with-help" in design
 
     # 圖表指標選單需要可存取名稱。
@@ -451,3 +454,43 @@ def test_udbox_preset_matches_the_yaml_example() -> None:
     assert f"output_attenuator_db: {config['output_attenuator_db']:g}," in gprf
     assert f"dut_max_input_dbm: {config['dut_max_input_dbm']:g}," in gprf
     assert f"conversion_lo_mhz: {config['conversion']['lo_frequency_hz'] / 1e6:g}" in gprf
+
+def test_home_typewriter_preserves_accessibility_and_reduced_motion() -> None:
+    app = (STATIC / "app.js").read_text(encoding="utf-8")
+    css = (STATIC / "design-system.css").read_text(encoding="utf-8")
+    effect = app.split("function renderHeroTypewriter", 1)[1].split("function applyLanguage", 1)[0]
+    # 標題動畫只更動 DOM，保留完整朗讀文字與使用者減少動態效果偏好。
+    assert "aria-label" in effect
+    assert "aria-hidden" in effect
+    assert "Array.from(node.textContent)" in effect
+    assert "renderHeroTypewriter(el,value)" in app
+    assert "fetch(" not in effect
+    assert "if(previous?.markup===markup)return" in effect
+    assert "clearTimeout(previous.timer)" in effect
+    assert "style.removeProperty('visibility')" in effect
+    assert ".typewriter-glyph{visibility:visible!important}" in css
+    assert "hero-type-reveal" not in css
+
+    # 漸層字元不可繼承透明色；較慢節奏與游標必須一致。
+    assert "Date.now()-started-350)/160" in effect
+    assert "typewriter-current" in css
+    assert "h2.typewriter-title span{background:none;color:var(--console-cyan)}" in css
+    assert "color-mix(in srgb,var(--console-cyan),#79f2df var(--type-progress))" in css
+
+def test_home_copy_is_consistent_and_avoids_unqualified_claims() -> None:
+    import json
+    import re
+
+    app = (STATIC / "app.js").read_text(encoding="utf-8")
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    copy = json.loads(app.split("const homeCopy=", 1)[1].split(";\nconst pageCopy=", 1)[0])
+    home = html.split('<section id="home"', 1)[1].split('<section id="measurement"', 1)[0]
+    # 預設 HTML 與兩種語言皆須覆蓋相同欄位，避免載入後仍回到舊宣稱。
+    for key in re.findall(r'data-home="([^"]+)"', home):
+        assert key in copy["zh"] and key in copy["en"]
+        assert copy["zh"][key] in home
+    for claim in ("任何異常立即", "每次 Run 保留", "五步完成一次可靠量測", "工程師真正需要", "從頭播放"):
+        assert claim not in home
+        assert claim not in str(copy)
+    assert "renderArchitectureDetail" in app
+    assert "軟體無法判斷實際線材是否接妥" in app

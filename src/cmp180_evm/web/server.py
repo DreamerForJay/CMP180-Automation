@@ -42,7 +42,7 @@ from cmp180_evm.web.mock_service import (
     simulate_point,
 )
 from cmp180_evm.web.run_records import load_run_record, move_run_to_trash, open_run_folder
-from cmp180_evm.workflow.rf_routes import validate_route
+from cmp180_evm.workflow.rf_routes import route_is_hil_verified, validate_route
 
 # 原版橫向量測工作區已由操作員確認較符合實驗室流程；新版分析能力回填此介面。
 STATIC_DIR = Path(__file__).with_name("static")
@@ -192,15 +192,35 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
 
 
 def validate_cable_route(value: object) -> str:
-    """Normalize a user-entered route and allow only hardware-verified wiring."""
-    # 核准清單改由 capability profile 驅動：新增一條已完成 HIL 的 route 只需改
-    # approved_profile.routes，不必改程式；未列入者仍一律拒絕開啟 RF。
+    """Normalize a route and allow anything the instrument and software can drive.
+
+    只擋物理／能力上做不到的事：port 必須已安裝、兩端不同，且 Generator port
+    必須是軟體切換得到的（目前只有 RF1.1，因為沒有已驗證的 generator RF path
+    setter）。未完成 HIL 的 route 仍可送 RF 蒐證，僅在 metadata 標記，不再阻擋。
+    """
     profile = load_capability_profile(CAPABILITY_PROFILE_PATH)
     return validate_route(
         value,
-        approved_routes=profile.approved_profile.routes,
         installed_ports=profile.installed.rf_ports,
+        commandable_generator_ports=profile.installed.commandable_generator_ports,
     ).label
+
+
+def validate_calibration_route(value: object) -> str:
+    """Accept any wireable route for paper-only calibration work.
+
+    校正只是把 CSV 讀值換算成 path loss，完全不連線、不送 RF，因此不套用 RF
+    執行閘門。新路徑的 path loss profile 本來就必須在該路徑通過 HIL 之前建立，
+    用 RF 白名單擋住會造成「要有校正才能量、要能量才能校正」的死結。
+    """
+    profile = load_capability_profile(CAPABILITY_PROFILE_PATH)
+    return validate_route(value, installed_ports=profile.installed.rf_ports).label
+
+
+def route_hil_verified(value: object) -> bool:
+    """Flag whether a route already carries HIL evidence (metadata only)."""
+    profile = load_capability_profile(CAPABILITY_PROFILE_PATH)
+    return route_is_hil_verified(value, profile.approved_profile.routes)
 
 
 def validate_hardware_bind(host: str, hardware_enabled: bool) -> None:
@@ -446,6 +466,8 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 from cmp180_evm.web.real_service import run_custom_real_sweep
 
                 execution_request = dict(case["request"])
+                # route 必須進到量測 plan；只當文字確認會讓 analyzer 仍停在舊 port。
+                execution_request["cable_confirmation"] = case["route"]
 
                 def campaign_worker(active_job):
                     try:
@@ -729,11 +751,14 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 )
                 if len(readings) != len(raw_readings):
                     raise ValueError("Every calibration reading must be an object")
+                # 校正不連線、不送 RF，因此只檢查 port 存在與兩端不同；
+                # 是否已完成 HIL 只當作標示回傳，讓新路徑得以先建立 path loss profile。
+                calibration_route = validate_calibration_route(data.get("route"))
                 profile = build_draft_profile(
                     readings,
                     profile_id=str(data["profile_id"]),
                     revision=str(data.get("revision") or "0.1-draft"),
-                    route=validate_cable_route(data.get("route")),
+                    route=calibration_route,
                     calibrated_at=date.fromisoformat(str(data["calibrated_at"])),
                     expires_at=date.fromisoformat(str(data["expires_at"])),
                     equipment_reference=str(data["equipment_reference"]),
@@ -742,6 +767,7 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     {
                         "profile": profile.snapshot(),
                         "measurement_use": "BLOCKED_DRAFT_REQUIRES_OWNER_APPROVAL",
+                        "route_hil_verified": route_hil_verified(calibration_route),
                     }
                 )
                 return

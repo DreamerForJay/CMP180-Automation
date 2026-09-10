@@ -624,3 +624,34 @@ def test_udbox_example_stays_inside_the_generator_ceiling():
     # 範例的 stop 必須就是 generator 上限；超過的話現場會在最後幾點才失敗。
     assert request["stop_dbm"] == 8
     assert build_gprf_power_preview(request).execution_allowed is True
+
+
+def _udbox_cascade_request() -> dict:
+    return yaml.safe_load(
+        Path("configs/udbox_cascade_loopback.example.yaml").read_text(encoding="utf-8")
+    )
+
+
+def test_udbox_cascade_example_keeps_both_ends_on_one_frequency():
+    request = _udbox_cascade_request()
+    preview = build_gprf_power_preview(request)
+
+    assert preview.execution_allowed is True
+    # Up + Down 共用同一顆 LO 時 IF_out = IF_in，兩端同頻；送出 conversion 反而會把
+    # analyzer 調到單次轉換的 RF 頻率，量到底噪。此範例必須維持無 conversion。
+    assert preview.conversion is None
+    assert "conversion" not in request
+    generator_hz, analyzer_hz = preview.point_frequencies_hz(preview.points[0])
+    assert generator_hz == analyzer_hz == pytest.approx(6_105_000_000.0)
+
+
+def test_udbox_cascade_example_stops_at_the_declared_dut_input_ceiling():
+    request = _udbox_cascade_request()
+
+    # stop_dbm 是本路徑唯一擋得住 Down channel RF2 輸入的手段（軟體看不到那個節點），
+    # 因此必須與 dut_max_input_dbm 對齊；放寬其中一個就會失去保護。
+    assert request["stop_dbm"] == request["dut_max_input_dbm"] == 0
+    assert request["output_attenuator_db"] == 0
+
+    raised = dict(request, stop_dbm=8)
+    assert build_gprf_power_preview(raised).execution_allowed is False

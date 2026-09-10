@@ -28,6 +28,7 @@
 | [Limit Profiles](limit-profiles.md) | PASS／FAIL／INVALID 與核准規則 |
 | [Calibration Profiles](calibration-profiles.md) | Path Loss、內插、期限與追溯 |
 | [Calibration Adapters](calibration-adapters.md) | 外部校正儀器 adapter 邊界 |
+| [UD Box 級聯迴路測試計畫](udbox-loopback-test-plan.md) | 無 DUT 的 UD Box Up+Down 級聯迴路：頻率抵銷推導、功率預算與分階段執行 |
 | [DUT／UDBox 量測功能實作規格](dut-udbox-measurement-spec.md) | 目前需求：操作員輸入條件後執行 DUT／UDBox 量測並產生 artifacts |
 | [Path Loss／DUT／UDBox HIL 計畫](path-loss-dut-udbox-hil-plan.md) | 歷史參考：非目前 DUT／UDBox 量測需求，不作為下一步實作依據 |
 | [硬體探索](hardware-discovery.md) | 已驗證 CMP180 事實與結果證據 |
@@ -90,6 +91,7 @@ This page distinguishes authoritative specifications, operator documents, valida
 | [Limit profiles](limit-profiles.md) | PASS/FAIL/INVALID and approval rules |
 | [Calibration profiles](calibration-profiles.md) | Path loss, interpolation, expiry, and traceability |
 | [Calibration adapters](calibration-adapters.md) | External calibration-instrument adapter boundary |
+| [UD Box cascade loopback test plan](udbox-loopback-test-plan.md) | No-DUT UD Box up+down cascade: frequency cancellation, power budget, staged execution |
 | [DUT/UDBox measurement spec](dut-udbox-measurement-spec.md) | Current requirement: operator-entered conditions drive a DUT/UDBox run and produce artifacts |
 | [Path Loss/DUT/UDBox HIL plan](path-loss-dut-udbox-hil-plan.md) | Archived reference, not the current DUT/UDBox requirement; not a basis for the next implementation step |
 | [Hardware discovery](hardware-discovery.md) | Verified CMP180 facts and result evidence |

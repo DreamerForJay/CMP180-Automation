@@ -51,6 +51,51 @@ function normalizeRoute(value) {
   return String(value || '').trim().toUpperCase().replaceAll('→', '-').replaceAll(' ', '');
 }
 
+// Route 能力來自 /api/capabilities，與後端 workflow/rf_routes.py 同一份事實來源。
+// 在載入完成前保守採用已驗證的 RF1.1-RF1.5，避免空清單誤放行任何路徑。
+let routeCapability = {
+  installedPorts: ['RF1.1', 'RF1.5'],
+  commandableGeneratorPorts: ['RF1.1'],
+  hilVerifiedRoutes: ['RF1.1-RF1.5']
+};
+
+fetch('/api/capabilities').then(response => response.json()).then(profile => {
+  routeCapability = {
+    installedPorts: profile.installed.rf_ports,
+    commandableGeneratorPorts: profile.installed.commandable_generator_ports || ['RF1.1'],
+    hilVerifiedRoutes: profile.approved_profile.routes
+  };
+  updatePreflight();
+}).catch(() => { /* 保留保守預設；離線時不放寬任何路徑。 */ });
+
+// 只擋硬體／軟體真的做不到的事；未做過 HIL 的路徑允許執行但會標示。
+function checkRoute(value) {
+  const route = normalizeRoute(value);
+  if (!route) return { ok: false, reason: language === 'zh' ? '請輸入或選擇接線路徑。' : 'Select or enter a cable route.' };
+  const parts = route.split('-');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    return { ok: false, reason: language === 'zh' ? '格式須為 GENERATOR-ANALYZER，例如 RF1.1-RF1.5。' : 'Use GENERATOR-ANALYZER form, e.g. RF1.1-RF1.5.' };
+  }
+  const [generator, analyzer] = parts;
+  if (generator === analyzer) {
+    return { ok: false, reason: language === 'zh' ? 'Generator 與 Analyzer 不能是同一個 port。' : 'Generator and analyzer ports must be different.' };
+  }
+  const missing = [generator, analyzer].filter(port => !routeCapability.installedPorts.includes(port));
+  if (missing.length) {
+    return { ok: false, reason: language === 'zh' ? `這台儀器沒有 ${missing.join('、')}。` : `Port ${missing.join(', ')} is not present on this instrument.` };
+  }
+  if (!routeCapability.commandableGeneratorPorts.includes(generator)) {
+    // 能力限制而非核准問題：沒有 generator RF path setter，輸出切不過去。
+    return {
+      ok: false,
+      reason: language === 'zh'
+        ? `Generator 端無法遠端切到 ${generator}：CMP180 沒有已驗證的 generator RF path setter，輸出固定在 ${routeCapability.commandableGeneratorPorts.join('、')}。請把 Generator 線接回去。`
+        : `Generator cannot be switched to ${generator} remotely: no verified generator RF path setter exists, so the output stays on ${routeCapability.commandableGeneratorPorts.join(', ')}.`
+    };
+  }
+  return { ok: true, reason: '', hilVerified: routeCapability.hilVerifiedRoutes.includes(route) };
+}
+
 function showHardwareAlert(message, notify = true) {
   const alert = $('#hardwareAlert');
   alert.textContent = message;
@@ -157,7 +202,7 @@ window.updateHardwareSummary = updateHardwareSummary;
 function updatePreflight() {
   const form = $('#hardwareForm');
   const action = form.elements.hardware_action.value;
-  const routeVerified = normalizeRoute(form.elements.cable_confirmation.value) === 'RF1.1-RF1.5';
+  const routeVerified = checkRoute(form.elements.cable_confirmation.value).ok;
   const directCableConfirmed = form.elements.direct_cable_no_attenuator.checked;
   const directPathReady = action === 'gprf' || directCableConfirmed;
   const operatorPresent = form.elements.operator_present.checked;
@@ -300,12 +345,9 @@ $('#hardwareForm').onsubmit = async event => {
   }
   const route = normalizeRoute(form.get('cable_confirmation'));
   const action = form.get('hardware_action');
-  if (!route) {
-    showHardwareAlert(language === 'zh' ? '請輸入或選擇接線路徑。' : 'Select or enter a cable route.');
-    return;
-  }
-  if (route !== 'RF1.1-RF1.5') {
-    showHardwareAlert(language === 'zh' ? `${route} 尚未由本 workflow 驗證，未送出 RF。` : `Route "${route}" is not workflow-verified; no RF was transmitted.`);
+  const routeCheck = checkRoute(route);
+  if (!routeCheck.ok) {
+    showHardwareAlert(routeCheck.reason);
     return;
   }
   if (form.get('operator_present') !== 'on') {
@@ -381,9 +423,13 @@ $('#hardwareForm').onsubmit = async event => {
 
 $('#hardwareForm').addEventListener('input', () => {
   const route = normalizeRoute($('#hardwareForm').elements.cable_confirmation.value);
-  const warning = route && route !== 'RF1.1-RF1.5'
-    ? (language === 'zh' ? `${route} 尚未由本 workflow 驗證，未送出 RF。` : `Route "${route}" is not workflow-verified; no RF was transmitted.`)
-    : '';
+  const check = route ? checkRoute(route) : { ok: true, hilVerified: true };
+  // 擋下來的講原因；能執行但沒做過 HIL 的只提醒證據等級，不謊稱沒送 RF。
+  const warning = !check.ok
+    ? check.reason
+    : (route && !check.hilVerified
+      ? (language === 'zh' ? `${route} 尚未完成 HIL，可執行以蒐證，但結果不得作為 compliance 宣稱。` : `Route ${route} has no HIL evidence yet; it can run for evidence gathering but must not back a compliance claim.`)
+      : '');
   showHardwareAlert(warning, false);
   updatePreflight();
 });

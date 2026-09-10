@@ -280,6 +280,41 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 @media(max-width:640px){.calibration-toolbar select{flex-basis:100%}.calibration-toolbar .ghost{flex:1 1 auto}}
 
 /* A05：說明按鈕移出 label 後，用 wrapper 定位到欄位右上角，維持原本的視覺位置與 grid 版面。 */
-.field-with-help{position:relative;min-width:0}
-.field-with-help>label{display:block}
-.field-with-help>.help-button{position:absolute;top:0;right:0;margin-left:0}
+.field-with-help{min-width:0}
+/* 標題與說明按鈕同一行，按鈕緊貼文字；不再絕對定位到格子右上角。 */
+.field-with-help>.field-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;min-width:0}
+.field-with-help>.field-head>label{margin:0;color:#dce8f4;font-size:13px;font-weight:750;line-height:1.35}
+/* 英文對照維持同一字級但降低對比，避免中英夾雜看起來像兩種標題。 */
+.field-with-help>.field-head>label em{font-style:normal;font-weight:600;color:var(--console-muted)}
+.field-with-help>.field-head>.help-button{position:static;flex:0 0 auto;margin-left:0}
+.field-with-help>input,.field-with-help>textarea,.field-with-help>select{width:100%}
+
+[data-theme="light"] .field-with-help>.field-head>label{color:var(--console-text)}
+
+/* 字元保留尺寸且預設可見；JavaScript 完成後不留下隱藏樣式。 */
+.hero-copy h2 .typewriter-glyph{position:relative;font-style:normal;visibility:visible}
+.hero-copy h2 .typewriter-current::after{content:"";position:absolute;right:-.06em;top:.08em;height:.85em;border-right:2px solid var(--console-cyan)}
+@media(prefers-reduced-motion:reduce){.hero-copy h2 .typewriter-glyph{visibility:visible!important}.hero-copy h2 .typewriter-current::after{display:none}}
+
+/* 漸層改為逐字實色插值，不依賴包含動畫子元素的文字背景裁切。 */
+.hero-copy h2.typewriter-title span{background:none;color:var(--console-cyan)}
+.hero-copy h2.typewriter-title span .typewriter-glyph{color:var(--console-cyan);color:color-mix(in srgb,var(--console-cyan),#79f2df var(--type-progress))}
+/* 提示與空狀態共用主題色，錯誤也以文字說明，不只依賴顏色。 */
+.history-notice{padding:14px 18px;margin-bottom:16px;border:1px solid var(--console-line);border-radius:10px;background:var(--console-surface-2);color:var(--console-text);overflow-wrap:anywhere}
+.history-notice[data-state="error"]{border-color:var(--console-red)}
+.history-notice[hidden]{display:none}
+#toast{display:flex;align-items:flex-start;gap:18px;width:max-content;max-width:min(600px,calc(100vw - 32px));background:var(--console-surface);color:var(--console-text);border:1px solid var(--console-line-strong);box-shadow:var(--console-shadow);pointer-events:none}
+#toast.show{pointer-events:auto}
+#toast[data-type="error"]{border-color:var(--console-red);background:var(--console-surface)}
+#toastTitle{display:block;color:var(--console-text)}
+#toast[data-type="error"] #toastTitle{color:var(--console-red)}
+#toastMessage{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:35vh;overflow:auto;color:var(--console-text)}
+#dismissToast{flex-shrink:0;border:1px solid var(--console-line-strong);background:var(--console-surface-2);color:var(--console-text);padding:8px 12px;border-radius:6px;cursor:pointer}
+#dismissToast:focus-visible{outline:2px solid var(--console-cyan);outline-offset:3px}
+.history-empty,.detail-loading{color:var(--console-muted)}
+/* 亮色標題使用較深的漸層終點，避免淺青文字融入白底。 */
+[data-theme="light"] .hero-copy h2.typewriter-title span .typewriter-glyph{color:color-mix(in srgb,var(--console-cyan),#146754 var(--type-progress))}
+
+/* 隱藏的提示不可留在鍵盤 Tab 順序中。 */
+#toast{visibility:hidden}
+#toast.show{visibility:visible}
