@@ -201,7 +201,8 @@ function renderResultSummary(points,axis,context={},rawPoints=null){
   const worstMargin=margins.length?Math.min(...margins):null;
   const signed=value=>(value>0?'+':'')+value.toFixed(2)+' dB';
   const powerStats=powerFlatnessStats(points),isGprf=context.measurement_family==='GPRF_POWER';
-  const hasPa=isGprf&&source.some(point=>point&&Object.hasOwn(point,'gain_db'));
+  // Demo 與實機共用 PA 欄位契約；只要結果含 Gain，就顯示 PA 摘要，不以量測來源阻擋 P1dB。
+  const hasPa=source.some(point=>point&&Object.hasOwn(point,'gain_db'));
   $('#metrics').innerHTML=hasPa?paSummaryMetrics(points,axis,context.p1db)+metric(fixedLabel,fixedValue):isGprf&&powerStats
     ? metric('Mean Analyzer Power (dBm arithmetic mean)',powerStats.avgMeasured.toFixed(3)+' dBm')
     +metric('Mean Expected Analyzer Power',powerStats.avgExpected.toFixed(3)+' dBm')

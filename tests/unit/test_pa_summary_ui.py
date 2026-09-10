@@ -6,6 +6,14 @@ from pathlib import Path
 import pytest
 
 
+def test_demo_pa_points_are_not_hidden_by_measurement_family():
+    source = Path("src/cmp180_evm/web/static/app.js").read_text(encoding="utf-8")
+
+    # Demo 沒有 GPRF measurement_family，但仍須依 Pin／Pout／Gain 欄位顯示 P1dB 摘要。
+    assert "const hasPa=source.some(point=>point&&Object.hasOwn(point,'gain_db'));" in source
+    assert "const hasPa=isGprf&&" not in source
+
+
 def test_pa_summary_reference_planes_and_missing_values():
     node = shutil.which("node")
     if not node:
