@@ -2,6 +2,8 @@ const translations={zh:{subtitle:'WLAN TX EVM 自動化量測',mockBadge:'DEMO',
 // 導覽名稱明確區分 Demo 與實機，避免相同量測類型看起來像重複功能。
 translations.zh.singleTab='示範單點';translations.zh.sweepTab='示範頻掃';translations.zh.powerSweepTab='示範功掃';
 translations.en.singleTab='Demo Single';translations.en.sweepTab='Demo Freq Sweep';translations.en.powerSweepTab='Demo Power Sweep';
+Object.assign(translations.zh,{demoAdvancedMode:'進階 PA 指標',advancedPaTitle:'進階 PA 指標示範',advancedPaHelp:'以固定教學模型示範 OIP3、Harmonics、ACP 與 ACLR；不連線儀器或送出 RF。',advancedInputPower:'PA 輸入功率 Pin',advancedPowerHelp:'Demo 不套用實機功率安全限制。',toneSpacing:'雙音間距',channelBandwidth:'通道頻寬',runAdvancedPa:'產生進階 PA Demo'});
+Object.assign(translations.en,{demoAdvancedMode:'Advanced PA',advancedPaTitle:'Advanced PA Metrics Demo',advancedPaHelp:'Use a deterministic training model to demonstrate OIP3, harmonics, ACP, and ACLR without instrument control or RF.',advancedInputPower:'PA input power Pin',advancedPowerHelp:'Demo data does not apply hardware power safety limits.',toneSpacing:'Tone spacing',channelBandwidth:'Channel bandwidth',runAdvancedPa:'Generate Advanced PA Demo'});
 translations.zh.campaignTab='HIL 批次';translations.en.campaignTab='HIL Campaign';
 Object.assign(translations.zh,{homeTab:'首頁',measurementTab:'量測',calibrationTab:'校正',guideTab:'說明',guideTitle:'快速操作',guideIntro:'啟動服務、執行量測、查看結果。',guideSafeTitle:'Demo 模式',guideSafeText:'不發送 RF',guideStep1:'啟動',guideStep2:'量測',guideStep3:'結果',guideStep4:'報告',demoCommandTitle:'啟動 Demo',demoCommandHelp:'不連線 CMP180、不送 SCPI。',copyCommand:'複製',openBrowser:'網址',configCommandTitle:'檢查設定',configCommandHelp:'驗證 YAML 與安全設定。',expectedOutput:'預期結果',connectionCommandTitle:'連線檢查',connectionCommandHelp:'讀取 IDN、Options 與 Error Queue。',powerWarning:'注意',queryOnlyAdvice:'此動作不啟動量測或 RF。',hardwareCommandTitle:'啟動實機服務',hardwareCommandHelp:'啟動後仍需在量測頁完成安全確認。',hardwareHold:'未通過安全確認時不會送出 RF。',whereResultsTitle:'輸出位置',whereResultsText:'output\\<timestamp>_<run>\\',whenStopTitle:'停止條件',whenStopText:'INV、逾時、SCPI Error、接線異動或 RF 狀態不明。'});
 Object.assign(translations.zh,{guideInstallTitle:'第一次安裝',guideCliTitle:'CLI：檢查連線與設定',guideDataTitle:'取得與分析資料',guideDataHelp:'也可在「量測紀錄」開啟詳情，再到「結果與圖表」比較 2–8 筆 Run。'});
@@ -48,6 +50,7 @@ function measurementPageCopy(){
   const demo=document.querySelector('[data-demo-tab].active')?.dataset.demoTab||'single';
   if(demo==='sweep')return language==='zh'?['DEMO FREQUENCY SWEEP','示範頻率掃描','固定功率，X 軸為 Frequency']:['DEMO FREQUENCY SWEEP','Demo Frequency Sweep','Fixed power; Frequency X axis'];
   if(demo==='powerSweep')return language==='zh'?['DEMO POWER SWEEP','示範功率掃描－線性度','固定頻率，X 軸為 Power']:['DEMO POWER SWEEP','Demo Power Sweep – Linearity','Fixed frequency; Power X axis'];
+  if(demo==='advancedPa')return language==='zh'?['ADVANCED PA DEMO','OIP3、Harmonics 與 ACP／ACLR','固定教學模型；不連線儀器或送 RF']:['ADVANCED PA DEMO','OIP3, Harmonics, and ACP/ACLR','Deterministic training model; no instrument or RF'];
   return language==='zh'?['DEMO SINGLE','示範單點量測','僅產生示範資料，不送出 RF']:['DEMO SINGLE','Demo Single Measurement','Demo data only; no RF transmitted'];
 }
 function updatePageHeading(){const loopbackCopy=language==='zh'?['LOOPBACK BASELINE','Loopback 驗證','Tester／Cable／UD Box／RF Path 的重複性與合理性']:['LOOPBACK BASELINE','Loopback Validation','Repeatability and reasonableness of the tester, cable, UD Box, and RF path'];const copy=activeTopTab==='measurement'?measurementPageCopy():activeTopTab==='loopback'?loopbackCopy:pageCopy[language][activeTopTab];$('#pageKicker').textContent=copy[0];$('#pageTitle').textContent=copy[1];$('#pageContext').textContent=copy[2]}
@@ -125,6 +128,34 @@ $('#singleForm').onsubmit=event=>{event.preventDefault();const form=new FormData
 $('#sweepForm').onsubmit=event=>{event.preventDefault();const form=new FormData(event.target);startJob('/api/jobs/mock/frequency-sweep',{start_hz:+form.get('start_mhz')*1e6,stop_hz:+form.get('stop_mhz')*1e6,step_hz:+form.get('step_mhz')*1e6,bandwidth_hz:+form.get('bandwidth_mhz')*1e6,generator_power_dbm:+form.get('power_dbm'),dwell_ms:+form.get('dwell_ms'),test_name:form.get('test_name')},event.submitter,'frequency')};
 // 表單顯示 MHz，但 API 與 workflow 一律使用 Hz；此處集中做 1e6 單位轉換。
 $('#powerSweepForm').onsubmit=event=>{event.preventDefault();const form=new FormData(event.target);startJob('/api/jobs/mock/power-sweep',{frequency_hz:+form.get('frequency_mhz')*1e6,bandwidth_hz:+form.get('bandwidth_mhz')*1e6,start_dbm:+form.get('start_dbm'),stop_dbm:+form.get('stop_dbm'),step_dbm:+form.get('step_dbm'),dwell_ms:+form.get('dwell_ms'),test_name:form.get('test_name')},event.submitter,'power')};
+function drawAdvancedBarChart(selector,samples){
+  const svg=$(selector),width=560,height=300,left=64,right=18,top=25,bottom=58;
+  const values=samples.map(sample=>Number(sample.value)).filter(Number.isFinite);
+  if(!values.length){svg.innerHTML='<text x="280" y="150" text-anchor="middle" class="axis-label">No simulated data</text>';return}
+  const low=Math.floor(Math.min(...values,-60)/10)*10-5,high=Math.ceil(Math.max(...values,0)/10)*10+5,span=Math.max(high-low,10);
+  const y=value=>top+(high-value)/span*(height-top-bottom),slot=(width-left-right)/samples.length,barWidth=Math.min(56,slot*.52),base=y(low);
+  // 小圖只呈現後端固定模型；輸入的 MHz 已在送出前轉為 Hz，功率一律為 dBm。
+  let html=`<line x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}" class="grid-line"/><line x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}" class="grid-line"/>`;
+  for(let tick=0;tick<=4;tick++){const value=low+span*tick/4,py=y(value);html+=`<line x1="${left}" y1="${py}" x2="${width-right}" y2="${py}" class="grid-line"/><text x="${left-8}" y="${py+5}" text-anchor="end" class="axis-label">${value.toFixed(0)}</text>`}
+  samples.forEach((sample,index)=>{const value=Number(sample.value),x=left+slot*(index+.5),py=y(value);html+=`<rect x="${x-barWidth/2}" y="${Math.min(py,base)}" width="${barWidth}" height="${Math.max(2,Math.abs(base-py))}" rx="3" class="advanced-bar"><title>${escapeHtml(sample.label)}: ${value.toFixed(2)} dBm</title></rect><text x="${x}" y="${height-bottom+22}" text-anchor="middle" class="axis-label">${escapeHtml(sample.label)}</text><text x="${x}" y="${Math.max(top+13,py-7)}" text-anchor="middle" class="bar-value">${value.toFixed(1)}</text>`});
+  html+=`<text x="19" y="150" text-anchor="middle" transform="rotate(-90 19 150)" class="axis-title mini-axis">Power (dBm)</text>`;
+  svg.innerHTML=html;
+}
+function renderAdvancedPa(data){
+  const metrics=data.metrics||{},format=(key,unit)=>Number.isFinite(Number(metrics[key]))?Number(metrics[key]).toFixed(2)+' '+unit:'—';
+  $('#advancedPaMetrics').innerHTML=metric('OIP3',format('oip3_dbm','dBm'))+metric('IM3',format('im3_dbc','dBc'))+metric('H2',format('h2_dbc','dBc'))+metric('H3',format('h3_dbc','dBc'))+metric('Lower ACLR',format('aclr_lower_db','dB'))+metric('Upper ACLR',format('aclr_upper_db','dB'));
+  drawAdvancedBarChart('#oip3Chart',(data.two_tone||[]).map(point=>({label:point.label,value:point.power_dbm})));
+  drawAdvancedBarChart('#harmonicChart',(data.harmonics||[]).map(point=>({label:`H${point.order}`,value:point.power_dbm})));
+  drawAdvancedBarChart('#acpChart',(data.acp_channels||[]).map(point=>({label:point.channel==='Lower adjacent'?'Lower':point.channel==='Upper adjacent'?'Upper':'Main',value:point.power_dbm})));
+  const urls=data.artifact_urls||{};
+  $('#advancedPaArtifacts').innerHTML=`<strong>SIMULATED artifacts</strong><br>${['csv','json','report'].filter(key=>urls[key]).map(key=>`<a href="${urls[key]}" target="_blank" rel="noopener">${key==='report'?'HTML':key.toUpperCase()}</a>`).join(' · ')}<br><code>${escapeHtml(data.output_location||'')}</code>`;
+  $('#advancedPaResult').hidden=false;
+}
+$('#advancedPaForm').onsubmit=async event=>{event.preventDefault();const form=new FormData(event.target),button=event.submitter;button.disabled=true;try{
+  // Demo 不建立儀器 session；前端只送模擬參數到本機 API 並顯示計算結果。
+  const response=await fetch('/api/mock/pa-advanced',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frequency_hz:+form.get('frequency_mhz')*1e6,input_power_dbm:+form.get('input_power_dbm'),tone_spacing_hz:+form.get('tone_spacing_mhz')*1e6,channel_bandwidth_hz:+form.get('channel_bandwidth_mhz')*1e6,test_name:form.get('test_name')})});
+  const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to generate advanced PA demo');renderAdvancedPa(data);
+}catch(error){toast(error.message,'error')}finally{button.disabled=false}};
 let latestAxis='frequency';
 // 目前結果套用的 EVM spec limit（dB）；null 代表本次沒有套用 limit profile。
 let latestSpecLimitDb=null;

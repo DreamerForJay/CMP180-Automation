@@ -9,6 +9,7 @@ import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 from cmp180_evm.limits import DRAFT_LOOPBACK_LIMIT_PROFILE, evaluate_limits
 from cmp180_evm.results.visualization import write_pandas_matplotlib_plots
@@ -164,6 +165,139 @@ def analyze_mock_p1db(points: list[MockPoint]) -> dict[str, object]:
         "max_compression_db": max_compression,
         "max_measured_pin_dbm": float(max_pin_point["pin_dbm"]),
         "max_measured_pout_dbm": float(max_pin_point["pout_dbm"]),
+    }
+
+
+def simulate_advanced_pa(
+    frequency_hz: float,
+    input_power_dbm: float,
+    tone_spacing_hz: float,
+    channel_bandwidth_hz: float,
+) -> dict[str, object]:
+    """Build deterministic OIP3, harmonic, and adjacent-channel demo data."""
+    if frequency_hz <= 0 or tone_spacing_hz <= 0 or channel_bandwidth_hz <= 0:
+        raise ValueError("Frequency, tone spacing, and channel bandwidth must be positive")
+
+    # 這些係數只建立可重現的教學頻譜，不代表任何實機 DUT 規格或量測結果。
+    compression_db = max(0.0, (input_power_dbm + 10.0) * 0.2)
+    gain_db = 20.0 - compression_db
+    tone_output_dbm = input_power_dbm + gain_db - 3.0
+    oip3_dbm = 35.0 - max(0.0, compression_db - 1.0) * 0.5
+    im3_dbm = 3.0 * tone_output_dbm - 2.0 * oip3_dbm
+    im3_dbc = tone_output_dbm - im3_dbm
+    harmonic_fundamental_dbm = input_power_dbm + gain_db
+    h2_dbc = 32.0 - min(compression_db, 8.0) * 0.5
+    h3_dbc = 45.0 - min(compression_db, 8.0) * 0.8
+    aclr_lower_db = 36.0 - min(compression_db, 8.0) * 1.2
+    aclr_upper_db = aclr_lower_db - 0.8
+    channel_power_dbm = harmonic_fundamental_dbm
+
+    # 雙音 IM3 位於兩個 tone 外側各一個 tone spacing；頻率欄位統一使用 Hz。
+    half_spacing = tone_spacing_hz / 2.0
+    two_tone = [
+        {"frequency_hz": frequency_hz - 1.5 * tone_spacing_hz, "power_dbm": im3_dbm, "label": "IM3 lower"},
+        {"frequency_hz": frequency_hz - half_spacing, "power_dbm": tone_output_dbm, "label": "Tone 1"},
+        {"frequency_hz": frequency_hz + half_spacing, "power_dbm": tone_output_dbm, "label": "Tone 2"},
+        {"frequency_hz": frequency_hz + 1.5 * tone_spacing_hz, "power_dbm": im3_dbm - 0.6, "label": "IM3 upper"},
+    ]
+    harmonics = [
+        {"order": 1, "frequency_hz": frequency_hz, "power_dbm": harmonic_fundamental_dbm, "relative_dbc": 0.0},
+        {"order": 2, "frequency_hz": frequency_hz * 2.0, "power_dbm": harmonic_fundamental_dbm - h2_dbc, "relative_dbc": -h2_dbc},
+        {"order": 3, "frequency_hz": frequency_hz * 3.0, "power_dbm": harmonic_fundamental_dbm - h3_dbc, "relative_dbc": -h3_dbc},
+    ]
+    acp_channels = [
+        {"channel": "Lower adjacent", "offset_hz": -channel_bandwidth_hz, "power_dbm": channel_power_dbm - aclr_lower_db},
+        {"channel": "Main", "offset_hz": 0.0, "power_dbm": channel_power_dbm},
+        {"channel": "Upper adjacent", "offset_hz": channel_bandwidth_hz, "power_dbm": channel_power_dbm - aclr_upper_db},
+    ]
+    return {
+        "simulated": True,
+        "measurement_family": "PA_ADVANCED_DEMO",
+        "inputs": {
+            "frequency_hz": frequency_hz,
+            "input_power_dbm": input_power_dbm,
+            "tone_spacing_hz": tone_spacing_hz,
+            "channel_bandwidth_hz": channel_bandwidth_hz,
+        },
+        "metrics": {
+            "gain_db": round(gain_db, 3),
+            "tone_output_dbm": round(tone_output_dbm, 3),
+            "oip3_dbm": round(oip3_dbm, 3),
+            "im3_dbm": round(im3_dbm, 3),
+            "im3_dbc": round(im3_dbc, 3),
+            "h2_dbc": round(h2_dbc, 3),
+            "h3_dbc": round(h3_dbc, 3),
+            "acp_lower_dbm": round(channel_power_dbm - aclr_lower_db, 3),
+            "acp_upper_dbm": round(channel_power_dbm - aclr_upper_db, 3),
+            "aclr_lower_db": round(aclr_lower_db, 3),
+            "aclr_upper_db": round(aclr_upper_db, 3),
+        },
+        "two_tone": two_tone,
+        "harmonics": harmonics,
+        "acp_channels": acp_channels,
+    }
+
+
+def save_advanced_pa_run(
+    result: dict[str, object], output_root: Path, test_name: str
+) -> dict[str, str]:
+    """Persist an advanced PA demo as JSON, CSV, metadata, and HTML."""
+    now = datetime.now(UTC)
+    run_id = uuid.uuid4().hex[:10]
+    safe_name = "".join(char if char.isalnum() or char in "-_" else "_" for char in test_name)
+    run_dir = output_root / f"{now.strftime('%Y%m%dT%H%M%SZ')}_{safe_name or 'pa-advanced'}_{run_id}"
+    run_dir.mkdir(parents=True, exist_ok=False)
+    payload = {**result, "run_id": run_id, "created_at": now.isoformat()}
+
+    rows: list[dict[str, object]] = []
+    for point in cast(list[dict[str, object]], result["two_tone"]):
+        rows.append({"measurement": "OIP3", **point})
+    for point in cast(list[dict[str, object]], result["harmonics"]):
+        rows.append({"measurement": "HARMONIC", **point})
+    for point in cast(list[dict[str, object]], result["acp_channels"]):
+        rows.append({"measurement": "ACP", **point})
+    fieldnames = sorted({key for row in rows for key in row})
+    csv_path = run_dir / "results.csv"
+    with csv_path.open("w", newline="", encoding="utf-8-sig") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    json_path = run_dir / "results.json"
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    metadata_path = run_dir / "metadata.json"
+    metadata_path.write_text(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "test_name": test_name,
+                "created_at": now.isoformat(),
+                "status": "complete",
+                "simulated": True,
+                "source": "web-demo-pa-advanced",
+                "measurement_family": "PA_ADVANCED_DEMO",
+                "point_count": len(rows),
+                "completed_points": len(rows),
+                "compliance_claim": False,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    report_path = run_dir / "report.html"
+    encoded = json.dumps(payload).replace("</", "<\\/")
+    report_path.write_text(
+        f"""<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>PA Advanced Demo</title>
+<style>body{{font:15px system-ui;margin:32px;color:#172033}}pre{{padding:18px;background:#f3f6fa;overflow:auto}}.badge{{background:#fff3cd;padding:8px 12px}}</style>
+<h1>PA 進階指標示範</h1><p class="badge">SIMULATED / 模擬資料，不代表實機 DUT</p><pre id="result"></pre>
+<script>document.querySelector('#result').textContent=JSON.stringify({encoded},null,2)</script></html>""",
+        encoding="utf-8",
+    )
+    return {
+        "run_id": run_id,
+        "run_dir": str(run_dir.resolve()),
+        "csv": str(csv_path.resolve()),
+        "json": str(json_path.resolve()),
+        "report": str(report_path.resolve()),
     }
 
 

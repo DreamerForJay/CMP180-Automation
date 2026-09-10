@@ -10,6 +10,22 @@ def test_original_workspace_is_the_served_frontend() -> None:
     assert (STATIC_DIR / "index.html").is_file()
 
 
+def test_demo_exposes_advanced_pa_metrics_without_hardware_endpoint() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    javascript = (STATIC / "app.js").read_text(encoding="utf-8")
+
+    assert 'data-demo-tab="advancedPa"' in html
+    assert 'id="advancedPaForm"' in html
+    assert 'id="oip3Chart"' in html
+    assert 'id="harmonicChart"' in html
+    assert 'id="acpChart"' in html
+    assert "/api/mock/pa-advanced" in javascript
+    advanced_code = javascript.split("$('#advancedPaForm').onsubmit", 1)[1].split(
+        "let latestAxis", 1
+    )[0]
+    assert "/api/hardware/" not in advanced_code
+
+
 def test_original_workspace_supports_read_only_run_comparison() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     javascript = (STATIC / "app.js").read_text(encoding="utf-8")

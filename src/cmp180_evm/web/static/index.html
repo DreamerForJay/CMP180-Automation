@@ -142,6 +142,7 @@
           <button type="button" class="subtab active" data-demo-tab="single" data-i18n="demoSingleMode">示範單點</button>
           <button type="button" class="subtab" data-demo-tab="sweep" data-i18n="demoFrequencyMode">示範頻率掃描</button>
           <button type="button" class="subtab" data-demo-tab="powerSweep" data-i18n="demoPowerMode">示範功率掃描</button>
+          <button type="button" class="subtab" data-demo-tab="advancedPa" data-i18n="demoAdvancedMode">進階 PA 指標</button>
         </div>
     <section id="single" class="demo-panel active">
       <div class="panel-head"><div><h2 data-i18n="singleTitle">Mock 單點量測</h2><p data-i18n="singleHelp">輸入一個測試點，驗證完整 GUI、資料保存與圖表流程。</p></div><span class="pill">DEMO DATA</span></div>
@@ -180,6 +181,27 @@
         <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="gui-power-sweep"></label>
         <button class="primary submit" type="submit" data-i18n="runPowerSweep">執行 Mock 功率掃描</button>
       </form>
+    </section>
+
+    <section id="advancedPa" class="demo-panel">
+      <div class="panel-head"><div><h2 data-i18n="advancedPaTitle">進階 PA 指標示範</h2><p data-i18n="advancedPaHelp">以固定教學模型示範 OIP3、Harmonics、ACP 與 ACLR；不連線儀器或送出 RF。</p></div><span class="pill">SIMULATED</span></div>
+      <form id="advancedPaForm" class="form-grid">
+        <label><span data-i18n="frequency">中心頻率</span><div class="input-unit"><input name="frequency_mhz" type="number" value="6105" step="1" required><b>MHz</b></div></label>
+        <label><span data-i18n="advancedInputPower">PA 輸入功率 Pin</span><div class="input-unit"><input name="input_power_dbm" type="number" value="-10" step="1" required><b>dBm</b></div><small class="field-help" data-i18n="advancedPowerHelp">Demo 不套用實機功率安全限制。</small></label>
+        <label><span data-i18n="toneSpacing">雙音間距</span><div class="input-unit"><input name="tone_spacing_mhz" type="number" value="10" min="0.1" step="0.1" required><b>MHz</b></div></label>
+        <label><span data-i18n="channelBandwidth">通道頻寬</span><div class="input-unit"><input name="channel_bandwidth_mhz" type="number" value="320" min="1" step="1" required><b>MHz</b></div></label>
+        <label><span data-i18n="testName">測試名稱</span><input name="test_name" value="pa-advanced-demo"></label>
+        <button class="primary submit" type="submit" data-i18n="runAdvancedPa">產生進階 PA Demo</button>
+      </form>
+      <section id="advancedPaResult" class="advanced-pa-result" hidden aria-live="polite">
+        <div id="advancedPaMetrics" class="metrics"></div>
+        <div class="advanced-chart-grid">
+          <article class="chart-card"><h3>OIP3 / IM3</h3><p>Two-tone spectrum</p><svg id="oip3Chart" viewBox="0 0 560 300" role="img" aria-label="OIP3 與 IM3 示範頻譜"></svg></article>
+          <article class="chart-card"><h3>Harmonics</h3><p>Fundamental / H2 / H3</p><svg id="harmonicChart" viewBox="0 0 560 300" role="img" aria-label="諧波示範圖"></svg></article>
+          <article class="chart-card"><h3>ACP / ACLR</h3><p>Lower / Main / Upper channel</p><svg id="acpChart" viewBox="0 0 560 300" role="img" aria-label="鄰道功率示範圖"></svg></article>
+        </div>
+        <div id="advancedPaArtifacts" class="artifacts"></div>
+      </section>
     </section>
 
       </div>

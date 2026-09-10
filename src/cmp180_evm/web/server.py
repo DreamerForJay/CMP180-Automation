@@ -12,6 +12,7 @@ from datetime import date, datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import cast
 from urllib.parse import unquote, urlparse
 
 from cmp180_evm.calibration import load_calibration_profile
@@ -35,7 +36,9 @@ from cmp180_evm.web.mock_service import (
     analyze_mock_p1db,
     build_frequency_points,
     build_power_points,
+    save_advanced_pa_run,
     save_mock_run,
+    simulate_advanced_pa,
     simulate_point,
 )
 from cmp180_evm.web.run_records import load_run_record, move_run_to_trash, open_run_folder
@@ -793,6 +796,24 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                 return
             # 決定結果圖表 X 軸：頻率或功率掃描才不是 "frequency"（單點沿用預設）。
             sweep_axis = "frequency"
+            if path == "/api/mock/pa-advanced":
+                # 進階 PA Demo 僅計算固定模型並保存本機 artifact，不建立儀器 session 或送出 SCPI。
+                advanced = simulate_advanced_pa(
+                    float(cast(str | int | float, data["frequency_hz"])),
+                    float(cast(str | int | float, data["input_power_dbm"])),
+                    float(cast(str | int | float, data["tone_spacing_hz"])),
+                    float(cast(str | int | float, data["channel_bandwidth_hz"])),
+                )
+                artifacts = save_advanced_pa_run(
+                    advanced,
+                    PROJECT_ROOT / "output",
+                    str(data.get("test_name", "pa-advanced-demo")),
+                )
+                advanced["artifacts"] = artifacts
+                advanced["artifact_urls"] = self._artifact_urls(artifacts)
+                advanced["output_location"] = self._output_location(artifacts)
+                self._json_response(advanced)
+                return
             if path == "/api/mock/single":
                 points = [
                     simulate_point(

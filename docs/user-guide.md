@@ -245,7 +245,7 @@ Profile 另有必填的 `dut_max_input_dbm`，代表 DUT 參考面能承受的�
 
 P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。2026-09-09 已完成 RF1.1 → RF1.5 低功率 GPRF PA sweep 實機驗證；擴大到 `-20 dBm` 的 P1dB 掃描仍需使用 profile／fixture 安全裁切，不得把失敗 finding 當成 P1dB 證據。
 
-示範模式的單點、頻率掃描與功率掃描不連接 CMP180，也不送 RF，因此不套用實機功率安全上限；功率掃描會以固定的模擬 PA 曲線產生 Pin、Pout、Gain compression 與 P1dB 摘要，方便展示目前與未來圖表流程。所有示範 artifact 仍標示 `SIMULATED`，不得當成新的 PA 實機量測證據。
+示範模式的單點、頻率掃描與功率掃描不連接 CMP180，也不送 RF，因此不套用實機功率安全上限；功率掃描會以固定的模擬 PA 曲線產生 Pin、Pout、Gain compression 與 P1dB 摘要。「進階 PA 指標」可輸入中心頻率、Pin、雙音間距與通道頻寬，產生 OIP3／IM3、H2／H3 及 ACP／ACLR 三張教學圖，並保存 JSON／CSV／HTML。這些數值來自固定模擬公式，不代表 SG、SA 或 DUT 的實際能力；所有 artifact 均標示 `SIMULATED`，不得當成新的 PA 實機量測證據。
 
 ### Converter DUT（UDBox 類）的頻率解耦
 

@@ -8,7 +8,9 @@ from cmp180_evm.web.mock_service import (
     analyze_mock_p1db,
     build_frequency_points,
     build_power_points,
+    save_advanced_pa_run,
     save_mock_run,
+    simulate_advanced_pa,
     simulate_point,
 )
 from cmp180_evm.web.server import (
@@ -104,6 +106,36 @@ def test_demo_power_sweep_reports_p1db_when_compression_is_observed():
     assert p1db["ip1db_dbm"] == pytest.approx(-5.0)
     assert p1db["op1db_dbm"] == pytest.approx(14.0)
     assert p1db["max_compression_db"] > 1.0
+
+
+def test_advanced_pa_demo_reports_oip3_harmonics_and_aclr():
+    result = simulate_advanced_pa(6_105e6, -10, 10e6, 320e6)
+    metrics = result["metrics"]
+
+    assert result["simulated"] is True
+    assert result["measurement_family"] == "PA_ADVANCED_DEMO"
+    assert metrics["oip3_dbm"] == pytest.approx(35.0)
+    assert metrics["im3_dbc"] > 0
+    assert metrics["h2_dbc"] > 0
+    assert metrics["h3_dbc"] > metrics["h2_dbc"]
+    assert metrics["aclr_lower_db"] > 0
+    assert len(result["two_tone"]) == 4
+    assert len(result["harmonics"]) == 3
+    assert len(result["acp_channels"]) == 3
+
+
+def test_advanced_pa_demo_artifacts_are_labeled_simulated(tmp_path):
+    result = simulate_advanced_pa(6_105e6, -10, 10e6, 320e6)
+    artifacts = save_advanced_pa_run(result, tmp_path, "advanced-demo")
+
+    payload = json.loads(Path(artifacts["json"]).read_text(encoding="utf-8"))
+    metadata = json.loads((Path(artifacts["run_dir"]) / "metadata.json").read_text(encoding="utf-8"))
+    assert payload["simulated"] is True
+    assert payload["metrics"]["oip3_dbm"] == pytest.approx(35.0)
+    assert metadata["source"] == "web-demo-pa-advanced"
+    assert metadata["compliance_claim"] is False
+    assert "SIMULATED" in Path(artifacts["report"]).read_text(encoding="utf-8")
+    assert Path(artifacts["csv"]).is_file()
 
 
 def test_mock_artifacts_include_csv_json_and_html(tmp_path):

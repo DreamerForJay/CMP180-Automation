@@ -269,3 +269,7 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 
 /* 游標讀值保留小幅固定空間，避免大面積空白及 hover 時圖面跳動。 */
 .chart-cursor-readout{min-height:26px;margin:4px 0;padding:3px 8px;font-size:12px;line-height:1.5}
+
+/* 進階 PA Demo 的三張圖分開呈現量測原理；所有資料均為模擬，不共用實機結果狀態。 */
+.advanced-pa-result{margin-top:28px;padding-top:22px;border-top:1px solid var(--console-line)}.advanced-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.advanced-chart-grid .chart-card{margin:0}.advanced-chart-grid .chart-card:last-child{grid-column:1/-1}.advanced-chart-grid h3{margin:0;font-size:16px}.advanced-chart-grid p{margin:2px 0 10px;color:var(--console-muted);font-size:12px}.advanced-chart-grid svg{display:block;width:100%;height:auto;cursor:default}.advanced-bar{fill:var(--console-cyan);opacity:.82}.bar-value{fill:var(--console-text);font:800 12px var(--console-mono)}.mini-axis{font-size:13px}
+@media(max-width:720px){.advanced-chart-grid{grid-template-columns:1fr}.advanced-chart-grid .chart-card:last-child{grid-column:auto}}

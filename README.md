@@ -40,7 +40,7 @@ Python 3.11+ 的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化系統，用可重�
 - 首頁直接嵌入 `docs/diagrams/` 的系統架構與 SingleShot 生命週期互動圖，使用 `present=1` 互動／簡報模式；可切換、重新載入或全頁開啟，圖表操作不會呼叫量測 API。
 - 導覽明確區分示範與實機量測；一般本機啟動直接提供受保護的實機控制，`--demo-only` 才會停用儀器連線。結果頁顯示安全的相對輸出位置。
 - 實機與示範量測共用單點／頻率掃描／功率掃描分頁；結果圖表提供固定座標、受限水平 Zoom／Pan、十字游標與完整點位標值。說明頁涵蓋 GitHub clone、安裝、CLI、Web 與離線報告流程。
-- 示範模式不送 RF、不套用實機功率安全上限，可輸入較寬的功率範圍來展示 PA Pin／Pout／Gain／P1dB 圖與未來功能；輸出仍一律標註 simulated，不能當成實機證據。
+- 示範模式不送 RF、不套用實機功率安全上限，可輸入較寬的功率範圍來展示 PA Pin／Pout／Gain／P1dB；「進階 PA 指標」另提供 OIP3／IM3、H2／H3 與 ACP／ACLR 三張模擬圖及 JSON／CSV／HTML。輸出仍一律標註 simulated，不能當成實機證據。
 - 實機執行確認可完全在 Web 完成：Route、操作員在場與安全 profile 通過後，最後摘要會列出實際頻率／功率／頻寬；取消不送 RF，後端限制與 cleanup 不可繞過。
 - Runs Table 支援全文搜尋、日期／來源／狀態篩選與時間／頻率／功率／點數／Worst EVM 排序；詳情在原列下方展開，輸出直接由瀏覽器開啟，刪除需 Run ID 二次確認並移至可復原 Trash。
 - 實機量測頁改為單點／頻率／功率三個直接操作分頁，不再顯示裝飾性積木或量測模式下拉選單；Run 仍走完整安全確認，掃描 Pause 只在 RF Off 點位邊界生效，Stop 保留 cooperative cancellation 與 emergency cleanup。
