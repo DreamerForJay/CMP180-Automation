@@ -4,6 +4,15 @@
 
 ### 狀態（更新至 2026-09-11）
 
+- 2026-09-11 第二階段完成純軟體 MCS Sweep framework：EHT MCS 0–13 data model、保留順序的
+  selected-list validation、可重現 Mock、EVM／Power vs MCS Web chart、五種 artifact 及 unit
+  tests。每一點保存 modulation、coding rate、頻寬、頻率、EVM、power、frequency error、
+  reliability 與 validity；所有 artifact 固定標記 `source=mock`、`simulated=true`、
+  `hil_status=HIL_PENDING` 且 `compliance_claim=false`。`CMP180MCSSweepSource.acquire()` 因沒有
+  已驗證的 waveform／MCS SCPI mapping 而拒絕執行。Browser Mock 驗證完成 12 點 EHT sweep 與
+  CSV／JSON／SVG／PNG／metadata。此批沒有連接 CMP180、沒有 SCPI write、沒有 RF On，也沒有新增
+  HIL evidence。
+
 - 2026-09-11 完成純軟體 Constellation stack：標準 point／metadata model、通用 interleaved
   I/Q parser、BPSK 至 4096-QAM 單位功率理想點、可重現的 AWGN／phase／quadrature／gain
   imbalance／DC／frequency offset Mock、valid-only EVM 與 I/Q 分析、五種 artifact，以及正式

@@ -76,16 +76,16 @@ features:
   - name: MCS Sweep
     priority: P1
     kind: rf_acquisition
-    architecture: false
-    software: false
-    unit_tests: false
-    mock: false
+    architecture: true
+    software: true
+    unit_tests: true
+    mock: true
     hil: false
     approved: false
     documented: true
-    current: 僅有既有 EHT MCS11 baseline，尚無 multi-MCS framework。
-    evidence: docs/project-development-log.md
-    missing: Data model、selected-list validation、Mock、chart、artifact、SCPI evidence 與 HIL。
+    current: EHT MCS 0–13 data model、任意 selected-list validation、可重現 Mock、Web EVM／Power vs MCS chart 與五種 artifact 已完成。
+    evidence: src/cmp180_evm/mcs_sweep/；tests/unit/test_mcs_sweep.py；Web MCS Sweep tab
+    missing: CMP180 waveform／MCS command evidence、real MCS acquisition、實機 HIL 與 DUT profile approval。
   - name: PA Offline Analysis
     priority: P1
     kind: offline
@@ -174,7 +174,7 @@ features:
     hil: null
     approved: null
     documented: true
-    current: 正式 static/ 工作區具響應式 UI、Mock、guarded hardware、history、chart 與 Constellation。
+    current: 正式 static/ 工作區具響應式 UI、Mock、guarded hardware、history、chart、Constellation 與 MCS Sweep。
     evidence: src/cmp180_evm/web/static/；tests/unit/test_web_original_static.py
     missing: 新功能仍須維持窄螢幕與無 RF 的 CI 驗收。
   - name: RF Safety

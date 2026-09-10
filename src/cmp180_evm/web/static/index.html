@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/design-system.css?v=console18">
   <link rel="stylesheet" href="/cmp180-viewer.css?v=1">
   <link rel="stylesheet" href="/constellation.css?v=1">
+  <link rel="stylesheet" href="/mcs-sweep.css?v=1">
 </head>
 <body>
   <header class="topbar">
@@ -30,6 +31,7 @@
       <button class="tab active" data-tab="home" data-i18n="homeTab">首頁</button>
       <button class="tab" data-tab="measurement" data-i18n="measurementTab">量測</button>
       <button class="tab" data-tab="constellation">Constellation</button>
+      <button class="tab" data-tab="mcs-sweep">MCS Sweep</button>
       <button class="tab" data-tab="loopback">Loopback 驗證</button>
       <button class="tab" data-tab="campaign" data-i18n="campaignTab">HIL 批次</button>
       <button class="tab" data-tab="calibration" data-i18n="calibrationTab">校正</button>
@@ -361,6 +363,38 @@
       </div>
     </section>
 
+    <section id="mcs-sweep" class="panel mcs-panel">
+      <div class="panel-head">
+        <div><p class="workspace-kicker">OFFLINE EHT ANALYSIS</p><h2>MCS Sweep</h2><p>以可重現 synthetic data 驗證任意 selected MCS list、趨勢圖與 artifact；不控制 CMP180 waveform。</p></div>
+        <div class="mcs-status"><span class="pill neutral">SOFTWARE / MOCK VERIFIED</span><span class="pill pending">HIL PENDING</span></div>
+      </div>
+      <div class="inline-alert"><strong>資料邊界</strong><span>沒有 approved compliance limit，也沒有已驗證的 CMP180 MCS／waveform SCPI mapping；結果永久標記 <code>simulated=true</code>。</span></div>
+      <div class="mcs-layout">
+        <form id="mcsSweepForm" class="form-grid mcs-form">
+          <label class="wide-field"><span>Selected MCS list</span><input name="selected_mcs" value="0,1,2,3,4,5,6,7,8,9,10,11" required></label>
+          <label><span>Bandwidth</span><div class="input-unit"><input name="bandwidth_mhz" type="number" value="320" min="1" step="1" required><b>MHz</b></div></label>
+          <label><span>Center frequency</span><div class="input-unit"><input name="frequency_hz" type="number" value="6105000000" min="1" step="1" required><b>Hz</b></div></label>
+          <label><span>Nominal power</span><div class="input-unit"><input name="nominal_power_dbm" type="number" value="-20" step="0.1" required><b>dBm</b></div></label>
+          <label><span>EVM jitter</span><div class="input-unit"><input name="evm_jitter_db" type="number" value="0.35" min="0" step="0.01" required><b>dB</b></div></label>
+          <label><span>Power jitter</span><div class="input-unit"><input name="power_jitter_db" type="number" value="0.08" min="0" step="0.01" required><b>dB</b></div></label>
+          <label><span>Frequency error σ</span><div class="input-unit"><input name="frequency_error_std_hz" type="number" value="25" min="0" step="1" required><b>Hz</b></div></label>
+          <label><span>Invalid ratio</span><input name="invalid_rate" type="number" value="0" min="0" max="0.99" step="0.01" required></label>
+          <label><span>Seed</span><input name="seed" type="number" value="180" step="1" required></label>
+          <label class="wide-field"><span>Test name</span><input name="test_name" value="mcs-sweep-mock" required></label>
+          <button id="runMcsSweep" class="primary submit wide-field" type="submit">產生 Mock MCS Sweep</button>
+        </form>
+        <div class="mcs-workbench">
+          <div id="mcsMetrics" class="metrics"></div>
+          <div class="chart-card mcs-chart-card">
+            <div class="chart-title"><div><strong id="mcsChartTitle">EVM vs MCS</strong><small>IEEE 802.11be EHT baseline · SIMULATED</small></div><div class="chart-tools"><select id="mcsMetric"><option value="evm_db">EVM (dB)</option><option value="power_dbm">Power (dBm)</option></select><button id="mcsSvg" class="ghost" type="button" disabled>SVG</button><button id="mcsPng" class="ghost" type="button" disabled>PNG</button><button id="mcsCsv" class="ghost" type="button" disabled>CSV</button><button id="mcsJson" class="ghost" type="button" disabled>JSON</button></div></div>
+            <svg id="mcsChart" viewBox="0 0 900 470" role="img" aria-label="EVM versus MCS chart"></svg>
+          </div>
+          <div id="mcsArtifacts" class="artifacts"></div>
+          <div class="table-wrap mcs-table-wrap"><table><thead><tr><th>MCS</th><th>Modulation</th><th>Coding</th><th>EVM</th><th>Power</th><th>Freq. Error</th><th>Reliability</th><th>Validity</th></tr></thead><tbody id="mcsRows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
     <section id="loopback" class="panel">
       <div class="panel-head"><div><p class="workspace-kicker">TESTER BASELINE</p><h2 data-i18n="loopbackTitle">Loopback RF 效能驗證</h2><p data-i18n="loopbackHelp">固定條件下執行獨立 SingleShot repeats；先驗證 Tester／Cable／UD Box／RF path，不代表 DUT PASS。</p></div><span id="loopbackOverall" class="pill neutral">LOOPBACK_UNVERIFIED</span></div>
       <div class="warning-card"><strong data-i18n="loopbackWarning">穩定不等於合理</strong><p data-i18n="loopbackWarningHelp">Stability 評估重複性；Reasonableness 比較 Analyzer input reference plane 的 Expected RX Power。相同代表點、門檻且至少 Repeat 10 使用 approved baseline；其他條件仍為 draft。</p></div>
@@ -511,7 +545,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast" role="status"></div>
-  <script src="/app.js?v=console19"></script>
+  <script src="/app.js?v=console20"></script>
   <script src="/hardware.js?v=single-range9"></script>
   <script src="/campaign.js?v=5"></script>
   <script src="/calibration.js?v=3"></script>
@@ -519,6 +553,7 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
   <script src="/gprf-power.js?v=6"></script>
   <script src="/loopback.js?v=4"></script>
   <script src="/constellation.js?v=1"></script>
+  <script src="/mcs-sweep.js?v=1"></script>
   <script type="module" src="/cmp180-viewer.js?v=1"></script>
 </body>
 </html>

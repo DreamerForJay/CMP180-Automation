@@ -11,7 +11,7 @@
 | Frequency Sweep | ✅ | ✅ | ✅ | ✅ | COMPLETE | 100% |
 | Power Sweep | ✅ | ✅ | ✅ | ✅ | COMPLETE | 100% |
 | Constellation | ✅ | ✅ | ❌ | ❌ | PARTIAL | 70% |
-| MCS Sweep | ❌ | ❌ | ❌ | ❌ | TODO | 5% |
+| MCS Sweep | ✅ | ✅ | ❌ | ❌ | PARTIAL | 70% |
 | PA Offline Analysis | ✅ | ✅ | N/A | ❌ | PARTIAL | 94% |
 | Calibration | ✅ | ✅ | ✅ | ✅ | COMPLETE | 100% |
 | DUT Model | ❌ | ❌ | ❌ | ❌ | TODO | 5% |
@@ -24,11 +24,11 @@
 
 ## 自動計算摘要
 
-- Overall Software Completion: **80%**
-- Mock Verification: **71%**
+- Overall Software Completion: **86%**
+- Mock Verification: **79%**
 - Hardware/HIL Completion: **55%**
 - Documentation Completion: **100%**
-- Production Readiness: **76%**
+- Production Readiness: **80%**
 
 計分權重：Architecture/Data Model 15%、Software 25%、Unit Tested 15%、Mock 15%、HIL 20%、Approved 5%、Documented 5%。不適用項目不進入該分母；RF acquisition 未完成 HIL 時單項最高 70%。
 
@@ -134,23 +134,23 @@ Status: Software READY / Mock VERIFIED / HIL PENDING
 
 ## MCS Sweep
 
-Overall: **TODO** · Priority: **P1** · Score: **5%**
+Overall: **PARTIAL** · Priority: **P1** · Score: **70%**
 
-Current implementation: 僅有既有 EHT MCS11 baseline，尚無 multi-MCS framework。
+Current implementation: EHT MCS 0–13 data model、任意 selected-list validation、可重現 Mock、Web EVM／Power vs MCS chart 與五種 artifact 已完成。
 
-Evidence: `docs/project-development-log.md`
+Evidence: `src/cmp180_evm/mcs_sweep/；tests/unit/test_mcs_sweep.py；Web MCS Sweep tab`
 
-Missing work: Data model、selected-list validation、Mock、chart、artifact、SCPI evidence 與 HIL。
+Missing work: CMP180 waveform／MCS command evidence、real MCS acquisition、實機 HIL 與 DUT profile approval。
 
-- [ ] Architecture / Data Model
-- [ ] Software Implemented
-- [ ] Unit Tested
-- [ ] Mock Verified
+- [x] Architecture / Data Model
+- [x] Software Implemented
+- [x] Unit Tested
+- [x] Mock Verified
 - [ ] HIL Verified
 - [ ] Approved for DUT Use
 - [x] Documented
 
-Status: Software PENDING / Mock PENDING / HIL PENDING
+Status: Software READY / Mock VERIFIED / HIL PENDING
 
 ## PA Offline Analysis
 
@@ -276,7 +276,7 @@ Status: Software READY / Mock VERIFIED / HIL N/A
 
 Overall: **COMPLETE** · Priority: **P0** · Score: **100%**
 
-Current implementation: 正式 static/ 工作區具響應式 UI、Mock、guarded hardware、history、chart 與 Constellation。
+Current implementation: 正式 static/ 工作區具響應式 UI、Mock、guarded hardware、history、chart、Constellation 與 MCS Sweep。
 
 Evidence: `src/cmp180_evm/web/static/；tests/unit/test_web_original_static.py`
 

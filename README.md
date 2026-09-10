@@ -2,7 +2,7 @@
 
 以 Python 3.11+ 與本機 Web 工作站建立可重現、可稽核的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化流程。專案將設定驗證、RF 安全閘門、量測 lifecycle、Mock、結果分析與 artifacts 分層，避免把軟體完成度誤寫成硬體驗證。
 
-> 目前開發狀態：本輪沒有 CMP180 實機。新增的 Constellation 功能為 **Software Ready / Mock Verified / HIL Pending**，不包含新 SCPI、RF 或 HIL 證據。
+> 目前開發狀態：本輪沒有 CMP180 實機。Constellation 與 MCS Sweep 為 **Software Ready / Mock Verified / HIL Pending**，不包含新 SCPI、RF 或 HIL 證據。
 
 [文件中心](docs/README.md) · [功能完成度 Dashboard](docs/FEATURE_COMPLETION_CHECKLIST.md) · [使用者指南](docs/user-guide.md) · [硬體量測 SOP](docs/hardware-test-sop.md) · [架構圖](docs/diagrams/README.md)
 
@@ -18,7 +18,7 @@
 | Frequency Sweep | ✅ | ✅ | 固定／Web 掃描與 11 個 approved WLAN section 已有證據 |
 | Power Sweep | ✅ | ✅ | `INV` fail-fast、有效功率掃描與 V1 acceptance 已有證據 |
 | Constellation | ✅ | ✅ | **HIL PENDING**；沒有已驗證 CMP180 acquisition SCPI |
-| MCS Sweep | ❌ | ❌ | 只有 EHT MCS11 baseline；multi-MCS 尚未開始 |
+| MCS Sweep | ✅ | ✅ | **HIL PENDING**；沒有已驗證 CMP180 waveform／MCS mapping |
 | PA Offline Analysis | ✅ | ✅ | 進階指標仍以 SIMULATED／DERIVED 為主，不能當 DUT 實測 |
 | Calibration | ✅ | ✅ | 現行 approved profile 有既有證據；新 fixture／route 必須另行驗證 |
 | UDBox | Partial | ❌ | 已有部分 GPRF 軟體骨架，尚無獨立 Mock stack 與核准 DUT HIL |
@@ -38,6 +38,17 @@ Web 的 `Constellation` 分頁提供 hardware-independent workflow：
 - `constellation.csv`、`constellation.json`、`constellation.svg`、`constellation.png`、`constellation_metadata.json`。
 
 硬體 adapter 目前只定義介面，`acquire()` 會明確拒絕執行。Repository 尚無已驗證的 CMP180 Constellation query 與回傳格式，因此沒有把任何猜測命令放入 SCPI registry。
+
+## MCS Sweep 工作區
+
+Web 的 `MCS Sweep` 分頁提供 EHT MCS 0–13 的 hardware-independent framework：
+
+- 支援逗號分隔、非連續且保留順序的 selected MCS list，例如 `0,3,5,7,9,11`。
+- 輸出 modulation、coding rate、EVM、power、frequency error、reliability 與 validity。
+- 可切換 EVM vs MCS 與 Power vs MCS；匯出 `mcs_sweep.csv`、`mcs_sweep.json`、SVG、PNG 與 metadata。
+- Mock 固定標記 `source=mock`、`simulated=true`、`hil_status=HIL_PENDING`，而且沒有正式 compliance limit。
+
+`CMP180MCSSweepSource.acquire()` 同樣會拒絕執行，直到有官方文件、既有 query evidence 或新實機 discovery 證實 waveform／MCS mapping。
 
 ## 快速開始
 
@@ -79,6 +90,7 @@ configs/                     YAML 範例、能力與 SCPI command map
 docs/                        規格、SOP、證據、checklist 與互動架構圖
 scripts/                     驗證、報告與 checklist 產生工具
 src/cmp180_evm/constellation Constellation model、Mock、分析與 artifacts
+src/cmp180_evm/mcs_sweep/     MCS sweep model、Mock、圖表與 artifacts
 src/cmp180_evm/web/static/   正式 Web 前端
 src/cmp180_evm/workflow/     SingleShot、sweep、校正與 RF safety workflow
 tests/unit/                  CI 使用的 unit／mock／schema／artifact 測試
