@@ -47,6 +47,8 @@
 | [實習結案報告 PPT 規格](final-presentation-spec.md) | 12–15 頁期末簡報結構、講稿節奏、證據與能力邊界 |
 | [RF 工作站 UX](rf-workstation-ux-plan.md) | Runs、Trace、圖表與操作安全 UX |
 | [UI/UX Roadmap](ui-ux-roadmap.md) | 介面階段與響應式驗收標準 |
+| [CMP180 360° 檢視器](cmp180-3d-viewer.md) | 首頁立體操作、離線依賴與模型重建 |
+| [2026-09-10 網站檢視與改進計畫](web-audit-2026-09-10.md) | 8 個工作區實查、缺陷證據、優先順序與下一階段驗收 |
 | [開發流程](development-workflow.md) | Definition of Done、測試與文件同步 |
 | [專案開發日誌與 Week 9–12 計畫](project-development-log.md) | 簡報差距、問題／解法、逐日進度與交付 backlog |
 | [Google Apps Script 部署](google-apps-script-deployment.md) | 唯讀分享版部署與去識別化 |
@@ -106,6 +108,8 @@ This page distinguishes authoritative specifications, operator documents, valida
 | [Result visualization specification](result-visualization-spec.md) | CSV/JSON/HTML and chart requirements |
 | [RF workstation UX](rf-workstation-ux-plan.md) | Runs, traces, charts, and safe-operation UX |
 | [UI/UX roadmap](ui-ux-roadmap.md) | UI phases and responsive acceptance criteria |
+| [CMP180 360° viewer](cmp180-3d-viewer.md) | Home-page 3D controls, offline dependencies, and asset rebuilding |
+| [2026-09-10 website review](web-audit-2026-09-10.md) | Review of eight workspaces, evidence, priorities, and next-stage acceptance |
 | [Development workflow](development-workflow.md) | Definition of Done, testing, and documentation synchronization |
 | [Project development log and Week 9–12 plan](project-development-log.md) | Deck gap review, problem/solution history, daily plan, and delivery backlog |
 | [Google Apps Script deployment](google-apps-script-deployment.md) | Read-only viewer deployment and de-identification |

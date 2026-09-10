@@ -5,6 +5,8 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+# 瀏覽器巡檢的本機快照與 console 記錄可重建，不納入版本庫。
+.playwright-mcp/
 .pytest-tmp*/
 .coverage
 htmlcov/

@@ -6,7 +6,7 @@
 
 主導覽只負責切換首頁、量測、校正、結果、紀錄與說明；每頁只顯示一個主要功能標題。量測頁以「實機量測／示範訓練」切換資料來源，實機表單中的進階範圍統一稱為「掃描設定」。說明頁提供可直接複製的 PowerShell 指令，會先切換到專案目錄，且不包含 PowerShell 畫面上的 `PS` 提示符。
 
-首頁 Hero 使用專案內建的 CMP180 Blender 立體渲染，並在桌面、平板與手機寬度維持完整儀器輪廓。渲染圖是純本機靜態資產，不載入外部 CDN，也不綁定任何量測或 RF API。
+首頁 Hero 先顯示 CMP180 Blender 渲染圖，點擊「啟用 360° 檢視」才下載本機立體模型與檢視器。支援拖曳、觸控、縮放、視角快捷鍵、重設、可暫停自轉與全螢幕；其他工作區或背景頁面會暫停自轉。載入失敗保留靜態圖並提供重試，不依賴外部 CDN、不綁定量測或 RF API。操作與重建說明見 [3D 檢視器](cmp180-3d-viewer.md)；下一階段改善見 [全站檢視計畫](web-audit-2026-09-10.md)。
 
 實機量測與示範訓練都使用「單點／頻率掃描／功率掃描」三級分頁。切換實機分頁會同步後端 action；單點不顯示掃描欄位，只有頻率或功率掃描才展開掃描設定。結果圖表使用固定 900 × 300 工程座標；滾輪只縮放 X 軸，拖曳只水平平移且限制在資料畫布內。靠近量測點會顯示十字游標與完整 EVM、功率、頻率誤差及 VALID／INVALID 狀態。
 
@@ -177,7 +177,7 @@ EVM limit 判定使用「dB 越負通常越好」的方向：量測 EVM 必須�
 
 The primary navigation only switches Home, Measurement, Calibration, Results, Runs, and Help, and each page presents one main functional heading. Measurement uses Hardware/Demo Training to select the data source, while advanced hardware ranges are consistently named Sweep Setup. Help provides copyable PowerShell commands that change to the project directory first and do not include the visual `PS` prompt.
 
-The home-page hero uses the bundled CMP180 Blender render and preserves the complete instrument silhouette across desktop, tablet, and phone widths. It is a local static asset with no external CDN and no measurement or RF API binding.
+The home-page hero initially displays a CMP180 Blender render; selecting “Explore in 360°” loads the local model and viewer. Drag, touch, zoom, view presets, reset, optional auto-rotation, and fullscreen are supported. Auto-rotation pauses when the viewer is hidden or the page is in the background. Failed loads preserve the still image and offer retry. There is no external CDN or measurement/RF API binding. See the [3D viewer guide](cmp180-3d-viewer.md) and [website improvement plan](web-audit-2026-09-10.md).
 
 Hardware and Demo Training both use Single, Frequency Sweep, and Power Sweep tabs. A hardware-tab change synchronizes the backend action. Single hides sweep fields, while frequency or power opens Sweep Setup. Result charts use a fixed 900 by 300 engineering coordinate system. The wheel zooms only the X axis, panning is horizontal and clamped to the data canvas, and the Y axis cannot drift. Moving near a point displays a crosshair and complete EVM, power, frequency-error, and VALID/INVALID values.
 
