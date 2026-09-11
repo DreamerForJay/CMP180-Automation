@@ -239,9 +239,11 @@ def test_constellation_workspace_is_scatter_only_and_hil_pending() -> None:
     assert "<circle class=\"constellation-point" in javascript
     assert "<polyline" not in javascript
     assert "<path class=\"constellation-ideal" in javascript
+    assert "constellation-legend" in javascript
     for feature in ("wheel", "pointerdown", "constellationReset", "constellationSvg", "constellationPng", "constellationCsv", "constellationJson"):
         assert feature in javascript
     assert "constellation-point.outlier" in style
+    assert "#50e7f2" in style
 
 
 def test_mcs_sweep_workspace_supports_selected_lists_and_mock_artifacts() -> None:

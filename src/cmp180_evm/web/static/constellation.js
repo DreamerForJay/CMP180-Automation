@@ -36,7 +36,9 @@
       return `<circle class="constellation-point${outlier ? ' outlier' : ''}" data-symbol="${point.symbol_index}" data-i="${fmt(i)}" data-q="${fmt(q)}" data-evm="${fmt(point.evm)}" cx="${sx(i)}" cy="${sy(q)}" r="3.2"><title>Symbol ${point.symbol_index} · I ${fmt(i)} · Q ${fmt(q)} · EVM ${fmt(point.evm)}</title></circle>`;
     }).join('');
     const ideals = payload.ideal_points.map(point => `<path class="constellation-ideal" d="M ${sx(point.i)-4} ${sy(point.q)} h 8 M ${sx(point.i)} ${sy(point.q)-4} v 8"/>`).join('');
-    chart.innerHTML = `<rect x="70" y="70" width="620" height="620" fill="transparent" stroke="currentColor" opacity=".25"/>${grid.join('')}<line class="constellation-axis" x1="${sx(0)}" y1="70" x2="${sx(0)}" y2="690"/><line class="constellation-axis" x1="70" y1="${sy(0)}" x2="690" y2="${sy(0)}"/>${labels.join('')}${ideals}${points}<text class="constellation-label" x="380" y="748" text-anchor="middle">I</text><text class="constellation-label" x="16" y="380" text-anchor="middle" transform="rotate(-90 16 380)">Q</text>`;
+    // 圖例使用獨立色彩，避免深色主題或瀏覽器快取讓有效點誤看成黑色。
+    const legend = `<circle class="constellation-point" cx="84" cy="42" r="4"/><text class="constellation-legend" x="94" y="46">Measured / simulated</text><path class="constellation-ideal" d="M 244 42 h 10 M 249 37 v 10"/><text class="constellation-legend" x="262" y="46">Ideal reference</text><circle class="constellation-point outlier" cx="402" cy="42" r="4"/><text class="constellation-legend" x="412" y="46">Outlier</text>`;
+    chart.innerHTML = `${legend}<rect x="70" y="70" width="620" height="620" fill="transparent" stroke="#587089" opacity=".9"/>${grid.join('')}<line class="constellation-axis" x1="${sx(0)}" y1="70" x2="${sx(0)}" y2="690"/><line class="constellation-axis" x1="70" y1="${sy(0)}" x2="690" y2="${sy(0)}"/>${labels.join('')}${ideals}${points}<text class="constellation-label" x="380" y="748" text-anchor="middle">I</text><text class="constellation-label" x="16" y="380" text-anchor="middle" transform="rotate(-90 16 380)">Q</text>`;
   }
 
   function render(data) {
