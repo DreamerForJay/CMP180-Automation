@@ -7,6 +7,7 @@ import yaml
 from cmp180_evm.pa_sweep_profile import load_pa_sweep_profile
 from cmp180_evm.scpi.registry import load_scpi_command_map
 from cmp180_evm.web.gprf_service import (
+    GPRF_RF15_SAFE_LIMIT_DBM,
     _analyze_p1db,
     _drain_error_queue,
     _expected_analyzer_power_dbm,
@@ -141,6 +142,7 @@ def test_gprf_preview_reports_pa_reference_plane_budget():
     public = preview.public()
 
     assert public["execution_allowed"] is True
+    assert public["sa_safe_limit_dbm"] == GPRF_RF15_SAFE_LIMIT_DBM
     assert public["pin_start_dbm"] == pytest.approx(-21.5)
     assert public["pin_stop_dbm"] == pytest.approx(-11.5)
     metrics = _point_pa_metrics(
@@ -154,6 +156,24 @@ def test_gprf_preview_reports_pa_reference_plane_budget():
         "pout_dbm": pytest.approx(19.0),
         "gain_db": pytest.approx(30.5),
     }
+
+
+def test_gprf_preview_uses_fixed_rf15_limit_when_payload_requests_a_different_value():
+    request = {
+        "axis": "power",
+        "frequency_hz": 900_000_000,
+        "start_dbm": -30,
+        "stop_dbm": -21,
+        "step_dbm": 1,
+        "dwell_ms": 200,
+    }
+
+    lower = build_gprf_power_preview({**request, "sa_safe_limit_dbm": 0})
+    higher = build_gprf_power_preview({**request, "sa_safe_limit_dbm": 30})
+
+    # 外部 payload 不可放寬或縮窄固定的 RF1.5 硬體保護門檻。
+    assert lower.sa_safe_limit_dbm == GPRF_RF15_SAFE_LIMIT_DBM
+    assert higher.sa_safe_limit_dbm == GPRF_RF15_SAFE_LIMIT_DBM
 
 
 def test_pa_profile_clips_safe_stop_when_no_output_attenuator():

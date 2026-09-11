@@ -56,6 +56,8 @@ mass_memory_query:
   catalog: 'MMEMory:CATalog? "{path_pattern}"'
 
 wlan_tx:
+  # 2026-09-11 內建 Help 29f91d3469e2442d.htm；保存原 tuple，只啟用第六欄 IQConst。
+  set_results: "CONFigure:WLAN:MEAS:MEValuation:RESult:ALL {flags}"
   # 內建 Help 已確認以下 setter tree；實機驗證工具只在 Generator 與
   # WLAN measurement 都為 OFF 時寫回目前值。
   set_rf_path: "ROUTe:WLAN:MEAS:SPATh {rf_path}"
@@ -81,6 +83,7 @@ wlan_tx:
 
 # Query-only commands verified against CMP180 serial REDACTED on 2026-08-18.
 wlan_tx_query:
+  result_configuration: "CONFigure:WLAN:MEAS:MEValuation:RESult:ALL?"
   standard: "CONF:WLAN:MEAS:ISIG:STAN?"
   bandwidth: "CONF:WLAN:MEAS:ISIG:BWID?"
   rf_path_catalog: "CAT:WLAN:MEAS:SPAT?"
@@ -131,6 +134,9 @@ gprf_measurement_query:
   external_attenuation: "CONFigure:GPRF:MEASurement1:RFSettings:EATTenuation?"
 
 results:
+  # 2026-09-11 內建 Help 60fb3cd25f0c40f2.htm；唯讀 stored trace，不啟動量測。
+  constellation_i: "FETCh:WLAN:MEAS:MEValuation:TRACe:IQConst:INPHase?"
+  constellation_q: "FETCh:WLAN:MEAS:MEValuation:TRACe:IQConst:QUADrature?"
   # Aggregate 28-field OFDM SISO result queries from CMP180 built-in WLAN help.
   # Hardware verification is performed by scripts/cmp180_wlan_result_discover.py.
   modulation_current: "FETC:WLAN:MEAS:MEV:MOD:CURR?"

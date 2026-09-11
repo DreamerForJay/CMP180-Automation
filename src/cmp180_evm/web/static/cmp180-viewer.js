@@ -99,7 +99,7 @@ async function load() {
   translate();
   timeout = setTimeout(() => { if (token === generation) release('error'); }, 45000);
   try {
-    // 按需載入本機固定版本；所有互動只改相機，不呼叫量測或儀器 API。
+    // 自動載入本機固定版本；所有互動只改相機，不呼叫量測或儀器 API。
     if (!customElements.get('model-viewer')) await import(`./vendor/model-viewer/model-viewer.min.js?attempt=${token}`);
     if (token !== generation) return;
     viewer = document.createElement('model-viewer');
@@ -110,7 +110,7 @@ async function load() {
       'max-camera-orbit': 'auto 175deg 180%', 'field-of-view': '30deg',
       'min-field-of-view': '30deg', 'max-field-of-view': '30deg',
       'interaction-prompt': 'none', 'environment-image': 'neutral',
-      'shadow-intensity': '0.65', exposure: '1', 'rotation-per-second': '18deg',
+      'shadow-intensity': '0.3', 'shadow-softness': '1', exposure: '0.9', 'rotation-per-second': '18deg',
       'auto-rotate-delay': '0', loading: 'eager', reveal: 'auto',
       alt: words().alt, 'aria-describedby': 'cmp180ViewerStatus',
     };
@@ -122,9 +122,11 @@ async function load() {
       root.setAttribute('aria-busy', 'false');
       statusKey = 'ready';
       controls.hidden = false;
+      // 首次載入即自轉，但尊重減少動態偏好；自動載入不可搶走使用者焦點。
+      rotating = !reducedMotion.matches;
+      syncRotation();
       translate();
-      // 啟用按鈕會隱藏；焦點移到第一個視角按鈕，Shift+Tab 可回到模型的鍵盤控制。
-      root.querySelector('[data-viewer-orbit]').focus({ preventScroll: true });
+      if (document.activeElement === loadButton) root.querySelector('[data-viewer-orbit]').focus({ preventScroll: true });
     }, { once: true });
     current.addEventListener('error', () => { if (token === generation) release('error'); });
     current.addEventListener('progress', event => {
@@ -169,8 +171,10 @@ fullButton.addEventListener('click', async () => {
 document.addEventListener('fullscreenchange', translate);
 document.addEventListener('visibilitychange', syncRotation);
 new IntersectionObserver(entries => { visible = entries[0].isIntersecting; syncRotation(); }).observe(root);
-// 減少動態偏好切換時立即暫停；自轉一律由使用者主動開啟。
+// 減少動態偏好切換時立即暫停，避免突然恢復動畫。
 reducedMotion.addEventListener('change', () => { rotating = false; syncRotation(); });
 window.addEventListener('cmp180-language-change', translate);
 window.addEventListener('pagehide', () => release());
 translate();
+// 進入頁面即載入外觀模型；不涉及儀器連線或 RF 狀態。
+load();

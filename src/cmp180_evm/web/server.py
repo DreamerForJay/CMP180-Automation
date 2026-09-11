@@ -35,6 +35,7 @@ from cmp180_evm.mcs_sweep import (
     save_mcs_sweep_artifacts,
     validate_mcs_list,
 )
+from cmp180_evm.runtime import project_root
 from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.web.custom_plans import (
     build_custom_single_preview,
@@ -53,12 +54,17 @@ from cmp180_evm.web.mock_service import (
     simulate_advanced_pa,
     simulate_point,
 )
-from cmp180_evm.web.run_records import load_run_record, move_run_to_trash, open_run_folder
+from cmp180_evm.web.run_records import (
+    load_run_record,
+    move_run_to_trash,
+    open_run_folder,
+    rename_run_record,
+)
 from cmp180_evm.workflow.rf_routes import route_is_hil_verified, validate_route
 
 # 原版橫向量測工作區已由操作員確認較符合實驗室流程；新版分析能力回填此介面。
 STATIC_DIR = Path(__file__).with_name("static")
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = project_root()
 DIAGRAM_ROUTES = {
     "/diagrams/system-architecture.html": (
         PROJECT_ROOT / "docs" / "diagrams" / "system-architecture.html"
@@ -166,7 +172,7 @@ def list_run_history(output_root: Path, limit: int = 50) -> list[dict[str, objec
                 {
                     "run_id": str(metadata.get("run_id") or run_dir.name),
                     "run_key": run_dir.name,
-                    "test_name": str(metadata.get("test_name") or "measurement"),
+                    "test_name": str(metadata.get("display_name") or metadata.get("test_name") or "measurement"),
                     "created_at": created_at,
                     "simulated": bool(metadata.get("simulated", True)),
                     "status": str(metadata.get("status") or "complete"),
@@ -808,6 +814,19 @@ class Cmp180WebHandler(SimpleHTTPRequestHandler):
                     PROJECT_ROOT / "output", run_key, str(data.get("confirm_run_id") or "")
                 )
                 self._json_response(result)
+                return
+            if path.startswith("/api/runs/") and path.endswith("/rename"):
+                # 改名只寫入本機 metadata 的 display_name，保留 run_id、目錄與原始量測結果。
+                if not self._is_local_client():
+                    self._json_response(
+                        {"error": "Rename is available only from the local workstation"},
+                        HTTPStatus.FORBIDDEN,
+                    )
+                    return
+                run_key = unquote(path.removeprefix("/api/runs/").removesuffix("/rename"))
+                self._json_response(
+                    rename_run_record(PROJECT_ROOT / "output", run_key, str(data.get("display_name") or ""))
+                )
                 return
             if path in {"/api/jobs/hardware/frequency-sweep", "/api/jobs/hardware/power-sweep"}:
                 if not self.hardware_enabled:

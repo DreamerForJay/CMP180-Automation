@@ -11,7 +11,6 @@ const approvedPaProfile = {
   dwell_ms: 200,
   expected_dut_gain_db: 25,
   output_attenuator_db: 0,
-  sa_safe_limit_dbm: 0,
   dut_max_input_dbm: -20
 };
 
@@ -25,7 +24,6 @@ const udboxPlan = {
   dwell_ms: 200,
   expected_dut_gain_db: -10,
   output_attenuator_db: 10,
-  sa_safe_limit_dbm: 0,
   dut_max_input_dbm: 13,
   conversion_direction: 'up',
   conversion_sideband: 'high',
@@ -76,7 +74,6 @@ function loadUdboxPlan() {
   form.external_gain_db.value = 0;
   form.expected_dut_gain_db.value = udboxPlan.expected_dut_gain_db;
   form.output_attenuator_db.value = udboxPlan.output_attenuator_db;
-  form.sa_safe_limit_dbm.value = udboxPlan.sa_safe_limit_dbm;
   form.dut_max_input_dbm.value = udboxPlan.dut_max_input_dbm;
   form.conversion_enabled.checked = true;
   form.conversion_direction.value = udboxPlan.conversion_direction;
@@ -95,7 +92,7 @@ function loadUdboxPlan() {
 
 function loadApprovedPaProfile() {
   const form = $('#gprfPowerForm').elements;
-  // Web 快速鍵採用 profile 的安全預設：未填實體輸出衰減器時，依 25 dB DUT gain 將 stop 裁切到 RF1.5 0 dBm safe limit。
+  // Web 快速鍵仍保留低功率起始範圍；後端固定以 RF1.5 +25 dBm 上限判斷每點安全。
   form.axis.value = approvedPaProfile.axis;
   configureGprfFields();
   form.start.value = approvedPaProfile.start;
@@ -108,7 +105,6 @@ function loadApprovedPaProfile() {
   form.external_gain_db.value = 0;
   form.expected_dut_gain_db.value = approvedPaProfile.expected_dut_gain_db;
   form.output_attenuator_db.value = approvedPaProfile.output_attenuator_db;
-  form.sa_safe_limit_dbm.value = approvedPaProfile.sa_safe_limit_dbm;
   form.dut_max_input_dbm.value = approvedPaProfile.dut_max_input_dbm;
   // PA 是同頻 DUT；載入 PA profile 必須清掉 converter 設定，避免殘留上一次的 LO。
   form.conversion_enabled.checked = false;
@@ -134,8 +130,7 @@ function buildGprfPayload() {
     external_gain_db: Number(form.get('external_gain_db')),
     expected_dut_gain_db: Number(form.get('expected_dut_gain_db')),
     output_attenuator_db: Number(form.get('output_attenuator_db')),
-    external_attenuation_db: 0,
-    sa_safe_limit_dbm: Number(form.get('sa_safe_limit_dbm'))
+    external_attenuation_db: 0
   };
   // 空字串代表「路徑上沒有 DUT」；不可送成 0，那會被當成一個真實的 0 dBm 上限。
   const dutMaxInput = form.get('dut_max_input_dbm');
@@ -177,8 +172,8 @@ function renderGprfPreview(data) {
     ? ''
     : `${language === 'zh' ? 'DUT Pin 範圍' : 'DUT Pin range'}: ${data.pin_start_dbm.toFixed(2)} → ${data.pin_stop_dbm.toFixed(2)} dBm`;
   const compensation = language === 'zh'
-    ? `補償：Input loss ${data.input_cable_loss_db} dB，Output loss ${data.output_cable_loss_db} dB，External gain ${data.external_gain_db} dB，Expected DUT gain ${data.expected_dut_gain_db} dB，Output attenuator ${data.output_attenuator_db} dB，Measurement EATT ${data.external_attenuation_db} dB，SA limit ${data.sa_safe_limit_dbm} dBm`
-    : `Compensation: input loss ${data.input_cable_loss_db} dB, output loss ${data.output_cable_loss_db} dB, external gain ${data.external_gain_db} dB, expected DUT gain ${data.expected_dut_gain_db} dB, output attenuator ${data.output_attenuator_db} dB, measurement EATT ${data.external_attenuation_db} dB, SA limit ${data.sa_safe_limit_dbm} dBm`;
+    ? `補償：Input loss ${data.input_cable_loss_db} dB，Output loss ${data.output_cable_loss_db} dB，External gain ${data.external_gain_db} dB，Expected DUT gain ${data.expected_dut_gain_db} dB，Output attenuator ${data.output_attenuator_db} dB，Measurement EATT ${data.external_attenuation_db} dB，RF1.5 固定安全上限 ${data.sa_safe_limit_dbm} dBm`
+    : `Compensation: input loss ${data.input_cable_loss_db} dB, output loss ${data.output_cable_loss_db} dB, external gain ${data.external_gain_db} dB, expected DUT gain ${data.expected_dut_gain_db} dB, output attenuator ${data.output_attenuator_db} dB, measurement EATT ${data.external_attenuation_db} dB, RF1.5 fixed safety limit ${data.sa_safe_limit_dbm} dBm`;
   preview.hidden = false;
   const title = data.axis === 'frequency'
     ? (language === 'zh' ? 'RF 功率讀值頻率掃描（GPRF）' : 'RF Power vs Frequency (GPRF)')

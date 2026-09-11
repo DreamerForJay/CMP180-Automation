@@ -19,24 +19,24 @@ const attributes={};
 const svg={style:{},setAttribute:(key,value)=>attributes[key]=value};
 const $=()=>svg;
 """+geometry+"""
-const chartView={x:0,y:0,width:900,height:390};
+const chartView={x:0,y:0,width:900,height:410};
 """+zoom+"""
 const samples=Array.from({length:16},(_,i)=>({x:-80+i*5,y:30+i/100}));
 chartDataWindow(-80,0,samples);
 const minimum=chartZoomLimits.minWidth;
-zoomChartAt(.5,1/1.2);
+zoomChartAt(.5,.5,1/1.2);
 assert.ok(chartView.width<900);
 assert.ok(Math.abs(chartView.x+chartView.width/2-450)<1e-8);
-for(let i=0;i<100;i++)zoomChartAt(.95,1/1.2);
+for(let i=0;i<100;i++)zoomChartAt(.95,.5,1/1.2);
 assert.equal(chartView.width,minimum);
 for(const requested of [-1e8,1e8]){
  chartView.x=clampChartX(requested);
  assert.ok(chartView.x>=0&&chartView.x+chartView.width<=900);
  const window=chartDataWindow(-80,0,samples);
  assert.ok(samples.some(point=>point.x>=window.xmin&&point.x<=window.xmax));
- syncChartViewportSize();assert.equal(attributes.viewBox,'0 0 900 390');
+ syncChartViewportSize();assert.equal(attributes.viewBox,'0 0 900 410');
 }
-for(let i=0;i<100;i++)zoomChartAt(.5,1.2);
+for(let i=0;i<100;i++)zoomChartAt(.5,.5,1.2);
 assert.equal(chartView.width,900);assert.equal(chartView.x,0);
 assert.ok(chartClipMarkup().includes('clip-path'));
 """

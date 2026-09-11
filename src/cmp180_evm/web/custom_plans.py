@@ -7,8 +7,8 @@ import json
 import math
 from dataclasses import dataclass
 from decimal import Decimal
-from pathlib import Path
 
+from cmp180_evm.runtime import project_root
 from cmp180_evm.utils.exceptions import SafetyGuardError
 from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.workflow.frequency_sweep import (
@@ -28,7 +28,7 @@ from cmp180_evm.workflow.wlan_bands import (
 # 真正能送 RF 的點數仍由 FrequencySweepPlan／PowerSweepPlan 的硬性包絡把關。
 MAXIMUM_PLANNING_PREVIEW_POINTS = 100_000
 CAPABILITY_PROFILE_PATH = (
-    Path(__file__).resolve().parents[3]
+    project_root()
     / "configs"
     / "instrument_capabilities.example.yaml"
 )

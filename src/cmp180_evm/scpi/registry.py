@@ -59,6 +59,8 @@ class MassMemoryQueryCommands(BaseModel):
 
 
 class WlanTxCommands(BaseModel):
+    # 星座圖計算開關會改變結果集合；HIL 工具必須保存並恢復原設定。
+    set_results: str | None = None
     set_rf_path: str | None = None
     set_frequency: str | None = None
     set_bandwidth: str | None = None
@@ -78,6 +80,7 @@ class WlanTxCommands(BaseModel):
 
 
 class WlanTxQueryCommands(BaseModel):
+    result_configuration: str | None = None
     standard: str
     bandwidth: str
     rf_path_catalog: str
@@ -120,6 +123,9 @@ class GprfMeasurementQueryCommands(BaseModel):
 
 
 class ResultCommands(BaseModel):
+    # CMP180 Help 確認 I/Q 分開回傳，首欄各自為 reliability。
+    constellation_i: str | None = None
+    constellation_q: str | None = None
     modulation_current: str | None = None
     modulation_average: str | None = None
     modulation_minimum: str | None = None

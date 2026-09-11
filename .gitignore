@@ -37,3 +37,6 @@ docs/diagrams/*.visual-check.*
 # open-slide 簡報工作區的相依與建置產物。
 presentation/node_modules/
 presentation/dist/
+
+# pytest 與本機檢查的暫存輸出可重建，不納入版本庫。
+.tmp/

@@ -46,6 +46,18 @@ def test_original_workspace_supports_read_only_run_comparison() -> None:
     assert "analysisTraces.length<2" not in comparison_code
 
 
+def test_result_chart_supports_manual_ranges_marks_and_local_record_rename() -> None:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    javascript = (STATIC / "app.js").read_text(encoding="utf-8")
+
+    for control in ("chartXMin", "chartXMax", "chartYMin", "chartYMax", "chartMarkMode"):
+        assert f'id="{control}"' in html
+    assert "chartManualRange" in javascript
+    assert "chartUserMarksMarkup" in javascript
+    assert "zoomChartAt(xFraction,yFraction,factor)" in javascript
+    assert "postRecordAction(button.dataset.runKey,'rename'" in javascript
+
+
 def test_loopback_page_exposes_live_trends_and_traceable_analysis() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     javascript = (STATIC / "loopback.js").read_text(encoding="utf-8")
@@ -305,7 +317,8 @@ def test_hardware_tabs_and_stable_chart_interactions() -> None:
     assert "GPRF: RF power only" in hardware
     # 圖表平移必須限制在固定畫布內，且不得造成 Y 軸跟著游標漂移。
     assert "chartFrame.width-width" in javascript
-    assert "chartView.y=0" in javascript
+    assert "clampChartY" in javascript
+    assert "startY:position.y" in javascript
     assert "chart-crosshair" in javascript
     assert "chartAxisMarkup" in javascript
     assert "xTicks=xmin===xmax?1:6" in javascript
@@ -333,9 +346,9 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert 'name="output_attenuator_db"' in html
     assert 'id="loadPaProfileButton"' in html
     # 靜態資源版本必須跟著 profile UI 修正提升，避免現場瀏覽器沿用舊摘要與安全文案。
-    assert 'src="/app.js?v=merge1"' in html
+    assert 'src="/app.js?v=interactive-chart2"' in html
     assert 'src="/hardware.js?v=merge1"' in html
-    assert 'src="/gprf-power.js?v=route1"' in html
+    assert 'src="/gprf-power.js?v=rf15-limit1"' in html
     assert 'value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器' in html
     gprf = (STATIC / "gprf-power.js").read_text(encoding="utf-8")
     assert "function loadApprovedPaProfile" in gprf
@@ -345,13 +358,19 @@ def test_gprf_power_chart_has_flatness_analysis_and_contrast() -> None:
     assert gprf.count("updateHardwareSummary();") >= 3
     assert "safetyCheckHelpGprf:'目前只核准 RF1.1 → RF1.5。確認線材、衰減器與轉接件都已登錄於計畫" in javascript
     assert 'translations[language].safetyCheckHelpGprf' in hardware
-    assert 'name="sa_safe_limit_dbm"' in html
+    assert 'name="sa_safe_limit_dbm"' not in html
+    assert 'RF1.5 analyzer 安全上限固定為 +25 dBm' in html
     assert "external_attenuation_db: 0" in gprf
     assert 'value="gain_db"' in html
     assert 'value="pout_dbm"' in html
     assert "<th>Power Error (dB)</th>" in html
     assert "powerFlatnessStats" in javascript
     assert "p1dbMetrics" in javascript
+    assert "p1dbChartMarker" in javascript
+    assert "p1dbMarkerMarkup" in javascript
+    assert "chartYWindow" in javascript
+    assert 'id="chartYExpand"' in html
+    assert 'id="chartYShrink"' in html
     assert "Max compression" in javascript
     assert "expected_power_dbm:expectedPower" in javascript
     assert "pin_dbm:pin" in javascript
