@@ -20,25 +20,31 @@
 
   function draw() {
     if (!payload) return;
+    // 匯出 PNG 時瀏覽器不會攜帶頁面的 CSS；色彩直接寫入 SVG 才能保證輸出可讀。
+    const palette = document.documentElement.dataset.theme === 'light'
+      ? { axis:'#5c7188', grid:'#d8e2ec', label:'#29435d', point:'#007c96', pointStroke:'#dffaff', ideal:'#bd4b52', outlier:'#a86400', outlierStroke:'#fff2b0', frame:'#91a8be' }
+      : { axis:'#9bb4ca', grid:'#31455d', label:'#c9d8e6', point:'#50e7f2', pointStroke:'#d5fbff', ideal:'#ff9e97', outlier:'#ffd166', outlierStroke:'#fff2b0', frame:'#587089' };
     const ticks = 6, grid = [], labels = [];
     for (let index = 0; index <= ticks; index += 1) {
       const value = view.cx - view.span + index * view.span * 2 / ticks;
       const yValue = view.cy - view.span + index * view.span * 2 / ticks;
       const x = sx(value), y = sy(yValue);
-      grid.push(`<line class="constellation-grid" x1="${x}" y1="70" x2="${x}" y2="690"/><line class="constellation-grid" x1="70" y1="${y}" x2="690" y2="${y}"/>`);
-      labels.push(`<text class="constellation-label" x="${x}" y="716" text-anchor="middle">${value.toFixed(2)}</text><text class="constellation-label" x="58" y="${y + 4}" text-anchor="end">${yValue.toFixed(2)}</text>`);
+      grid.push(`<line class="constellation-grid" stroke="${palette.grid}" x1="${x}" y1="70" x2="${x}" y2="690"/><line class="constellation-grid" stroke="${palette.grid}" x1="70" y1="${y}" x2="690" y2="${y}"/>`);
+      labels.push(`<text class="constellation-label" fill="${palette.label}" x="${x}" y="716" text-anchor="middle">${value.toFixed(2)}</text><text class="constellation-label" fill="${palette.label}" x="58" y="${y + 4}" text-anchor="end">${yValue.toFixed(2)}</text>`);
     }
     const threshold = outlierThreshold();
     const points = payload.points.map(point => {
       const [i, q] = coords(point);
       if (!point.valid || i === null || q === null) return '';
       const outlier = finite(point.evm) !== null && Number(point.evm) > threshold;
-      return `<circle class="constellation-point${outlier ? ' outlier' : ''}" data-symbol="${point.symbol_index}" data-i="${fmt(i)}" data-q="${fmt(q)}" data-evm="${fmt(point.evm)}" cx="${sx(i)}" cy="${sy(q)}" r="3.2"><title>Symbol ${point.symbol_index} · I ${fmt(i)} · Q ${fmt(q)} · EVM ${fmt(point.evm)}</title></circle>`;
+      const fill = outlier ? palette.outlier : palette.point;
+      const stroke = outlier ? palette.outlierStroke : palette.pointStroke;
+      return `<circle class="constellation-point${outlier ? ' outlier' : ''}" fill="${fill}" stroke="${stroke}" data-symbol="${point.symbol_index}" data-i="${fmt(i)}" data-q="${fmt(q)}" data-evm="${fmt(point.evm)}" cx="${sx(i)}" cy="${sy(q)}" r="3.2"><title>Symbol ${point.symbol_index} · I ${fmt(i)} · Q ${fmt(q)} · EVM ${fmt(point.evm)}</title></circle>`;
     }).join('');
-    const ideals = payload.ideal_points.map(point => `<path class="constellation-ideal" d="M ${sx(point.i)-4} ${sy(point.q)} h 8 M ${sx(point.i)} ${sy(point.q)-4} v 8"/>`).join('');
+    const ideals = payload.ideal_points.map(point => `<path class="constellation-ideal" stroke="${palette.ideal}" d="M ${sx(point.i)-4} ${sy(point.q)} h 8 M ${sx(point.i)} ${sy(point.q)-4} v 8"/>`).join('');
     // 圖例使用獨立色彩，避免深色主題或瀏覽器快取讓有效點誤看成黑色。
-    const legend = `<circle class="constellation-point" cx="84" cy="42" r="4"/><text class="constellation-legend" x="94" y="46">Measured / simulated</text><path class="constellation-ideal" d="M 244 42 h 10 M 249 37 v 10"/><text class="constellation-legend" x="262" y="46">Ideal reference</text><circle class="constellation-point outlier" cx="402" cy="42" r="4"/><text class="constellation-legend" x="412" y="46">Outlier</text>`;
-    chart.innerHTML = `${legend}<rect x="70" y="70" width="620" height="620" fill="transparent" stroke="#587089" opacity=".9"/>${grid.join('')}<line class="constellation-axis" x1="${sx(0)}" y1="70" x2="${sx(0)}" y2="690"/><line class="constellation-axis" x1="70" y1="${sy(0)}" x2="690" y2="${sy(0)}"/>${labels.join('')}${ideals}${points}<text class="constellation-label" x="380" y="748" text-anchor="middle">I</text><text class="constellation-label" x="16" y="380" text-anchor="middle" transform="rotate(-90 16 380)">Q</text>`;
+    const legend = `<circle class="constellation-point" fill="${palette.point}" stroke="${palette.pointStroke}" cx="84" cy="42" r="4"/><text class="constellation-legend" fill="${palette.label}" x="94" y="46">Measured / simulated</text><path class="constellation-ideal" stroke="${palette.ideal}" d="M 244 42 h 10 M 249 37 v 10"/><text class="constellation-legend" fill="${palette.label}" x="262" y="46">Ideal reference</text><circle class="constellation-point outlier" fill="${palette.outlier}" stroke="${palette.outlierStroke}" cx="402" cy="42" r="4"/><text class="constellation-legend" fill="${palette.label}" x="412" y="46">Outlier</text>`;
+    chart.innerHTML = `${legend}<rect x="70" y="70" width="620" height="620" fill="transparent" stroke="${palette.frame}" opacity=".9"/>${grid.join('')}<line class="constellation-axis" stroke="${palette.axis}" x1="${sx(0)}" y1="70" x2="${sx(0)}" y2="690"/><line class="constellation-axis" stroke="${palette.axis}" x1="70" y1="${sy(0)}" x2="690" y2="${sy(0)}"/>${labels.join('')}${ideals}${points}<text class="constellation-label" fill="${palette.label}" x="380" y="748" text-anchor="middle">I</text><text class="constellation-label" fill="${palette.label}" x="16" y="380" text-anchor="middle" transform="rotate(-90 16 380)">Q</text>`;
   }
 
   function render(data) {
