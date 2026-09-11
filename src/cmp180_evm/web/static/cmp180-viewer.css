@@ -27,3 +27,7 @@
 [data-theme="light"] .cmp180-viewer .cmp180-image-stage { background: radial-gradient(ellipse at 50% 35%, #f2f8fc, #d0dee9 85%); }
 @media (min-width:1101px) { .home-hero:has(.cmp180-viewer) { grid-template-columns: minmax(0,1fr) minmax(400px,1.1fr); gap: 36px; padding: clamp(30px,4vw,64px); } .home-hero:has(.cmp180-viewer) .hero-copy h2 { font-size: clamp(38px,4vw,60px); line-height: 1.12; } }
 @media (max-width:720px) { .cmp180-viewer .cmp180-image-stage { aspect-ratio: 1 / 1; } .viewer-controls button { flex: 1 0 auto; } .viewer-launch .primary { min-height: 48px; } }
+
+/* 載入時使用主題背景，避免舊渲染圖的黑色天空與亮色地板形成明暗斷層。 */
+.cmp180-viewer[data-state="loading"] .cmp180-image-stage > img { visibility: hidden; }
+.cmp180-viewer[data-state="loading"] .viewer-launch { display: none; }

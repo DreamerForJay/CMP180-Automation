@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/hardware.css">
   <link rel="stylesheet" href="/console-theme.css">
   <link rel="stylesheet" href="/design-system.css?v=feedback4">
-  <link rel="stylesheet" href="/cmp180-viewer.css?v=1">
+  <link rel="stylesheet" href="/cmp180-viewer.css?v=2">
   <link rel="stylesheet" href="/constellation.css?v=2">
   <link rel="stylesheet" href="/mcs-sweep.css?v=1">
 </head>
@@ -289,8 +289,8 @@
           <label><span>External gain</span><div class="input-unit"><input name="external_gain_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div></label>
           <label><span>Expected DUT gain</span><div class="input-unit"><input name="expected_dut_gain_db" type="number" value="25" min="-120" max="120" step="0.01" required><b>dB</b></div><small class="field-help">損耗型 DUT（converter、attenuator）填負值，例如 UD Box 0630 的 conversion loss 填 −10。</small></label>
           <label><span>Output attenuator</span><div class="input-unit"><input name="output_attenuator_db" type="number" value="0" min="0" max="120" step="0.01" required><b>dB</b></div><small class="field-help">實體衰減器只用於 Pout/Gain 與 RF1.5 安全預估，不寫入 CMP180 EATT；未接衰減器時維持 0 dB。</small></label>
-          <label><span>SA safe limit</span><div class="input-unit"><input name="sa_safe_limit_dbm" type="number" value="0" min="-120" max="30" step="0.1" required><b>dBm</b></div><small class="field-help">超過此 analyzer power 會標記為 SA_LIMIT，不列入 P1dB。</small></label>
-          <label><span>DUT max input</span><div class="input-unit"><input name="dut_max_input_dbm" type="number" value="" min="-120" max="30" step="0.1"><b>dBm</b></div><small class="field-help">DUT 參考面能承受的輸入上限，與 SA safe limit 是兩條獨立保護：後者只保護 CMP180。Expected DUT gain 非 0 時必填。</small></label>
+          <div class="field-help wide-field">RF1.5 analyzer 安全上限固定為 +25 dBm（CMP180 port +30 dBm Max 保留 5 dB 裕度）。超過時會標記為 SA_LIMIT，不列入 P1dB。</div>
+          <label><span>DUT max input</span><div class="input-unit"><input name="dut_max_input_dbm" type="number" value="" min="-120" max="30" step="0.1"><b>dBm</b></div><small class="field-help">DUT 參考面能承受的輸入上限，與固定 RF1.5 +25 dBm 保護獨立。Expected DUT gain 非 0 時必填。</small></label>
           <label><span>Dwell</span><div class="input-unit"><input name="dwell_ms" type="number" value="200" min="50" max="5000" step="50" required><b>ms</b></div></label>
           <label class="check-label wide-field"><input id="gprfConversionToggle" name="conversion_enabled" type="checkbox"><span>DUT 是頻率轉換器（up/down converter），輸入與輸出不同頻</span></label>
           <label id="gprfConversionDirectionField" hidden><span>Conversion direction</span><select name="conversion_direction"><option value="up">Up：generator 送 IF、analyzer 收 RF</option><option value="down">Down：generator 送 RF、analyzer 收 IF</option></select></label>
@@ -457,7 +457,7 @@
       <div id="metrics" class="metrics"></div>
       <div id="limitProfileCard" class="limit-profile-card" hidden></div>
       <section id="comparisonPanel" class="comparison-panel" hidden><div><strong>歷史資料比較 / Historical comparison</strong><p id="comparisonHint">可調整曲線名稱、顏色與顯示狀態。</p></div><div id="traceList" class="trace-list"></div></section>
-      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">EVM dB 越負通常越好；PASS 區在 limit line 下方</small></div><div class="chart-tools"><select id="chartMetric" aria-label="圖表顯示指標 / Chart metric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="pin_dbm">PA Pin (dBm)</option><option value="pout_dbm">PA Pout (dBm)</option><option value="gain_db">PA Gain (dB)</option><option value="power_error_db">Power Error (dB)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button" title="匯出目前前端互動圖">Web PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 390" role="img" aria-label="量測結果趨勢圖，含完整橫軸、縱軸標題與刻度"></svg></div>
+      <div class="chart-card"><div class="chart-title"><div><strong data-i18n="resultChart">結果趨勢圖</strong><small id="chartHint">輸入 X/Y 範圍後按套用；滾輪縮放、拖曳平移，雙擊回到全局</small></div><div class="chart-tools"><select id="chartMetric" aria-label="圖表顯示指標 / Chart metric"><option value="evm_all_db">EVM All (dB)</option><option value="evm_data_db">EVM Data (dB)</option><option value="evm_pilot_db">EVM Pilot (dB)</option><option value="burst_power_dbm">Burst Power (dBm)</option><option value="pin_dbm">PA Pin (dBm)</option><option value="pout_dbm">PA Pout (dBm)</option><option value="gain_db">PA Gain (dB)</option><option value="power_error_db">Power Error (dB)</option><option value="peak_power_dbm">Peak Power (dBm)</option><option value="frequency_error_hz">Frequency Error (Hz)</option><option value="clock_error_ppm">Clock Error (ppm)</option></select><button id="chartYExpand" type="button" title="擴大 Y 軸範圍">Y 範圍＋</button><button id="chartYShrink" type="button" title="縮小 Y 軸範圍，放大曲線細節">Y 範圍－</button><button id="chartMarkMode" type="button" title="點選測點加入比較標記">標記</button><button id="chartReset" type="button" title="重設縮放與游標">Reset</button><button id="chartCursorMode" type="button" title="點擊圖表依序設定 A/B 游標">A/B</button><button id="exportSvg" type="button">SVG</button><button id="exportPng" type="button" title="匯出目前前端互動圖">Web PNG</button><button id="exportCompareCsv" type="button">CSV</button></div></div><div class="chart-range-controls" aria-label="圖表顯示範圍"><label><span id="chartXRangeLabel">X 範圍</span><input id="chartXMin" type="number" step="any" placeholder="自動"></label><label><span>至</span><input id="chartXMax" type="number" step="any" placeholder="自動"></label><label><span id="chartYRangeLabel">Y 範圍</span><input id="chartYMin" type="number" step="any" placeholder="自動"></label><label><span>至</span><input id="chartYMax" type="number" step="any" placeholder="自動"></label><button id="chartApplyRange" type="button">套用範圍</button><button id="chartAutoRange" type="button">全局自動</button></div><div id="chartCursorReadout" class="chart-cursor-readout" hidden></div><svg id="chart" viewBox="0 0 900 410" role="img" aria-label="量測結果趨勢圖，含完整橫軸、縱軸標題與刻度"></svg></div>
       <section id="matplotlibGallery" class="matplotlib-gallery" hidden><div class="panel-head"><div><h3>Pandas DataFrame + Matplotlib PNG</h3><p id="matplotlibDescription">由本次 Run 已保存的 CSV 產生；選擇指標後可開啟原始 160 DPI PNG。</p></div><span class="pill">OFFLINE REPORT</span></div><div class="matplotlib-toolbar"><label><span>Matplotlib metric</span><select id="matplotlibMetric"></select></label><a id="matplotlibOpen" class="ghost" href="#" target="_blank" rel="noopener">開啟原圖</a></div><div id="matplotlibPlots" class="matplotlib-plots"></div></section>
       <div class="table-wrap"><table><thead><tr><th>#</th><th id="xAxisHeader">MHz</th><th>EVM (dB)</th><th>Power (dBm)</th><th>Power Error (dB)</th><th>Freq Error (Hz)</th><th>Status</th></tr></thead><tbody id="resultRows"></tbody></table></div>
       <div id="artifacts" class="artifacts"></div>
@@ -548,15 +548,15 @@ python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre></div>
     </section>
   </main>
   <div id="toast"><div role="status" aria-live="polite" aria-atomic="true"><strong id="toastTitle"></strong><p id="toastMessage"></p></div><button type="button" id="dismissToast">關閉</button></div>
-  <script src="/app.js?v=merge1"></script>
+  <script src="/app.js?v=interactive-chart2"></script>
   <script src="/hardware.js?v=merge1"></script>
   <script src="/campaign.js?v=5"></script>
   <script src="/calibration.js?v=route1"></script>
   <script src="/custom-plan.js?v=route1"></script>
-  <script src="/gprf-power.js?v=route1"></script>
+  <script src="/gprf-power.js?v=rf15-limit1"></script>
   <script src="/loopback.js?v=4"></script>
   <script src="/constellation.js?v=1"></script>
   <script src="/mcs-sweep.js?v=1"></script>
-  <script type="module" src="/cmp180-viewer.js?v=1"></script>
+  <script type="module" src="/cmp180-viewer.js?v=2"></script>
 </body>
 </html>

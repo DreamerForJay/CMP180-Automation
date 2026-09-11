@@ -53,14 +53,25 @@ def test_viewer_vendor_matches_manifest_and_includes_license() -> None:
     assert "Apache License" in (vendor / "LICENSE").read_text()
 
 
-def test_viewer_load_is_opt_in_and_does_not_bind_instrument_actions() -> None:
+def test_viewer_load_is_automatic_and_does_not_bind_instrument_actions() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     script = (STATIC / "cmp180-viewer.js").read_text(encoding="utf-8")
     assert '<model-viewer' not in html
     assert '/assets/cmp180-hero.png' in html
     assert "loadButton.addEventListener('click', load)" in script
-    assert 'src="/cmp180-viewer.js?v=1"' in html
+    assert 'src="/cmp180-viewer.js?v=2"' in html
     assert "/api/" not in script
     assert "cmp180-language-change" in script
     assert "visibilitychange" in script
     assert "prefers-reduced-motion" in script
+
+
+def test_viewer_starts_rotation_without_stealing_focus_and_softens_shadows() -> None:
+    script = (STATIC / "cmp180-viewer.js").read_text(encoding="utf-8")
+    css = (STATIC / "cmp180-viewer.css").read_text(encoding="utf-8")
+    # 自動載入須尊重減少動態偏好，且不能把鍵盤焦點從其他控制項移走。
+    assert script.rstrip().endswith("load();")
+    assert "rotating = !reducedMotion.matches;" in script
+    assert "if (document.activeElement === loadButton)" in script
+    assert "'shadow-intensity': '0.3', 'shadow-softness': '1', exposure: '0.9'" in script
+    assert '[data-state="loading"] .cmp180-image-stage > img { visibility: hidden; }' in css

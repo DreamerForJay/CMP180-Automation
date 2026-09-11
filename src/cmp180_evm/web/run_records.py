@@ -59,6 +59,23 @@ def move_run_to_trash(output_root: Path, run_key: str, confirmed_run_id: str) ->
     return {"status": "trashed", "run_id": actual_run_id, "trash_key": destination.name}
 
 
+def rename_run_record(output_root: Path, run_key: str, display_name: str) -> dict[str, str]:
+    """Save an operator-facing display name without renaming the evidence directory."""
+    run_dir = resolve_run_dir(output_root, run_key)
+    normalized = " ".join(display_name.split())
+    if not normalized or len(normalized) > 120 or any(ord(char) < 32 for char in normalized):
+        raise ValueError("Display name must contain 1 to 120 printable characters")
+    metadata_path = run_dir / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    if not isinstance(metadata, dict):
+        raise ValueError("Run record metadata must be an object")
+    # 顯示名稱只改 metadata，不改 run 目錄或 run_id，讓既有 artifact URL 與量測證據保持可追溯。
+    metadata["display_name"] = normalized
+    metadata["display_name_updated_at"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"status": "renamed", "run_key": run_key, "display_name": normalized}
+
+
 def open_run_folder(output_root: Path, run_key: str) -> None:
     run_dir = resolve_run_dir(output_root, run_key)
     if os.name != "nt":

@@ -13,6 +13,7 @@ from cmp180_evm.web.mock_service import (
     simulate_advanced_pa,
     simulate_point,
 )
+from cmp180_evm.web.run_records import rename_run_record
 from cmp180_evm.web.server import (
     Cmp180WebHandler,
     ExclusiveThreadingHTTPServer,
@@ -183,6 +184,22 @@ def test_run_history_recovers_legacy_demo_timestamp_without_rewriting_artifacts(
     assert result["created_at"] == "2026-08-25T08:00:00+00:00"
     assert result["completed_points"] == 3
     assert "created_at" not in json.loads(metadata_path.read_text(encoding="utf-8"))
+
+
+def test_run_record_display_name_preserves_evidence_identity(tmp_path):
+    run = tmp_path / "rename-me"
+    run.mkdir()
+    (run / "metadata.json").write_text(
+        json.dumps({"run_id": "immutable-run", "test_name": "original"}), encoding="utf-8"
+    )
+
+    result = rename_run_record(tmp_path, "rename-me", "  PA 壓縮掃描 A  ")
+
+    metadata = json.loads((run / "metadata.json").read_text(encoding="utf-8"))
+    assert result["display_name"] == "PA 壓縮掃描 A"
+    assert metadata["run_id"] == "immutable-run"
+    assert metadata["test_name"] == "original"
+    assert list_run_history(tmp_path)[0]["test_name"] == "PA 壓縮掃描 A"
 
 
 def test_web_hardware_endpoint_is_enabled_for_local_workstation_by_default():

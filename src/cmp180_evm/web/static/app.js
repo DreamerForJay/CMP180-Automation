@@ -273,6 +273,24 @@ function renderHistoryFeedback(){
   empty.textContent=runHistory.length?uiText('沒有符合篩選條件的紀錄，請調整搜尋或篩選。','No records match. Adjust the search or filters.'):uiText('尚無量測紀錄。完成量測後，可在此查看結果。','No measurement records yet. Completed measurements will appear here.');
 }
 function renderRunHistory(loadDetail=true){const labels=language==='zh'?{load:'查看詳情',close:'收合詳情',open:'開啟輸出',trash:'刪除'}:{load:'View details',close:'Close details',open:'Open output',trash:'Delete'};const rows=filteredRuns();$('#historyEmpty').hidden=rows.length>0;$('#historyEmpty').textContent=language==='zh'?'沒有符合條件的量測紀錄。':'No runs match the current filters.';$('#historyRows').innerHTML=rows.map(run=>{const files=run.artifact_urls||{};const links=[historyLink(files.report,'HTML'),historyLink(files.csv,'CSV'),historyLink(files.json,'JSON'),historyLink(files.metadata,'Metadata')].filter(Boolean).join(' · ');const source=run.simulated?uiText('示範','DEMO'):uiText('實機','HARDWARE'),checked=selectedCompareKeys.has(run.run_key)?'checked':'',expanded=expandedRunKey===run.run_key,openUrl=files.report||files.json||files.csv||files.metadata||'';return `<tr class="run-main-row"><td class="select-column"><input class="run-select" type="checkbox" data-compare-run="${escapeHtml(run.run_key)}" ${checked} aria-label="Select ${escapeHtml(run.test_name)} for comparison"></td><td>${run.created_at?new Date(run.created_at).toLocaleString(language==='zh'?'zh-TW':'en-US'):'—'}</td><td>${escapeHtml(run.test_name)}</td><td><code>${escapeHtml(run.run_id)}</code></td><td><span class="pill ${run.simulated?'neutral':'hardware-source'}">${source}</span></td><td>${escapeHtml(uiText(({complete:'執行完成',partial:'部分完成',failed:'執行失敗',cancelled:'已取消'})[String(run.status).toLowerCase()]||String(run.status).toUpperCase(),String(run.status).toUpperCase()))}</td><td>${run.completed_points}</td><td class="history-links">${links||'—'}</td><td class="record-actions"><button type="button" data-record-action="load" data-run-key="${escapeHtml(run.run_key)}">${expanded?labels.close:labels.load}</button><button type="button" data-record-action="open" data-open-url="${escapeHtml(openUrl)}" ${openUrl?'':'disabled'}>${labels.open}</button><button type="button" class="danger-mini" data-record-action="trash" data-run-key="${escapeHtml(run.run_key)}" data-run-id="${escapeHtml(run.run_id)}">${labels.trash}</button></td></tr><tr class="run-detail-row" data-detail-row="${escapeHtml(run.run_key)}" ${expanded?'':'hidden'}><td colspan="9"><div class="inline-run-detail">${expanded?'<div class="detail-loading">'+uiText('載入詳情中…','Loading details…')+'</div>':''}</div></td></tr>`}).join('');updateCompareSelection();renderHistoryFeedback();if(expandedRunKey&&(loadDetail||runDetailCache.has(expandedRunKey)))loadRunRecord(expandedRunKey,true)}
+const renderRunHistoryBase=renderRunHistory;
+renderRunHistory=function(...args){
+  renderRunHistoryBase(...args);
+  document.querySelectorAll('.record-actions').forEach(actions=>{
+    if(actions.querySelector('[data-record-action="rename"]'))return;
+    const button=document.createElement('button');
+    button.type='button';button.dataset.recordAction='rename';button.dataset.runKey=actions.querySelector('[data-record-action="load"]')?.dataset.runKey||'';
+    button.textContent=language==='zh'?'改名':'Rename';actions.insertBefore(button,actions.querySelector('[data-record-action="open"]'));
+  });
+}
+$('#historyRows').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-record-action="rename"]');if(!button)return;
+  const run=runHistory.find(item=>item.run_key===button.dataset.runKey),current=run?.test_name||'';
+  const next=prompt(language==='zh'?'輸入量測紀錄顯示名稱：':'Enter a display name for this measurement:',current);
+  if(next===null)return;
+  button.disabled=true;
+  try{await postRecordAction(button.dataset.runKey,'rename',{display_name:next});runDetailCache.delete(button.dataset.runKey);await loadRunHistory();toast(language==='zh'?'量測紀錄名稱已更新':'Measurement record name updated')}catch(error){toast(error.message,'error')}finally{button.disabled=false}
+});
 async function loadRunHistory(){
   // 僅手動或導覽讀取紀錄；阻擋重複請求，不對 RF 操作套用重試。
   if(historyFeedback.phase==='loading')return;
@@ -393,6 +411,8 @@ $('#advancedPaForm').onsubmit=async event=>{event.preventDefault();const form=ne
 let latestAxis='frequency';
 // 目前結果套用的 EVM spec limit（dB）；null 代表本次沒有套用 limit profile。
 let latestSpecLimitDb=null;
+// P1dB 是由相鄰實測點內插而來；保留 metadata 才能在 PA 圖上標出非整數功率的位置。
+let latestP1db=null;
 function xFieldFor(axis){return axis==='power'?'generator_power_dbm':'frequency_hz'}
 function xUnitFor(axis){return axis==='power'?'dBm':'MHz'}
 function xDisplayFor(axis,value){return axis==='power'?value.toFixed(1):(value/1e6).toFixed(1)}
@@ -486,6 +506,7 @@ function renderResultSummary(points,axis,context={},rawPoints=null){
   const statusCount=context.limit_profile?pass:measured;
   const statusTotal=context.limit_profile?validCount:points.length;
   latestSpecLimitDb=context.limit_profile?context.limit_profile.maximum_evm_db:null;
+  latestP1db=context.p1db||null;
   // margin = limit - measured，正值代表優於限值；此符號約定與 backend 的 margin_db 相同。
   const margins=points.filter(point=>point.valid&&Number.isFinite(point.margin_db)).map(point=>point.margin_db);
   const avgMargin=margins.length?margins.reduce((sum,value)=>sum+value,0)/margins.length:null;
@@ -558,8 +579,14 @@ function renderLimitProfile(profile,complianceClaim){const card=$('#limitProfile
 function metric(label,value){return `<div class="metric"><small>${label}</small><strong>${value}</strong></div>`}
 function metricAxisLabel(metricName){return {evm_all_db:'EVM All (dB)',evm_data_db:'EVM Data (dB)',evm_pilot_db:'EVM Pilot (dB)',burst_power_dbm:'Burst Power (dBm)',pin_dbm:'PA Pin (dBm)',pout_dbm:'PA Pout (dBm)',gain_db:'PA Gain (dB)',power_error_db:'Power Error (dB)',peak_power_dbm:'Peak Power (dBm)',frequency_error_hz:'Frequency Error (Hz)',clock_error_ppm:'Clock Error (ppm)'}[metricName]||metricName}
 const metricOrder=['evm_all_db','evm_data_db','evm_pilot_db','burst_power_dbm','pin_dbm','pout_dbm','gain_db','power_error_db','peak_power_dbm','frequency_error_hz','clock_error_ppm'];
+function updateChartMetricAvailability(points){
+  const select=$('#chartMetric');
+  [...select.options].forEach(option=>{const available=points.some(point=>Number.isFinite(point[option.value]));option.disabled=!available;option.hidden=!available});
+  if(select.selectedOptions[0]?.disabled)select.value=[...select.options].find(option=>!option.disabled)?.value||'';
+}
 function selectBestChartMetric(points,data={}){
   // 新結果進來時只自動選一次最有趨勢意義的指標；使用者之後手動切換不會重算資料。
+  updateChartMetricAvailability(points);
   const preferred=data.measurement_family==='GPRF_POWER'?['gain_db','pout_dbm','burst_power_dbm','power_error_db','frequency_error_hz']:metricOrder;
   const selected=[...preferred,...metricOrder].find(metricName=>points.some(point=>Number.isFinite(point[metricName])));
   if(selected)$('#chartMetric').value=selected;
@@ -609,16 +636,22 @@ function expectedReferenceForPowerMetric(points,axis,metricName){
   const reference=expectedValues.length?expectedValues.reduce((sum,value)=>sum+value,0)/expectedValues.length:null;
   return reference===null?null:{kind:'horizontal',value:reference,label:`Expected ${reference.toFixed(2)} dBm`};
 }
-const chartFrame={width:900,height:390,left:88,right:28,top:24,bottom:64};
-const chartZoomLimits={minWidth:18};
+const chartFrame={width:900,height:410,left:104,right:52,top:28,bottom:82};
+const chartZoomLimits={minWidth:18,minHeight:18};
+const chartManualRange={xmin:null,xmax:null,ymin:null,ymax:null};
 function clampChartX(x,width=chartView.width){
   // 縮小最多回到完整圖，避免 viewBox 大於圖面後把曲線縮到像消失。
   if(width>=chartFrame.width)return 0;
   return Math.max(0,Math.min(chartFrame.width-width,x));
 }
+function clampChartY(y,height=chartView.height){
+  // Y 軸也限制在資料全域範圍內，讓拖曳不會把所有測點帶離畫布。
+  if(height>=chartFrame.height)return 0;
+  return Math.max(0,Math.min(chartFrame.height-height,y));
+}
 function syncChartViewportSize(){
   const svg=$('#chart');
-  chartView.x=clampChartX(chartView.x,chartView.width);
+  chartView.x=clampChartX(chartView.x,chartView.width);chartView.y=clampChartY(chartView.y,chartView.height);
   // 畫布與座標軸固定；縮放只改變資料範圍，避免瀏覽器等比縮放造成左右裁切。
   svg.setAttribute('viewBox',`0 0 ${chartFrame.width} ${chartFrame.height}`);
   svg.style.aspectRatio=`${chartFrame.width} / ${chartFrame.height}`;
@@ -650,6 +683,32 @@ function chartExtent(values,{minimumSpan=1,paddingRatio=.08}={}){
   // Y 軸只加必要留白，讓小幅變化不會被壓扁；零跨度資料仍保留最小可讀範圍。
   return {min:midpoint-span/2-span*paddingRatio,max:midpoint+span/2+span*paddingRatio};
 }
+function chartYWindow(extent){
+  const span=extent.max-extent.min||1,high=extent.max-chartView.y/chartFrame.height*span;
+  return {min:high-chartView.height/chartFrame.height*span,max:high};
+}
+function p1dbChartMarker(axis,metric){
+  const result=latestP1db||{};
+  if(axis!=='power'||result.status!=='found')return null;
+  const ip1db=finiteNumber(result.ip1db_dbm);
+  if(ip1db===null)return null;
+  if(metric==='pin_dbm')return {x:ip1db,y:ip1db,label:`IP1dB ${ip1db.toFixed(2)} dBm`};
+  if(metric==='pout_dbm'){
+    const op1db=finiteNumber(result.op1db_dbm);
+    return op1db===null?null:{x:ip1db,y:op1db,label:`OP1dB ${op1db.toFixed(2)} dBm`};
+  }
+  if(metric==='gain_db'){
+    const target=finiteNumber(result.target_gain_db);
+    return target===null?null:{x:ip1db,y:target,label:`IP1dB ${ip1db.toFixed(2)} dBm`};
+  }
+  return null;
+}
+function p1dbMarkerMarkup(marker,x,y){
+  if(!marker)return '';
+  const cx=x(marker.x),cy=y(marker.y),labelY=cy<chartFrame.top+24?cy+24:cy-12,atRight=cx>chartFrame.width-chartFrame.right-150;
+  return `<line class="p1db-guide" x1="${cx}" y1="${chartFrame.top}" x2="${cx}" y2="${chartFrame.height-chartFrame.bottom}"/><line class="p1db-guide" x1="${chartFrame.left}" y1="${cy}" x2="${cx}" y2="${cy}"/><circle class="p1db-marker" cx="${cx}" cy="${cy}" r="8"><title>${marker.label}</title></circle><text class="p1db-label" x="${cx+(atRight?-10:10)}" y="${labelY}" text-anchor="${atRight?'end':'start'}">${marker.label}</text>`;
+}
+function chartUserMarksMarkup(x,y){return chartView.marks.map(mark=>`<circle class="chart-user-mark" cx="${x(mark.x)}" cy="${y(mark.y)}" r="7"/><text class="chart-user-mark-label" x="${x(mark.x)+10}" y="${y(mark.y)-10}">${mark.label}</text>`).join('')}
 function chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y){
   const frame=chartFrame,xTicks=xmin===xmax?1:6,yTicks=6;
   let html='';
@@ -670,6 +729,7 @@ function chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y){
 }
 function drawChart(points,axis='frequency',preserveView=false){
   if(!preserveView)setChartNaturalView();
+  updateChartRangeLabels();
   const svg=$('#chart'),metric=$('#chartMetric').value,w=chartFrame.width,h=chartFrame.height,xField=xFieldFor(axis),xUnit=xUnitFor(axis),left=chartFrame.left,right=chartFrame.right,top=chartFrame.top,bottom=chartFrame.bottom;
   const xs=points.map(point=>point[xField]).filter(Number.isFinite);
   const validPoints=points.filter(point=>point.valid&&Number.isFinite(point[metric]));
@@ -679,11 +739,12 @@ function drawChart(points,axis='frequency',preserveView=false){
   const specLimit=metric==='evm_all_db'&&Number.isFinite(latestSpecLimitDb)?latestSpecLimitDb:null;
   const expectedReference=expectedReferenceForPowerMetric(validPoints,axis,metric);
   const expectedSpread=expectedReference?.kind==='diagonal'?expectedReference.points.map(point=>point.y):expectedReference?[expectedReference.value]:[];
-  const spread=[...ys,...(specLimit===null?[]:[specLimit]),...expectedSpread];
-  const window=chartDataWindow(Math.min(...xs),Math.max(...xs),validPoints.map(point=>({x:point[xField],y:point[metric]})));
+  const p1Marker=p1dbChartMarker(axis,metric);
+  const spread=[...ys,...(specLimit===null?[]:[specLimit]),...expectedSpread,...(p1Marker?[p1Marker.y]:[])];
+  const baseXMin=chartManualRange.xmin??Math.min(...xs),baseXMax=chartManualRange.xmax??Math.max(...xs),window=chartDataWindow(baseXMin,baseXMax,validPoints.map(point=>({x:point[xField],y:point[metric]})));
   const {xmin,xmax}=window,metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metric==='burst_power_dbm'||metric==='power_error_db'?0.18:metric==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
-  const yExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max;
+  const autoYExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),baseYExtent={min:chartManualRange.ymin??autoYExtent.min,max:chartManualRange.ymax??autoYExtent.max},yExtent=chartYWindow(baseYExtent),ymin=yExtent.min,ymax=yExtent.max;
   const x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
   let html=chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y)+chartClipMarkup();
   if(specLimit!==null){
@@ -710,7 +771,8 @@ function drawChart(points,axis='frequency',preserveView=false){
   points.forEach(point=>{if(point.valid&&Number.isFinite(point[metric])){segment.push(point)}else{if(segment.length)segments.push(segment);segment=[]}});
   if(segment.length)segments.push(segment);
   html+=segments.map(values=>`<polyline class="plot-line" points="${values.map(point=>`${x(point[xField])},${y(point[metric])}`).join(' ')}"/>`).join('');
-  html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | Pin=${formatMeasured(point.pin_dbm)} dBm | Pout=${formatMeasured(point.pout_dbm)} dBm | Gain=${formatMeasured(point.gain_db)} dB | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | Error=${formatMeasured(point.power_error_db,3)} dB | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
+  html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | Pin=${formatMeasured(point.pin_dbm)} dBm | Pout=${formatMeasured(point.pout_dbm)} dBm | Gain=${formatMeasured(point.gain_db)} dB | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | Error=${formatMeasured(point.power_error_db,3)} dB | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-chart-x="${point[xField]}" data-chart-y="${point[metric]}" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
+  html+=p1dbMarkerMarkup(p1Marker,x,y)+chartUserMarksMarkup(x,y);
   // 無效點固定畫在圖底並標示叉號，保留其頻率／功率位置且不偽造 Y 值。
   html+=points.filter(point=>!point.valid||!Number.isFinite(point[metric])).map(point=>`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${xDisplayFor(axis,point[xField])} ${xUnit} · INVALID</title></g>`).join('');
   svg.innerHTML=html+'</g>';
@@ -719,6 +781,7 @@ function drawChart(points,axis='frequency',preserveView=false){
 }
 function drawAnalysisChart(preserveView=false){
   if(!preserveView)setChartNaturalView();
+  updateChartRangeLabels();
   const visible=analysisTraces.filter(trace=>trace.visible);
   if(!visible.length){$('#chart').innerHTML='';return}
   const metricName=$('#chartMetric').value,w=chartFrame.width,h=chartFrame.height,left=chartFrame.left,right=chartFrame.right,top=chartFrame.top,bottom=chartFrame.bottom,samples=[];
@@ -728,10 +791,11 @@ function drawAnalysisChart(preserveView=false){
   const referenceSpread=referenceLines.flatMap(item=>item.reference.kind==='diagonal'?item.reference.points.map(point=>point.y):[item.reference.value]);
   // X 軸仍含 INVALID 的位置，Y 軸只用有效值；失敗點不應消失或擴大增益範圍。
   const allXs=visible.flatMap(trace=>trace.points.map(point=>point[xFieldFor(trace.axis)])).filter(Number.isFinite);
-  const window=chartDataWindow(Math.min(...allXs),Math.max(...allXs),samples);
-  const {xmin,xmax}=window,spread=[...samples.map(sample=>sample.y),...referenceSpread],metricSpan=Math.max(...spread)-Math.min(...spread);
+  const baseXMin=chartManualRange.xmin??Math.min(...allXs),baseXMax=chartManualRange.xmax??Math.max(...allXs),window=chartDataWindow(baseXMin,baseXMax,samples);
+  const comparisonMarker=visible.length===1?p1dbChartMarker(visible[0].axis,metricName):null;
+  const {xmin,xmax}=window,spread=[...samples.map(sample=>sample.y),...referenceSpread,...(comparisonMarker?[comparisonMarker.y]:[])],metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metricName==='burst_power_dbm'||metricName==='power_error_db'?0.18:metricName==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
-  const yExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
+  const autoYExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),baseYExtent={min:chartManualRange.ymin??autoYExtent.min,max:chartManualRange.ymax??autoYExtent.max},yExtent=chartYWindow(baseYExtent),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
   const axes=new Set(visible.map(trace=>trace.axis)),comparisonAxis=axes.size===1?visible[0].axis:'frequency';
   let html=chartAxisMarkup(comparisonAxis,metricName,xmin,xmax,ymin,ymax,x,y)+chartClipMarkup();
   referenceLines.forEach(({reference})=>{
@@ -745,12 +809,13 @@ function drawAnalysisChart(preserveView=false){
       html+=`<text class="expected-power-label" x="${w-right-4}" y="${yReference-7}" text-anchor="end">${reference.label}</text>`;
     }
   });
-  visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(!Number.isFinite(point[xField]))return;if(!point.valid||!Number.isFinite(point[metricName])){html+=`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${escapeHtml(trace.name)} · INVALID</title></g>`;return}const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
+  visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(!Number.isFinite(point[xField]))return;if(!point.valid||!Number.isFinite(point[metricName])){html+=`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${escapeHtml(trace.name)} · INVALID</title></g>`;return}const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-chart-x="${point[xField]}" data-chart-y="${point[metricName]}" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
+  html+=p1dbMarkerMarkup(comparisonMarker,x,y)+chartUserMarksMarkup(x,y);
   $('#chart').innerHTML=html+'</g>';
   syncChartViewportSize();
   updateExportAvailability();
 }
-$('#chartMetric').onchange=()=>{analysisTraces.length?drawAnalysisChart():(latest.length&&drawChart(latest,latestAxis))};
+$('#chartMetric').onchange=()=>{chartView.marks=[];analysisTraces.length?drawAnalysisChart():(latest.length&&drawChart(latest,latestAxis))};
 function downloadBlob(filename,blob){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),0)}
 // A08：圖表沒有任何測點時不得匯出，避免產生空白但看似正式的報告檔。
 function chartHasExportableData(){return analysisTraces.length?analysisTraces.some(trace=>trace.points.length):latest.length>0}
@@ -791,32 +856,47 @@ $('#restartDiagram').addEventListener('click',()=>{$('#diagramShowcaseFrame').sr
 $('#openDiagram').addEventListener('click',()=>window.open(diagramPlaybackUrl(activeDiagramPath),'_blank','noopener'));
 
 // 圖表檢視狀態只影響瀏覽器顯示；不重新量測，也不修改原始結果。
-const chartView={x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]};
+const chartView={x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[],marks:[]};
 function redrawActiveChart(){
   // 重繪時保留拖曳狀態，但移除舊像素座標游標，避免 A/B 標記指向錯誤測點。
   chartView.cursors=[];clearHoverPoint();
   analysisTraces.length?drawAnalysisChart(true):drawChart(latest,latestAxis,true);
   updateExportAvailability();
 }
-function resetChartView(){Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[]});redrawActiveChart();$('#chartCursorReadout').hidden=true;$('#chart').querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove())}
+function resetChartView(){Object.assign(chartView,{x:0,y:0,width:chartFrame.width,height:chartFrame.height,drag:null,cursors:[],marks:[]});redrawActiveChart();$('#chartCursorReadout').hidden=true;$('#chart').querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove())}
 function renderChartCursors(){const svg=$('#chart');svg.querySelectorAll('.chart-ab-line,.chart-ab-label').forEach(item=>item.remove());chartView.cursors.forEach((cursor,index)=>{const ns='http://www.w3.org/2000/svg',line=document.createElementNS(ns,'line'),label=document.createElementNS(ns,'text');line.setAttribute('class','chart-ab-line');line.setAttribute('x1',cursor.x);line.setAttribute('x2',cursor.x);line.setAttribute('y1',chartFrame.top);line.setAttribute('y2',chartFrame.height-chartFrame.bottom);label.setAttribute('class','chart-ab-label');label.setAttribute('x',cursor.x+5);label.setAttribute('y',chartFrame.top-5);label.textContent=index?'B':'A';svg.append(line,label)});const readout=$('#chartCursorReadout');if(chartView.cursors.length){readout.hidden=false;readout.textContent=chartView.cursors.map((cursor,index)=>`${index?'B':'A'}: ${cursor.label}`).join('  |  ')+(chartView.cursors.length===2?`  |  ΔX(view): ${Math.abs(chartView.cursors[1].x-chartView.cursors[0].x).toFixed(1)}`:'')}else readout.hidden=true}
+function activeChartAxis(){return analysisTraces.filter(trace=>trace.visible)[0]?.axis||latestAxis}
+function updateChartRangeLabels(){const axis=activeChartAxis();$('#chartXRangeLabel').textContent=`X (${xUnitFor(axis)})`;$('#chartYRangeLabel').textContent=`Y (${metricAxisLabel($('#chartMetric').value)})`}
+function applyChartRange(){
+  const values=['chartXMin','chartXMax','chartYMin','chartYMax'].map(id=>{const raw=$('#'+id).value.trim();return raw===''?null:Number(raw)});
+  if(values.some(value=>value!==null&&!Number.isFinite(value))||((values[0]===null)!==(values[1]===null))||((values[2]===null)!==(values[3]===null)))throw new Error('Enter both minimum and maximum for each axis, or leave both empty for auto range.');
+  if((values[0]!==null&&values[0]>=values[1])||(values[2]!==null&&values[2]>=values[3]))throw new Error('Range minimum must be smaller than maximum.');
+  const axis=activeChartAxis();chartManualRange.xmin=values[0]===null?null:(axis==='frequency'?values[0]*1e6:values[0]);chartManualRange.xmax=values[1]===null?null:(axis==='frequency'?values[1]*1e6:values[1]);chartManualRange.ymin=values[2];chartManualRange.ymax=values[3];setChartNaturalView();redrawActiveChart();
+}
+$('#chartApplyRange').onclick=()=>{try{applyChartRange()}catch(error){toast(error.message,'error')}};
+$('#chartAutoRange').onclick=()=>{Object.assign(chartManualRange,{xmin:null,xmax:null,ymin:null,ymax:null});['chartXMin','chartXMax','chartYMin','chartYMax'].forEach(id=>{$('#'+id).value=''});setChartNaturalView();redrawActiveChart()};
 $('#chartReset').onclick=resetChartView;
+$('#chartYExpand').onclick=()=>{zoomChartAt(.5,.5,1.5);redrawActiveChart()};
+$('#chartYShrink').onclick=()=>{zoomChartAt(.5,.5,1/1.5);redrawActiveChart()};
 $('#chartCursorMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?{zh:'A/B 游標已啟用：點選圖上測點',en:'A/B cursors enabled: select measured points'}:{zh:'A/B 游標已關閉',en:'A/B cursors disabled'})};
+$('#chartMarkMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?{zh:'標記模式：點選測點加入 M 標記',en:'Mark mode: select measured points to add M marks'}:{zh:'標記模式已關閉',en:'Mark mode disabled'})};
 function chartPointer(event){
   // 用 SVG 螢幕矩陣處理響應式尺寸與瀏覽器縮放，不以 DOM 寬度猜測圖內座標。
   const matrix=event.currentTarget.getScreenCTM();
   return matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()):null;
 }
-function zoomChartAt(fraction,factor){
+function zoomChartAt(xFraction,yFraction,factor){
   const nextWidth=Math.min(chartFrame.width,Math.max(chartZoomLimits.minWidth,chartView.width*factor));
-  chartView.x=clampChartX(chartView.x+fraction*(chartView.width-nextWidth),nextWidth);
-  chartView.width=nextWidth;chartView.y=0;
+  const nextHeight=Math.min(chartFrame.height,Math.max(chartZoomLimits.minHeight,chartView.height*factor));
+  chartView.x=clampChartX(chartView.x+xFraction*(chartView.width-nextWidth),nextWidth);
+  chartView.y=clampChartY(chartView.y+yFraction*(chartView.height-nextHeight),nextHeight);
+  chartView.width=nextWidth;chartView.height=nextHeight;
 }
 $('#chart').addEventListener('wheel',event=>{
   const point=chartPointer(event),f=chartFrame;
   if(!point||point.x<f.left||point.x>f.width-f.right||point.y<f.top||point.y>f.height-f.bottom||!event.deltaY)return;
   event.preventDefault();
-  zoomChartAt((point.x-f.left)/(f.width-f.left-f.right),event.deltaY<0?1/1.2:1.2);redrawActiveChart();
+  zoomChartAt((point.x-f.left)/(f.width-f.left-f.right),(point.y-f.top)/(f.height-f.top-f.bottom),event.deltaY<0?1/1.2:1.2);redrawActiveChart();
 },{passive:false});
 $('#chart').addEventListener('pointerdown',event=>{
   if(event.button!==0)return;
@@ -825,15 +905,19 @@ $('#chart').addEventListener('pointerdown',event=>{
     const point=event.target.closest('[data-chart-point]');
     if(point){chartView.cursors.push({x:chartPointCenter(point).x,label:point.dataset.tooltip});if(chartView.cursors.length>2)chartView.cursors.shift();renderChartCursors()}return;
   }
+  if($('#chartMarkMode').classList.contains('active')){
+    const point=event.target.closest('[data-chart-point]');
+    if(point){const x=Number(point.dataset.chartX),y=Number(point.dataset.chartY);if(Number.isFinite(x)&&Number.isFinite(y)){chartView.marks.push({x,y,label:`M${chartView.marks.length+1}`});if(chartView.marks.length>8)chartView.marks.shift();redrawActiveChart()}return}
+  }
   const f=chartFrame;if(position.x<f.left||position.x>f.width-f.right||position.y<f.top||position.y>f.height-f.bottom)return;
-  chartView.drag={pointerId:event.pointerId,start:position.x,x:chartView.x,width:chartView.width};
+  chartView.drag={pointerId:event.pointerId,startX:position.x,startY:position.y,x:chartView.x,y:chartView.y,width:chartView.width,height:chartView.height};
   event.currentTarget.setPointerCapture(event.pointerId);document.querySelector('.chart-card').classList.add('is-panning');
 });
 $('#chart').addEventListener('pointermove',event=>{
   const drag=chartView.drag;if(!drag||drag.pointerId!==event.pointerId)return;
   const position=chartPointer(event);if(!position)return;
-  chartView.x=clampChartX(drag.x-(position.x-drag.start)/(chartFrame.width-chartFrame.left-chartFrame.right)*drag.width);
-  chartView.y=0;redrawActiveChart();
+  chartView.x=clampChartX(drag.x-(position.x-drag.startX)/(chartFrame.width-chartFrame.left-chartFrame.right)*drag.width);
+  chartView.y=clampChartY(drag.y-(position.y-drag.startY)/(chartFrame.height-chartFrame.top-chartFrame.bottom)*drag.height);redrawActiveChart();
 });
 function finishChartDrag(event){
   // 放開、系統取消與失去捕捉都結束拖曳，避免滑鼠離開後圖仍黏著游標。

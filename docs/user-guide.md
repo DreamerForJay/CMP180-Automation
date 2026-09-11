@@ -8,7 +8,7 @@
 
 本文件說明目前工具。除了設定、Mock、連線與唯讀探索外，固定安全 profile 的 Python 實機 SingleShot、頻率／功率掃描與本機 Web GUI 已完成 HIL。自訂兩點頻率 HIL 曾在第二點收到 `INV` 並安全停止，因此自訂實機掃描仍須重新驗收；不得把該次結果描述為通過。完成一次量測後，仍可使用下列唯讀工具擷取上一筆 28 欄 OFDM SISO 結果：
 
-首頁右側先顯示 CMP180 靜態渲染圖。按「啟用 360° 檢視」後可用滑鼠或觸控拖曳旋轉、滾輪／雙指縮放；下方提供正面、背面、側面、重設、自動旋轉與全螢幕。「靜態圖」會結束 3D 檢視；載入失敗可以重試。此元件只呈現外觀，不會建立儀器連線、送出 SCPI 或啟用 RF。完整操作與離線資產說明見 [3D 檢視器指南](cmp180-3d-viewer.md)。
+首頁右側自動載入 CMP180 立體模型並自動旋轉（減少動態偏好除外），不需按啟用按鈕。載入後可用滑鼠或觸控拖曳旋轉、滾輪／雙指縮放；下方提供正面、背面、側面、重設、自動旋轉與全螢幕。「靜態圖」會結束 3D 檢視；載入失敗可以重試。此元件只呈現外觀，不會建立儀器連線、送出 SCPI 或啟用 RF。完整操作與離線資產說明見 [3D 檢視器指南](cmp180-3d-viewer.md)。
 
 ```powershell
 python scripts\cmp180_wlan_result_discover.py
@@ -236,7 +236,7 @@ MCS 結果固定標記 `simulated=true`、`source=mock`、`hil_status=HIL_PENDIN
 
 ### GPRF PA 功率掃描與 P1dB 圖
 
-GPRF power sweep 可作為第一版 PA conducted scalar 量測入口：選擇 `Power` 軸，填入固定頻率、Start／Stop／Step、dwell、input cable loss、output cable loss、external gain、output attenuator 與 SA safe limit。Preview 會顯示 DUT Pin 範圍；執行後 CSV／JSON 會保存 `pin_dbm`、`pout_dbm`、`gain_db`，結果頁可直接切換 PA Pin、PA Pout 與 PA Gain 圖。`pout_dbm` 由 analyzer power 加回 output cable loss 與 attenuator；`pin_dbm` 由 generator power 加 external gain、扣 input cable loss。
+GPRF power sweep 可作為第一版 PA conducted scalar 量測入口：選擇 `Power` 軸，填入固定頻率、Start／Stop／Step、dwell、input cable loss、output cable loss、external gain 與 output attenuator。RF1.5 analyzer 安全上限固定為 `+25 dBm`，比 CMP180 前面板 `+30 dBm Max` 保留 5 dB 裕度，不能由 Web 或 API payload 覆寫。Preview 會顯示 DUT Pin 範圍；執行後 CSV／JSON 會保存 `pin_dbm`、`pout_dbm`、`gain_db`，結果頁可直接切換 PA Pin、PA Pout 與 PA Gain 圖。`pout_dbm` 由 analyzer power 加回 output cable loss 與 attenuator；`pin_dbm` 由 generator power 加 external gain、扣 input cable loss。
 
 若已使用 approved PA profile，現場換 DUT 不需重填上述工程參數。先驗證 profile：
 
@@ -274,7 +274,7 @@ Profile 另有必填的 `dut_max_input_dbm`，代表 DUT 參考面能承受的�
 會被拒絕載入。只要 request 宣告了非零的 `expected_dut_gain_db`（代表路徑上有 DUT），
 未填 `dut_max_input_dbm` 的 GPRF 計畫一律阻擋。
 
-P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。2026-09-09 已完成 RF1.1 → RF1.5 低功率 GPRF PA sweep 實機驗證；擴大到 `-20 dBm` 的 P1dB 掃描仍需使用 profile／fixture 安全裁切，不得把失敗 finding 當成 P1dB 證據。
+P1dB 只在功率掃描資料已觀察到 Gain 下降 1 dB 時輸出 `IP1dB` 與 `OP1dB`，並在單一 Run 的 PA Pin、PA Pout、PA Gain 圖上以橘色標記內插點。結果圖預設依有效資料自動縮放；可用 `Y 範圍＋` 擴大範圍，或以 `Y 範圍－` 放大局部變化，`Reset` 會還原自動範圍。若最高功率仍未讓 Gain 下降 1 dB，結果會顯示 `not_found`，並同時列出最大已觀察 compression、最大 Pin 與最大 Pout，避免把最後一點誤當成 P1dB。SA safe limit 是資料有效性門檻；超過時該點標示 `SA_LIMIT` 且不納入 P1dB，實體保護仍必須靠正確衰減器、接線與現場操作員確認。2026-09-09 已完成 RF1.1 → RF1.5 低功率 GPRF PA sweep 實機驗證；擴大到 `-20 dBm` 的 P1dB 掃描仍需使用 profile／fixture 安全裁切，不得把失敗 finding 當成 P1dB 證據。
 
 示範模式的單點、頻率掃描與功率掃描不連接 CMP180，也不送 RF，因此不套用實機功率安全上限；功率掃描會以固定的模擬 PA 曲線產生 Pin、Pout、Gain compression 與 P1dB 摘要。「進階 PA 指標」可輸入中心頻率、Pin、雙音間距與通道頻寬，產生 OIP3／IM3、H2／H3 及 ACP／ACLR 三張教學圖，並保存 JSON／CSV／HTML。這些數值來自固定模擬公式，不代表 SG、SA 或 DUT 的實際能力；所有 artifact 均標示 `SIMULATED`，不得當成新的 PA 實機量測證據。
 
@@ -375,7 +375,7 @@ validation. A custom two-point frequency HIL returned `INV` at its second point 
 stopped safely, so custom live execution still requires trigger/ranging review and a new
 HIL. It must not be reported as a passing run.
 
-The home page initially displays a CMP180 still render. Select “Explore in 360°” for mouse/touch orbit and wheel/pinch zoom. Controls provide front, rear, side, reset, auto-rotation, and fullscreen. “Still image” ends the 3D session; failed loads can be retried. This exterior viewer does not connect to an instrument, transmit SCPI, or enable RF. See the [3D viewer guide](cmp180-3d-viewer.md) for operation and offline assets.
+首頁自動載入 CMP180 模型並旋轉（減少動態偏好除外），可拖曳與縮放。 Controls provide front, rear, side, reset, auto-rotation, and fullscreen. “Still image” ends the 3D session; failed loads can be retried. This exterior viewer does not connect to an instrument, transmit SCPI, or enable RF. See the [3D viewer guide](cmp180-3d-viewer.md) for operation and offline assets.
 
 ### 1. Open the project
 
@@ -530,4 +530,10 @@ Analyzer measured／expected power 的誤差與 PA Gain 是不同物理量；不
 
 ### 圖表縮放與拖曳（2026-09-09）
 
-游標放在繪圖區內，滾輪前滾放大、後滾縮小；X 軸以游標位置縮放，Y 軸依可見有效測點自動調整。按住滑鼠左鍵可左右拖曳，放開即停止；拖曳範圍受資料邊界限制，縮小最多回到全圖。Reset 或雙擊恢復完整範圍。A/B 模式下左鍵改為選點；縮放／拖曳會清除舊游標，避免位置誤讀。座標軸與文字固定在圖框內，資料超出範圍時只裁切資料層。以上操作只讀取既有結果，不送 SCPI 或 RF。
+游標放在繪圖區內，滾輪前滾放大、後滾縮小；X、Y 軸都以游標位置縮放。按住滑鼠左鍵可上下左右拖曳，放開即停止；拖曳範圍受資料邊界限制，縮小最多回到全圖。可直接輸入 X／Y 最小與最大值後按「套用範圍」，頻率掃描的 X 使用 MHz；「全局自動」、Reset 或雙擊會恢復完整範圍。標記模式下點選測點會加入 M1、M2 等比較標記，並隨 SVG／Web PNG 一起匯出；切換指標時會清除標記，避免不同量綱混用。舊紀錄若本來沒有 PA Pin／Pout／Gain 欄位，對應選項會隱藏；量測紀錄的「改名」只更新顯示名稱，不改 run_id、輸出目錄或原始量測資料。座標軸與文字固定在圖框內，資料超出範圍時只裁切資料層。以上操作只讀取既有結果，不送 SCPI 或 RF。
+
+## Windows EXE 可攜版
+
+分享 `dist/CMP180-Windows-x64.zip`，完整解壓縮後雙擊 `CMP180.exe`；不需安裝 Python。
+預設 Demo／Mock，實機使用 `--hardware` 並遵循既有安全 SOP。請保留 EXE 旁所有資源。
+詳細操作與重建方式見 [Windows 可攜版](windows-portable.md)。

@@ -18,7 +18,7 @@ Repository 尚未證實 CMP180 waveform 選擇、MCS mapping 或 acquisition SCP
 
 相同 11 個代表點在升級後必須直接選到 approved lifecycle，且只有 validity、stability、reasonableness 均通過才可輸出 `LOOPBACK_READY`。2026-09-03 升級後回歸為 110/110 valid、11/11 `LOOPBACK_READY`。Web 所有量測與校正檢查計畫、Preview、安全阻擋原因、修正方式及最後確認必須隨中文／English 選擇即時切換；語言切換不得重新送出 SCPI、Preview API 或 RF job。
 
-GPRF power sweep 可作為 PA Gain／Pout／P1dB 圖的軟體計算入口：以既有 GPRF Generator／Measurement power 讀值產生 `pin_dbm`、`pout_dbm`、`gain_db` 與 P1dB 摘要，並保存到 CSV／JSON／metadata／圖表。參考面補償只可由使用者輸入 input cable loss、output cable loss、external gain、external attenuator 與 SA safe limit 後套用於 artifact 計算，不得放寬 CMP180 frequency/power planning guard 或替代實體 attenuator。若 power sweep 尚未觀察到 1 dB gain compression，必須顯示 `not_found` 與最大已觀察 compression／Pin／Pout，不得把最後一點宣稱為 P1dB。此能力目前為軟體與 Mock／離線測試通過，尚未形成新的 PA 實機 RF 驗證證據。
+GPRF power sweep 可作為 PA Gain／Pout／P1dB 圖的軟體計算入口：以既有 GPRF Generator／Measurement power 讀值產生 `pin_dbm`、`pout_dbm`、`gain_db` 與 P1dB 摘要，並保存到 CSV／JSON／metadata／圖表。參考面補償只可由使用者輸入 input cable loss、output cable loss、external gain 與 external attenuator 後套用於 artifact 計算，不得放寬 CMP180 frequency/power planning guard 或替代實體 attenuator。GPRF Web 的 RF1.5 analyzer 上限固定為 `+25 dBm`，比 CMP180 port `+30 dBm Max` 保留 5 dB 裕度，Web 或 API payload 均不得覆寫。若 power sweep 尚未觀察到 1 dB gain compression，必須顯示 `not_found` 與最大已觀察 compression／Pin／Pout，不得把最後一點宣稱為 P1dB。此能力目前為軟體與 Mock／離線測試通過，尚未形成新的 PA 實機 RF 驗證證據。
 
 示範模式必須與實機 RF workflow 分離：Mock／Demo 不連接 CMP180、不送 RF，可為訓練展示輸入較寬的功率範圍並模擬 PA Pin／Pout／Gain／P1dB。進階 Demo 必須提供 OIP3／IM3、H2／H3 與 ACP／ACLR 的摘要、獨立圖表及 JSON／CSV／HTML artifact；不得套用或顯示實機「安全短掃描上限」作為 demo 輸入限制。所有 demo artifact 必須保留 simulated 標記，且不得作為 HIL、DUT compliance 或 PA 實機特性證據。
 

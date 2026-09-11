@@ -41,8 +41,8 @@ GPRF_MAX_DWELL_MS = 5000
 # GPRF power 量測需要連續波；突發 ARB 波形會被平均進閒置期而無法解讀。
 GPRF_BASEBAND_MODE = "CW"
 GPRF_MAX_PATH_COMPENSATION_DB = 120.0
-GPRF_MIN_SAFE_LIMIT_DBM = -120.0
-GPRF_MAX_SAFE_LIMIT_DBM = 30.0
+# RF1.5 前面板標示 +30 dBm Max；GPRF 固定保留 5 dB 裕度，API 輸入不得覆寫此硬體保護。
+GPRF_RF15_SAFE_LIMIT_DBM = 25.0
 GPRF_MIN_EXPECTED_POWER_DBM = -30.0
 # Converter 類 DUT 是淨損耗，expected_dut_gain_db 必須允許負值，否則規劃階段就填不進去。
 GPRF_MIN_DUT_GAIN_DB = -GPRF_MAX_PATH_COMPENSATION_DB
@@ -66,7 +66,7 @@ class GprfPreview:
     external_attenuation_db: float = 0.0
     output_attenuator_db: float = 0.0
     expected_dut_gain_db: float = 0.0
-    sa_safe_limit_dbm: float = 0.0
+    sa_safe_limit_dbm: float = GPRF_RF15_SAFE_LIMIT_DBM
     dut_max_input_dbm: float | None = None
     # converter 為 None 時 generator 與 analyzer 同頻，維持既有 PA/loopback 行為。
     conversion: ConversionPlan | None = None
@@ -214,13 +214,8 @@ def _path_compensation(data: dict[str, object]) -> dict[str, float]:
             minimum=GPRF_MIN_DUT_GAIN_DB,
             maximum=GPRF_MAX_PATH_COMPENSATION_DB,
         ),
-        "sa_safe_limit_dbm": _bounded_float(
-            data,
-            "sa_safe_limit_dbm",
-            0.0,
-            minimum=GPRF_MIN_SAFE_LIMIT_DBM,
-            maximum=GPRF_MAX_SAFE_LIMIT_DBM,
-        ),
+        # 保留既有 artifact key，但固定 RF1.5 保護值，避免舊版或 API payload 放寬門檻。
+        "sa_safe_limit_dbm": GPRF_RF15_SAFE_LIMIT_DBM,
     }
 
 

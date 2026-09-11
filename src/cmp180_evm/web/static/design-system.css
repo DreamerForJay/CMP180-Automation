@@ -93,6 +93,7 @@ main{position:relative;width:min(1800px,calc(100% - clamp(40px,5vw,104px)));max-
 .plot-line{fill:none;stroke:#1e88ff;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(30,136,255,.32))}
 .plot-dot{fill:var(--console-surface);stroke:#1e88ff;stroke-width:3}
 .plot-invalid path{stroke:var(--console-red)}
+.p1db-guide{stroke:#f59e0b;stroke-width:1.6;stroke-dasharray:5 4;pointer-events:none}.p1db-marker{fill:var(--console-surface);stroke:#f59e0b;stroke-width:4;pointer-events:none}.p1db-label{fill:#fbbf24;font:900 14px var(--console-mono);paint-order:stroke;stroke:var(--console-surface);stroke-width:5;stroke-linejoin:round;pointer-events:none}
 #chart{display:block;width:100%;height:auto;touch-action:none;user-select:none}.chart-card{overflow:hidden}.chart-card.is-panning #chart{cursor:grabbing}.chart-card:not(.is-panning) #chart{cursor:crosshair}.axis-label{fill:var(--console-muted);font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}.axis-title{fill:var(--console-text);font-size:20px;font-weight:900;letter-spacing:0}.x-grid{stroke-dasharray:3 5;opacity:.65}.chart-crosshair{stroke:var(--console-cyan);stroke-width:1.4;stroke-dasharray:4 4;pointer-events:none;opacity:.82}.chart-focus-ring{fill:var(--console-surface);stroke:var(--console-cyan);stroke-width:4;pointer-events:none}
 @media(max-width:1100px){main{width:min(100% - 36px,960px)}.command-grid{grid-template-columns:1fr}.workspace-head,.guide-hero{grid-template-columns:1fr}.workspace-state,.guide-state{width:100%}.form-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:720px){main{width:calc(100% - 24px);padding-top:26px}.topbar{padding:0 12px}.brand small{display:none}.workspace-head h1{font-size:38px}.tabs{scroll-snap-type:x proximity}.tabs .tab{scroll-snap-align:start}.panel,.demo-panel,.measurement-view{padding:20px}.form-grid{grid-template-columns:1fr}.workflow-line{grid-template-columns:1fr 1fr}.workflow-line li:nth-child(2){border-right:0}.workflow-line li:nth-child(-n+2){border-bottom:1px solid var(--console-line)}.guide-notes{grid-template-columns:1fr}.command-card{padding:18px}.terminal pre{font-size:11px}.top-actions .status{display:none}}
@@ -205,6 +206,7 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 [data-theme="light"] .axis-label{fill:#39536b}
 [data-theme="light"] .plot-line{stroke:#0877ff;filter:none}
 [data-theme="light"] .plot-dot{fill:#fff;stroke:#0877ff}
+[data-theme="light"] .p1db-marker{fill:#fff}.p1db-label{stroke:var(--console-surface)}
 [data-theme="light"] .expected-power-line{stroke:#b45309}
 [data-theme="light"] .expected-power-label{fill:#92400e}
 [data-theme="light"] .guide-hero{border-color:var(--console-line);background:radial-gradient(circle at 85% 20%,rgba(8,127,152,.14),transparent 24rem),linear-gradient(120deg,#fff,#edf6fc)}
@@ -264,6 +266,7 @@ html[data-theme="light"]{background:var(--console-bg);scrollbar-color:#9fb3c8 va
 /* 主結果圖保留較大的固定字級；縮放只改資料視窗，不改文字比例。 */
 #chart .axis-label{font-size:16px;font-weight:800}
 #chart .axis-title{font-size:20px;font-weight:900}
+.chart-user-mark{fill:var(--console-surface);stroke:#a78bfa;stroke-width:3;pointer-events:none}.chart-user-mark-label{fill:#c4b5fd;font:900 13px var(--console-mono);paint-order:stroke;stroke:var(--console-surface);stroke-width:5;pointer-events:none}.chart-tools button.active{border-color:#a78bfa;color:#c4b5fd;background:color-mix(in srgb,#a78bfa 18%,var(--console-surface-2))}.chart-range-controls{display:flex;align-items:end;flex-wrap:wrap;gap:8px;margin:12px 0}.chart-range-controls label{display:flex;align-items:center;gap:5px;color:var(--console-muted);font-size:12px;font-weight:800}.chart-range-controls input{width:104px;min-height:34px;padding:0 8px;border:1px solid var(--console-line-strong);border-radius:8px;background:var(--console-surface-2);color:var(--console-text)}.chart-range-controls button{min-height:34px;padding:0 10px;border:1px solid var(--console-line-strong);border-radius:8px;background:var(--console-surface-2);color:var(--console-text);font-weight:800}
 #chart .plot-line{stroke-width:3;filter:none}
 #chart .plot-dot{stroke-width:3;fill:var(--console-surface)}
 #chart .grid-line{stroke-width:1.15;opacity:.55}

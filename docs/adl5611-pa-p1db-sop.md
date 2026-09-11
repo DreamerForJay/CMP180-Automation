@@ -24,8 +24,8 @@ ADI ADL5611 標稱頻率範圍為 30 MHz 至 6 GHz；現有 Loopback approved ba
    GPRF 計畫應被阻擋。
 4. `output_attenuator_db` 只填實體接在 DUT output 與 RF1.5 之間的 attenuator；不得把它
    混成 CMP180 measurement EATT。
-5. `sa_safe_limit_dbm` 保護 RF1.5 analyzer input；`dut_max_input_dbm` 保護 DUT input。
-   兩者互相獨立，safe stop 取較嚴的一邊。
+5. GPRF Web 的 RF1.5 analyzer 安全上限固定為 `+25 dBm`，比前面板 `+30 dBm Max`
+   保留 5 dB 裕度；`dut_max_input_dbm` 則獨立保護 DUT input。兩者都不得用表單覆寫。
 6. RF On 前確認 fan、散熱與 DC current limit；若 bias current 異常，先關 RF 與 DC，
    不要用 sweep 追問題。
 
@@ -38,7 +38,7 @@ ADI ADL5611 標稱頻率範圍為 30 MHz 至 6 GHz；現有 Loopback approved ba
 | Step | 1 dB | P1dB 附近需要足夠解析度 |
 | Dwell | 200 ms 起 | 沿用既有 GPRF workflow；現場再依穩定性調整 |
 | Output attenuator | 20 至 30 dB | PA 接近壓縮時保護 RF1.5，實值以現場 pad 為準 |
-| SA safe limit | 0 dBm 或 RF owner 指定值 | 超過時點位 INVALID，並停止後續掃描 |
+| RF1.5 fixed safety limit | +25 dBm | 比前面板 +30 dBm Max 保留 5 dB；超過時點位 INVALID，並停止後續掃描 |
 
 第一輪不要直接掃到預估 P1dB。先做 3 到 5 點低功率 sanity sweep，確認 `gain_db` 接近
 datasheet 量級、`pout_dbm` 沒有落在底噪、reliability 為 0、error queue 空、final RF 為
@@ -49,8 +49,8 @@ OFF。只有 sanity 正常，才放寬 stop power。
 1. 啟動本機 Web，進入實機量測頁，切到 `RF 功率讀值（GPRF）`。
 2. 按「載入 approved PA profile」作為模板，但將 Center frequency 改成 ADL5611 範圍內的
    頻率，例如 900 MHz；不要沿用 6105 MHz 當 DUT 結論。
-3. 填入 `Input cable loss`、`Output cable loss`、`External gain`、`Output attenuator`、
-   `SA safe limit` 與 `DUT max input`。
+3. 填入 `Input cable loss`、`Output cable loss`、`External gain`、`Output attenuator` 與
+   `DUT max input`；RF1.5 安全上限固定為 `+25 dBm`。
 4. 按「檢查 GPRF 計畫」。若 preview 顯示 stop 被裁切，先接受較保守裁切；不要用加大
    CMP180 EATT 的方式繞過。
 5. 勾選 route、operator present 與最後 RF confirmation 後執行。
@@ -73,7 +73,7 @@ OFF。只有 sanity 正常，才放寬 stop power。
 ## 報告最小欄位
 
 結案報告至少放入 DUT ID、日期、操作者、fixture 圖、頻率、Start／Stop／Step、實體
-attenuator、input/output cable loss、`dut_max_input_dbm`、`sa_safe_limit_dbm`、artifact
+attenuator、input/output cable loss、`dut_max_input_dbm`、固定 `RF1.5 +25 dBm` 上限、artifact
 資料夾、有效點數、最大 Pout、最大 compression、P1dB 狀態、final RF state、measurement
 state 與 error queue。若沒有新的 ADL5611 實機 artifact，只能寫「SOP 與軟體路徑完成」，
 不能寫「ADL5611 PA/P1dB 已驗證」。

@@ -6,10 +6,10 @@
 
 ### 操作
 
-1. 開啟首頁，按「啟用 360° 檢視」。未點擊時只載入原本靜態圖。
+1. 開啟首頁即自動載入模型並旋轉，不必按啟用按鈕；載入期間呈現主題背景。
 2. 滑鼠拖曳或手機水平滑動旋轉；滾輪、雙指捏合或「＋／−」縮放。手機垂直滑動可繼續捲頁。
 3. 「正面／背面／側面」切換固定視角；「重設視角」恢復預設三分之四視角與距離。
-4. 「自動旋轉」由使用者主動開啟；可暫停，拖曳時會停止。切換工作區、離開可見範圍或背景頁面會暫停。
+4. 模型載入後預設自動旋轉（減少動態偏好除外）；可暫停，拖曳時會停止。切換工作區、離開可見範圍或背景頁面會暫停。
 5. 全螢幕依瀏覽器支援提供，按同一按鈕或 Escape 離開；不支援的裝置不顯示按鈕。
 6. 「靜態圖」結束 3D 檢視並移除模型。載入錯誤／超過 45 秒會保留圖片並提供重試；重試避開失敗下載快取。
 
@@ -39,7 +39,7 @@ node scripts/build_cmp180_web.mjs
 
 ### 驗收
 
-資產測試檢查有效 GLB、三角面／材質保留、無外部資源或解碼器、檔案指紋與授權。瀏覽器需驗證按需載入、拖曳／鍵盤／觸控、縮放、視角、自轉暫停、全螢幕退出、語言、深淺色與失敗後重試。WebGL 不可用時應回到靜態圖。Safari／iPhone 實機和低階 GPU 仍需裝置驗收。
+資產測試檢查有效 GLB、三角面／材質保留、無外部資源或解碼器、檔案指紋與授權。瀏覽器需驗證自動載入、拖曳／鍵盤／觸控、縮放、視角、自轉暫停、全螢幕退出、語言、深淺色與失敗後重試。WebGL 不可用時應回到靜態圖。Safari／iPhone 實機和低階 GPU 仍需裝置驗收。
 
 ## English
 
@@ -47,10 +47,10 @@ The home page now uses the existing Blender exterior model in a genuine 3D viewe
 
 ### Controls
 
-1. Select “Explore in 360°” on Home. Only the still image loads before this action.
+1. 首頁自動載入模型並旋轉，減少動態偏好除外。
 2. Drag with a mouse or swipe horizontally on a phone to orbit. Use the wheel, pinch, or +/− to zoom. Vertical phone swipes continue scrolling the page.
 3. Front/Rear/Side choose fixed views; Reset restores the three-quarter view and distance.
-4. Auto-rotation is opt-in, can be paused, and stops on user dragging. It pauses when switching workspaces, leaving the visible area, or backgrounding the page.
+4. 預設自動旋轉，可暫停，拖曳時停止。 It pauses when switching workspaces, leaving the visible area, or backgrounding the page.
 5. Fullscreen is available where supported; use the same button or Escape to exit. Unsupported devices omit this control.
 6. Still image ends the 3D session and removes the model. Errors or a 45-second timeout preserve the poster and offer retry. Retry avoids the failed download cache.
 

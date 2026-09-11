@@ -110,3 +110,11 @@ output/                      本機量測與模擬 artifacts；不當作原始�
 CI 只執行 unit、Mock、config、Ruff 與非阻斷 mypy，不可連接公司 CMP180 網段。新增功能必須同步更新程式碼、測試、相關文件與完成度資料來源；SCPI 變更還必須附官方 CMP180 文件、Command Help、Recorder 或受控實機證據。
 
 本專案採 MIT License。安全問題請依 [SECURITY.md](SECURITY.md) 回報。
+
+首頁 CMP180 3D 模型會自動載入並旋轉（尊重減少動態偏好），不需啟用按鈕；採柔和陰影與主題背景。此功能僅為瀏覽器外觀展示，不涉及 RF。
+
+## Windows EXE 可攜版
+
+分享 `dist/CMP180-Windows-x64.zip`，完整解壓縮後雙擊 `CMP180.exe`；不需安裝 Python。
+預設 Demo／Mock，實機使用 `--hardware` 並遵循既有安全 SOP。請保留 EXE 旁所有資源。
+詳細操作與重建方式見 [Windows 可攜版](docs/windows-portable.md)。

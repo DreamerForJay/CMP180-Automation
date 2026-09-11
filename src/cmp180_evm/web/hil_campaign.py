@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
 
+from cmp180_evm.runtime import project_root
 from cmp180_evm.web.capabilities import load_capability_profile
 from cmp180_evm.web.custom_plans import build_custom_sweep_preview
 from cmp180_evm.workflow.rf_routes import validate_route
@@ -37,7 +38,7 @@ GENERATOR_PORT = "RF1.1"
 def _route_executable(route: str) -> tuple[bool, str]:
     """Decide whether this software can actually drive the wiring a case describes."""
     profile = load_capability_profile(
-        Path(__file__).resolve().parents[3] / "configs" / "instrument_capabilities.example.yaml"
+        project_root() / "configs" / "instrument_capabilities.example.yaml"
     )
     try:
         validate_route(
