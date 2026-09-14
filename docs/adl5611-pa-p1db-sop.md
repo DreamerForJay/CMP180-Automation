@@ -57,6 +57,11 @@ OFF。只有 sanity 正常，才放寬 stop power。
 6. 每次結果先看 Valid Points、Max Pout、Max Compression、IP1dB／OP1dB 與 artifact
    metadata。`not_found` 代表掃描範圍內未達 1 dB 壓縮；`insufficient_points` 代表有效點
    不足，兩者都不能寫成 P1dB。
+7. 需要讀 back-off 時，在「結果與圖表」把指標切到 PA Pin／Pout／Gain，按「對標 P1dB」把
+   P1dB 內插點釘成基準，再用標記模式點選要比較的測點；比較面板的 ΔX 就是該點相對 IP1dB 的
+   back-off，ΔY 是相對 P1dB 的增益或 Pout 差值。P1dB 是相鄰實測點內插值，不是實際測點，
+   報告中必須照實說明。多顆 DUT 或多次掃描的 IP1dB／OP1dB 差異，改用量測紀錄的比較模式
+   讀取；接線、衰減器或波形不同就不得直接當成 DUT 差異。
 
 ## 異常判讀
 

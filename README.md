@@ -1,120 +1,202 @@
-# CMP180 WLAN TX EVM Automation
+# CMP180 WLAN TX EVM 自動化量測系統
 
-以 Python 3.11+ 與本機 Web 工作站建立可重現、可稽核的 Rohde & Schwarz CMP180 WLAN TX EVM 自動化流程。專案將設定驗證、RF 安全閘門、量測 lifecycle、Mock、結果分析與 artifacts 分層，避免把軟體完成度誤寫成硬體驗證。
+這是一套以 Python 3.11 以上建立的 CMP180 WLAN TX EVM 自動化工作站。系統把設定檢查、唯讀探索、量測流程、射頻安全閘門、模擬資料、結果分析與可追溯檔案分開管理，讓每一次操作都能清楚區分程式、模擬與實機證據。
 
-> 目前開發狀態：本輪沒有 CMP180 實機。Constellation 與 MCS Sweep 為 **Software Ready / Mock Verified / HIL Pending**，不包含新 SCPI、RF 或 HIL 證據。
+> 目前狀態：固定安全設定的單次量測、頻率掃描、功率掃描與本機網頁介面已有實機證據；星座圖、MCS 掃描與自訂掃描仍以程式及模擬驗證為主，尚不能宣稱新的實機或合規結果。
 
-[文件中心](docs/README.md) · [功能完成度 Dashboard](docs/FEATURE_COMPLETION_CHECKLIST.md) · [使用者指南](docs/user-guide.md) · [硬體量測 SOP](docs/hardware-test-sop.md) · [架構圖](docs/diagrams/README.md)
+## 目錄
 
-[![CMP180 系統架構圖](docs/diagrams/system-architecture.png)](docs/diagrams/README.md)
+1. [系統定位與能力邊界](#系統定位與能力邊界)
+2. [快速選擇使用方式](#快速選擇使用方式)
+3. [從原始碼安裝](#從原始碼安裝)
+4. [Windows 可攜版](#windows-可攜版)
+5. [啟動網頁工作站](#啟動網頁工作站)
+6. [網頁功能說明](#網頁功能說明)
+7. [結果與檔案位置](#結果與檔案位置)
+8. [實機操作安全規則](#實機操作安全規則)
+9. [設定檔與命令驗證](#設定檔與命令驗證)
+10. [測試與發布](#測試與發布)
+11. [專案結構](#專案結構)
+12. [限制、證據與文件順序](#限制證據與文件順序)
+13. [常見問題](#常見問題)
 
-<sub>可互動版本與 SingleShot 生命週期圖見<a href="docs/diagrams/README.md">架構圖</a>。互動圖支援縮放、搜尋、關係追蹤與匯出。</sub>
+## 系統定位與能力邊界
 
-## 目前能力
+沒有 CMP180 時，可以用模擬資料熟悉介面、流程與報表；符合安全條件時，才可連線 CMP180 執行核准流程。模擬資料永遠保存模擬標記，不能當成射頻證據。
 
-| 能力 | Software | Mock | HIL／證據邊界 |
+| 功能 | 程式 | 模擬 | 實機／證據狀態 |
 |---|---:|---:|---|
-| WLAN SingleShot | ✅ | ✅ | 已有 RF1.1 → RF1.5 與 approved WLAN section 實機證據 |
-| Frequency Sweep | ✅ | ✅ | 固定／Web 掃描與 11 個 approved WLAN section 已有證據 |
-| Power Sweep | ✅ | ✅ | `INV` fail-fast、有效功率掃描與 V1 acceptance 已有證據 |
-| Constellation | ✅ | ✅ | **HIL PENDING**；沒有已驗證 CMP180 acquisition SCPI |
-| MCS Sweep | ✅ | ✅ | **HIL PENDING**；沒有已驗證 CMP180 waveform／MCS mapping |
-| PA Offline Analysis | ✅ | ✅ | 進階指標仍以 SIMULATED／DERIVED 為主，不能當 DUT 實測 |
-| Calibration | ✅ | ✅ | 現行 approved profile 有既有證據；新 fixture／route 必須另行驗證 |
-| UDBox | Partial | ❌ | 已有部分 GPRF 軟體骨架，尚無獨立 Mock stack 與核准 DUT HIL |
-| 5G NR FR1 | ❌ | ❌ | 架構與 Mock 尚未建立；禁止從其他儀器猜 SCPI |
+| WLAN 單次量測 | 已完成 | 已完成 | 固定 RF1.1 至 RF1.5 路徑已有證據 |
+| 頻率掃描 | 已完成 | 已完成 | 固定核准區段已有證據；自訂掃描仍需重新驗收 |
+| 功率掃描 | 已完成 | 已完成 | 固定核准設定已有證據 |
+| 星座圖 | 已完成 | 已完成 | 尚無驗證過的 CMP180 擷取命令 |
+| MCS 掃描 | 已完成 | 已完成 | 尚無驗證過的波形與 MCS 對應 |
+| GPRF 功率與 P1dB | 已完成 | 已完成 | 軟體及低功率流程已有證據，擴大功率仍需現場驗收 |
+| 校正與回損補償 | 已完成 | 已完成 | 只適用核准設定與已保存的校正資料 |
+| UDBox 頻率轉換 | 部分完成 | 部分完成 | 尚無完整獨立實機證據 |
+| 5G NR FR1 | 尚未完成 | 尚未完成 | 不可從其他儀器猜測命令 |
 
-完整分層、證據與自動計算百分比以[功能完成度 Checklist](docs/FEATURE_COMPLETION_CHECKLIST.md)為準。
+## 快速選擇使用方式
 
-## Constellation 工作區
+只要展示介面或產生教學資料，使用 Windows 可攜版或 `--demo-only`。這個模式不連線 CMP180，也不會送出射頻命令。
 
-Web 的 `Constellation` 分頁提供 hardware-independent workflow：
+若要執行實機量測，先閱讀[硬體量測標準作業程序](docs/hardware-test-sop.md)，確認接線、衰減、頻率、頻寬、功率與分析儀輸入上限，再使用原始碼啟動或執行可攜版的 `--hardware`。此參數只開啟既有安全閘門，不代表任意條件都已核准。
 
-- BPSK、QPSK、16／64／256／1024／4096-QAM 單位平均功率理想點。
-- Raw I/Q 與 normalized I/Q 切換；invalid 保留為 `null`／`valid=false`，不轉成 0。
-- AWGN、phase、quadrature、gain imbalance、DC offset、frequency offset 與 amplitude scale。
-- Scatter-only 圖表、ideal reference、equal-axis、zoom、pan、reset、hover 與 outlier 標示。
-- RMS／Peak EVM、I/Q mean、I/Q RMS、gain imbalance 與 estimated phase error；來源標為 `SIMULATED · DERIVED`。
-- `constellation.csv`、`constellation.json`、`constellation.svg`、`constellation.png`、`constellation_metadata.json`。
+## 從原始碼安裝
 
-硬體 adapter 目前只定義介面，`acquire()` 會明確拒絕執行。Repository 尚無已驗證的 CMP180 Constellation query 與回傳格式，因此沒有把任何猜測命令放入 SCPI registry。
-
-## MCS Sweep 工作區
-
-Web 的 `MCS Sweep` 分頁提供 EHT MCS 0–13 的 hardware-independent framework：
-
-- 支援逗號分隔、非連續且保留順序的 selected MCS list，例如 `0,3,5,7,9,11`。
-- 輸出 modulation、coding rate、EVM、power、frequency error、reliability 與 validity。
-- 可切換 EVM vs MCS 與 Power vs MCS；匯出 `mcs_sweep.csv`、`mcs_sweep.json`、SVG、PNG 與 metadata。
-- Mock 固定標記 `source=mock`、`simulated=true`、`hil_status=HIL_PENDING`，而且沒有正式 compliance limit。
-
-`CMP180MCSSweepSource.acquire()` 同樣會拒絕執行，直到有官方文件、既有 query evidence 或新實機 discovery 證實 waveform／MCS mapping。
-
-## 快速開始
+需要 Windows 10／11、Python 3.11 以上與可寫入的專案目錄：
 
 ```powershell
 git clone https://github.com/DreamerForJay/CMP180-Automation.git
 Set-Location CMP180-Automation
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,hardware]"
+```
+
+驗證基本設定：
+
+```powershell
+python -m cmp180_evm validate-config configs\instrument.example.yaml
+python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
+```
+
+兩個指令都顯示 `OK` 才代表檔案格式與欄位通過；這不會替代實機命令審核或接線檢查。
+
+## Windows 可攜版
+
+發布檔位於 `dist/CMP180-Windows-x64.zip`。把整個壓縮檔解壓縮到可寫入資料夾，再雙擊 `CMP180.exe`。接收者不需要安裝 Python，也不要只複製單一執行檔，因為同一資料夾內還有網頁資源、範例設定與相依檔案。
+
+雙擊啟動時預設為模擬模式，瀏覽器會開啟 `http://127.0.0.1:8765`。若瀏覽器沒有自動開啟，可手動輸入網址。埠號被占用時，可執行 `CMP180.exe --port 8766`。結果會寫入執行檔旁的 `output/`；完成操作後回到主控台按 Ctrl+C。
+
+實機操作前必須閱讀標準作業程序，並使用 `CMP180.exe --hardware`。完整步驟見[Windows 可攜版說明](docs/windows-portable.md)。
+
+## 啟動網頁工作站
+
+原始碼模式啟動：
+
+```powershell
 python -m cmp180_evm.web --demo-only
 ```
 
-瀏覽器開啟 `http://127.0.0.1:8765`。`--demo-only` 不建立 CMP180 session；Constellation 本身也只使用 synthetic data。
+瀏覽器開啟 `http://127.0.0.1:8765`。若要使用實機入口，執行 `python -m cmp180_evm.web`，但仍須通過頁面中的安全確認、核准設定與實機閘門。
 
-常用的離線檢查：
+首頁右上角保留中文／英文切換。切換只重新繪製網頁文字、提示、圖表說明與結果狀態，不會重新送出預覽請求、量測請求或射頻命令。文件統一使用繁體中文；程式介面仍保留雙語功能。
 
-```powershell
-python -m cmp180_evm validate-config configs/instrument.example.yaml
-python -m cmp180_evm validate-config configs/wlan_baseline.example.yaml
-python scripts/build_feature_checklist.py --check
-python -m pytest -m "not hardware"
-```
+## 網頁功能說明
 
-## 實機安全邊界
+### 單次量測
 
-- 未經明確要求不得 Reset 儀器或 Workspace。
-- 預設 query-only；`FETCh` 只讀 stored result，`READ`／`INITiate` 會啟動量測。
-- RF On 前必須確認 routing、頻率、頻寬、功率、線材／衰減、DUT 與 analyzer input limit。
-- 所有 RF workflow 必須在成功、錯誤、逾時與取消後 Stop／Abort 並 RF Off。
-- SCPI 只存在於 command map 與 typed registry；未驗證命令維持 `null` 或 `HIL_PENDING`。
-- Mock、synthetic dataset、stored artifact 分析與 UI 預覽都不是新 HIL。
+填寫中心頻率、頻寬與功率後先檢查計畫，再確認 RF1.1 至 RF1.5 直連、沒有額外衰減器、操作員在場與最後射頻摘要。流程會在量測前讀回設定，完成後保存結果；成功、錯誤、逾時或取消都會嘗試停止量測並關閉射頻。
 
-實機操作前必讀[硬體量測 SOP](docs/hardware-test-sop.md)。目前使用者採 Single Permission Model；Authentication／RBAC 不在專案範圍，但 RF safety gate 永遠保留。
+### 頻率與功率掃描
 
-## 專案結構
+掃描會逐點執行並保存原始回應。多點流程可在目前點完成停止與關閉射頻後暫停，繼續時從下一點開始；停止時會保存部分結果。固定核准區段可執行，自訂條件若出現 `INV` 或未通過安全閘門，系統會停止後續點。
 
-```text
-configs/                     YAML 範例、能力與 SCPI command map
-docs/                        規格、SOP、證據、checklist 與互動架構圖
-scripts/                     驗證、報告與 checklist 產生工具
-src/cmp180_evm/constellation Constellation model、Mock、分析與 artifacts
-src/cmp180_evm/mcs_sweep/     MCS sweep model、Mock、圖表與 artifacts
-src/cmp180_evm/web/static/   正式 Web 前端
-src/cmp180_evm/workflow/     SingleShot、sweep、校正與 RF safety workflow
-tests/unit/                  CI 使用的 unit／mock／schema／artifact 測試
-output/                      本機量測與模擬 artifacts；不當作原始碼提交
-```
+### 星座圖與 MCS 掃描
 
-`static_v2/` 與早期規劃文件僅供封存參考；目前正式前端是 `src/cmp180_evm/web/static/`。需求與安全邊界以 `SPEC.MD` 為準，文件權威順序見 `docs/README.md`。
+模擬模式可產生 BPSK、QPSK、16／64／256／1024／4096-QAM，加入雜訊、相位、正交、增益不平衡、直流偏移、頻率偏移與振幅縮放。MCS 掃描可輸入 0 至 13 的不連續清單，例如 `0,3,5,7,9,11`，產生 EVM、功率、頻率誤差、可靠度與有效性欄位。兩個功能目前都沒有經驗證的 CMP180 擷取命令，不能作為實機合規判定。
 
-## 驗證與貢獻
+### GPRF 功率與 P1dB
+
+功率掃描會依輸入線損、輸出線損、外部增益與衰減器計算輸入功率、輸出功率與增益。若沒有觀察到增益下降 1 dB，結果會標記為找不到 P1dB，不會把最後一點誤稱為 P1dB。模擬模式只產生教學曲線，不連線射頻儀器。
+
+### 歷史結果與圖表
+
+結果頁可讀取已保存的執行紀錄，查看單筆或比較多筆資料，調整曲線名稱、顏色、線型與點型，並匯出圖形與整理後資料。歷史分析只讀取 `output/` 內檔案，不會重新連線或送出量測命令。
+
+## 結果與檔案位置
+
+每一次模擬或量測都會在 `output/<執行資料夾>/` 保存可追溯檔案：
+
+| 檔案 | 用途 |
+|---|---|
+| `results.csv` | 每一點的表格結果 |
+| `result.json` 或工作區專用 JSON | 完整結構化資料與狀態 |
+| `metadata.json` | 設定、來源、有效性與安全摘要 |
+| `*.svg`、`*.png` | 離線圖表 |
+| 原始回應與錯誤佇列 | 追查儀器狀態與命令結果 |
+
+`source=mock`、`simulated=true`、`hil_status=HIL_PENDING` 代表模擬或尚未完成實機驗證。`APPROVED` 只適用文件明確列出的核准設定。
+
+## 實機操作安全規則
+
+- 未經明確要求不得重設儀器或工作區。
+- 預設採唯讀查詢；`FETCh` 讀取已保存結果，`READ` 與 `INITiate` 會啟動量測。
+- 開啟射頻前必須確認路徑、頻率、頻寬、功率、線材、衰減、DUT 與輸入上限。
+- 每個射頻流程都必須在成功、錯誤、逾時與取消後停止／中止量測並關閉射頻。
+- 未確認來源的命令維持空值，不得從其他型號儀器猜測 CMP180 命令。
+- 模擬、預覽、離線報告與單獨讀取已保存結果，都不能描述為新的完整 Python 實機量測。
+
+## 設定檔與命令驗證
+
+`configs/` 保存範例設定與集中式命令表。儀器設定檔定義連線位置與連接埠；WLAN 基準設定檔定義頻率、頻寬與功率；其他範例檔提供校正、限制、功率掃描與 UDBox 規劃。
+
+命令只有在 CMP180 內建說明、官方手冊或受控探索取得證據後，才可從空值改為已確認狀態。新增或修改命令時，必須同步更新命令矩陣、來源證據、測試與安全說明。
+
+## 測試與發布
 
 提交前執行：
 
 ```powershell
-.\scripts\precommit_check.ps1
+New-Item -ItemType Directory -Force output | Out-Null
+.\.venv\Scripts\python.exe -m pytest -q --basetemp=output\pytest-tmp
+python -m cmp180_evm validate-config configs\instrument.example.yaml
+python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
+git diff --check
+.\.venv\Scripts\python.exe -m ruff check src scripts tests
 ```
 
-CI 只執行 unit、Mock、config、Ruff 與非阻斷 mypy，不可連接公司 CMP180 網段。新增功能必須同步更新程式碼、測試、相關文件與完成度資料來源；SCPI 變更還必須附官方 CMP180 文件、Command Help、Recorder 或受控實機證據。
+建立與驗證 Windows 可攜版：
 
-本專案採 MIT License。安全問題請依 [SECURITY.md](SECURITY.md) 回報。
+```powershell
+.\.venv\Scripts\python.exe scripts\build_windows.py
+.\.venv\Scripts\python.exe scripts\verify_windows.py
+```
 
-首頁 CMP180 3D 模型會自動載入並旋轉（尊重減少動態偏好），不需啟用按鈕；採柔和陰影與主題背景。此功能僅為瀏覽器外觀展示，不涉及 RF。
+建置工具不會把私人設定、開發機量測紀錄或測試快取放入壓縮檔；驗證工具會解壓到含中文的路徑，檢查首頁、設定、模擬鎖定與資料匯出。完成檢查後，再將修改提交並推送到 GitHub。
 
-## Windows EXE 可攜版
+## 專案結構
 
-分享 `dist/CMP180-Windows-x64.zip`，完整解壓縮後雙擊 `CMP180.exe`；不需安裝 Python。
-預設 Demo／Mock，實機使用 `--hardware` 並遵循既有安全 SOP。請保留 EXE 旁所有資源。
-詳細操作與重建方式見 [Windows 可攜版](docs/windows-portable.md)。
+```text
+configs/                    範例設定、能力資料與命令表
+docs/                       規格、標準作業程序、證據與操作文件
+scripts/                    驗證、報告、建置與發布工具
+src/cmp180_evm/             核心量測、模擬、網頁與安全流程
+src/cmp180_evm/web/static/  正式網頁前端
+tests/unit/                 單元、模擬、結構與檔案驗證
+output/                     本機量測與模擬輸出，不提交到版本庫
+dist/                       Windows 發布產物，不提交到版本庫
+```
+
+`src/cmp180_evm/web/static/` 是正式前端；`static_v2/` 與早期設計文件只作封存參考。首頁三維模型是離線外觀展示，不涉及射頻。
+
+## 限制、證據與文件順序
+
+目前需求與安全邊界以根目錄 `SPEC.MD` 為準；程式註解、文件語言、實機安全與開發規則以 `AGENTS.md` 為準；文件導覽與封存分類以 `docs/README.md` 為準；累積變更與硬體證據以 `HANDOFF.md` 交叉核對。任何舊計畫、模擬資料、網頁預覽或 CMsquares 操作都不能取代新的 Python 實機量測證據。
+
+## 常見問題
+
+### 為什麼雙擊後看不到視窗？
+
+這是本機網頁工作站，不會開啟傳統桌面視窗。查看主控台輸出的網址，或手動開啟 `http://127.0.0.1:8765`。
+
+### 為什麼只複製執行檔會失敗？
+
+網頁資源、範例設定與相依檔案都在執行檔旁邊。請完整解壓縮壓縮檔並保留整個資料夾。
+
+### 模擬模式會不會碰到 CMP180？
+
+不會。`--demo-only` 與 Windows 雙擊預設模式不建立儀器連線，也不送射頻命令。
+
+### 可以直接把模擬結果當成合規結果嗎？
+
+不可以。請先確認來源、實機狀態、核准設定、校正資料與有效性，再依標準作業程序判讀。
+
+### 如何切換介面語言？
+
+使用網頁右上角的中文／英文切換。文件維持繁體中文，系統介面與使用者提示仍保留雙語。
+
+### 如何回報問題？
+
+請保留執行資料夾中的結構化結果、錯誤佇列、最終射頻狀態與使用的設定快照；不要附上授權金鑰、完整設備傾印或未核准的公司內網資訊。

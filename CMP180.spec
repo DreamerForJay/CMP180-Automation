@@ -7,7 +7,8 @@ a = Analysis(
     pathex=[str(root / "src")],
     binaries=[],
     datas=[(str(root / "src/cmp180_evm/web/static"), "cmp180_evm/web/static")],
-    hiddenimports=["RsInstrument"],
+    # Matplotlib 圖檔後端由執行時動態載入，分析階段需明確收錄。
+    hiddenimports=["RsInstrument", "matplotlib.backends.backend_svg", "matplotlib.backends.backend_agg"],
     hookspath=[],
     hooksconfig={"matplotlib": {"backends": ["Agg"]}},
     runtime_hooks=[],

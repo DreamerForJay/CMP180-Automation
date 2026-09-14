@@ -339,7 +339,7 @@ function renderHistoryDetail(records,traces){
   renderMatplotlibGallery(urls);
   return trace;
 }
-async function compareSelectedRuns(){const button=$('#compareSelectedButton');button.disabled=true;try{const keys=[...selectedCompareKeys];const records=await Promise.all(keys.map(async key=>{const response=await fetch(`/api/runs/${encodeURIComponent(key)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||`Unable to load ${key}`);return record}));analysisTraces=records.map((record,index)=>{const summary=runHistory.find(run=>run.run_key===record.run_key)||{};const points=normalizeHistoricalPoints(record);return {id:record.run_key,name:summary.test_name||record.metadata?.test_name||record.metadata?.run_id||record.run_key,color:traceColors[index],visible:true,colorLocked:false,lineStyle:'solid',pointShape:'circle',axis:inferTraceAxis(points),compatibility:{bandwidth:summary.bandwidth_hz,route:summary.route,calibration:summary.calibration_profile,waveform:record.metadata?.waveform_file||record.metadata?.arb_waveform_file||'',mcs:record.metadata?.mcs||''},points}}).filter(trace=>trace.points.length);if(analysisTraces.length<1)throw new Error(language==='zh'?'所選紀錄沒有可用結果':'The selected run has no usable results');latestAxis=analysisTraces[0].axis;latest=analysisTraces[0].points;selectBestChartMetric(latest,{measurement_family:String(records[0].metadata?.measurement_family||'')});renderComparisonControls();const primaryTrace=renderHistoryDetail(records,analysisTraces);resultViewState={mode:'history',traceCount:analysisTraces.length,primaryName:primaryTrace.name};renderResultViewState();activateTopTab('results');drawAnalysisChart()}catch(error){toast(error.message,'error')}finally{updateCompareSelection()}}
+async function compareSelectedRuns(){const button=$('#compareSelectedButton');button.disabled=true;try{const keys=[...selectedCompareKeys];const records=await Promise.all(keys.map(async key=>{const response=await fetch(`/api/runs/${encodeURIComponent(key)}`);const record=await response.json();if(!response.ok)throw new Error(record.error||`Unable to load ${key}`);return record}));analysisTraces=records.map((record,index)=>{const summary=runHistory.find(run=>run.run_key===record.run_key)||{};const points=normalizeHistoricalPoints(record);return {id:record.run_key,name:summary.test_name||record.metadata?.test_name||record.metadata?.run_id||record.run_key,color:traceColors[index],visible:true,colorLocked:false,lineStyle:'solid',pointShape:'circle',axis:inferTraceAxis(points),compatibility:{bandwidth:summary.bandwidth_hz,route:summary.route,calibration:summary.calibration_profile,waveform:record.metadata?.waveform_file||record.metadata?.arb_waveform_file||'',mcs:record.metadata?.mcs||''},p1db:record.metadata?.p1db||null,points}}).filter(trace=>trace.points.length);if(analysisTraces.length<1)throw new Error(language==='zh'?'所選紀錄沒有可用結果':'The selected run has no usable results');latestAxis=analysisTraces[0].axis;latest=analysisTraces[0].points;selectBestChartMetric(latest,{measurement_family:String(records[0].metadata?.measurement_family||'')});renderComparisonControls();const primaryTrace=renderHistoryDetail(records,analysisTraces);resultViewState={mode:'history',traceCount:analysisTraces.length,primaryName:primaryTrace.name};renderResultViewState();activateTopTab('results');drawAnalysisChart()}catch(error){toast(error.message,'error')}finally{updateCompareSelection()}}
 function compatibilityWarnings(){const fields=['bandwidth','waveform','mcs','route','calibration'];return fields.filter(field=>new Set(analysisTraces.map(trace=>trace.compatibility[field]).filter(Boolean)).size>1)}
 function renderComparisonControls(){$('#comparisonPanel').hidden=false;const axes=new Set(analysisTraces.map(trace=>trace.axis)),warnings=compatibilityWarnings();$('#comparisonHint').textContent=warnings.length?(language==='zh'?`相容性警告：${warnings.join('、')} 不一致，禁止直接做合規結論。`:`Compatibility warning: ${warnings.join(', ')} differ; do not infer compliance.`):axes.size>1?(language==='zh'?'資料包含不同掃描軸；請確認比較目的。':'Runs use different sweep axes; verify comparison intent.'):(language==='zh'?'EVM 越負通常越好；INVALID 點會中斷，不與正常資料連線。':'More-negative EVM is generally better; INVALID points break traces.');$('#traceList').innerHTML=analysisTraces.map((trace,index)=>`<div class="trace-control" draggable="true" data-trace-index="${index}"><button class="trace-drag" type="button" title="Drag to reorder">⋮⋮</button><input type="checkbox" data-trace-visible="${index}" ${trace.visible?'checked':''} title="Hide / Show"><input type="color" data-trace-color="${index}" value="${trace.color}" ${trace.colorLocked?'disabled':''}><input type="text" data-trace-name="${index}" value="${escapeHtml(trace.name)}"><select data-trace-line="${index}" title="Line style"><option value="solid" ${trace.lineStyle==='solid'?'selected':''}>Solid</option><option value="dash" ${trace.lineStyle==='dash'?'selected':''}>Dash</option><option value="dot" ${trace.lineStyle==='dot'?'selected':''}>Dot</option></select><select data-trace-point="${index}" title="Point shape"><option value="circle" ${trace.pointShape==='circle'?'selected':''}>●</option><option value="square" ${trace.pointShape==='square'?'selected':''}>■</option><option value="diamond" ${trace.pointShape==='diamond'?'selected':''}>◆</option></select><button type="button" data-trace-solo="${index}">Solo</button><button type="button" data-trace-lock="${index}" title="Color lock">${trace.colorLocked?'🔒':'🔓'}</button><button type="button" class="trace-remove" data-trace-remove="${index}" title="Remove">×</button><small>${trace.points.length} pts</small></div>`).join('')}
 $('#compareSelectedButton').onclick=compareSelectedRuns;
@@ -687,8 +687,9 @@ function chartYWindow(extent){
   const span=extent.max-extent.min||1,high=extent.max-chartView.y/chartFrame.height*span;
   return {min:high-chartView.height/chartFrame.height*span,max:high};
 }
-function p1dbChartMarker(axis,metric){
-  const result=latestP1db||{};
+function p1dbChartMarker(axis,metric,p1db=latestP1db){
+  // 比較模式每條 trace 帶自己的 P1dB metadata；未指定時沿用最後一次量測結果。
+  const result=p1db||{};
   if(axis!=='power'||result.status!=='found')return null;
   const ip1db=finiteNumber(result.ip1db_dbm);
   if(ip1db===null)return null;
@@ -703,12 +704,107 @@ function p1dbChartMarker(axis,metric){
   }
   return null;
 }
-function p1dbMarkerMarkup(marker,x,y){
+function p1dbMarkerMarkup(marker,x,y,color=null){
   if(!marker)return '';
   const cx=x(marker.x),cy=y(marker.y),labelY=cy<chartFrame.top+24?cy+24:cy-12,atRight=cx>chartFrame.width-chartFrame.right-150;
-  return `<line class="p1db-guide" x1="${cx}" y1="${chartFrame.top}" x2="${cx}" y2="${chartFrame.height-chartFrame.bottom}"/><line class="p1db-guide" x1="${chartFrame.left}" y1="${cy}" x2="${cx}" y2="${cy}"/><circle class="p1db-marker" cx="${cx}" cy="${cy}" r="8"><title>${marker.label}</title></circle><text class="p1db-label" x="${cx+(atRight?-10:10)}" y="${labelY}" text-anchor="${atRight?'end':'start'}">${marker.label}</text>`;
+  // 多 Run 比較時以 trace 顏色畫各自的 P1dB 對標線；單一 Run 維持預設橘色樣式。
+  const stroke=color?` stroke="${color}"`:'',fill=color?` fill="${color}"`:'',label=escapeHtml(marker.label);
+  return `<line class="p1db-guide"${stroke} x1="${cx}" y1="${chartFrame.top}" x2="${cx}" y2="${chartFrame.height-chartFrame.bottom}"/><line class="p1db-guide"${stroke} x1="${chartFrame.left}" y1="${cy}" x2="${cx}" y2="${cy}"/><circle class="p1db-marker"${stroke} cx="${cx}" cy="${cy}" r="8"><title>${label}</title></circle><text class="p1db-label"${fill} x="${cx+(atRight?-10:10)}" y="${labelY}" text-anchor="${atRight?'end':'start'}">${label}</text>`;
 }
-function chartUserMarksMarkup(x,y){return chartView.marks.map(mark=>`<circle class="chart-user-mark" cx="${x(mark.x)}" cy="${y(mark.y)}" r="7"/><text class="chart-user-mark-label" x="${x(mark.x)+10}" y="${y(mark.y)-10}">${mark.label}</text>`).join('')}
+function chartUserMarksMarkup(x,y){
+  // 每個標記都拉出到兩軸的對標線，讓 M 標記與 P1dB 基準用同一種方式讀座標。
+  return chartView.marks.map(mark=>{
+    const cx=x(mark.x),cy=y(mark.y),isBaseline=mark.kind==='p1db';
+    const dot=isBaseline?'chart-mark-baseline':'chart-user-mark',guide=isBaseline?'chart-mark-guide is-baseline':'chart-mark-guide';
+    const label=escapeHtml(mark.label);
+    return `<line class="${guide}" x1="${cx}" y1="${cy}" x2="${cx}" y2="${chartFrame.height-chartFrame.bottom}"/><line class="${guide}" x1="${chartFrame.left}" y1="${cy}" x2="${cx}" y2="${cy}"/><circle class="${dot}" cx="${cx}" cy="${cy}" r="7"><title>${label}</title></circle><text class="chart-user-mark-label" x="${cx+10}" y="${cy-10}">${label}</text>`;
+  }).join('');
+}
+function relabelChartMarks(marks){
+  // P1dB 基準固定叫 P1dB；其餘實測標記依目前順序重新編號，刪改後不會出現重複標籤。
+  let index=0;
+  marks.forEach(mark=>{if(mark.kind!=='p1db')mark.label='M'+(++index)});
+  return marks;
+}
+function addChartMark(marks,mark,limit=8){
+  // P1dB 基準只保留一個；重按「對標 P1dB」代表改用目前指標的新基準。
+  const next=mark.kind==='p1db'?marks.filter(item=>item.kind!=='p1db'):marks.slice();
+  next.push(mark);
+  // 超過上限時先丟最舊的實測標記，基準必須留著才能繼續比較。
+  while(next.length>limit){const oldest=next.findIndex(item=>item.kind!=='p1db');next.splice(oldest===-1?0:oldest,1)}
+  return relabelChartMarks(next);
+}
+function markComparisonRows(marks){
+  // 基準優先取 P1dB 標記，沒有才退回第一個標記；ΔX／ΔY 一律為「標記 − 基準」。
+  if(!marks.length)return [];
+  const baseline=marks.find(mark=>mark.kind==='p1db')||marks[0];
+  return marks.map(mark=>({
+    label:mark.label,
+    baseline:mark===baseline,
+    baselineKind:baseline.kind||'point',
+    x:mark.x,
+    y:mark.y,
+    dx:mark===baseline?null:mark.x-baseline.x,
+    dy:mark===baseline?null:mark.y-baseline.y
+  }));
+}
+function p1dbComparisonRows(traces){
+  // 只比較功率掃描且 status==='found' 的 Run；not_found／insufficient_points 沒有數值，不得拿來相減。
+  const usable=(traces||[]).filter(trace=>trace.axis==='power'&&(trace.p1db||{}).status==='found'&&finiteNumber(trace.p1db.ip1db_dbm)!==null);
+  if(usable.length<2)return [];
+  const baseline=usable[0],baseIp=finiteNumber(baseline.p1db.ip1db_dbm),baseOp=finiteNumber(baseline.p1db.op1db_dbm);
+  return usable.map(trace=>{
+    const ip=finiteNumber(trace.p1db.ip1db_dbm),op=finiteNumber(trace.p1db.op1db_dbm);
+    return {
+      name:trace.name,
+      color:trace.color,
+      baseline:trace===baseline,
+      ip1db:ip,
+      op1db:op,
+      gain_db:finiteNumber(trace.p1db.target_gain_db),
+      delta_ip1db:trace===baseline||ip===null||baseIp===null?null:ip-baseIp,
+      delta_op1db:trace===baseline||op===null||baseOp===null?null:op-baseOp
+    };
+  });
+}
+function metricUnitLabel(metricName){const match=/\(([^)]+)\)/.exec(metricAxisLabel(metricName));return match?match[1]:''}
+// dBm 相減得到的是 dB 差值；單位不可沿用絕對準位，否則讀圖時會誤判成功率。
+function deltaUnitLabel(unit){return unit==='dBm'?'dB':unit}
+function markAxisText(axis,value){return Number.isFinite(value)?(axis==='power'?value.toFixed(2):(value/1e6).toFixed(3)):'—'}
+function markDeltaText(value,{axis=null,digits=3}={}){
+  if(value===null||!Number.isFinite(value))return '—';
+  const scaled=axis==='frequency'?value/1e6:value;
+  return (scaled>0?'+':'')+scaled.toFixed(axis==='frequency'?3:digits);
+}
+function markComparisonTable(headers,rows){
+  return `<table class="mark-compare-table"><thead><tr>${headers.map(head=>`<th>${escapeHtml(head)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+function renderMarkComparison(axis,metricName,traces=[]){
+  const panel=$('#chartMarkComparison');
+  if(!panel)return;
+  const markRows=markComparisonRows(chartView.marks),p1dbRows=p1dbComparisonRows(traces);
+  if(!markRows.length&&!p1dbRows.length){panel.hidden=true;panel.innerHTML='';return}
+  const xUnit=xUnitFor(axis),yUnit=metricUnitLabel(metricName),suffix=unit=>unit?` (${unit})`:'';
+  let html='';
+  if(markRows.length){
+    const baselineRow=markRows.find(row=>row.baseline);
+    const headers=[uiText('標記','Mark'),`X${suffix(xUnit)}`,metricAxisLabel(metricName),`ΔX${suffix(deltaUnitLabel(xUnit))}`,`ΔY${suffix(deltaUnitLabel(yUnit))}`];
+    const body=markRows.map(row=>`<tr${row.baseline?' class="is-baseline"':''}><td>${escapeHtml(row.label)}${row.baseline?` <span class="mark-compare-tag">${escapeHtml(uiText('基準','baseline'))}</span>`:''}</td><td>${markAxisText(axis,row.x)}</td><td>${Number.isFinite(row.y)?row.y.toFixed(3):'—'}</td><td>${markDeltaText(row.dx,{axis})}</td><td>${markDeltaText(row.dy)}</td></tr>`);
+    html+=`<div class="mark-compare-title">${escapeHtml(uiText('標記對標比較 · 基準 ','Mark comparison · baseline ')+(baselineRow?baselineRow.label:'—'))}</div>`+markComparisonTable(headers,body);
+    if(baselineRow&&baselineRow.baselineKind==='p1db'){
+      // 以 P1dB 為基準時 ΔX 就是 input back-off；負值代表仍在 P1dB 之下的線性區。
+      html+=`<p class="mark-compare-note">${escapeHtml(uiText('ΔX 是相對 IP1dB 的 back-off，負值代表標記仍在 P1dB 之下；P1dB 為相鄰實測點內插值，不是實際量到的測點。','ΔX is back-off from IP1dB; a negative value means the mark is below P1dB. P1dB is interpolated between measured points, not a measured point itself.'))}</p>`;
+    }
+  }
+  if(p1dbRows.length){
+    const headers=[uiText('量測紀錄','Run'),'IP1dB (dBm)','OP1dB (dBm)',uiText('P1dB 增益 (dB)','P1dB gain (dB)'),'ΔIP1dB (dB)','ΔOP1dB (dB)'];
+    const body=p1dbRows.map(row=>`<tr${row.baseline?' class="is-baseline"':''}><td><span class="mark-compare-swatch" style="background:${escapeHtml(row.color)}"></span>${escapeHtml(row.name)}${row.baseline?` <span class="mark-compare-tag">${escapeHtml(uiText('基準','baseline'))}</span>`:''}</td><td>${row.ip1db===null?'—':row.ip1db.toFixed(2)}</td><td>${row.op1db===null?'—':row.op1db.toFixed(2)}</td><td>${row.gain_db===null?'—':row.gain_db.toFixed(2)}</td><td>${markDeltaText(row.delta_ip1db,{digits:2})}</td><td>${markDeltaText(row.delta_op1db,{digits:2})}</td></tr>`);
+    html+=`<div class="mark-compare-title">${escapeHtml(uiText('P1dB 跨 Run 比較 · 基準 ','P1dB across runs · baseline ')+p1dbRows[0].name)}</div>`+markComparisonTable(headers,body);
+    html+=`<p class="mark-compare-note">${escapeHtml(uiText('只列出已求得 P1dB 的功率掃描；接線、衰減與波形不同的 Run 不得直接當成 DUT 差異。','Only power sweeps where P1dB was found are listed; runs with different cabling, attenuation, or waveform must not be read as a DUT difference.'))}</p>`;
+  }
+  panel.hidden=false;
+  panel.innerHTML=html;
+}
 function chartAxisMarkup(axis,metric,xmin,xmax,ymin,ymax,x,y){
   const frame=chartFrame,xTicks=xmin===xmax?1:6,yTicks=6;
   let html='';
@@ -734,7 +830,7 @@ function drawChart(points,axis='frequency',preserveView=false){
   const xs=points.map(point=>point[xField]).filter(Number.isFinite);
   const validPoints=points.filter(point=>point.valid&&Number.isFinite(point[metric]));
   const ys=validPoints.map(point=>point[metric]);
-  if(!xs.length||!ys.length){svg.innerHTML=`<text class="axis-label" x="450" y="150" text-anchor="middle">${uiText('此指標沒有有效數值；請查看結果表與執行狀態','No valid values for this metric; review the results and run status')}</text>`;return}
+  if(!xs.length||!ys.length){svg.innerHTML=`<text class="axis-label" x="450" y="150" text-anchor="middle">${uiText('此指標沒有有效數值；請查看結果表與執行狀態','No valid values for this metric; review the results and run status')}</text>`;renderMarkComparison(axis,metric);return}
   // EVM 圖需要把 spec limit 一起納入 Y 範圍，否則 limit line 會被裁切在圖外。
   const specLimit=metric==='evm_all_db'&&Number.isFinite(latestSpecLimitDb)?latestSpecLimitDb:null;
   const expectedReference=expectedReferenceForPowerMetric(validPoints,axis,metric);
@@ -773,6 +869,7 @@ function drawChart(points,axis='frequency',preserveView=false){
   html+=segments.map(values=>`<polyline class="plot-line" points="${values.map(point=>`${x(point[xField])},${y(point[metric])}`).join(' ')}"/>`).join('');
   html+=validPoints.map(point=>{const tip=`x=${xDisplayFor(axis,point[xField])} ${xUnit} | ${metric}=${point[metric].toFixed(3)} | Pin=${formatMeasured(point.pin_dbm)} dBm | Pout=${formatMeasured(point.pout_dbm)} dBm | Gain=${formatMeasured(point.gain_db)} dB | EVM=${formatMeasured(point.evm_all_db)} dB | Power=${formatMeasured(point.burst_power_dbm)} dBm | Error=${formatMeasured(point.power_error_db,3)} dB | FreqErr=${formatMeasured(point.frequency_error_hz)} Hz | ${point.limit_status}`;return `<circle class="plot-dot" data-chart-point="true" data-chart-x="${point[xField]}" data-chart-y="${point[metric]}" data-tooltip="${escapeHtml(tip)}" cx="${x(point[xField])}" cy="${y(point[metric])}" r="4"><title>${escapeHtml(tip)}</title></circle>`}).join('');
   html+=p1dbMarkerMarkup(p1Marker,x,y)+chartUserMarksMarkup(x,y);
+  renderMarkComparison(axis,metric);
   // 無效點固定畫在圖底並標示叉號，保留其頻率／功率位置且不偽造 Y 值。
   html+=points.filter(point=>!point.valid||!Number.isFinite(point[metric])).map(point=>`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${xDisplayFor(axis,point[xField])} ${xUnit} · INVALID</title></g>`).join('');
   svg.innerHTML=html+'</g>';
@@ -783,17 +880,21 @@ function drawAnalysisChart(preserveView=false){
   if(!preserveView)setChartNaturalView();
   updateChartRangeLabels();
   const visible=analysisTraces.filter(trace=>trace.visible);
-  if(!visible.length){$('#chart').innerHTML='';return}
+  if(!visible.length){$('#chart').innerHTML='';renderMarkComparison(activeChartAxis(),$('#chartMetric').value);return}
   const metricName=$('#chartMetric').value,w=chartFrame.width,h=chartFrame.height,left=chartFrame.left,right=chartFrame.right,top=chartFrame.top,bottom=chartFrame.bottom,samples=[];
   visible.forEach(trace=>trace.points.forEach(point=>{const xValue=point[xFieldFor(trace.axis)],yValue=point[metricName];if(point.valid&&Number.isFinite(xValue)&&Number.isFinite(yValue))samples.push({x:xValue,y:yValue})}));
-  if(!samples.length){$('#chart').innerHTML=`<text class="axis-label" x="45" y="70">${language==='zh'?'此指標沒有可比較的有效數值':'No comparable values for this metric'}</text>`;return}
+  if(!samples.length){$('#chart').innerHTML=`<text class="axis-label" x="45" y="70">${language==='zh'?'此指標沒有可比較的有效數值':'No comparable values for this metric'}</text>`;renderMarkComparison(visible[0].axis,metricName,visible);return}
   const referenceLines=visible.map(trace=>({trace,reference:expectedReferenceForPowerMetric(trace.points.filter(point=>point.valid),trace.axis,metricName)})).filter(item=>item.reference);
   const referenceSpread=referenceLines.flatMap(item=>item.reference.kind==='diagonal'?item.reference.points.map(point=>point.y):[item.reference.value]);
   // X 軸仍含 INVALID 的位置，Y 軸只用有效值；失敗點不應消失或擴大增益範圍。
   const allXs=visible.flatMap(trace=>trace.points.map(point=>point[xFieldFor(trace.axis)])).filter(Number.isFinite);
   const baseXMin=chartManualRange.xmin??Math.min(...allXs),baseXMax=chartManualRange.xmax??Math.max(...allXs),window=chartDataWindow(baseXMin,baseXMax,samples);
-  const comparisonMarker=visible.length===1?p1dbChartMarker(visible[0].axis,metricName):null;
-  const {xmin,xmax}=window,spread=[...samples.map(sample=>sample.y),...referenceSpread,...(comparisonMarker?[comparisonMarker.y]:[])],metricSpan=Math.max(...spread)-Math.min(...spread);
+  // 比較模式逐條畫各自的 P1dB；trace 未帶 metadata 時才沿用最後一次量測結果。
+  const traceMarkers=visible.map(trace=>{
+    const marker=p1dbChartMarker(trace.axis,metricName,trace.p1db===undefined?(visible.length===1?latestP1db:null):trace.p1db);
+    return marker?{color:visible.length>1?trace.color:null,marker:visible.length>1?{...marker,label:`${trace.name} · ${marker.label}`}:marker}:null;
+  }).filter(Boolean);
+  const {xmin,xmax}=window,spread=[...samples.map(sample=>sample.y),...referenceSpread,...traceMarkers.map(item=>item.marker.y)],metricSpan=Math.max(...spread)-Math.min(...spread);
   const minimumSpan=metricName==='burst_power_dbm'||metricName==='power_error_db'?0.18:metricName==='frequency_error_hz'?Math.max(metricSpan,.5):0.5;
   const autoYExtent=chartExtent(chartView.width<chartFrame.width?window.ys:spread,{minimumSpan:chartView.width<chartFrame.width?.02:minimumSpan,paddingRatio:.1}),baseYExtent={min:chartManualRange.ymin??autoYExtent.min,max:chartManualRange.ymax??autoYExtent.max},yExtent=chartYWindow(baseYExtent),ymin=yExtent.min,ymax=yExtent.max,x=value=>left+(value-xmin)/(xmax-xmin||1)*(w-left-right),y=value=>h-bottom-(value-ymin)/(ymax-ymin||1)*(h-top-bottom);
   const axes=new Set(visible.map(trace=>trace.axis)),comparisonAxis=axes.size===1?visible[0].axis:'frequency';
@@ -810,7 +911,8 @@ function drawAnalysisChart(preserveView=false){
     }
   });
   visible.forEach(trace=>{const xField=xFieldFor(trace.axis),dash=trace.lineStyle==='dash'?'10 7':trace.lineStyle==='dot'?'2 6':'none';let segment=[];const flush=()=>{if(segment.length){html+=`<polyline fill="none" stroke="${trace.color}" stroke-width="3" stroke-dasharray="${dash}" stroke-linecap="round" points="${segment.map(point=>`${x(point[xField])},${y(point[metricName])}`).join(' ')}"/>`;segment=[]}};trace.points.forEach(point=>{const valid=point.valid&&point[xField]!==null&&Number.isFinite(point[metricName]);if(valid)segment.push(point);else flush()});flush();trace.points.forEach(point=>{if(!Number.isFinite(point[xField]))return;if(!point.valid||!Number.isFinite(point[metricName])){html+=`<g class="plot-invalid" transform="translate(${x(point[xField])},${h-bottom})"><path d="M-5-5L5 5M5-5L-5 5"/><title>${escapeHtml(trace.name)} · INVALID</title></g>`;return}const cx=x(point[xField]),cy=y(point[metricName]),fill=point.valid?trace.color:'#f05261',title=`${trace.name} | x=${point[xField]} | ${metricName}=${point[metricName]} | EVM=${point.evm_all_db} dB | Power=${point.burst_power_dbm} dBm | FreqErr=${point.frequency_error_hz} Hz | ${point.valid?'VALID':'INVALID'}`,shape=trace.pointShape==='square'?`<rect x="${cx-4}" y="${cy-4}" width="8" height="8" rx="1"`:trace.pointShape==='diamond'?`<polygon points="${cx},${cy-5} ${cx+5},${cy} ${cx},${cy+5} ${cx-5},${cy}"`:`<circle cx="${cx}" cy="${cy}" r="4"`;html+=`${shape} data-chart-point="true" data-chart-x="${point[xField]}" data-chart-y="${point[metricName]}" data-tooltip="${escapeHtml(title)}" fill="${fill}" stroke="${trace.color}"><title>${escapeHtml(title)}</title></${trace.pointShape==='square'?'rect':trace.pointShape==='diamond'?'polygon':'circle'}>`})});
-  html+=p1dbMarkerMarkup(comparisonMarker,x,y)+chartUserMarksMarkup(x,y);
+  html+=traceMarkers.map(item=>p1dbMarkerMarkup(item.marker,x,y,item.color)).join('')+chartUserMarksMarkup(x,y);
+  renderMarkComparison(comparisonAxis,metricName,visible);
   $('#chart').innerHTML=html+'</g>';
   syncChartViewportSize();
   updateExportAvailability();
@@ -879,6 +981,22 @@ $('#chartReset').onclick=resetChartView;
 $('#chartYExpand').onclick=()=>{zoomChartAt(.5,.5,1.5);redrawActiveChart()};
 $('#chartYShrink').onclick=()=>{zoomChartAt(.5,.5,1/1.5);redrawActiveChart()};
 $('#chartCursorMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?{zh:'A/B 游標已啟用：點選圖上測點',en:'A/B cursors enabled: select measured points'}:{zh:'A/B 游標已關閉',en:'A/B cursors disabled'})};
+function activeP1dbForChart(){
+  // 圖上有多條 trace 時以第一條可見的 Run 為對標對象；單一 Run 直接用該次量測的 P1dB。
+  const visible=analysisTraces.filter(trace=>trace.visible);
+  if(!visible.length)return {axis:latestAxis,p1db:latestP1db,name:''};
+  const trace=visible[0];
+  return {axis:trace.axis,p1db:trace.p1db===undefined?(visible.length===1?latestP1db:null):trace.p1db,name:visible.length>1?trace.name:''};
+}
+$('#chartMarkP1db').onclick=()=>{
+  const metricName=$('#chartMetric').value,source=activeP1dbForChart();
+  const marker=p1dbChartMarker(source.axis,metricName,source.p1db);
+  // 沒有 P1dB 就不得畫對標線；缺少的條件必須講清楚，不可用最後一點假裝成 P1dB。
+  if(!marker){toast(uiText('目前圖表沒有可對標的 P1dB：需要功率掃描、PA Pin／Pout／Gain 指標，且該 Run 已求得 P1dB。','No P1dB to align to: it needs a power sweep, a PA Pin/Pout/Gain metric, and a run where P1dB was found.'),'error');return}
+  chartView.marks=addChartMark(chartView.marks,{x:marker.x,y:marker.y,kind:'p1db',label:source.name?`P1dB · ${source.name}`:'P1dB'});
+  redrawActiveChart();
+  toast(uiText(`已對標 ${marker.label}；其餘標記改以此為比較基準。`,`Aligned to ${marker.label}; other marks are now compared against it.`));
+};
 $('#chartMarkMode').onclick=event=>{event.currentTarget.classList.toggle('active');toast(event.currentTarget.classList.contains('active')?{zh:'標記模式：點選測點加入 M 標記',en:'Mark mode: select measured points to add M marks'}:{zh:'標記模式已關閉',en:'Mark mode disabled'})};
 function chartPointer(event){
   // 用 SVG 螢幕矩陣處理響應式尺寸與瀏覽器縮放，不以 DOM 寬度猜測圖內座標。
@@ -907,7 +1025,7 @@ $('#chart').addEventListener('pointerdown',event=>{
   }
   if($('#chartMarkMode').classList.contains('active')){
     const point=event.target.closest('[data-chart-point]');
-    if(point){const x=Number(point.dataset.chartX),y=Number(point.dataset.chartY);if(Number.isFinite(x)&&Number.isFinite(y)){chartView.marks.push({x,y,label:`M${chartView.marks.length+1}`});if(chartView.marks.length>8)chartView.marks.shift();redrawActiveChart()}return}
+    if(point){const x=Number(point.dataset.chartX),y=Number(point.dataset.chartY);if(Number.isFinite(x)&&Number.isFinite(y)){chartView.marks=addChartMark(chartView.marks,{x,y,kind:'point',label:'M'});redrawActiveChart()}return}
   }
   const f=chartFrame;if(position.x<f.left||position.x>f.width-f.right||position.y<f.top||position.y>f.height-f.bottom)return;
   chartView.drag={pointerId:event.pointerId,startX:position.x,startY:position.y,x:chartView.x,y:chartView.y,width:chartView.width,height:chartView.height};
