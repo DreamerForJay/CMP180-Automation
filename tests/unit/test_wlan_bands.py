@@ -8,6 +8,7 @@ from cmp180_evm.workflow.wlan_bands import (
     band_for_frequency,
     describe_capability,
     executable_band_for,
+    measurement_band_for,
     reject_unsupported_plan,
 )
 
@@ -108,3 +109,39 @@ def test_filling_in_a_verified_enum_unlocks_that_band():
         frequencies_hz=(5_500_000_000,), bandwidth_hz=320_000_000
     )
     assert reason is not None and "exceeds the 5 GHz band maximum" in reason
+
+
+@pytest.mark.parametrize(
+    ("frequency_hz", "bandwidth_hz", "expected_key", "expected_native"),
+    [
+        # 頻寬在該 band 上限內：使用該頻率自己的 band。
+        (2_450_000_000, 40_000_000, "2.4GHz", True),
+        (5_500_000_000, 160_000_000, "5GHz", True),
+        (6_105_000_000, 320_000_000, "6GHz", True),
+        # 頻寬超過該 band 上限：退回已驗證的 B6GHz EHT template，而不是中止量測。
+        (2_450_000_000, 80_000_000, "6GHz", False),
+        (5_500_000_000, 320_000_000, "6GHz", False),
+        # 不屬於任何 WLAN band 的頻率維持既有 template 行為。
+        (400_000_000, 320_000_000, "6GHz", False),
+        (3_000_000_000, 20_000_000, "6GHz", False),
+    ],
+)
+def test_measurement_band_falls_back_to_template_instead_of_refusing(
+    frequency_hz, bandwidth_hz, expected_key, expected_native
+):
+    band, is_native = measurement_band_for(frequency_hz, bandwidth_hz)
+
+    assert band.key == expected_key
+    assert is_native is expected_native
+    # 退回 template 的組合仍必須帶已實機驗證的 enum，否則會送出臆測命令。
+    assert band.band_enum is not None
+
+
+def test_measurement_band_fallback_is_still_flagged_as_non_standard():
+    """退回 template 可以量測，但 preview 仍必須標示為非標準 channel plan。"""
+    band, is_native = measurement_band_for(5_500_000_000, 320_000_000)
+
+    assert (band.key, is_native) == ("6GHz", False)
+    assert reject_unsupported_plan(
+        frequencies_hz=(5_500_000_000,), bandwidth_hz=320_000_000
+    ) is not None

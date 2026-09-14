@@ -44,7 +44,7 @@ from cmp180_evm.workflow.frequency_sweep import FrequencySweepPlan, run_frequenc
 from cmp180_evm.workflow.power_sweep import PowerSweepPlan, run_power_sweep
 from cmp180_evm.workflow.rf_routes import parse_route, route_is_hil_verified
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan, run_single_measurement
-from cmp180_evm.workflow.wlan_bands import WLAN_BANDS, band_for_frequency
+from cmp180_evm.workflow.wlan_bands import measurement_band_for
 
 DEFAULT_ROUTE = "RF1.1-RF1.5"
 # 已完成 HIL 的路徑；僅供 artifact 標示，不參與執行判定。
@@ -73,11 +73,15 @@ def _measurement_diagnostics(
 ) -> dict[str, object]:
     """Return the verified configuration and observed state trace for artifacts."""
     # 這些值都已在 RF On 前完成 readback；保存快照不會額外控制儀器。
-    natural_band = band_for_frequency(plan.center_frequency_hz)
+    # band_role 必須與 backend 實際送出的 band 用同一份判定，否則頻寬超過 band
+    # 上限而退回 EHT template 的點會被 metadata 誤記成 native。
+    template_band, band_is_native = measurement_band_for(
+        plan.center_frequency_hz, plan.bandwidth_hz
+    )
     configured_band_readback = getattr(backend, "selected_wlan_band_readback", None)
     if configured_band_readback is None:
         # 測試替身沒有 backend 狀態時依正式選擇規則重建 metadata，不額外查詢儀器。
-        configured_band_readback = (natural_band or WLAN_BANDS["6GHz"]).band_readback
+        configured_band_readback = template_band.band_readback
     return {
         # Adapter 測試替身可能不提供狀態追蹤；正式 backend 仍會保存完整轉換序列。
         "measurement_state_trace": list(
@@ -85,7 +89,7 @@ def _measurement_diagnostics(
         ),
         "wlan_standard": VERIFIED_WLAN_STANDARD_READBACK,
         "wlan_band": configured_band_readback,
-        "wlan_band_role": "native" if natural_band else "EHT_MEASUREMENT_TEMPLATE",
+        "wlan_band_role": "native" if band_is_native else "EHT_MEASUREMENT_TEMPLATE",
         "trigger_source": VERIFIED_TRIGGER_SOURCE,
         "trigger_threshold_db": VERIFIED_TRIGGER_THRESHOLD_DB,
         "expected_nominal_power_dbm": plan.expected_nominal_power_dbm,

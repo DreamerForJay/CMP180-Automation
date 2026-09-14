@@ -174,6 +174,45 @@ def test_catalog_edge_single_uses_verified_b6_measurement_template():
     assert REGISTRY.render("wlan_tx.set_frequency", frequency_hz=400_000_000) in io.writes
 
 
+def test_bandwidth_above_band_maximum_still_measures_via_b6_template():
+    """5 GHz + 320 MHz 以前在 configure 直接 raise，操作員完全拿不到結果。"""
+    io = FakeCmp180()
+    original_query = io.query_str
+
+    def query_5ghz(command: str) -> str:
+        if command in {
+            REGISTRY.require("generator_query.frequency"),
+            REGISTRY.require("wlan_tx_query.center_frequency"),
+        }:
+            return "5.5E9"
+        return original_query(command)
+
+    io.query_str = query_5ghz  # type: ignore[method-assign]
+    wide_plan = SingleMeasurementPlan(
+        generator_port="RF1.1",
+        analyzer_port="RF1.5",
+        center_frequency_hz=5_500_000_000,
+        bandwidth_hz=320_000_000,
+        generator_power_dbm=-40,
+        expected_nominal_power_dbm=-20,
+        external_attenuation_db=0,
+        operator_confirmed=True,
+        maximum_generator_power_dbm=-40,
+    )
+    backend = Cmp180SingleMeasurementBackend(io, REGISTRY, poll_interval_s=0)
+    result = run_single_measurement(backend, wide_plan)
+
+    # 頻寬超過 5 GHz band 上限時借用 B6G 解調 template，但 RF 仍停在 5.5 GHz。
+    assert result.cleanup_errors == ()
+    assert backend.selected_wlan_band_readback == "B6GH"
+    assert REGISTRY.render("wlan_tx.set_band", band="B6GHz") in io.writes
+    assert REGISTRY.render("generator.set_frequency", frequency_hz=5_500_000_000) in io.writes
+    assert REGISTRY.render("wlan_tx.set_frequency", frequency_hz=5_500_000_000) in io.writes
+    # 無論走哪條 template，cleanup 都必須把 RF 關掉。
+    assert io.rf_state == "OFF"
+    assert io.writes[-1] == REGISTRY.require("generator.rf_off")
+
+
 @pytest.mark.parametrize("bandwidth_hz", [20e6, 40e6, 80e6, 160e6, 320e6])
 def test_each_approved_bandwidth_has_a_matching_hil_waveform(bandwidth_hz):
     path = waveform_for_bandwidth(bandwidth_hz)

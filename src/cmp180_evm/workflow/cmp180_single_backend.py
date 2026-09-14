@@ -11,7 +11,7 @@ from cmp180_evm.workflow.analyzer_setter_validation import (
 )
 from cmp180_evm.workflow.generator_setter_validation import ScpiIo
 from cmp180_evm.workflow.single_measurement import SingleMeasurementPlan
-from cmp180_evm.workflow.wlan_bands import WLAN_BANDS, band_for_frequency
+from cmp180_evm.workflow.wlan_bands import measurement_band_for
 
 BANDWIDTH_ENUMS = {
     20_000_000: "BW20",
@@ -123,15 +123,14 @@ class Cmp180SingleMeasurementBackend:
         self._write_checked("generator.set_power", power_dbm=plan.generator_power_dbm)
         # 儀器重啟後可能回到 LOFD/B24G，必須在頻寬與頻率前恢復 EHT/6 GHz。
         self._write_checked("wlan_tx.set_standard", standard=VERIFIED_WLAN_STANDARD)
-        # 標準 WLAN 頻段使用對應 band；標準 channel plan 外的點沿用已驗證的 B6GHz
-        # EHT 解調 template，但 RF center frequency 仍寫入使用者值並逐項 readback。
-        # 這類點可以量測與蒐證，但不能把頻點宣稱為法規 WLAN channel。
-        natural_band = band_for_frequency(plan.center_frequency_hz)
-        band = natural_band or WLAN_BANDS["6GHz"]
-        if natural_band is not None and plan.bandwidth_hz > band.maximum_bandwidth_hz:
-            raise ValueError(
-                f"{plan.bandwidth_hz / 1e6:.0f} MHz exceeds the {band.name} band maximum"
-            )
+        # 標準 WLAN 頻段且頻寬在該 band 上限內時使用對應 band；頻段空隙的頻率、
+        # 或頻寬超過該 band 上限（例如 5 GHz + 320 MHz）則沿用已驗證的 B6GHz EHT
+        # 解調 template。後者不再丟例外中止量測：RF center frequency 與頻寬仍寫入
+        # 使用者值並逐項 readback，操作員拿得到結果與 artifact，只是可能為 INV，
+        # 且這類頻點不能宣稱為法規 WLAN channel。
+        band, _band_is_native = measurement_band_for(
+            plan.center_frequency_hz, plan.bandwidth_hz
+        )
         self._write_checked("wlan_tx.set_band", band=band.band_enum)
         self.selected_wlan_band_readback = band.band_readback
         self._write_checked("wlan_tx.set_rf_path", rf_path=f'"{plan.analyzer_port}"')

@@ -74,6 +74,25 @@ def band_for_frequency(frequency_hz: float) -> WlanBand | None:
     return None
 
 
+def measurement_band_for(
+    frequency_hz: float, bandwidth_hz: float
+) -> tuple[WlanBand, bool]:
+    """Return the band template to configure and whether it is the frequency's own band.
+
+    頻率落在標準 band、且頻寬不超過該 band 上限時，使用該 band 的 enum；其餘情況
+    （頻段空隙的頻率，或頻寬超過該 band 上限）一律沿用已 HIL 驗證的 B6GHz EHT
+    解調 template。
+
+    這裡刻意不丟例外：RF center frequency 與頻寬仍照操作員指定值寫入並逐項
+    readback，量測照跑，結果可能為 INV。是否可用由操作員看結果判斷，不由軟體
+    在規劃階段替他決定；但這類頻點一律不得宣稱為法規 WLAN channel。
+    """
+    natural_band = band_for_frequency(frequency_hz)
+    if natural_band is not None and bandwidth_hz <= natural_band.maximum_bandwidth_hz:
+        return natural_band, True
+    return WLAN_BANDS["6GHz"], False
+
+
 def executable_band_for(frequency_hz: float) -> WlanBand:
     """Return the band to configure, refusing any band whose SCPI enum is unverified."""
     band = band_for_frequency(frequency_hz)
