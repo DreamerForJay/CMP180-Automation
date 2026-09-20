@@ -4,6 +4,23 @@
 
 > 目前狀態：固定安全設定的單次量測、頻率掃描、功率掃描與本機網頁介面已有實機證據；星座圖、MCS 掃描與自訂掃描仍以程式及模擬驗證為主，尚不能宣稱新的實機或合規結果。
 
+[![Release](https://img.shields.io/github/v/release/DreamerForJay/CMP180-Automation?label=%E5%8F%AF%E6%94%9C%E7%89%88&color=0e8c7a)](https://github.com/DreamerForJay/CMP180-Automation/releases/latest)
+[![CI](https://github.com/DreamerForJay/CMP180-Automation/actions/workflows/ci.yml/badge.svg)](https://github.com/DreamerForJay/CMP180-Automation/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab)](https://www.python.org/downloads/)
+[![Platform](https://img.shields.io/badge/Windows-10%20%7C%2011%20x64-0078d4)](docs/windows-portable.md)
+
+**[⬇ 下載 Windows 可攜版](https://github.com/DreamerForJay/CMP180-Automation/releases/latest/download/CMP180-Windows-x64.zip)**（免安裝 Python，雙擊即用）
+ · [使用手冊](docs/manual/README.md)
+ · [安裝與使用網頁](https://dreamerforjay.github.io/CMP180-Automation/)
+ · [文件中心](docs/README.md)
+ · [架構圖](docs/diagrams/README.md)
+
+[![CMP180 系統架構圖](docs/diagrams/system-architecture.png)](docs/diagrams/README.md)
+
+<sub>靜態預覽。<a href="docs/diagrams/README.md">互動版</a>支援縮放、搜尋、關係追蹤與匯出，另有 SingleShot 量測生命週期圖。</sub>
+
+> **第一次接觸這個專案？** 請直接看 **[完整使用手冊](docs/manual/cmp180-user-manual.html)**（另有 [PDF](docs/manual/cmp180-user-manual.pdf) 與 [Word](docs/manual/cmp180-user-manual.docx) 版）。手冊假設讀者沒有寫過程式、也沒有操作過射頻儀器，從安裝、啟動、每個功能的操作、結果判讀、射頻安全到疑難排解逐步說明。本 README 面向已熟悉專案的開發者與驗收者。
+
 ## 目錄
 
 1. [系統定位與能力邊界](#系統定位與能力邊界)
@@ -65,7 +82,7 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml
 
 ## Windows 可攜版
 
-發布檔位於 `dist/CMP180-Windows-x64.zip`。把整個壓縮檔解壓縮到可寫入資料夾，再雙擊 `CMP180.exe`。接收者不需要安裝 Python，也不要只複製單一執行檔，因為同一資料夾內還有網頁資源、範例設定與相依檔案。
+從 [Releases 頁面](https://github.com/DreamerForJay/CMP180-Automation/releases/latest)下載 `CMP180-Windows-x64.zip`（在開發機重新建置時，產物同樣位於 `dist/CMP180-Windows-x64.zip`）。把整個壓縮檔解壓縮到可寫入資料夾，再雙擊 `CMP180.exe`。接收者不需要安裝 Python，也不要只複製單一執行檔，因為同一資料夾內還有網頁資源、範例設定與相依檔案。
 
 雙擊啟動時預設為模擬模式，瀏覽器會開啟 `http://127.0.0.1:8765`。若瀏覽器沒有自動開啟，可手動輸入網址。埠號被占用時，可執行 `CMP180.exe --port 8766`。結果會寫入執行檔旁的 `output/`；完成操作後回到主控台按 Ctrl+C。
 
@@ -161,6 +178,8 @@ git diff --check
 ```text
 configs/                    範例設定、能力資料與命令表
 docs/                       規格、標準作業程序、證據與操作文件
+docs/manual/                非技術使用者完整操作手冊（HTML／PDF／DOCX）
+docs/site/                  GitHub Pages 安裝與使用介紹網頁原始碼
 scripts/                    驗證、報告、建置與發布工具
 src/cmp180_evm/             核心量測、模擬、網頁與安全流程
 src/cmp180_evm/web/static/  正式網頁前端

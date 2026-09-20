@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMP180 WLAN TX EVM 自動化系統 — 完整使用手冊</title>
+<style>
+:root{
+  --ink:#12181f; --ink-soft:#4a5560; --line:#dfe5ec; --line-soft:#eef2f6;
+  --paper:#ffffff; --paper-soft:#f6f8fb;
+  --navy:#10294a; --navy-2:#1d4674; --accent:#0d8fa8; --accent-soft:#e6f6f9;
+  --danger:#b3261e; --danger-soft:#fdecea;
+  --warn:#a1670a; --warn-soft:#fff5e2;
+  --ok:#1f6b45; --ok-soft:#e8f6ee;
+  --info:#2b4f9e; --info-soft:#ecf1fd;
+  --code-bg:#0f1b2b; --code-ink:#e6edf5;
+  --sans:"Segoe UI","Microsoft JhengHei","Noto Sans TC","PingFang TC","Heiti TC",sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Courier New","Microsoft JhengHei",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper-soft);color:var(--ink);
+  font-family:var(--sans);font-size:16.5px;line-height:1.85;
+  -webkit-font-smoothing:antialiased;letter-spacing:.01em}
+
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);max-width:1460px;margin:0 auto}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+  background:var(--navy);color:#cfe0f0;padding:26px 18px 60px}
+nav.toc .brand{font-size:15px;font-weight:700;color:#fff;letter-spacing:.05em}
+nav.toc .brand small{display:block;font-weight:400;font-size:12px;color:#8fb2d4;margin-top:5px;letter-spacing:.02em}
+nav.toc hr{border:0;border-top:1px solid rgba(255,255,255,.16);margin:16px 0}
+nav.toc a{display:block;color:#cfe0f0;text-decoration:none;font-size:13.4px;line-height:1.5;
+  padding:5px 10px;border-radius:6px;border-left:3px solid transparent}
+nav.toc a:hover{background:rgba(255,255,255,.09);color:#fff;border-left-color:var(--accent)}
+nav.toc a.lv1{font-weight:700;color:#fff;margin-top:11px;font-size:13.8px}
+nav.toc a.lv2{padding-left:24px;color:#a9c6e2;font-size:12.8px}
+main{background:var(--paper);padding:0 0 80px;min-height:100vh;box-shadow:0 0 40px rgba(16,41,74,.06)}
+.wrap{max-width:890px;margin:0 auto;padding:0 46px}
+
+.cover{background:linear-gradient(140deg,var(--navy) 0%,var(--navy-2) 62%,#2c6ea3 100%);
+  color:#fff;padding:74px 46px 58px;margin-bottom:40px}
+.cover .kicker{display:inline-block;font-size:12.5px;letter-spacing:.2em;
+  color:#8ddaea;border:1px solid rgba(141,218,234,.5);border-radius:999px;padding:5px 15px;margin-bottom:22px}
+.cover h1{font-size:40px;line-height:1.28;margin:0 0 14px;font-weight:800}
+.cover .sub{font-size:18px;color:#d4e6f6;margin:0 0 30px;line-height:1.75;max-width:660px}
+.cover .meta{display:flex;flex-wrap:wrap;gap:8px 34px;font-size:13.5px;color:#a9cbe6;
+  border-top:1px solid rgba(255,255,255,.2);padding-top:20px}
+.cover .meta b{color:#fff;font-weight:600}
+
+h1.sec{font-size:29px;font-weight:800;color:var(--navy);margin:66px 0 8px;
+  padding-bottom:14px;border-bottom:3px solid var(--accent)}
+h1.sec .num{display:inline-block;background:var(--accent);color:#fff;font-size:14px;
+  padding:3px 12px;border-radius:6px;margin-right:12px;vertical-align:6px;letter-spacing:.06em}
+h2{font-size:21.5px;font-weight:700;color:var(--navy-2);margin:42px 0 10px;
+  padding-left:13px;border-left:5px solid var(--accent)}
+h3{font-size:17.5px;font-weight:700;color:var(--ink);margin:28px 0 8px}
+h4{font-size:15.5px;font-weight:700;color:var(--ink-soft);margin:20px 0 6px}
+p{margin:11px 0}
+.lead{font-size:17.5px;color:var(--ink-soft);line-height:1.9;margin:14px 0 6px}
+
+ul,ol{margin:11px 0;padding-left:26px}
+li{margin:7px 0}
+li::marker{color:var(--accent);font-weight:700}
+strong{font-weight:700;color:var(--navy)}
+code{font-family:var(--mono);font-size:14px;background:var(--accent-soft);color:#08596a;
+  padding:2px 6px;border-radius:4px;border:1px solid #cbe9ef;word-break:break-word}
+pre{background:var(--code-bg);color:var(--code-ink);font-family:var(--mono);font-size:13.5px;
+  line-height:1.75;padding:18px 20px;border-radius:10px;overflow-x:auto;margin:14px 0;border:1px solid #1e3550}
+pre code{background:none;border:0;color:inherit;padding:0;font-size:inherit}
+pre .cmt{color:#89a4bd}
+kbd{font-family:var(--mono);font-size:13px;background:#fff;border:1px solid #bcc7d3;
+  border-bottom-width:2px;border-radius:5px;padding:1px 7px;color:var(--ink)}
+
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;background:#fff}
+th,td{border:1px solid var(--line);padding:10px 13px;text-align:left;vertical-align:top;line-height:1.65}
+th{background:var(--navy);color:#fff;font-weight:600}
+tbody tr:nth-child(even){background:var(--paper-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok);border:1px solid #b9ddc9}
+.tag.no{background:var(--danger-soft);color:var(--danger);border:1px solid #f0c3bf}
+.tag.wait{background:var(--warn-soft);color:var(--warn);border:1px solid #f0dcb0}
+.tag.part{background:var(--info-soft);color:var(--info);border:1px solid #c7d4f2}
+
+.box{border-radius:10px;padding:16px 20px;margin:18px 0;border:1px solid;border-left-width:6px}
+.box .t{font-weight:800;font-size:15px;margin:0 0 6px}
+.box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box.tip{background:var(--accent-soft);border-color:#a9dde7;border-left-color:var(--accent)}
+.box.tip .t{color:#076477}
+.box.warn{background:var(--warn-soft);border-color:#efd9a6;border-left-color:var(--warn)}
+.box.warn .t{color:var(--warn)}
+.box.danger{background:var(--danger-soft);border-color:#f2c4c0;border-left-color:var(--danger)}
+.box.danger .t{color:var(--danger)}
+.box.note{background:var(--info-soft);border-color:#c9d6f5;border-left-color:var(--info)}
+.box.note .t{color:var(--info)}
+.box.ok{background:var(--ok-soft);border-color:#bcdfcd;border-left-color:var(--ok)}
+.box.ok .t{color:var(--ok)}
+
+ol.steps{list-style:none;counter-reset:s;padding:0;margin:22px 0}
+ol.steps>li{counter-increment:s;position:relative;padding:2px 0 20px 52px;margin:0 0 0 17px;
+  border-left:2px solid var(--line)}
+ol.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+ol.steps>li::before{content:counter(s);position:absolute;left:-18px;top:0;
+  width:35px;height:35px;border-radius:50%;background:var(--accent);color:#fff;
+  font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 5px #fff}
+ol.steps>li .st{font-weight:700;font-size:16.5px;color:var(--navy);display:block;margin-bottom:3px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0}
+.card{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff}
+.card .h{font-weight:700;color:var(--navy);font-size:15.5px;margin-bottom:5px}
+.card p{margin:4px 0;font-size:14.2px;color:var(--ink-soft);line-height:1.7}
+
+.faq{border:1px solid var(--line);border-radius:10px;margin:12px 0;overflow:hidden;background:#fff}
+.faq>summary{cursor:pointer;padding:13px 18px;font-weight:700;color:var(--navy);
+  background:var(--paper-soft);list-style:none;font-size:15.4px}
+.faq>summary::-webkit-details-marker{display:none}
+.faq>summary::before{content:"Q";display:inline-block;width:22px;height:22px;line-height:22px;
+  text-align:center;background:var(--accent);color:#fff;border-radius:50%;font-size:12px;
+  font-weight:800;margin-right:10px;vertical-align:2px}
+.faq[open]>summary{border-bottom:1px solid var(--line)}
+.faq .body{padding:6px 18px 16px}
+
+.kv{display:grid;grid-template-columns:190px 1fr;border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;margin:16px 0;font-size:14.5px}
+.kv>div{padding:10px 14px;border-bottom:1px solid var(--line-soft)}
+.kv>div:nth-child(odd){background:var(--paper-soft);font-weight:700;color:var(--navy)}
+.kv>div:nth-last-child(-n+2){border-bottom:0}
+
+hr.soft{border:0;border-top:1px solid var(--line);margin:38px 0}
+.footer{margin-top:70px;padding:26px 0 0;border-top:2px solid var(--line);
+  font-size:13.4px;color:var(--ink-soft);text-align:center}
+
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr}
+  nav.toc{position:static;height:auto;padding:20px}
+  .wrap{padding:0 22px}
+  .cover{padding:44px 22px 38px}
+  .cover h1{font-size:29px}
+  .kv{grid-template-columns:1fr}
+  .kv>div:nth-child(odd){border-bottom:0}
+}
+
+@page{size:A4;margin:16mm 15mm 18mm}
+@media print{
+  body{background:#fff;font-size:11.2pt;line-height:1.68}
+  nav.toc{display:none}
+  .layout{display:block;max-width:none}
+  main{box-shadow:none;padding:0}
+  .wrap{max-width:none;padding:0}
+  .cover{margin:0 0 18pt;padding:34pt 26pt;break-after:page;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h1.sec{break-before:page;margin-top:0;font-size:19pt}
+  h2{font-size:14pt;margin-top:18pt}
+  h3{font-size:12pt}
+  h2,h3,h4{break-after:avoid}
+  table,pre,.box,.card,.faq,ol.steps>li{break-inside:avoid}
+  pre{font-size:9.2pt}
+  pre,th,.box,.tag,.card,.kv>div:nth-child(odd),.faq>summary{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .faq>summary{background:#f2f4f7}
+  details{display:block}
+  details>summary{list-style:none}
+  a{color:inherit;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" id="toc">
+  <div class="brand">CMP180 使用手冊<small>WLAN TX EVM 自動化系統</small></div>
+  <hr>
+  <a class="lv1" href="#ch0">0 · 給第一次看到這份文件的人</a>
+  <a class="lv2" href="#ch0-1">這套系統在做什麼</a>
+  <a class="lv2" href="#ch0-2">白話名詞速查</a>
+  <a class="lv2" href="#ch0-3">三種使用身分</a>
+  <a class="lv1" href="#ch1">1 · 安裝前的準備</a>
+  <a class="lv2" href="#ch1-1">電腦需求</a>
+  <a class="lv2" href="#ch1-2">要先下載的三樣東西</a>
+  <a class="lv1" href="#ch2">2 · 安裝步驟（逐步照做）</a>
+  <a class="lv2" href="#ch2-1">取得專案</a>
+  <a class="lv2" href="#ch2-2">建立虛擬環境</a>
+  <a class="lv2" href="#ch2-3">安裝套件</a>
+  <a class="lv2" href="#ch2-4">確認安裝成功</a>
+  <a class="lv1" href="#ch3">3 · 五分鐘上手（示範模式）</a>
+  <a class="lv1" href="#ch4">4 · 介面導覽</a>
+  <a class="lv1" href="#ch5">5 · 功能逐項說明</a>
+  <a class="lv2" href="#ch5-1">示範單點量測</a>
+  <a class="lv2" href="#ch5-2">示範頻率掃描</a>
+  <a class="lv2" href="#ch5-3">示範功率掃描</a>
+  <a class="lv2" href="#ch5-4">進階 PA 指標示範</a>
+  <a class="lv2" href="#ch5-5">Constellation 星座圖</a>
+  <a class="lv2" href="#ch5-6">MCS Sweep</a>
+  <a class="lv2" href="#ch5-7">實機量測</a>
+  <a class="lv2" href="#ch5-8">GPRF 能力掃描</a>
+  <a class="lv2" href="#ch5-9">Loopback 驗證</a>
+  <a class="lv2" href="#ch5-10">HIL 批次執行器</a>
+  <a class="lv2" href="#ch5-11">Path Loss 校正</a>
+  <a class="lv2" href="#ch5-12">結果與量測紀錄</a>
+  <a class="lv1" href="#ch6">6 · 看懂結果</a>
+  <a class="lv1" href="#ch7">7 · 輸出檔案在哪裡</a>
+  <a class="lv1" href="#ch8">8 · 實機操作與 RF 安全</a>
+  <a class="lv1" href="#ch9">9 · 命令列（CLI）參考</a>
+  <a class="lv1" href="#ch10">10 · 疑難排解</a>
+  <a class="lv1" href="#ch11">11 · 能力邊界：現在不能做什麼</a>
+  <a class="lv1" href="#ch12">12 · 延伸問題 Q&amp;A</a>
+  <a class="lv1" href="#ch13">13 · 名詞辭典</a>
+  <a class="lv1" href="#appendix">附錄 · 檔案結構與文件地圖</a>
+</nav>
+<main>
+
+<header class="cover">
+  <div class="kicker">USER MANUAL / 完整使用手冊</div>
+  <h1>CMP180 WLAN TX EVM<br>自動化量測系統</h1>
+  <p class="sub">從零開始安裝、啟動、操作到看懂報告。本手冊假設你完全沒有寫過程式，也沒有碰過射頻儀器 —— 只要照著每一頁做，就能把系統跑起來。</p>
+  <div class="meta">
+    <span><b>適用版本</b> 0.1.0</span>
+    <span><b>對象</b> 一般使用者 · 量測操作員 · 開發者</span>
+    <span><b>語言</b> 繁體中文</span>
+    <span><b>授權</b> MIT License</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ CH 0 ============ -->
+<h1 class="sec" id="ch0"><span class="num">CH 0</span>給第一次看到這份文件的人</h1>
+
+<p class="lead">你不需要先懂程式，也不需要先懂無線電。這一章用最白話的方式，讓你在五分鐘內知道「這東西是幹嘛的」、「我會碰到哪些名詞」、以及「我屬於哪一種使用者」。</p>
+
+<h2 id="ch0-1">0.1　這套系統在做什麼？</h2>
+
+<p>想像你做了一台 Wi-Fi 裝置（手機、路由器、無線網卡）。你要怎麼知道它發出來的無線訊號「乾不乾淨」？</p>
+
+<p>工程上會用一台叫做 <strong>R&amp;S CMP180</strong> 的專業儀器來量。這台儀器很貴、很複雜，而且原本要靠人一步一步在儀器畫面上點選設定、按下開始、等結果、再手動抄下數字。<strong>一次量測可能要點十幾個按鈕，量二十個頻率點就要重複二十次。</strong></p>
+
+<p>這個專案做的事很單純：<strong>把「人手動點儀器」變成「電腦自動做」</strong>，並且把每一次量測的設定、原始回應、結果、圖表都完整存檔，之後任何人都能回頭查證。</p>
+
+<div class="cards">
+  <div class="card"><div class="h">① 自動設定儀器</div><p>把頻率、頻寬、功率等參數一次送給 CMP180，不用人工在儀器面板上點。</p></div>
+  <div class="card"><div class="h">② 自動執行與收資料</div><p>啟動量測、等待完成、讀回 EVM／功率／頻率誤差等數十個欄位。</p></div>
+  <div class="card"><div class="h">③ 自動存檔與畫圖</div><p>每次執行都產生 CSV、JSON、metadata 與可離線開啟的 HTML 報告。</p></div>
+  <div class="card"><div class="h">④ 自動守安全規則</div><p>開啟射頻（RF）前強制檢查接線與人員在場，結束一定關閉射頻。</p></div>
+</div>
+
+<div class="box tip">
+  <p class="t">一句話總結</p>
+  <p>這是一個<strong>跑在你自己電腦上的網頁工具</strong>：打開瀏覽器、填幾個欄位、按執行，它就會幫你操作 CMP180 儀器（或用模擬資料示範），並把結果存成可稽核的檔案。</p>
+</div>
+
+<h2 id="ch0-2">0.2　白話名詞速查（先看這張表就好）</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:150px">你會看到的字</th><th>白話解釋</th></tr></thead>
+<tbody>
+<tr><td><strong>CMP180</strong></td><td>德國 Rohde &amp; Schwarz（羅德史瓦茲）出的無線通訊測試儀。本專案操作的就是它。</td></tr>
+<tr><td><strong>DUT</strong></td><td>Device Under Test，被測物。就是你要測的那台裝置。</td></tr>
+<tr><td><strong>EVM</strong></td><td>訊號「準不準」的分數。單位是 dB，<strong>數字越負代表越好</strong>（−36 dB 比 −28 dB 好）。</td></tr>
+<tr><td><strong>RF</strong></td><td>Radio Frequency，射頻，也就是真正發射出去的無線電能量。開啟 RF 才是「真的在發訊號」。</td></tr>
+<tr><td><strong>SCPI</strong></td><td>跟儀器溝通用的文字指令語言，例如 <code>*IDN?</code> 就是問「你是誰」。</td></tr>
+<tr><td><strong>Mock／示範／Demo</strong></td><td>模擬資料。完全不碰儀器、不發射訊號，用來練習操作與教學。</td></tr>
+<tr><td><strong>HIL</strong></td><td>Hardware-In-the-Loop，接上真實儀器實際跑過並留下證據。</td></tr>
+<tr><td><strong>Loopback</strong></td><td>自打自收：儀器自己發訊號、用一條線接回自己接收，驗證儀器與軟體流程。</td></tr>
+<tr><td><strong>Sweep／掃描</strong></td><td>一次量很多點。頻率掃描＝換不同頻率各量一次；功率掃描＝換不同功率各量一次。</td></tr>
+<tr><td><strong>Artifact</strong></td><td>「產出物」。每次執行留下的 CSV／JSON／報告等檔案。</td></tr>
+<tr><td><strong>VALID / INVALID</strong></td><td>這個測點的數字有沒有效。INVALID 代表不可用，<strong>不能當成 0</strong>。</td></tr>
+<tr><td><strong>PASS / FAIL</strong></td><td>是否通過門檻。注意：本系統目前多數情境只標示 <code>MEASURED</code>，不宣稱產品合規。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch0-3">0.3　你屬於哪一種使用者？</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:160px">身分</th><th>你需要讀的章節</th><th>你會做的事</th></tr></thead>
+<tbody>
+<tr><td><strong>純觀摩／教學</strong><br>不碰儀器</td><td>CH 1–5、CH 6、CH 7</td><td>安裝後用 <code>--demo-only</code> 啟動，操作示範分頁，看圖表與報告。<strong>完全不會發射訊號。</strong></td></tr>
+<tr><td><strong>量測操作員</strong><br>要接真儀器</td><td>全部，特別是 <strong>CH 8</strong></td><td>接線、確認安全、執行實機量測、保存證據。</td></tr>
+<tr><td><strong>開發者</strong></td><td>CH 9、附錄，再讀專案內 <code>SPEC.MD</code> 與 <code>docs/</code></td><td>改程式、寫測試、擴充功能。</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box danger">
+  <p class="t">最重要的一條安全原則</p>
+  <p>只要你沒有站在 CMP180 旁邊、沒有親眼確認接線，就<strong>永遠使用 <code>--demo-only</code> 示範模式</strong>。示範模式不會連線儀器、不會送出任何指令、不會開啟射頻。</p>
+</div>
+
+
+<!-- ============ CH 1 ============ -->
+<h1 class="sec" id="ch1"><span class="num">CH 1</span>安裝前的準備</h1>
+
+<p class="lead">安裝只做一次。整個過程大約 10–20 分鐘，取決於你的網路速度。</p>
+
+<h2 id="ch1-1">1.1　電腦需求</h2>
+
+<div class="kv">
+  <div>作業系統</div><div>Windows 10 / 11（本手冊所有指令以 Windows PowerShell 為準）</div>
+  <div>Python 版本</div><div><strong>3.11 或更新</strong>。這是硬性需求，3.10 以下無法安裝。</div>
+  <div>硬碟空間</div><div>約 2 GB（含 Python 套件與量測產出）</div>
+  <div>瀏覽器</div><div>Chrome、Edge 或 Firefox 任一（用來開啟操作介面）</div>
+  <div>網路</div><div>安裝時需要網際網路。<strong>實機量測時</strong>需要能連到 CMP180 所在的網段。</div>
+  <div>儀器（選用）</div><div>R&amp;S CMP180 一台、50 Ω 同軸線一條。沒有也能跑示範模式。</div>
+</div>
+
+<h2 id="ch1-2">1.2　要先下載的三樣東西</h2>
+
+<h3>① Python 3.11（必要）</h3>
+<ol class="steps">
+  <li><span class="st">前往官方網站</span>開啟 <code>https://www.python.org/downloads/windows/</code>，找到 <strong>Python 3.11.x</strong> 的 Windows installer (64-bit)。</li>
+  <li><span class="st">執行安裝檔</span>安裝畫面最下方有一個核取方塊 <strong>「Add python.exe to PATH」</strong>，<strong>一定要勾</strong>。沒勾的話之後打指令會找不到 Python。</li>
+  <li><span class="st">按 Install Now</span>等它跑完，看到 <em>Setup was successful</em> 就完成。</li>
+  <li><span class="st">驗證</span>按 <kbd>Win</kbd> + <kbd>X</kbd> 選「終端機」或「Windows PowerShell」，輸入：
+    <pre><code>py -3.11 -V</code></pre>
+    看到 <code>Python 3.11.x</code> 就成功。
+  </li>
+</ol>
+
+<div class="box warn">
+  <p class="t">如果看到「Python 3.11 not found」</p>
+  <p>代表沒裝到 3.11，或安裝時沒勾 PATH。請重新執行安裝檔，選擇 <em>Modify</em> 並確認勾選 PATH，或直接重裝一次。</p>
+</div>
+
+<h3>② Git（建議）</h3>
+<p>用來下載專案原始碼。前往 <code>https://git-scm.com/download/win</code> 下載並一路按「下一步」安裝即可，所有預設值都可以接受。</p>
+<p>驗證方式：</p>
+<pre><code>git --version</code></pre>
+
+<div class="box tip">
+  <p class="t">不想裝 Git 也可以</p>
+  <p>若專案是以壓縮檔（.zip）給你的，直接解壓縮到一個<strong>路徑不含中文與空白</strong>的資料夾即可，例如 <code>C:\work\CMP180-Automation</code>。跳過下一章的 clone 步驟。</p>
+</div>
+
+<h3>③ 專案原始碼</h3>
+<p>公開儲存庫位置：</p>
+<pre><code>https://github.com/DreamerForJay/CMP180-Automation.git</code></pre>
+
+
+<!-- ============ CH 2 ============ -->
+<h1 class="sec" id="ch2"><span class="num">CH 2</span>安裝步驟（逐步照做）</h1>
+
+<div class="box note">
+  <p class="t">怎麼打指令？</p>
+  <p>按 <kbd>Win</kbd> + <kbd>X</kbd> → 選「終端機 (Terminal)」或「Windows PowerShell」。看到一行結尾是 <code>&gt;</code> 的提示字元後，<strong>把下面框框裡的指令整行複製貼上，再按 <kbd>Enter</kbd></strong>。<br>
+  框框裡如果出現行尾的 <code>`</code>（反引號），那是 PowerShell 的「換行接續」符號，整段一起複製即可。</p>
+</div>
+
+<h2 id="ch2-1">2.1　取得專案並進入資料夾</h2>
+
+<pre><code>git clone https://github.com/DreamerForJay/CMP180-Automation.git
+Set-Location CMP180-Automation</code></pre>
+
+<p><code>Set-Location</code> 就是「切換目前所在資料夾」的意思（等同其他系統的 <code>cd</code>）。之後所有指令<strong>都要在這個資料夾裡執行</strong>。</p>
+
+<p>確認自己在正確位置：</p>
+<pre><code>Get-Location</code></pre>
+<p>輸出結尾應該是 <code>...\CMP180-Automation</code>。</p>
+
+<h2 id="ch2-2">2.2　建立虛擬環境（venv）</h2>
+
+<p><strong>虛擬環境是什麼？</strong>想像它是一個獨立的小房間，這個專案需要的套件都裝在這個房間裡，不會弄亂你電腦上其他 Python 程式。這是標準做法，請不要跳過。</p>
+
+<pre><code>py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1</code></pre>
+
+<p>成功的話，提示字元前面會多出 <code>(.venv)</code> 字樣，像這樣：</p>
+<pre><code><span class="cmt">(.venv) PS C:\work\CMP180-Automation&gt;</span></code></pre>
+
+<div class="box warn">
+  <p class="t">如果出現「因為這個系統上已停用指令碼執行」</p>
+  <p>這是 Windows 的安全設定。在同一個視窗執行下面這行後再試一次啟用：</p>
+  <pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code></pre>
+  <p><code>-Scope Process</code> 代表<strong>只對目前這個視窗生效</strong>，關掉視窗就恢復原狀，不會改到系統全域設定。</p>
+</div>
+
+<h2 id="ch2-3">2.3　安裝套件</h2>
+
+<p><strong>一般使用者 / 示範模式</strong>（不接儀器）：</p>
+<pre><code>python -m pip install -e ".[dev]"</code></pre>
+
+<p><strong>要接真實 CMP180 儀器</strong>時，額外需要儀器通訊套件：</p>
+<pre><code>python -m pip install -e ".[dev,hardware]"</code></pre>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:130px">安裝選項</th><th>裝了什麼</th><th>什麼時候需要</th></tr></thead>
+<tbody>
+<tr><td><code>（基本）</code></td><td>matplotlib、pandas、pyyaml、pydantic</td><td>一定會裝，負責畫圖、資料處理、設定檔驗證</td></tr>
+<tr><td><code>[dev]</code></td><td>pytest、pytest-cov、ruff、mypy</td><td>執行測試與程式碼檢查；建議一般使用者也裝</td></tr>
+<tr><td><code>[hardware]</code></td><td>RsInstrument</td><td><strong>只有要連真儀器時</strong>才需要</td></tr>
+<tr><td><code>[build]</code></td><td>pyinstaller</td><td>要把程式打包成 .exe 時才需要</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>這一步會下載數百 MB 的套件，請耐心等待。看到最後出現 <code>Successfully installed ...</code> 就完成了。</p>
+
+<h2 id="ch2-4">2.4　確認安裝成功（三個檢查）</h2>
+
+<ol class="steps">
+  <li><span class="st">檢查設定檔能被讀懂</span>
+    <pre><code>python -m cmp180_evm validate-config configs\instrument.example.yaml
+python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</code></pre>
+    看到 <code>OK (instrument)</code> 與 <code>OK (wlan_baseline)</code> 代表通過。
+  </li>
+  <li><span class="st">執行自動測試</span>
+    <pre><code>python -m pytest -m "not hardware"</code></pre>
+    <code>-m "not hardware"</code> 代表「跳過需要真儀器的測試」。看到一整排綠色的 <code>passed</code> 就成功。
+  </li>
+  <li><span class="st">啟動介面</span>
+    <pre><code>python -m cmp180_evm.web --demo-only</code></pre>
+    畫面出現網址後，用瀏覽器開啟 <code>http://127.0.0.1:8765</code>。
+  </li>
+</ol>
+
+<div class="box ok">
+  <p class="t">到這裡就裝好了</p>
+  <p>之後每次要使用，只需要三步：① 開終端機 → ② <code>Set-Location</code> 到專案資料夾 → ③ 啟用 <code>.venv</code> 後啟動網頁。不必再重裝。</p>
+</div>
+
+
+<!-- ============ CH 3 ============ -->
+<h1 class="sec" id="ch3"><span class="num">CH 3</span>五分鐘上手（示範模式）</h1>
+
+<p class="lead">這一章帶你完整跑一次流程。全程<strong>不會連線儀器、不會發射任何訊號</strong>，放心操作，按錯也不會有任何後果。</p>
+
+<h2>3.1　啟動</h2>
+
+<pre><code><span class="cmt"># 1. 進入專案資料夾（路徑換成你自己的）</span>
+Set-Location C:\work\CMP180-Automation
+
+<span class="cmt"># 2. 啟用虛擬環境</span>
+.\.venv\Scripts\Activate.ps1
+
+<span class="cmt"># 3. 以純示範模式啟動網頁介面</span>
+python -m cmp180_evm.web --demo-only</code></pre>
+
+<p>終端機會顯示類似：</p>
+<pre><code>CMP180 Web GUI: http://127.0.0.1:8765
+Mode: MOCK only; real-hardware controls are locked.</code></pre>
+
+<div class="box tip">
+  <p class="t">看懂這兩行</p>
+  <ul>
+    <li><code>http://127.0.0.1:8765</code> —— <code>127.0.0.1</code> 是「你自己這台電腦」，代表這個網頁<strong>只有你看得到</strong>，不會被別人連進來。</li>
+    <li><code>MOCK only; real-hardware controls are locked</code> —— 實機功能已鎖定，這一輪絕對不會碰儀器。</li>
+  </ul>
+</div>
+
+<p><strong>把這個終端機視窗留著不要關。</strong>它就是伺服器本體，關掉網頁就打不開了。要結束服務時，在這個視窗按 <kbd>Ctrl</kbd> + <kbd>C</kbd>。</p>
+
+<h2>3.2　第一次操作流程</h2>
+
+<ol class="steps">
+  <li><span class="st">打開瀏覽器</span>輸入 <code>http://127.0.0.1:8765</code>。首頁會顯示 CMP180 的外觀渲染圖與系統架構說明。</li>
+  <li><span class="st">（可選）玩一下 3D 檢視</span>按「啟用 360° 檢視」，可以拖曳旋轉、滾輪縮放，下方有正面／背面／側面／重設／自動旋轉／全螢幕。<strong>這只是外觀展示，不會連線儀器。</strong></li>
+  <li><span class="st">切換主題與語言</span>右上角可切換亮／暗主題（預設暗色，選擇會記在瀏覽器裡）與中文／EN。切換語言<strong>不會</strong>重新送出量測。</li>
+  <li><span class="st">進入「量測」頁 → 選「示範單點」</span>保留預設值：頻率 <strong>6105 MHz</strong>、頻寬 <strong>320 MHz</strong>、功率 <strong>−40 dBm</strong>，按<strong>「執行 Mock 單點」</strong>。</li>
+  <li><span class="st">看結果</span>畫面會切到「結果與圖表」，並標示 <span class="tag part">示範資料 / DEMO DATA</span>。你會看到 EVM、Burst Power、Frequency Error 三個主要數字。</li>
+  <li><span class="st">跑一次掃描</span>切到「示範頻掃」，輸入起始 <strong>5925</strong>、結束 <strong>6125</strong>、步進 <strong>20</strong>（MHz），執行。應該產生 <strong>11 個資料點</strong>與一張曲線圖。</li>
+  <li><span class="st">試試取消</span>掃描進行中按「停止」。系統會在目前這一點完成後安全停止，並<strong>保留已完成的部分結果</strong>（partial result），不會整批丟掉。</li>
+  <li><span class="st">下載產出</span>結果頁下方有 CSV、JSON、Metadata、HTML Report 按鈕，點下去就能開啟。</li>
+  <li><span class="st">回頭查紀錄</span>進入「量測紀錄」頁，按「重新整理」，剛剛跑的每一次都會列在這裡，可依時間排序、開啟檔案，也可勾選 2–8 筆做比較。</li>
+</ol>
+
+<div class="box note">
+  <p class="t">示範資料要怎麼認？</p>
+  <p>畫面上會標 <strong>示範資料 / DEMO DATA</strong>，而且存檔的 metadata 裡 <code>simulated=true</code>。<strong>這些數字不能當成任何儀器或產品的實測結果。</strong></p>
+</div>
+
+
+<!-- ============ CH 4 ============ -->
+<h1 class="sec" id="ch4"><span class="num">CH 4</span>介面導覽</h1>
+
+<p class="lead">主導覽列只有六個頁面，每頁只做一件事。先認得這六個字，就不會迷路。</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:120px">頁面</th><th>用途</th><th style="width:150px">會不會碰儀器</th></tr></thead>
+<tbody>
+<tr><td><strong>首頁</strong></td><td>系統簡介、CMP180 外觀與 360° 檢視、互動式 RF 系統架構圖</td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><strong>量測</strong></td><td>所有量測入口。以「實機量測／示範訓練」切換資料來源</td><td><span class="tag wait">看你選哪一邊</span></td></tr>
+<tr><td><strong>校正</strong></td><td>Path Loss 校正 SOP：建立草稿、套用正式校正 Profile</td><td><span class="tag wait">視操作而定</span></td></tr>
+<tr><td><strong>結果</strong></td><td>最近一次執行的表格、圖表、匯出</td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><strong>紀錄</strong></td><td>唯讀掃描本機 <code>output/</code>，列出所有歷史執行</td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><strong>說明</strong></td><td>可直接複製的 PowerShell 指令清單</td><td><span class="tag ok">不會</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>4.1　右上角的狀態指示</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:150px">你看到</th><th>意思</th><th>你該做什麼</th></tr></thead>
+<tbody>
+<tr><td><span class="tag no">LOCKED</span></td><td>這次伺服器是以 <code>--demo-only</code> 啟動，實機控制已停用</td><td>正常。想用實機請重新啟動時<strong>不要</strong>加 <code>--demo-only</code></td></tr>
+<tr><td><span class="tag ok">ARMED</span></td><td>實機控制可用（只有綁定本機 loopback 位址時才可能出現）</td><td>代表下一步真的會送 RF，務必先讀 CH 8</td></tr>
+<tr><td><strong>實機模式</strong></td><td>目前伺服器允許連線 CMP180</td><td>確認你人在儀器旁</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+  <p class="t">看到 LOCKED 不代表功能沒做好</p>
+  <p><code>LOCKED</code> 只是說「這一輪啟動選擇了示範模式」。實機 SingleShot 與固定掃描其實都已完成實機驗證。</p>
+</div>
+
+<h2>4.2　圖表怎麼操作</h2>
+
+<ul>
+  <li><strong>滑鼠滾輪</strong>：只會縮放 X 軸（橫軸），Y 軸不會亂跑。</li>
+  <li><strong>拖曳</strong>：只能水平平移，而且會被限制在資料範圍內，不會把圖拖到外太空。</li>
+  <li><strong>靠近測點</strong>：出現十字游標與完整數值（EVM、功率、頻率誤差、VALID／INVALID）。</li>
+  <li><strong>Reset</strong>：一鍵回到原始視野。</li>
+  <li><strong>A/B 游標</strong>：可以放兩個標記比較兩個測點。</li>
+</ul>
+
+<div class="box note">
+  <p class="t">重要觀念</p>
+  <p>圖表的縮放、平移、Reset <strong>只改變你在瀏覽器看到的畫面</strong>，不會修改原始結果，也不會重新量測或送出任何指令。</p>
+</div>
+
+
+<!-- ============ CH 5 ============ -->
+<h1 class="sec" id="ch5"><span class="num">CH 5</span>功能逐項說明</h1>
+
+<p class="lead">量測頁下面有多個分頁。前面幾個是「示範」，永遠安全；後面幾個會碰真儀器。這一章逐一說明每個分頁在做什麼、欄位怎麼填、結果怎麼看。</p>
+
+<div class="box tip">
+  <p class="t">先記住這個分界</p>
+  <p><strong>名稱有「示範 / Demo / Mock」的分頁，永遠不會送出 SCPI、不會開啟 RF。</strong>它們是給教學、UI 驗證、持續整合測試，以及沒有儀器時的開發使用。</p>
+</div>
+
+<h2 id="ch5-1">5.1　示範單點量測</h2>
+
+<p><strong>在做什麼：</strong>模擬「在單一頻率量一次」的完整流程。</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:170px">欄位</th><th>意思</th><th style="width:130px">建議值</th></tr></thead>
+<tbody>
+<tr><td>Frequency（頻率）</td><td>要量測的中心頻率</td><td>6105 MHz</td></tr>
+<tr><td>Bandwidth（頻寬）</td><td>訊號佔用的頻寬</td><td>320 MHz</td></tr>
+<tr><td>Power（功率）</td><td>訊號的功率大小，dBm 越小越弱</td><td>−40 dBm</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>結果：</strong>EVM、Burst Power、Frequency Error 三個主要數字，以及 VALID 狀態，並產生一個 run 資料夾。</p>
+
+<h2 id="ch5-2">5.2　示範頻率掃描</h2>
+
+<p><strong>在做什麼：</strong>固定功率，從起始頻率一路量到結束頻率。用來看「這個裝置在不同頻道上表現一不一致」。</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:170px">欄位</th><th>意思</th></tr></thead>
+<tbody>
+<tr><td>Start（起始頻率）</td><td>從哪裡開始，例如 5925 MHz</td></tr>
+<tr><td>Stop（結束頻率）</td><td>量到哪裡，例如 6125 MHz</td></tr>
+<tr><td>Step（步進）</td><td>每次跳多少，例如 20 MHz</td></tr>
+<tr><td>Dwell（停留）</td><td>每一點停留多久再讀值</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box note">
+  <p class="t">測點數怎麼算</p>
+  <p><code>(Stop − Start) ÷ Step + 1</code>。例如 (6125 − 5925) ÷ 20 + 1 = <strong>11 點</strong>。步進設太小會產生非常多點，執行時間會拉很長。</p>
+</div>
+
+<p><strong>執行控制：</strong>掃描使用非同步工作（Job）機制，狀態會依序經過 <code>queued → running → complete</code>，中途可 <code>stopping</code>／<code>cancelled</code>，錯誤則為 <code>failed</code>。同一時間只允許一個進行中的工作。</p>
+
+<h2 id="ch5-3">5.3　示範功率掃描</h2>
+
+<p><strong>在做什麼：</strong>固定頻率，改變輸出功率，看 EVM 如何隨功率變化（Power vs EVM）。這是判斷功率放大器線性度的典型測試。</p>
+<p>填寫固定頻率、起始功率、結束功率、步進（例如 −60 到 −40 dBm、每 5 dBm 一點 → 5 個點）。執行後圖表的 X 軸會自動從「頻率」切換成「dBm」。</p>
+
+<h2 id="ch5-4">5.4　進階 PA 指標示範</h2>
+<p>離線分析用的進階功率放大器指標展示。</p>
+<div class="box warn">
+  <p class="t">邊界說明</p>
+  <p>此頁的進階指標目前多數標示為 <code>SIMULATED</code> 或 <code>DERIVED</code>（模擬或推導），<strong>不能當作 DUT 的實測性能</strong>。</p>
+</div>
+
+<h2 id="ch5-5">5.5　Constellation 星座圖</h2>
+
+<p><strong>在做什麼：</strong>把調變訊號畫成平面上的一堆點。點越集中在理想位置，訊號品質越好；點散開成一團雲，代表雜訊或失真嚴重。</p>
+
+<h3>支援的調變方式</h3>
+<p>BPSK、QPSK、16-QAM、64-QAM、256-QAM、1024-QAM、4096-QAM，皆以單位平均功率的理想點呈現。</p>
+
+<h3>可以調整的損傷參數</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:190px">參數</th><th>白話意思</th></tr></thead>
+<tbody>
+<tr><td>AWGN</td><td>加入隨機雜訊，點會散開</td></tr>
+<tr><td>Phase error</td><td>相位誤差，整團點會旋轉</td></tr>
+<tr><td>Quadrature error</td><td>I／Q 兩軸不垂直，圖形被斜切</td></tr>
+<tr><td>Gain imbalance</td><td>I／Q 兩軸增益不同，圖形被壓扁</td></tr>
+<tr><td>DC offset</td><td>整團點偏離原點</td></tr>
+<tr><td>Frequency offset</td><td>頻率偏差，點會繞圈</td></tr>
+<tr><td>Amplitude scale</td><td>整體縮放</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>圖表與輸出</h3>
+<ul>
+  <li>Raw I/Q 與 normalized I/Q 可切換；無效值保留為 <code>null</code> / <code>valid=false</code>，<strong>不會被偷偷改成 0</strong>。</li>
+  <li>散點圖、理想參考點、等比例座標軸、縮放、平移、Reset、hover、離群點標示。</li>
+  <li>指標：RMS／Peak EVM、I/Q mean、I/Q RMS、gain imbalance、estimated phase error，來源一律標記 <code>SIMULATED · DERIVED</code>。</li>
+  <li>匯出：<code>constellation.csv</code>、<code>.json</code>、<code>.svg</code>、<code>.png</code>、<code>constellation_metadata.json</code>。</li>
+</ul>
+
+<div class="box danger">
+  <p class="t">目前狀態：HIL PENDING</p>
+  <p>Constellation 的硬體 adapter 目前<strong>只定義介面</strong>，<code>acquire()</code> 會明確拒絕執行。原因是專案內尚無已驗證的 CMP180 星座圖擷取指令與回傳格式，<strong>因此不放任何猜測的指令進系統</strong>。這個工作區完全是硬體無關的合成資料。</p>
+</div>
+
+<h2 id="ch5-6">5.6　MCS Sweep</h2>
+
+<p><strong>在做什麼：</strong>MCS（Modulation and Coding Scheme）是 Wi-Fi 的「檔位」，數字越大代表用越複雜的調變傳越快，但也越難維持品質。此頁掃描 EHT MCS 0–13 的表現。</p>
+
+<ul>
+  <li>可輸入<strong>逗號分隔、不連續、保留順序</strong>的清單，例如 <code>0,3,5,7,9,11</code>。</li>
+  <li>輸出 modulation、coding rate、EVM、power、frequency error、reliability、validity。</li>
+  <li>圖表可切換 <em>EVM vs MCS</em> 與 <em>Power vs MCS</em>。</li>
+  <li>匯出 <code>mcs_sweep.csv</code>、<code>.json</code>、SVG、PNG 與 metadata。</li>
+</ul>
+
+<div class="box danger">
+  <p class="t">目前狀態：HIL PENDING</p>
+  <p>Mock 結果固定標記 <code>source=mock</code>、<code>simulated=true</code>、<code>hil_status=HIL_PENDING</code>，<strong>而且沒有正式的合規門檻</strong>。<code>CMP180MCSSweepSource.acquire()</code> 同樣會拒絕執行，直到 waveform／MCS 對應關係有官方文件或實機證據為止。</p>
+</div>
+
+<h2 id="ch5-7">5.7　實機量測（Hardware）</h2>
+
+<div class="box danger">
+  <p class="t">操作這一頁之前</p>
+  <p>請先完整讀過 <a href="#ch8"><strong>CH 8 · 實機操作與 RF 安全</strong></a>。這一頁會真的輸出射頻能量。</p>
+</div>
+
+<p>實機頁採用固定的四步 SOP 排版，<strong>不能跳步</strong>：</p>
+
+<ol class="steps">
+  <li><span class="st">STEP 1 — 選擇工作與參數</span>四選一：<strong>SingleShot</strong>、<strong>WLAN 頻率掃描</strong>、<strong>WLAN 功率掃描</strong>、<strong>GPRF 功率掃描</strong>。頻率的 Start／Stop／Step／Center 各自有緊鄰的 <strong>MHz／GHz</strong> 單位選單，切換時會先換算為 Hz 再顯示等值數字。</li>
+  <li><span class="st">STEP 2 — 確認接線與人員</span>目視確認 <strong>RF1.1 Generator output → RF1.5 Analyzer input</strong> 的同軸線，在確認欄輸入<strong>完全一致</strong>的 <code>RF1.1-RF1.5</code>，並勾選「我人在 CMP180 旁並能觀察儀器」。</li>
+  <li><span class="st">STEP 3 — 檢視計畫 Review</span>系統會先呼叫 preview API 產生實際點位、fingerprint 與 RF workflow 檢查結果。<strong>如果目前 workflow 不接受這組參數，畫面會直接顯示拒絕原因，按鈕停在規劃狀態，不會送出 RF。</strong></li>
+  <li><span class="st">STEP 4 — 送出實機量測</span>再次確認後才真正執行。掃描會使用<strong>你畫面上的設定</strong>，不會偷偷改跑固定 profile。</li>
+</ol>
+
+<h3>執行中的控制</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:110px">動作</th><th>行為</th></tr></thead>
+<tbody>
+<tr><td><strong>Pause</strong></td><td>只在<strong>目前這一點完成 STOP 與 RF Off 之後</strong>才生效。SingleShot 不支援中途 Pause。</td></tr>
+<tr><td><strong>Resume</strong></td><td>從下一點繼續。</td></tr>
+<tr><td><strong>Stop</strong></td><td>協作式取消，保留已完成的部分結果（partial artifacts）。</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>每完成一點並完成 cleanup／RF Off 後，API 才發布該點快照，頁面同步更新進度、最新 EVM 與即時趨勢 —— <strong>畫圖不會額外送出任何 SCPI</strong>。</p>
+
+<h2 id="ch5-8">5.8　GPRF 能力掃描</h2>
+
+<p><strong>在做什麼：</strong>用 CMP180 的通用射頻（General Purpose RF）產生器與量測功能，展示儀器本身的「調頻能力」與「功率量測能力」。可在 400 MHz–8 GHz 規劃頻率掃描，或在固定頻率下規劃功率掃描。</p>
+
+<div class="box warn">
+  <p class="t">結果代表什麼、不代表什麼</p>
+  <p>GPRF 的欄位是 <code>measured_power_dbm</code> 與 <code>reliability</code>，<strong>不是 WLAN EVM，也不是 OFDM 解調結果，更不得作為任何合規宣稱</strong>。它回答的是「儀器本身準不準」，不是「產品好不好」。</p>
+</div>
+
+<h3>怎麼讀圖</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:170px">掃描軸</th><th>圖表標題</th><th>Expected Power 參考線</th><th>適合判讀</th></tr></thead>
+<tbody>
+<tr><td>Frequency 軸</td><td>GPRF Frequency Sweep – Power Flatness</td><td>固定功率的<strong>水平線</strong></td><td>功率平坦度</td></tr>
+<tr><td>Power 軸</td><td>GPRF Power Sweep – Linearity</td><td><code>Expected = Generator Power</code> 的<strong>對角線</strong></td><td>線性度</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>實測功率以高對比藍色曲線顯示，Expected Power 以橘色虛線標出。<code>Power Error (dB) = measured − expected</code>；切到該指標時，<strong>0 dB 參考線代表完全貼齊設定功率</strong>。</p>
+
+<p>Summary 直接顯示：Average Power、Expected Power、Mean Error、Max |Error|、Peak-to-Peak Ripple、Std Dev 與 Valid 點數。</p>
+
+<div class="box note">
+  <p class="t">安全行為</p>
+  <p>若任一點出現 SCPI 錯誤、reliability 非 0，或觸及頻譜分析儀安全上限，系統會在<strong>該點 STOP／RF Off 後停止後續掃描</strong>，並保存已完成的部分結果。</p>
+</div>
+
+<h2 id="ch5-9">5.9　Loopback RF 效能驗證</h2>
+<p>以獨立重複量測（repeats）檢查<strong>穩定性與合理性</strong>，並標示離群值（outlier），產出對應 artifacts。用來確認整條量測鏈路（儀器＋線材＋軟體）是否穩定，而不是評估產品。</p>
+
+<h2 id="ch5-10">5.10　HIL 批次執行器</h2>
+
+<p><strong>在做什麼：</strong>把多個待驗證的實機案例排成一張矩陣，依重要度逐一執行，並把進度存檔。</p>
+
+<ol class="steps">
+  <li><span class="st">以實機模式啟動 Web，開啟「HIL 批次」</span></li>
+  <li><span class="st">按「準備／重新檢查矩陣」</span>這一步<strong>只執行設定與既有 profile 檢查，不會送 RF</strong>。</li>
+  <li><span class="st">看排序</span>P0 黃金點最優先 → P1 已核准的 11 個 WLAN EVM section → P2 功率邊界 → P3／HOLD 為尚未核准的項目。同一重要度內採 2.4G → 5G → 6G、頻寬由小到大。</li>
+  <li><span class="st">讀狀態</span><span class="tag ok">READY</span> 代表現有 workflow 可執行；<span class="tag no">BLOCKED</span> 會明確顯示缺少什麼（band setter、waveform、route profile 或專用後端），<strong>不會改跑其他案例來充數</strong>。</li>
+  <li><span class="st">確認接線後執行</span>按單列 <code>Run</code> 或「執行下一個 READY」。</li>
+  <li><span class="st">進度會存檔</span>成功、失敗與 artifact 路徑保存在 <code>output/hil-campaign/state.json</code>。關閉瀏覽器不會清除進度。</li>
+</ol>
+
+<div class="box note">
+  <p class="t">INTERRUPTED 是什麼</p>
+  <p>如果 Web 伺服器在執行中被重啟，該列會轉為 <code>INTERRUPTED</code>，必須重新 Prepare 才能再跑。這是刻意設計，避免把已經消失的背景執行緒誤標成「執行中」。</p>
+</div>
+
+<h2 id="ch5-11">5.11　Path Loss 校正</h2>
+
+<p><strong>為什麼需要校正：</strong>訊號從儀器出來、經過線材與接頭，到達接收端時已經衰減了一些。校正就是量出「路上掉了多少 dB」，之後把它補回去，結果才代表真正的參考面功率。</p>
+
+<p>校正頁有 7 個欄位，每個欄位名稱都可以直接點擊聚焦，右上角的 <code>?</code> 按鈕提供說明。支援先建立<strong>草稿</strong>、檢視後再<strong>正式套用</strong>。</p>
+
+<div class="box warn">
+  <p class="t">目前重要限制</p>
+  <p>Power Reference Plane 尚未套用正式的 Path Loss／Calibration Profile，metadata 會標示 <code>calibration_applied=false</code>。<strong>因此目前不能把設定值（例如 −45 dBm）解讀成「已補償後的正式參考面功率」。</strong></p>
+</div>
+
+<h2 id="ch5-12">5.12　結果與量測紀錄</h2>
+
+<h3>結果頁</h3>
+<p>顯示最近一次執行的表格與圖表，並明確區分四種狀態：<strong>無資料</strong>、<strong>完整</strong>、<strong>部分／取消</strong>、<strong>全部無效</strong>。部分結果會同時列出有效與無效／未完成的點數。</p>
+
+<div class="box tip">
+  <p class="t">系統會主動提醒你的一句話</p>
+  <p><strong>「完成不等於規格通過」。</strong>量測順利跑完，只代表流程健康；數字是否符合產品規格，是另一件事。</p>
+</div>
+
+<p>匯出：SVG、Web PNG 與 CSV。<strong>當圖表沒有任何測點時，匯出按鈕會停用並顯示「目前沒有可匯出的測點」</strong>，避免產出看起來很正式、其實空白的報告。</p>
+
+<h3>量測紀錄頁</h3>
+<ul>
+  <li>唯讀掃描本機 <code>output/</code> 中有效的 metadata，依時間由新到舊排列。</li>
+  <li>顯示來源（實機／示範）、狀態、完成點數與 Run ID。</li>
+  <li>可直接開啟 HTML、CSV、JSON 與 Metadata。</li>
+  <li>勾選 <strong>1 筆</strong> → 查看該筆圖表（可切換指標、縮放、A/B 游標、匯出）；勾選 <strong>2–8 筆</strong> → 比較模式。</li>
+  <li>唯讀請求逾時為 <strong>15 秒</strong>；更新失敗時會保留上次資料並提示重新整理。</li>
+</ul>
+
+<div class="box note">
+  <p class="t">隱私設計</p>
+  <p>介面<strong>只顯示相對路徑</strong>（例如 <code>output/20260820T110057Z_real-frequency-sweep_afb64617df/</code>），不顯示絕對路徑，避免洩漏使用者名稱或公司目錄結構。API 也不回傳絕對路徑或原始 SCPI 內容。</p>
+</div>
+
+
+<!-- ============ CH 6 ============ -->
+<h1 class="sec" id="ch6"><span class="num">CH 6</span>看懂結果</h1>
+
+<p class="lead">跑完量測只是一半，看懂數字才是重點。這一章教你每個欄位代表什麼、方向是越大越好還是越小越好。</p>
+
+<h2>6.1　主要欄位對照表</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:160px">欄位</th><th>意義</th><th style="width:230px">單位／方向</th></tr></thead>
+<tbody>
+<tr><td><strong>EVM All</strong></td><td>所有有效子載波的調變誤差向量幅度 —— 整體訊號品質總分</td><td>dB；<strong>通常越負越好</strong></td></tr>
+<tr><td><strong>EVM Data</strong></td><td>資料子載波的 EVM</td><td>dB；越負越好</td></tr>
+<tr><td><strong>EVM Pilot</strong></td><td>導引子載波的 EVM</td><td>dB；越負越好</td></tr>
+<tr><td><strong>Burst Power</strong></td><td>封包 burst 的平均量測功率</td><td>dBm；應接近預期輸入功率</td></tr>
+<tr><td><strong>Peak Power</strong></td><td>burst 內的峰值功率</td><td>dBm；用於 crest／過載檢查</td></tr>
+<tr><td><strong>Frequency Error</strong></td><td>接收訊號相對分析器中心頻率的偏差</td><td>Hz；<strong>絕對值越小越好</strong></td></tr>
+<tr><td><strong>Clock Error</strong></td><td>OFDM symbol clock 偏差</td><td>ppm；絕對值越小越好</td></tr>
+<tr><td><strong>IQ Offset</strong></td><td>I／Q 直流偏移表現</td><td>dB；依標準與 DUT 規格判讀</td></tr>
+<tr><td><strong>Gain Imbalance</strong></td><td>I 與 Q 通道的增益不平衡</td><td>dB；絕對值越小越好</td></tr>
+<tr><td><strong>Quadrature Error</strong></td><td>I／Q 正交角度誤差</td><td>度；絕對值越小越好</td></tr>
+<tr><td><strong>Reliability</strong></td><td>CMP180 對本次解調／結果的可靠性指標</td><td>必須依儀器內建 Help 定義判讀</td></tr>
+<tr><td><strong>valid</strong></td><td>parser 與儀器結果是否有效</td><td><code>true/false</code>；<strong>無效值絕不可當成 0</strong></td></tr>
+<tr><td><strong>simulated</strong></td><td>是否為模擬資料</td><td>實機結果必須為 <code>false</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>6.2　EVM 的方向千萬別搞反</h2>
+
+<div class="box tip">
+  <p class="t">規則：量測 EVM 必須「小於或等於」門檻才算通過</p>
+  <p>當門檻 <code>maximum_evm_db</code> 設為 <strong>−32 dB</strong> 時：</p>
+  <ul>
+    <li><strong>−36 dB</strong> → <span class="tag ok">通過</span>（比 −32 更負，品質更好）</li>
+    <li><strong>−28 dB</strong> → <span class="tag no">失敗</span>（比 −32 不夠負，品質較差）</li>
+  </ul>
+</div>
+
+<h2>6.3　保存了哪幾種統計值</h2>
+
+<p>CSV／JSON 會保存全部 5 組已驗證的統計查詢，不只平均值：</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:200px">欄位命名</th><th>代表</th></tr></thead>
+<tbody>
+<tr><td><code>evm_all_carriers_db</code>（無前綴）</td><td><strong>平均值</strong>（沿用舊命名以保持向後相容）</td></tr>
+<tr><td><code>current_*</code></td><td>目前值</td></tr>
+<tr><td><code>min_*</code></td><td>最小值</td></tr>
+<tr><td><code>max_*</code></td><td>最大值</td></tr>
+<tr><td><code>stddev_*</code></td><td>標準差</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>對應的原始 SCPI 回應各自存成 <code>raw/modulation_{average,current,minimum,maximum,std_dev}.txt</code>。</p>
+
+<h2>6.4　一次合理的實機結果長什麼樣</h2>
+
+<p>以下是專案內已保存的兩筆實機 loopback 範例（RF1.1 → RF1.5，6105 MHz、320 MHz、−40 dBm）：</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>來源</th><th>EVM All</th><th>Burst Power</th><th>Frequency Error</th><th>最終狀態</th></tr></thead>
+<tbody>
+<tr><td>CLI SingleShot</td><td>−36.23029 dB</td><td>−40.47938 dBm</td><td>−16.30075 Hz</td><td>RF Off / Meas RDY</td></tr>
+<tr><td>Web GUI HIL</td><td>−36.51843 dB</td><td>−40.18850 dBm</td><td>6.986657 Hz</td><td>RF Off / Meas RDY</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box note">
+  <p class="t">怎麼判斷「這次跑得對不對」</p>
+  <p>不是要求數字每次完全相同，而是檢查以下六點：</p>
+  <ol>
+    <li><code>simulated = false</code></li>
+    <li>EVM、功率、頻率誤差是有效數字，不是 <code>INV</code>、<code>NAN</code> 或空白</li>
+    <li>Burst Power 接近設定的 −40 dBm（小幅差異來自量測與路徑，屬正常）</li>
+    <li>流程到達 <code>RDY</code>，儀器錯誤與 cleanup 錯誤都是空的</li>
+    <li>最終 RF 狀態為 <code>OFF</code></li>
+    <li>CSV、JSON、Metadata、Raw SCPI 與 HTML Report 按鈕都能正常開啟</li>
+  </ol>
+</div>
+
+<h2>6.5　PASS 的三種層次（非常重要）</h2>
+
+<div class="box danger">
+  <p class="t">目前的 PASS 不等於產品合規</p>
+  <p>現階段 loopback 結果的 <code>PASS</code> <strong>只代表流程健康或示範用門檻</strong>，不代表 DUT 符合 IEEE 802.11 或公司規格。沒有正式核准 limit profile 的實機結果，只會顯示 <code>MEASURED</code>。</p>
+</div>
+
+<p>要建立真正的 Pass／Fail 門檻，必須同時考慮：</p>
+<ol>
+  <li>IEEE 802.11 對應的標準、PPDU 類型、MCS 與頻寬規範</li>
+  <li>公司產品規格與保護帶（guard band）</li>
+  <li>DUT 的操作模式、通道、功率、鏈路數、溫度與校正條件</li>
+  <li>線材／路徑損耗、外部衰減與量測不確定度</li>
+  <li>測試封包數、統計方式及 worst／average 判定規則</li>
+</ol>
+
+
+<!-- ============ CH 7 ============ -->
+<h1 class="sec" id="ch7"><span class="num">CH 7</span>輸出檔案在哪裡</h1>
+
+<p class="lead">每一次執行都會在專案的 <code>output/</code> 底下建立一個專屬資料夾，永遠不會覆蓋前一次。</p>
+
+<h2>7.1　資料夾命名規則</h2>
+
+<pre><code>output/&lt;時間戳記&gt;_&lt;測試名稱&gt;_&lt;執行編號&gt;/
+├─ metadata.json     <span class="cmt"># 這次執行的完整設定與狀態</span>
+├─ results.csv       <span class="cmt"># 表格資料，可用 Excel 開啟</span>
+├─ results.json      <span class="cmt"># 結構化資料，程式好處理</span>
+└─ report.html       <span class="cmt"># 離線報告，雙擊即可用瀏覽器看</span></code></pre>
+
+<p>實際例子：</p>
+<pre><code>output/20260820T110057Z_real-frequency-sweep_afb64617df/</code></pre>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:190px">組成</th><th>意思</th></tr></thead>
+<tbody>
+<tr><td><code>20260820T110057Z</code></td><td>UTC 時間戳記：2026-08-20 11:00:57（Z＝世界標準時間）</td></tr>
+<tr><td><code>real-frequency-sweep</code></td><td>測試類型。<code>real-</code> 開頭＝實機；示範會有 mock／demo 標示</td></tr>
+<tr><td><code>afb64617df</code></td><td>Run ID，這次執行的唯一編號，用來追溯</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>7.2　各檔案怎麼用</h2>
+
+<div class="cards">
+  <div class="card"><div class="h">results.csv</div><p>直接用 Excel 或 Google 試算表開啟，做自己的統計或圖表。<strong>最常用</strong>。</p></div>
+  <div class="card"><div class="h">report.html</div><p>雙擊用瀏覽器開啟。完全離線、不需要伺服器，可直接寄給同事或主管。</p></div>
+  <div class="card"><div class="h">metadata.json</div><p>記錄頻率、頻寬、功率、狀態、<code>simulated</code>、<code>calibration_applied</code> 等。稽核時看這個。</p></div>
+  <div class="card"><div class="h">results.json</div><p>給程式讀的結構化結果，方便二次分析或串接其他系統。</p></div>
+</div>
+
+<p>實機執行還會額外保存 config snapshot、原始 SCPI 回應（<code>raw/</code>）與 logs。</p>
+
+<div class="box warn">
+  <p class="t">output/ 不要提交進版本控制</p>
+  <p>這個資料夾是本機量測與模擬產出，不當作原始碼管理。長期使用後檔案會累積，請自行定期備份與清理（介面上的「紀錄」頁也提供移除功能）。</p>
+</div>
+
+<h2>7.3　用既有資料重建圖表與報告</h2>
+
+<p>不需要重新量測，就能從既有的 CSV 產生圖，或從既有 run 資料夾重建 HTML 報告：</p>
+<pre><code>python scripts\plot_results.py --help
+python scripts\build_report.py --help</code></pre>
+<p>（<code>--help</code> 會列出該工具目前接受的參數，以實際輸出為準。）</p>
+
+
+<!-- ============ CH 8 ============ -->
+<h1 class="sec" id="ch8"><span class="num">CH 8</span>實機操作與 RF 安全</h1>
+
+<div class="box danger">
+  <p class="t">這一章是強制閱讀，不是建議</p>
+  <p>實機模式會讓儀器真的輸出射頻能量。操作錯誤可能造成儀器輸入端過載損壞，或產生不該存在的無線發射。<strong>沒有把握就不要執行。</strong></p>
+</div>
+
+<h2>8.1　七條不可妥協的安全規則</h2>
+
+<ol>
+  <li><strong>未經明確要求，不得 Reset 儀器或 Workspace。</strong>別人可能正在使用同一台儀器的其他設定。</li>
+  <li><strong>預設只讀（query-only）。</strong><code>FETCh</code> 只讀取已儲存的結果；<code>READ</code> 與 <code>INITiate</code> 會<strong>啟動新的量測</strong>，不可互相替換。</li>
+  <li><strong>開啟 RF 前必須逐項確認：</strong>接線路徑、頻率、頻寬、功率、線材／衰減器、DUT 狀態、分析儀輸入上限。</li>
+  <li><strong>所有 RF 流程結束後必須 Stop／Abort 並 RF Off</strong> —— 不論是成功、錯誤、逾時還是取消。</li>
+  <li><strong>SCPI 指令只能來自 command map 與 typed registry。</strong>未驗證的命令一律保持 <code>null</code> 或 <code>HIL_PENDING</code>，<strong>絕不從其他儀器猜指令</strong>。</li>
+  <li><strong>Mock、合成資料、既有檔案分析與 UI 預覽都不算新的實機驗證。</strong></li>
+  <li><strong>操作員必須在場。</strong>不可遠端或無人執行任何會開啟 RF 的步驟。</li>
+</ol>
+
+<h2>8.2　前置條件檢查</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:200px">檢查項目</th><th>合格條件</th></tr></thead>
+<tbody>
+<tr><td>儀器與軟體</td><td>CMP180 與 CMsquares 已啟動</td></tr>
+<tr><td>網路</td><td>控制電腦位於 <code>192.168.200.0/24</code>，無 IP 衝突</td></tr>
+<tr><td>連線</td><td>CMP180 為 <code>192.168.200.50</code>，TCP <code>5025</code> 可連線</td></tr>
+<tr><td>接線</td><td>RF1.1 以已知 50 Ω 同軸線連接 RF1.5；<strong>若加衰減器必須先記錄</strong></td></tr>
+<tr><td>初始狀態</td><td>錯誤佇列為空，Generator 與 WLAN TX 量測皆為 Off</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>對應的檢查指令（<strong>這些都不會開啟 RF</strong>）：</p>
+
+<pre><code>Test-NetConnection 192.168.200.50 -Port 5025
+
+python -m cmp180_evm validate-config configs\instrument.example.yaml
+
+python -m cmp180_evm test-connection `
+  --instrument-config configs\instrument.example.yaml
+
+python scripts\cmp180_wlan_discover.py</code></pre>
+
+<div class="box warn">
+  <p class="t">只有全部通過才能往下走</p>
+  <p>TCP 連線成功 <strong>且</strong> 儀器身分正確 <strong>且</strong> 錯誤佇列為空 <strong>且</strong> Generator 與 WLAN TX 量測皆 Off。任何一項不符就停下來排查，不要硬闖。</p>
+</div>
+
+<h2>8.3　已驗證的量測設定（參考基準）</h2>
+
+<pre><code>GPRF Generator RF1.1 ──單條 RF cable──&gt; WLAN TX Analyzer RF1.5
+
+Frequency:               6105 MHz
+Waveform bandwidth:      320 MHz
+Generator RMS level:     -40 dBm
+Analyzer expected power: -20 dBm
+External attenuation:    0 dB
+Waveform:                802.11be EHT MU, MCS11, 4xLTF, GI 3.2 us</code></pre>
+
+<div class="box danger">
+  <p class="t">遇到 Input Overdriven 時，絕對不要提高發射功率</p>
+  <p>曾經把 Analyzer 的 Expected Nominal Power 設為 −40 dBm 時出現 <code>Input Overdriven</code>。<strong>正確做法是保持 Generator 在 −40 dBm，把 Analyzer 的 Expected Nominal Power 改成 −20 dBm 以增加量程。</strong>提高 Generator 功率只會讓過載更嚴重，甚至損壞儀器輸入端。</p>
+</div>
+
+<h2>8.4　啟動實機模式</h2>
+
+<pre><code>python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre>
+
+<p>注意這裡<strong>沒有</strong> <code>--demo-only</code>。啟動伺服器本身<strong>不會送出 RF</strong>，仍須在網頁完成接線、操作員與最終摘要確認。</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:150px">參數</th><th>預設值</th><th>說明</th></tr></thead>
+<tbody>
+<tr><td><code>--host</code></td><td><code>127.0.0.1</code></td><td>綁定位址。<strong>目前禁止綁定非 loopback 位址</strong></td></tr>
+<tr><td><code>--port</code></td><td><code>8765</code></td><td>連接埠</td></tr>
+<tr><td><code>--demo-only</code></td><td>（未指定）</td><td>加上就完全停用儀器連線</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>8.5　實機執行的六個步驟</h2>
+
+<ol class="steps">
+  <li><span class="st">目視確認 RF1.1 → RF1.5 的同軸線</span>用眼睛看，不要用猜的。</li>
+  <li><span class="st">在接線選單選擇「RF1.1 → RF1.5（已驗證）」</span>你可以輸入自訂路徑，但<strong>只有已驗證的 <code>RF1.1-RF1.5</code> 能解鎖 RF</strong>。</li>
+  <li><span class="st">勾選「我人在 CMP180 旁並能觀察儀器」</span></li>
+  <li><span class="st">檢視 Review，確認參數無誤後送出</span></li>
+  <li><span class="st">執行期間的禁止事項</span>不要拔除 RF 線、不要關閉 CMP180、不要在 CMsquares 修改同一個 measurement instance。</li>
+  <li><span class="st">完成後確認</span>結果頁顯示 <code>HARDWARE</code> / <code>simulated=false</code>，且最終 RF 狀態為 <strong>Off</strong>。</li>
+</ol>
+
+<h2>8.6　離開前的收尾檢查</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:34px"></th><th>檢查項目</th></tr></thead>
+<tbody>
+<tr><td>☐</td><td>Generator 已 Off（目視確認）</td></tr>
+<tr><td>☐</td><td>量測不在 Run 狀態</td></tr>
+<tr><td>☐</td><td>錯誤佇列已檢查（<code>SYST:ERR?</code> 回 <code>0,"No error"</code>）</td></tr>
+<tr><td>☐</td><td>使用的線材與衰減器已記錄</td></tr>
+<tr><td>☐</td><td>結果 artifacts 已保存</td></tr>
+<tr><td>☐</td><td>相關文件已更新</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>8.7　異常處理速查</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:190px">症狀</th><th>正確處置</th><th>絕對不要做</th></tr></thead>
+<tbody>
+<tr><td><code>Input Overdriven</code></td><td>停止 RF，檢查僅 RF1.1 啟用、RF1.5 為分析器輸入、調整 Expected Nominal Power 增加量程</td><td><strong>提高輸出功率</strong></td></tr>
+<tr><td>結果查詢失敗</td><td>確認量測已完成且為 <code>RDY</code>，檢查 <code>SYST:ERR?</code></td><td>把 <code>FETCh</code> 換成 <code>READ</code></td></tr>
+<tr><td>掃描中出現 <code>INV</code></td><td>系統會 fail-fast 停止並保存部分結果；檢查該點參數是否超出安全包絡</td><td>把該次結果描述為「通過」</td></tr>
+<tr><td>逾時或未知錯誤</td><td>立即停止量測、關閉 Generator，確認 RF Off</td><td>反覆重按 Start</td></tr>
+</tbody>
+</table>
+</div>
+
+
+<!-- ============ CH 9 ============ -->
+<h1 class="sec" id="ch9"><span class="num">CH 9</span>命令列（CLI）參考</h1>
+
+<p class="lead">不想開網頁時，可以直接用指令。所有指令都以 <code>python -m cmp180_evm</code> 開頭。</p>
+
+<h2>9.1　指令總表</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:200px">指令</th><th>用途</th><th style="width:120px">會碰儀器嗎</th></tr></thead>
+<tbody>
+<tr><td><code>validate-config</code></td><td>驗證設定檔（instrument 或 WLAN baseline）</td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><code>validate-calibration</code></td><td>驗證 path-loss 校正 profile</td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><code>validate-limits</code></td><td>驗證 EVM 判定門檻 profile</td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><code>validate-pa-sweep</code></td><td>驗證已核准的 PA 功率掃描 profile</td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><code>dry-run</code></td><td>列出預計執行的步驟，<strong>不送出任何 SCPI 寫入</strong></td><td><span class="tag ok">不會</span></td></tr>
+<tr><td><code>test-connection</code></td><td>連線並驗證 <code>*IDN?</code> / <code>*OPT?</code></td><td><span class="tag part">會連線，但不開 RF</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>9.2　逐一說明</h2>
+
+<h3>validate-config</h3>
+<pre><code>python -m cmp180_evm validate-config configs\instrument.example.yaml
+python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</code></pre>
+<p>成功輸出 <code>OK (instrument)</code> 或 <code>OK (wlan_baseline)</code>。</p>
+<div class="box warn">
+  <p class="t">格式通過 ≠ 指令已驗證</p>
+  <p>這只檢查 YAML 的欄位格式與數值範圍正確，<strong>不代表 CMP180 專屬的 SCPI 指令已完成驗證</strong>。</p>
+</div>
+
+<h3>validate-calibration / validate-limits / validate-pa-sweep</h3>
+<pre><code>python -m cmp180_evm validate-calibration configs\calibration.example.yaml
+python -m cmp180_evm validate-limits      configs\limits.example.yaml
+python -m cmp180_evm validate-pa-sweep    configs\pa_sweep.example.yaml</code></pre>
+<p><code>validate-pa-sweep</code> 會額外印出安全相關的關鍵值，例如 <strong>SA safe limit</strong> 與 <strong>DUT max input</strong>，讓操作員在送 RF 之前就看得到保護上限。</p>
+
+<h3>dry-run</h3>
+<pre><code>python -m cmp180_evm dry-run `
+  --config configs\wlan_baseline.example.yaml `
+  --instrument-config configs\instrument.example.yaml</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:210px">參數</th><th>必填</th><th>說明</th></tr></thead>
+<tbody>
+<tr><td><code>--config</code></td><td>是</td><td>WLAN baseline／掃描設定檔</td></tr>
+<tr><td><code>--instrument-config</code></td><td>否</td><td>儀器／路由設定檔，預設 <code>configs/instrument.example.yaml</code></td></tr>
+</tbody>
+</table>
+</div>
+<div class="box tip">
+  <p class="t">最推薦新手使用的指令</p>
+  <p><code>dry-run</code> 會把「如果真的執行，會發生哪些步驟」完整印出來，但<strong>不建立儀器連線、不送出任何 SCPI</strong>。想確認參數對不對，先跑這個最安全。</p>
+</div>
+
+<h3>test-connection</h3>
+<pre><code><span class="cmt"># 使用模擬儀器（完全離線，最安全）</span>
+python -m cmp180_evm test-connection --mock
+
+<span class="cmt"># 連線真實儀器讀取身分與選配（不會開啟 RF）</span>
+python -m cmp180_evm test-connection `
+  --instrument-config configs\instrument.example.yaml</code></pre>
+
+<h2>9.3　其他常用指令</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:330px">指令</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td><code>python -m cmp180_evm.web --demo-only</code></td><td>啟動純示範網頁介面</td></tr>
+<tr><td><code>python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></td><td>啟動實機模式網頁介面</td></tr>
+<tr><td><code>python -m pytest -m "not hardware"</code></td><td>執行所有不需要儀器的測試</td></tr>
+<tr><td><code>python scripts\build_feature_checklist.py --check</code></td><td>檢查功能完成度資料是否與來源一致</td></tr>
+<tr><td><code>python scripts\cmp180_wlan_result_discover.py</code></td><td>唯讀讀取上一筆 28 欄 OFDM SISO 結果（只用 <code>FETCh</code>）</td></tr>
+<tr><td><code>.\scripts\precommit_check.ps1</code></td><td>提交程式碼前的完整檢查（開發者用）</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>9.4　唯讀探索工具（不會開 RF）</h2>
+
+<p><code>scripts/</code> 底下有一整套以 <code>cmp180_</code> 開頭的探索與驗證工具。它們的共同特性是：<strong>先讀取並驗證目前狀態，不符合安全條件就拒絕執行</strong>。</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:300px">腳本</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td><code>cmp180_doctor.py</code></td><td>環境與連線健檢</td></tr>
+<tr><td><code>cmp180_wlan_discover.py</code></td><td>唯讀讀取 WLAN 設定與狀態</td></tr>
+<tr><td><code>cmp180_wlan_result_discover.py</code></td><td>唯讀讀取並解析上一筆結果</td></tr>
+<tr><td><code>cmp180_generator_discover.py</code></td><td>唯讀讀取產生器狀態</td></tr>
+<tr><td><code>cmp180_band_discovery.py</code></td><td>頻段能力探索</td></tr>
+<tr><td><code>cmp180_waveform_catalog.py</code></td><td>列出可用波形</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box danger">
+  <p class="t">帶有 --confirm-* 旗標的腳本會改變儀器狀態</p>
+  <p>例如 <code>--confirm-same-value-write</code>、<code>--confirm-analyzer-lifecycle</code>、<code>--confirm-direct-cable</code>、<code>--confirm-operator-present</code>。<strong>這些是刻意設計的門檻</strong>，代表你正在授權一個有副作用的動作。執行前請先讀 <code>docs/hardware-test-sop.md</code> 對應章節。</p>
+</div>
+
+
+<!-- ============ CH 10 ============ -->
+<h1 class="sec" id="ch10"><span class="num">CH 10</span>疑難排解</h1>
+
+<p class="lead">按照「我看到什麼」去找，每一項都附上原因與解法。</p>
+
+<details class="faq" open><summary>打 <code>python</code> 沒反應，或顯示「不是內部或外部命令」</summary>
+<div class="body">
+<p><strong>原因：</strong>Python 沒裝、沒加入 PATH，或你忘了啟用虛擬環境。</p>
+<p><strong>解法：</strong></p>
+<ol>
+<li>先確認：<code>py -3.11 -V</code>。沒反應就重裝 Python 並勾選「Add python.exe to PATH」。</li>
+<li>確認提示字元前面有 <code>(.venv)</code>。沒有的話執行 <code>.\.venv\Scripts\Activate.ps1</code>。</li>
+</ol>
+</div></details>
+
+<details class="faq"><summary>啟用 venv 時顯示「因為這個系統上已停用指令碼執行」</summary>
+<div class="body">
+<p><strong>原因：</strong>PowerShell 的執行原則阻擋了 <code>.ps1</code> 指令碼。</p>
+<p><strong>解法：</strong>在同一個視窗執行下面這行，再啟用一次。它只影響目前視窗，關掉就恢復。</p>
+<pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code></pre>
+</div></details>
+
+<details class="faq"><summary>安裝時出現 <code>requires-python &gt;= 3.11</code> 之類的錯誤</summary>
+<div class="body">
+<p><strong>原因：</strong>你用的 Python 版本太舊。</p>
+<p><strong>解法：</strong>裝 Python 3.11，並<strong>明確指定版本</strong>建立虛擬環境：<code>py -3.11 -m venv .venv</code>。如果 <code>.venv</code> 已經用錯版本建立，先刪掉整個 <code>.venv</code> 資料夾再重建。</p>
+</div></details>
+
+<details class="faq"><summary>網頁打不開 / 顯示「無法連上這個網站」</summary>
+<div class="body">
+<p><strong>檢查順序：</strong></p>
+<ol>
+<li>啟動伺服器的那個終端機視窗<strong>還開著嗎</strong>？關掉視窗＝關掉伺服器。</li>
+<li>網址是不是 <code>http://127.0.0.1:8765</code>？注意是 <code>http</code>，不是 <code>https</code>。</li>
+<li>終端機有沒有印出錯誤訊息？</li>
+</ol>
+</div></details>
+
+<details class="faq"><summary>按下 artifact 按鈕出現 <code>Not found</code></summary>
+<div class="body">
+<p><strong>原因：</strong>更新程式後，<strong>仍有舊的 Python Web 程序佔用同一個連接埠</strong>，請求隨機落到舊版本。</p>
+<p><strong>解法：</strong></p>
+<ol>
+<li>在啟動 Web 的 PowerShell 視窗按 <kbd>Ctrl</kbd>+<kbd>C</kbd> 正常關閉。</li>
+<li>確認沒有其他視窗還在跑 <code>python -m cmp180_evm.web</code>。</li>
+<li>重新啟動一次。</li>
+</ol>
+<p><strong>預防：</strong>新版伺服器使用獨占式綁定（exclusive bind），第二個相同 host／port 的實例會在啟動時直接失敗。<strong>不要同時開多個 <code>python -m cmp180_evm.web</code>。</strong></p>
+</div></details>
+
+<details class="faq"><summary>介面右上角顯示 <code>LOCKED</code>，實機按鈕點不動</summary>
+<div class="body">
+<p><strong>原因：</strong>這次是以 <code>--demo-only</code> 啟動的。這是<strong>正常且安全</strong>的狀態。</p>
+<p><strong>解法：</strong>若你確實要操作儀器，停止伺服器後改用：</p>
+<pre><code>python -m cmp180_evm.web --host 127.0.0.1 --port 8765</code></pre>
+<p>並務必先完成 CH 8 的所有前置檢查。</p>
+</div></details>
+
+<details class="faq"><summary>實機頁送出後被拒絕，顯示「不可執行」與一段原因</summary>
+<div class="body">
+<p><strong>原因：</strong>preview 檢查判定你這組參數超出目前 RF workflow 允許的 routing、bandwidth、power、dwell 或點數範圍。</p>
+<p><strong>這是保護機制，不是故障。</strong>系統<strong>不會</strong>偷偷改跑一組已驗證的參數來讓你「看起來成功」。</p>
+<p><strong>解法：</strong>依畫面顯示的拒絕原因調整參數；若確實需要新的能力範圍，必須先補進正式 command registry、workflow 與 capability profile 並完成驗證。</p>
+</div></details>
+
+<details class="faq"><summary>連不到儀器 / <code>test-connection</code> 失敗</summary>
+<div class="body">
+<p><strong>逐項檢查：</strong></p>
+<ol>
+<li>網路線接好了嗎？控制電腦的 IP 是否在 <code>192.168.200.0/24</code>？</li>
+<li><code>Test-NetConnection 192.168.200.50 -Port 5025</code> 是否成功？</li>
+<li>CMP180 與 CMsquares 是否已啟動？</li>
+<li>是否有 IP 衝突（別台電腦用了同一個 IP）？</li>
+<li>是否安裝了 <code>[hardware]</code> 選項（<code>RsInstrument</code>）？</li>
+</ol>
+</div></details>
+
+<details class="faq"><summary>結果全部顯示 INVALID</summary>
+<div class="body">
+<p><strong>常見原因：</strong>訊號沒進到分析器（線沒接好）、功率設定與 Expected Nominal Power 差太多、或量測尚未完成就讀取。</p>
+<p><strong>重要：</strong>INVALID <strong>不可以當成 0 來處理</strong>，也不可以在報告中忽略不提。系統刻意保留 <code>null</code> / <code>valid=false</code> 就是為了避免造假。</p>
+</div></details>
+
+<details class="faq"><summary>匯出按鈕是灰的，顯示「目前沒有可匯出的測點」</summary>
+<div class="body">
+<p><strong>原因：</strong>圖表目前沒有任何有效測點。</p>
+<p><strong>這是刻意的防呆</strong>，避免匯出一個空白卻看起來很正式的報告。等取得測點後會自動恢復。</p>
+</div></details>
+
+<details class="faq"><summary>HIL 批次某一列變成 <code>INTERRUPTED</code></summary>
+<div class="body">
+<p><strong>原因：</strong>Web 伺服器在該案例執行中被重啟，背景執行緒已消失。</p>
+<p><strong>解法：</strong>重新按「準備／重新檢查矩陣」後才能再跑。這個設計是為了不把消失的執行緒誤標成「執行中」。</p>
+</div></details>
+
+<details class="faq"><summary>掃描中途停了，只有一部分的點</summary>
+<div class="body">
+<p><strong>可能原因：</strong>你按了 Stop、某一點回傳 <code>INV</code>、SCPI 錯誤、reliability 非 0，或觸及安全上限。</p>
+<p><strong>系統行為：</strong>在該點完成 STOP／RF Off 後停止後續掃描，並<strong>保存部分結果</strong>。結果頁會同時列出有效與無效／未完成的點數。</p>
+<p><strong>注意：</strong>部分結果<strong>不能</strong>描述為「通過」。</p>
+</div></details>
+
+
+<!-- ============ CH 11 ============ -->
+<h1 class="sec" id="ch11"><span class="num">CH 11</span>能力邊界：現在不能做什麼</h1>
+
+<div class="box tip">
+  <p class="t">為什麼要專門寫一章講「不能做什麼」</p>
+  <p>這是本專案最重要的工程原則之一：<strong>絕不把「軟體寫好了」誤寫成「硬體驗證過了」。</strong>把界線寫清楚，別人才敢相信你寫「通過」的那些項目。</p>
+</div>
+
+<h2>11.1　能力狀態總表</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:170px">能力</th><th style="width:95px">軟體</th><th style="width:95px">Mock</th><th>實機／證據邊界</th></tr></thead>
+<tbody>
+<tr><td>WLAN SingleShot</td><td><span class="tag ok">✓</span></td><td><span class="tag ok">✓</span></td><td>已有 RF1.1 → RF1.5 與核准 WLAN section 的實機證據</td></tr>
+<tr><td>Frequency Sweep</td><td><span class="tag ok">✓</span></td><td><span class="tag ok">✓</span></td><td>固定／Web 掃描與 11 個核准 WLAN section 已有證據</td></tr>
+<tr><td>Power Sweep</td><td><span class="tag ok">✓</span></td><td><span class="tag ok">✓</span></td><td><code>INV</code> fail-fast、有效功率掃描與 V1 驗收已有證據</td></tr>
+<tr><td>Constellation</td><td><span class="tag ok">✓</span></td><td><span class="tag ok">✓</span></td><td><span class="tag wait">HIL PENDING</span> 無已驗證的擷取 SCPI</td></tr>
+<tr><td>MCS Sweep</td><td><span class="tag ok">✓</span></td><td><span class="tag ok">✓</span></td><td><span class="tag wait">HIL PENDING</span> 無已驗證的 waveform／MCS 對應</td></tr>
+<tr><td>PA 離線分析</td><td><span class="tag ok">✓</span></td><td><span class="tag ok">✓</span></td><td>進階指標仍以 SIMULATED／DERIVED 為主，不可當 DUT 實測</td></tr>
+<tr><td>Calibration</td><td><span class="tag ok">✓</span></td><td><span class="tag ok">✓</span></td><td>現行核准 profile 有既有證據；新 fixture／route 必須另行驗證</td></tr>
+<tr><td>UDBox</td><td><span class="tag part">部分</span></td><td><span class="tag no">✗</span></td><td>已有部分 GPRF 軟體骨架，尚無獨立 Mock 與核准 DUT 實機驗證</td></tr>
+<tr><td>5G NR FR1</td><td><span class="tag no">✗</span></td><td><span class="tag no">✗</span></td><td>架構與 Mock 尚未建立；<strong>禁止從其他儀器猜 SCPI</strong></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>完整分層、證據與自動計算的百分比，請以專案內的<strong>功能完成度 Checklist</strong>（<code>docs/FEATURE_COMPLETION_CHECKLIST.md</code>）為準。</p>
+
+<h2>11.2　明確不在範圍內的項目</h2>
+
+<ul>
+  <li><strong>登入 / 帳號 / 權限管理（RBAC）</strong> —— 目前採單一權限模型（Single Permission Model），不在專案範圍。但 RF 安全閘門永遠保留。</li>
+  <li><strong>對外網路存取</strong> —— 目前禁止綁定非 loopback 位址，介面只能在本機使用。</li>
+  <li><strong>DUT 合規判定</strong> —— 目前的 loopback 結果只驗證儀器、SCPI、trigger、parser、cleanup 與軟體資料流，<strong>沒有 DUT 就不能解讀成產品性能</strong>。</li>
+  <li><strong>其他 RF 路徑、500 MHz 分析頻寬、雙 VSA/VSG</strong> —— 需先完成唯讀探索與安全審核，未完成前只列為「待核准能力」。</li>
+</ul>
+
+
+<!-- ============ CH 12 ============ -->
+<h1 class="sec" id="ch12"><span class="num">CH 12</span>延伸問題 Q&amp;A</h1>
+
+<details class="faq" open><summary>我沒有 CMP180 儀器，這套東西對我還有用嗎？</summary>
+<div class="body"><p>有。示範模式提供完整的操作流程、圖表、匯出與報告，適合教學、介面驗證、流程練習，以及在沒有儀器時繼續開發。你唯一得不到的是「真實的量測數字」。</p></div></details>
+
+<details class="faq"><summary>示範資料是隨便亂數產生的嗎？</summary>
+<div class="body"><p>不是隨機亂噴。Mock 會模擬合理的物理趨勢（例如 EVM 隨功率變化），讓圖表看起來像真的量測。但它<strong>一律標記 <code>simulated=true</code></strong>，而且輸出 schema 與實機完全相同，所以可以用來驗證整條資料流。</p></div></details>
+
+<details class="faq"><summary>為什麼 Constellation 和 MCS Sweep 不能接真儀器？功能不是都寫好了嗎？</summary>
+<div class="body">
+<p>因為專案內<strong>還沒有已驗證的 CMP180 擷取指令與回傳格式</strong>。</p>
+<p>這是刻意的決定：<strong>寧可讓功能停在「拒絕執行」，也不放猜測的 SCPI 指令進系統。</strong>猜錯的指令可能造成儀器進入非預期狀態，或產生看似合理卻完全錯誤的數字 —— 後者更危險，因為沒人會發現。</p>
+<p>解鎖條件是：官方 CMP180 文件、儀器內建 Command Help、SCPI Recorder 紀錄，或受控的實機探索證據。</p>
+</div></details>
+
+<details class="faq"><summary>我可以把這個網頁介面開放給同事從別台電腦連嗎？</summary>
+<div class="body"><p><strong>目前不行。</strong>系統禁止綁定非 loopback 位址，只能在本機使用。原因是硬體模式沒有登入與權限控制，開放出去等於讓任何人都能操作一台會發射射頻的儀器。</p></div></details>
+
+<details class="faq"><summary>「完成」和「通過」差在哪？</summary>
+<div class="body">
+<p><strong>完成（complete）</strong>＝量測流程順利跑完，儀器沒報錯，該收的資料都收到了。</p>
+<p><strong>通過（pass）</strong>＝數字符合某個門檻。</p>
+<p>系統會在結果頁主動提醒你這兩件事不一樣。目前沒有正式核准 limit profile 的實機結果，只會標示 <code>MEASURED</code>，不宣稱 PASS。</p>
+</div></details>
+
+<details class="faq"><summary>為什麼中途取消時，已經量到的資料不會全部丟掉？</summary>
+<div class="body"><p>因為那些點是真的量到的，丟掉就浪費了現場時間。系統採用<strong>協作式取消</strong>：只在目前這一點完成 STOP 與 RF Off 之後才停，並保存 partial artifacts，同時在結果中明確標示「部分／取消」與完成點數，不會讓人誤以為是完整資料。</p></div></details>
+
+<details class="faq"><summary>我改了參數，系統會不會偷偷幫我換成「安全的」設定去跑？</summary>
+<div class="body"><p><strong>不會，而且這是明確的設計原則。</strong>如果你的輸入超出目前 workflow 允許的範圍，系統會<strong>顯示拒絕原因並停住</strong>，不會改跑已驗證的 6085／6105／6125 MHz 固定 profile。這樣你才不會誤以為自己的參數已經被驗證過。</p></div></details>
+
+<details class="faq"><summary>切換中英文或亮暗主題，會不會重新量測？</summary>
+<div class="body"><p>不會。切換語言會更新紀錄狀態、通知、結果摘要與圖表說明的文字，但<strong>不重新送出量測或 RF 請求</strong>；原始診斷內容也會保留原文不翻譯。主題選擇存在瀏覽器的 <code>localStorage</code>，下次開啟會延續。</p></div></details>
+
+<details class="faq"><summary>我可以拿這些結果去申請認證或寫進產品規格書嗎？</summary>
+<div class="body">
+<p><strong>目前不行。</strong>理由在 CH 6.5 與 CH 11 已說明：</p>
+<ul>
+<li>目前是儀器自打自收的 loopback，沒有 DUT。</li>
+<li>Power Reference Plane 尚未套用正式校正（<code>calibration_applied=false</code>）。</li>
+<li>沒有正式核准的 limit profile。</li>
+</ul>
+<p>這些都是要先補齊的前置條件。</p>
+</div></details>
+
+<details class="faq"><summary>3D 檢視器會不會連到儀器或外部網站？</summary>
+<div class="body"><p>不會。它只呈現外觀，<strong>不建立儀器連線、不送出 SCPI、不啟用 RF</strong>，而且不依賴外部 CDN，模型與檢視器都是本機資產。載入失敗時會保留靜態圖並提供重試。</p></div></details>
+
+<details class="faq"><summary>output 資料夾越來越大怎麼辦？</summary>
+<div class="body"><p>這是正常的 —— 每次執行都獨立存檔就是為了可追溯。請自行定期把重要的 run 備份到別處，再清理舊資料。「紀錄」頁也提供移除功能。<strong>清理前請先確認該次結果沒有被任何報告或稽核文件引用。</strong></p></div></details>
+
+<details class="faq"><summary>我想新增一個功能，該從哪裡開始？</summary>
+<div class="body">
+<p>按順序讀這幾份：</p>
+<ol>
+<li><code>SPEC.MD</code> —— 權威需求與安全邊界</li>
+<li><code>AGENTS.md</code> —— 程式註解、文件語言、實機安全與開發規則</li>
+<li><code>docs/development-workflow.md</code> —— Definition of Done</li>
+</ol>
+<p>規則是：<strong>程式碼、測試、相關文件與完成度資料來源必須同步更新</strong>。若牽涉 SCPI 變更，還必須附上官方 CMP180 文件、Command Help、Recorder 紀錄或受控實機證據。</p>
+</div></details>
+
+<details class="faq"><summary>CI（自動化檢查）會連公司的 CMP180 嗎？</summary>
+<div class="body"><p>不會，而且<strong>明文禁止</strong>。CI 只執行 unit 測試、Mock、設定檔驗證、Ruff 與非阻斷的 mypy。</p></div></details>
+
+
+<!-- ============ CH 13 ============ -->
+<h1 class="sec" id="ch13"><span class="num">CH 13</span>名詞辭典</h1>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:180px">名詞</th><th>說明</th></tr></thead>
+<tbody>
+<tr><td><strong>ADJ</strong></td><td>儀器狀態之一，代表正在調整中。</td></tr>
+<tr><td><strong>Artifact</strong></td><td>每次執行留下的產出檔案（CSV／JSON／metadata／HTML report／raw）。</td></tr>
+<tr><td><strong>AWGN</strong></td><td>Additive White Gaussian Noise，加成性白高斯雜訊，最常用的雜訊模型。</td></tr>
+<tr><td><strong>Burst Power</strong></td><td>一個封包 burst 期間的平均功率。</td></tr>
+<tr><td><strong>dB / dBm</strong></td><td>dB 是比值（相對），dBm 是絕對功率（相對 1 mW）。EVM 用 dB，功率用 dBm。</td></tr>
+<tr><td><strong>Dwell</strong></td><td>每個測點停留的時間。</td></tr>
+<tr><td><strong>EHT</strong></td><td>Extremely High Throughput，即 Wi-Fi 7（802.11be）的實體層名稱。</td></tr>
+<tr><td><strong>EVM</strong></td><td>Error Vector Magnitude，調變誤差向量幅度。訊號品質的核心指標。</td></tr>
+<tr><td><strong>FETCh</strong></td><td>SCPI 指令，<strong>只讀取已儲存的結果</strong>，不會啟動新量測。</td></tr>
+<tr><td><strong>Fingerprint</strong></td><td>對一份量測計畫算出的識別碼，用來確認送出的就是你看到的那份。</td></tr>
+<tr><td><strong>GPRF</strong></td><td>General Purpose RF，通用射頻功能（產生器／量測），非 WLAN 專用解調。</td></tr>
+<tr><td><strong>HIL</strong></td><td>Hardware-In-the-Loop，接上真實硬體實際執行並留下證據。</td></tr>
+<tr><td><strong>INITiate</strong></td><td>SCPI 指令，<strong>會啟動量測</strong>。</td></tr>
+<tr><td><strong>INV</strong></td><td>Invalid，儀器回報結果無效。</td></tr>
+<tr><td><strong>I/Q</strong></td><td>同相（In-phase）與正交（Quadrature）兩個分量，用來描述調變訊號。</td></tr>
+<tr><td><strong>Job</strong></td><td>非同步執行的工作，有 queued／running／stopping／complete／cancelled／failed 狀態。</td></tr>
+<tr><td><strong>LDPC</strong></td><td>一種錯誤更正編碼，Wi-Fi 6/7 常用。</td></tr>
+<tr><td><strong>Loopback</strong></td><td>自打自收：輸出端用線接回輸入端。</td></tr>
+<tr><td><strong>MCS</strong></td><td>Modulation and Coding Scheme，調變與編碼組合，可理解成傳輸「檔位」。</td></tr>
+<tr><td><strong>Mock</strong></td><td>模擬。不連儀器、不發射訊號。</td></tr>
+<tr><td><strong>OFDM</strong></td><td>正交分頻多工，Wi-Fi 使用的多載波調變技術。</td></tr>
+<tr><td><strong>P1dB</strong></td><td>放大器的 1 dB 壓縮點，代表開始明顯失真的功率位置。</td></tr>
+<tr><td><strong>PA</strong></td><td>Power Amplifier，功率放大器。</td></tr>
+<tr><td><strong>Partial result</strong></td><td>部分結果。掃描中途停止時保留的已完成測點。</td></tr>
+<tr><td><strong>Path Loss</strong></td><td>路徑損耗。訊號經過線材與接頭後損失的能量。</td></tr>
+<tr><td><strong>PPDU</strong></td><td>PHY Protocol Data Unit，實體層封包單位。</td></tr>
+<tr><td><strong>Profile</strong></td><td>一組已定義並（在正式情況下）經過核准的設定組合。</td></tr>
+<tr><td><strong>QAM</strong></td><td>Quadrature Amplitude Modulation。數字越大（如 4096-QAM）傳越快但越敏感。</td></tr>
+<tr><td><strong>RDY</strong></td><td>Ready。量測已完成，處於就緒／閒置狀態。</td></tr>
+<tr><td><strong>Reliability</strong></td><td>儀器對本次結果可靠度的自評指標，<code>0</code> 通常代表正常。</td></tr>
+<tr><td><strong>RF1.1 / RF1.5</strong></td><td>CMP180 前面板的射頻埠編號。本專案已驗證路徑是 RF1.1 輸出 → RF1.5 輸入。</td></tr>
+<tr><td><strong>Ruff / mypy / pytest</strong></td><td>開發用工具：程式碼風格檢查、型別檢查、自動測試。</td></tr>
+<tr><td><strong>SA safe limit</strong></td><td>頻譜分析儀輸入的安全上限，超過可能損壞儀器。</td></tr>
+<tr><td><strong>SCPI</strong></td><td>Standard Commands for Programmable Instruments，儀器通用文字指令標準。</td></tr>
+<tr><td><strong>SISO</strong></td><td>Single Input Single Output，單天線收發。</td></tr>
+<tr><td><strong>SingleShot</strong></td><td>單次量測模式，量一次就停，不連續重複。</td></tr>
+<tr><td><strong>Statistic Count</strong></td><td>統計次數。儀器會量這麼多次再計算平均／最大／最小／標準差。</td></tr>
+<tr><td><strong>Sweep</strong></td><td>掃描。依序改變某個參數並逐點量測。</td></tr>
+<tr><td><strong>UDBox</strong></td><td>上／下變頻盒（Up-Down Converter），用來轉換頻率。</td></tr>
+<tr><td><strong>venv</strong></td><td>Python 虛擬環境，把專案套件與系統隔離。</td></tr>
+<tr><td><strong>VSA / VSG</strong></td><td>向量訊號分析儀／向量訊號產生器。</td></tr>
+<tr><td><strong>Waveform (.wv)</strong></td><td>預先產生的訊號波形檔，載入儀器後播放。</td></tr>
+<tr><td><strong>YAML</strong></td><td>一種人類容易閱讀的設定檔格式，本專案用它描述儀器與量測參數。</td></tr>
+</tbody>
+</table>
+</div>
+
+
+<!-- ============ APPENDIX ============ -->
+<h1 class="sec" id="appendix"><span class="num">附錄</span>檔案結構與文件地圖</h1>
+
+<h2>A.1　專案資料夾結構</h2>
+
+<pre><code>configs/                      YAML 範例、能力描述與 SCPI command map
+docs/                         規格、SOP、證據、checklist 與互動架構圖
+docs/manual/                  本使用手冊（HTML / PDF / DOCX）
+scripts/                      驗證、報告與 checklist 產生工具
+src/cmp180_evm/constellation/ Constellation 模型、Mock、分析與 artifacts
+src/cmp180_evm/mcs_sweep/     MCS sweep 模型、Mock、圖表與 artifacts
+src/cmp180_evm/web/static/    正式 Web 前端（served frontend）
+src/cmp180_evm/workflow/      SingleShot、掃描、校正與 RF 安全 workflow
+tests/unit/                   CI 使用的 unit／mock／schema／artifact 測試
+output/                       本機量測與模擬產出（不提交版本控制）</code></pre>
+
+<div class="box note">
+  <p class="t">哪個前端才是正式的</p>
+  <p><code>src/cmp180_evm/web/static/</code> 是正式前端。<code>static_v2/</code> 與早期規劃文件<strong>僅供封存參考</strong>。</p>
+</div>
+
+<h2>A.2　文件權威順序</h2>
+
+<p>當兩份文件說法衝突時，依此順序判定：</p>
+
+<ol class="steps">
+  <li><span class="st">SPEC.MD（根目錄）</span>目前需求與安全邊界的<strong>權威規格</strong>。</li>
+  <li><span class="st">AGENTS.md</span>程式註解、文件語言、實機安全與開發規則。</li>
+  <li><span class="st">README.md 與 docs/README.md</span>提供現況與導覽，<strong>不取代詳細 SOP</strong>。</li>
+  <li><span class="st">CMP180_DEVELOPMENT_SPEC_AND_PLAN.md</span>早期詳細計畫；與 SPEC.MD 衝突時以 SPEC.MD 為準。</li>
+  <li><span class="st">DEVELOPMENT_SPEC_AND_PLAN.md</span>SMW200A／FSW85 歷史資料，<strong>不作為驗收依據</strong>。</li>
+  <li><span class="st">HANDOFF.md</span>變動較快的交接紀錄，不是權威規格。</li>
+</ol>
+
+<h2>A.3　延伸閱讀（依角色）</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:130px">你的角色</th><th>建議閱讀順序</th></tr></thead>
+<tbody>
+<tr><td><strong>操作員</strong></td><td><code>docs/user-guide.md</code> → <code>docs/hardware-test-sop.md</code> → <code>docs/web-gui-guide.md</code> → <code>docs/measurement-example-and-fields.md</code></td></tr>
+<tr><td><strong>安全／校正</strong></td><td><code>docs/sweep-safety.md</code> → <code>docs/limit-profiles.md</code> → <code>docs/calibration-profiles.md</code> → <code>docs/custom-hardware-sweep.md</code></td></tr>
+<tr><td><strong>開發者</strong></td><td><code>SPEC.MD</code> → <code>AGENTS.md</code> → <code>docs/development-workflow.md</code> → <code>docs/scpi-command-matrix.md</code> → <code>docs/single-measurement-state-machine.md</code></td></tr>
+<tr><td><strong>主管／驗收</strong></td><td><code>docs/FEATURE_COMPLETION_CHECKLIST.md</code> → <code>docs/v1-acceptance-report.md</code> → <code>docs/v1-demo-script.md</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>A.4　三個最常用的指令（貼在螢幕旁邊）</h2>
+
+<pre><code><span class="cmt"># 每次使用前：進入專案並啟用環境</span>
+Set-Location C:\work\CMP180-Automation
+.\.venv\Scripts\Activate.ps1
+
+<span class="cmt"># 安全的示範模式（永遠不會碰儀器）</span>
+python -m cmp180_evm.web --demo-only
+
+<span class="cmt"># 結束服務：在該視窗按 Ctrl + C</span></code></pre>
+
+<h2>A.5　授權</h2>
+<p>本專案採 <strong>MIT License</strong>。</p>
+
+<div class="footer">
+  CMP180 WLAN TX EVM 自動化系統 · 完整使用手冊<br>
+  本手冊內容以專案內 <code>SPEC.MD</code> 與 <code>docs/</code> 為準；若有衝突，以 <code>SPEC.MD</code> 為權威來源。
+</div>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+</body>
+</html>

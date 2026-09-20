@@ -13,6 +13,7 @@
 
 | 文件 | 用途 |
 |---|---|
+| [完整使用手冊](manual/README.md) | **零基礎入門**：安裝、操作、結果判讀、射頻安全與疑難排解（HTML／PDF／DOCX） |
 | [使用者指南](user-guide.md) | 安裝、命令列、網頁、模擬與實機操作 |
 | [Windows 可攜版](windows-portable.md) | 解壓、啟動、實機參數與重新打包 |
 | [硬體量測標準作業程序](hardware-test-sop.md) | 接線、射頻安全、執行順序與異常處理 |
