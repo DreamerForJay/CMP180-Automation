@@ -1,6 +1,6 @@
 # 使用手冊（面向非技術使用者）
 
-本資料夾放的是「完全沒碰過程式或射頻儀器也看得懂」的完整操作手冊。內容涵蓋安裝、啟動、介面導覽、每個功能的操作方式、結果判讀、RF 安全 SOP、CLI 參考、疑難排解、能力邊界與名詞辭典。
+本資料夾放的是「完全沒碰過程式或射頻儀器也看得懂」的完整操作手冊。線上版在 [https://dreamerforjay.github.io/CMP180-Automation/manual/cmp180-user-manual.html](https://dreamerforjay.github.io/CMP180-Automation/manual/cmp180-user-manual.html)，由 `.github/workflows/pages.yml` 從本資料夾發布，不需要先 clone 專案。內容涵蓋安裝、啟動、介面導覽、每個功能的操作方式、結果判讀、RF 安全 SOP、CLI 參考、疑難排解、能力邊界與名詞辭典。
 
 | 檔案 | 用途 |
 |---|---|

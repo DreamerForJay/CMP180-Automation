@@ -10,16 +10,18 @@
 [![Platform](https://img.shields.io/badge/Windows-10%20%7C%2011%20x64-0078d4)](docs/windows-portable.md)
 
 **[⬇ 下載 Windows 可攜版](https://github.com/DreamerForJay/CMP180-Automation/releases/latest/download/CMP180-Windows-x64.zip)**（免安裝 Python，雙擊即用）
- · [使用手冊](docs/manual/README.md)
  · [安裝與使用網頁](https://dreamerforjay.github.io/CMP180-Automation/)
+ · [線上使用手冊](https://dreamerforjay.github.io/CMP180-Automation/manual/cmp180-user-manual.html)
+ · [互動架構圖](https://dreamerforjay.github.io/CMP180-Automation/diagrams/system-architecture.html)
  · [文件中心](docs/README.md)
- · [架構圖](docs/diagrams/README.md)
+
+下載後請先用 [Release 頁面](https://github.com/DreamerForJay/CMP180-Automation/releases/latest)的 SHA-256 核對檔案；執行檔沒有程式碼簽章，SmartScreen 可能攔下，核對無誤後選「其他資訊」→「仍要執行」。
 
 [![CMP180 系統架構圖](docs/diagrams/system-architecture.png)](docs/diagrams/README.md)
 
-<sub>靜態預覽。<a href="docs/diagrams/README.md">互動版</a>支援縮放、搜尋、關係追蹤與匯出，另有 SingleShot 量測生命週期圖。</sub>
+<sub>靜態預覽。<a href="https://dreamerforjay.github.io/CMP180-Automation/diagrams/system-architecture.html">線上互動版</a>支援縮放、搜尋、關係追蹤與匯出，另有<a href="https://dreamerforjay.github.io/CMP180-Automation/diagrams/single-measurement-lifecycle.html">單次量測生命週期圖</a>；來源與重新產生方式見<a href="docs/diagrams/README.md">架構圖說明</a>。</sub>
 
-> **第一次接觸這個專案？** 請直接看 **[完整使用手冊](docs/manual/cmp180-user-manual.html)**（另有 [PDF](docs/manual/cmp180-user-manual.pdf) 與 [Word](docs/manual/cmp180-user-manual.docx) 版）。手冊假設讀者沒有寫過程式、也沒有操作過射頻儀器，從安裝、啟動、每個功能的操作、結果判讀、射頻安全到疑難排解逐步說明。本 README 面向已熟悉專案的開發者與驗收者。
+> **第一次接觸這個專案？** 請直接看 **[完整使用手冊](https://dreamerforjay.github.io/CMP180-Automation/manual/cmp180-user-manual.html)**（另有 [PDF](https://dreamerforjay.github.io/CMP180-Automation/manual/cmp180-user-manual.pdf) 與 [Word](docs/manual/cmp180-user-manual.docx) 版；離線版本在 [`docs/manual/`](docs/manual/README.md)）。手冊假設讀者沒有寫過程式、也沒有操作過射頻儀器，從安裝、啟動、每個功能的操作、結果判讀、射頻安全到疑難排解逐步說明。本 README 面向已熟悉專案的開發者與驗收者。
 
 ## 目錄
 

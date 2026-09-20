@@ -13,7 +13,10 @@
 
 ![SingleShot 量測生命週期圖](single-measurement-lifecycle.png)
 
-> 上面兩張是靜態預覽。GitHub 不會直接執行 HTML，請下載或 clone 後開啟 `.html` 才有互動功能。
+> 上面兩張是靜態預覽。GitHub 不會直接執行 HTML，線上互動版在
+> [系統架構](https://dreamerforjay.github.io/CMP180-Automation/diagrams/system-architecture.html) 與
+> [SingleShot 生命週期](https://dreamerforjay.github.io/CMP180-Automation/diagrams/single-measurement-lifecycle.html)；
+> 也可以 clone 後直接開啟本資料夾的 `.html`。
 
 ### 這兩張圖對應的程式碼
 

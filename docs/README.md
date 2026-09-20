@@ -1,6 +1,6 @@
 # CMP180 文件中心
 
-本頁是繁體中文文件入口，區分權威規格、操作文件、驗證證據、設計規劃與封存參考。功能修改時，請依[開發流程](development-workflow.md)同步程式、測試與受影響文件。
+本頁是繁體中文文件入口，區分權威規格、操作文件、驗證證據、設計規劃與封存參考。給非開發者的線上入口是[安裝與使用網頁](https://dreamerforjay.github.io/CMP180-Automation/)與[線上使用手冊](https://dreamerforjay.github.io/CMP180-Automation/manual/cmp180-user-manual.html)。功能修改時，請依[開發流程](development-workflow.md)同步程式、測試與受影響文件。
 
 ## 目錄
 

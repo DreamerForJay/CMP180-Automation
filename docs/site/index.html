@@ -112,23 +112,29 @@ a:hover{text-decoration:underline;text-underline-offset:3px}
 }
 .hud:hover::after{opacity:.85}
 
-/* ── 系統狀態列 ── */
-.sysbar{border-bottom:1px solid var(--rule-soft);font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint)}
-.sysbar .wrap{display:flex;flex-wrap:wrap;gap:5px 22px;padding-block:6px;align-items:center}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:7px;box-shadow:0 0 8px var(--green);animation:pulse 2.4s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.sysbar b{color:var(--ink-dim);font-weight:500}
-.sysbar .clock{margin-left:auto;font-variant-numeric:tabular-nums}
-
 /* ── 導覽列 ── */
 .topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--panel);backdrop-filter:blur(14px) saturate(140%);border-bottom:1px solid var(--rule);transition:background .3s,border-color .3s}
 .topbar .wrap{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;padding-block:11px}
 .mark{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.08em}
 .mark b{background:linear-gradient(92deg,var(--cyan),var(--blue) 55%,var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
-.topbar nav{margin-left:auto;display:flex;flex-wrap:wrap;gap:4px 5px;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em}
+.topbar nav{margin-left:auto;display:flex;flex-wrap:wrap;gap:4px 5px;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;min-width:0}
 .topbar nav a{color:var(--ink-dim);padding:5px 11px;border:1px solid transparent;border-radius:2px;transition:.18s}
 .topbar nav a:hover{color:var(--cyan);text-decoration:none;border-color:color-mix(in srgb,var(--cyan) 34%,transparent);background:color-mix(in srgb,var(--cyan) 7%,transparent)}
 .topbar nav a.on{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 46%,transparent)}
+/* GitHub：整個專案的主要外連，給它自己的綠色描邊按鈕而不是混在導覽文字裡 */
+#gh{
+  display:inline-flex;align-items:center;gap:7px;flex:none;
+  font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.06em;
+  padding:6px 13px;border-radius:2px;color:var(--green);
+  border:1px solid color-mix(in srgb,var(--green) 46%,transparent);
+  background:color-mix(in srgb,var(--green) 8%,transparent);transition:.18s;
+}
+#gh:hover{
+  text-decoration:none;color:var(--green);
+  border-color:var(--green);background:color-mix(in srgb,var(--green) 15%,transparent);
+  box-shadow:0 0 22px -8px var(--green);
+}
+#gh svg{width:15px;height:15px;fill:currentColor;flex:none}
 #theme{
   width:34px;height:30px;display:grid;place-items:center;cursor:pointer;border-radius:2px;
   background:transparent;border:1px solid var(--rule);color:var(--ink-dim);transition:.18s;flex:none;
@@ -293,11 +299,22 @@ li code,p code,td code{background:color-mix(in srgb,var(--cyan) 10%,transparent)
 
 /* ── 文件 ── */
 .docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(236px,1fr));gap:12px}
-.doc{border:1px solid var(--rule);background:var(--panel);padding:19px 20px;display:block;transition:.2s}
+.doc{border:1px solid var(--rule);background:var(--panel);padding:19px 20px;display:flex;flex-direction:column;transition:.2s}
 .doc:hover{border-color:color-mix(in srgb,var(--cyan) 44%,transparent);text-decoration:none;transform:translateY(-3px)}
 .doc .eyebrow{display:block;margin-bottom:9px}
 .doc h3{font-size:14.5px;color:var(--ink)}
 .doc p{color:var(--ink-dim);font-size:13px;font-weight:300;line-height:1.75;margin-top:7px}
+/* 卡片底部的行動提示：沒有它，使用者不會知道整張卡是可以點的 */
+.go{
+  display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:14px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--cyan);
+}
+.go i{font-style:normal;transition:transform .22s}
+.doc:hover .go i{transform:translate(3px,-3px)}
+.go.out i{font-size:11px}
+.doc:hover .go{text-decoration:none}
+/* 內文與圖說中的外部連結也標一個小箭頭 */
+.ext::after{content:" ↗";font-family:var(--mono);font-size:.9em;opacity:.8}
 
 #top{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:35;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--rule);background:var(--panel);color:var(--ink-dim);font-family:var(--mono);font-size:15px;cursor:pointer;border-radius:2px;backdrop-filter:blur(8px);opacity:0;transform:translateY(8px);pointer-events:none;transition:.28s}
 #top.show{opacity:1;transform:none;pointer-events:auto}
@@ -309,7 +326,6 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
 /* ── 平板 ── */
 @media (max-width:880px){
   .hero-grid{grid-template-columns:1fr}
-  .sysbar .clock{display:none}
   #cursor{display:none}
   body{font-size:15px;line-height:1.8}
   /* 導覽列改為可橫向捲動的一排，而不是在手機上整個消失 */
@@ -323,9 +339,9 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
 @media (max-width:600px){
   :root{--gutter:16px}
   body{font-size:14.5px;line-height:1.78;letter-spacing:.01em}
-  .sysbar{font-size:9.5px;letter-spacing:.1em}
-  .sysbar .wrap{gap:4px 14px}
   .mark{font-size:14px}
+  #gh{padding:6px 9px;gap:0;font-size:0}
+  #gh svg{width:16px;height:16px}
   .hero{padding-block:26px 24px}
   .hero h1{font-size:clamp(23px,7.2vw,30px)}
   .hero h1 .l1{font-size:.78em}
@@ -361,11 +377,10 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
 /* ── 極窄機型 ── */
 @media (max-width:340px){
   .topbar .mark{display:none}
-  .sysbar span:nth-child(4){display:none}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .bg i,.btn-primary,.btn-primary::after,.caret,.dot,.diagram .shot:hover::after{animation:none!important}
+  .bg i,.btn-primary,.btn-primary::after,.caret,.diagram .shot:hover::after{animation:none!important}
   .bar i{transition:none}
   #cursor{display:none}
   *{transition-duration:.01ms!important}
@@ -375,17 +390,6 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
 <body>
 <div class="bg" aria-hidden="true"><i class="a"></i><i class="b"></i></div>
 <div id="cursor" aria-hidden="true"></div>
-
-<div class="sysbar">
-  <div class="wrap">
-    <span><i class="dot"></i>SYSTEM ONLINE</span>
-    <span><b>MODE</b> DEMO / MOCK</span>
-    <span><b>RF</b> OFF</span>
-    <span><b>SCPI</b> REGISTRY LOCKED</span>
-    <span><b>VERSION</b> v0.1.0</span>
-    <span class="clock" id="clock">--:--:--</span>
-  </div>
-</div>
 
 <header class="topbar">
   <div class="wrap">
@@ -398,6 +402,10 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
       <a href="#architecture">架構</a>
       <a href="#docs">文件</a>
     </nav>
+    <a id="gh" href="https://github.com/DreamerForJay/CMP180-Automation">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
     <button id="theme" type="button" aria-label="切換亮色或暗色主題">
       <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
       <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></svg>
@@ -624,7 +632,7 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</pre></d
       <div class="shot"><img src="diagrams/system-architecture.png" alt="CMP180 系統架構圖：瀏覽器、Web API、JobManager、射頻安全閘門、量測流程、InstrumentSession 與 CMP180 實機的分層關係" loading="lazy"></div>
       <figcaption>
         <span>靜態預覽 · 節點以原始碼行號標註</span>
-        <span><a href="diagrams/system-architecture.html">開啟互動版</a> · <a href="diagrams/single-measurement-lifecycle.html">單次量測生命週期</a></span>
+        <span><a class="ext" href="diagrams/system-architecture.html">開啟互動版</a> · <a class="ext" href="diagrams/single-measurement-lifecycle.html">單次量測生命週期</a></span>
       </figcaption>
     </figure>
   </div>
@@ -638,10 +646,10 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</pre></d
       <p>權威順序：規格 → 硬體標準作業程序 → 完成度清單 → 使用手冊。手冊若與前三者衝突，以前三者為準。</p>
     </div>
     <div class="docs">
-      <a class="doc spot hud" href="manual/cmp180-user-manual.html"><span class="eyebrow">HTML · PDF · DOCX</span><h3>完整使用手冊</h3><p>假設讀者沒寫過程式、也沒操作過射頻儀器，從安裝到結果判讀逐步說明。</p></a>
-      <a class="doc spot hud" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/hardware-test-sop.md"><span class="eyebrow">SOP</span><h3>硬體量測標準作業程序</h3><p>接實機前必讀：接線、衰減、頻率、頻寬、功率與輸入上限確認。</p></a>
-      <a class="doc spot hud" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/FEATURE_COMPLETION_CHECKLIST.md"><span class="eyebrow">Dashboard</span><h3>功能完成度清單</h3><p>由資料檔自動產生，百分比不可手動修改。</p></a>
-      <a class="doc spot hud" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/scpi-command-matrix.md"><span class="eyebrow">Reference</span><h3>命令矩陣</h3><p>每條命令的來源、韌體版本、驗證日期與副作用紀錄。</p></a>
+      <a class="doc spot hud" href="manual/cmp180-user-manual.html"><span class="eyebrow">HTML · PDF · DOCX</span><h3>完整使用手冊</h3><p>假設讀者沒寫過程式、也沒操作過射頻儀器，從安裝到結果判讀逐步說明。</p><span class="go">開啟手冊 <i>→</i></span></a>
+      <a class="doc spot hud" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/hardware-test-sop.md"><span class="eyebrow">SOP</span><h3>硬體量測標準作業程序</h3><p>接實機前必讀：接線、衰減、頻率、頻寬、功率與輸入上限確認。</p><span class="go out">前往 GitHub <i>↗</i></span></a>
+      <a class="doc spot hud" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/FEATURE_COMPLETION_CHECKLIST.md"><span class="eyebrow">Dashboard</span><h3>功能完成度清單</h3><p>由資料檔自動產生，百分比不可手動修改。</p><span class="go out">前往 GitHub <i>↗</i></span></a>
+      <a class="doc spot hud" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/scpi-command-matrix.md"><span class="eyebrow">Reference</span><h3>命令矩陣</h3><p>每條命令的來源、韌體版本、驗證日期與副作用紀錄。</p><span class="go out">前往 GitHub <i>↗</i></span></a>
     </div>
   </div>
 </section>
@@ -747,14 +755,6 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</pre></d
     }, { passive: true });
     addEventListener("pointerleave", function () { glow.classList.remove("on"); shown = false; });
   }
-
-  /* ── 狀態列時間 ── */
-  var clock = document.getElementById("clock");
-  function tick() {
-    var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
-    clock.textContent = p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
-  }
-  tick(); setInterval(tick, 1000);
 
   /* ── Hero 打字 ── */
   var typed = document.getElementById("typed");
