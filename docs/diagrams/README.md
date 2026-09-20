@@ -17,7 +17,7 @@
 
 ### 這兩張圖對應的程式碼
 
-系統架構圖的既有節點以 `SRC` 徽章指向 revision `f702e9c` 當下真實存在的檔案與行號，
+系統架構圖的既有節點以 `SRC` 徽章指向 revision `254821f` 當下真實存在的檔案與行號，
 共 16 筆原始碼引用，由 Archify 對本 repo 驗證通過後才產生。Constellation／MCS 是刻意不綁定
 SCPI 的離線 Stack，圖中明確標示 `HIL PENDING`；實作檔案列在下方，避免讓未驗證 acquisition
 看起來像不可變硬體證據：
@@ -36,8 +36,11 @@ SCPI 的離線 Stack，圖中明確標示 `HIL PENDING`；實作檔案列在下�
 
 1. **RF 收尾不可繞過** — RF On 之後的任何例外、逾時或取消都會落入 `finally`，先 `stop_measurement`
    再 `rf_off`；收尾自身的錯誤被收集到 `cleanup_errors`，不會遮蔽原始例外。
-2. **拒絕即不送 RF** — 缺少操作員確認、generator 與 analyzer 同 port、或功率超過核准上限，
+2. **拒絕即不送 RF** — 缺少操作員確認、generator 與 analyzer 同 port、或功率超過呼叫端宣告的上限，
    都在 `VALIDATING` 就丟出 `SafetyGuardError`，全程沒有送出任何 RF。
+
+執行閘門只保留儀器物理上做不到的項目；HIL／approved profile 不再參與執行判定，未驗證的頻段、
+頻寬與功率組合可以實際量測，但結果不得作為 compliance 宣稱。接線與衰減是否安全由操作員負責。
 
 ### 重新產生
 

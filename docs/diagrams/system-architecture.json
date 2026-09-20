@@ -6,7 +6,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/DreamerForJay/CMP180-Automation",
-      "revision": "f702e9c5f174b49c31cb8a9604e8857261670ac8"
+      "revision": "254821f4d34adf40c8f8091889d45cbd07bfeb8e"
     },
     "views": [
       {
@@ -143,7 +143,7 @@
       "id": "safety",
       "type": "security",
       "label": "RF 安全閘門",
-      "sublabel": "route／profile／功率",
+      "sublabel": "port／頻率／頻寬／dwell",
       "pos": [
         685,
         310
@@ -161,7 +161,7 @@
         {
           "path": "src/cmp180_evm/web/capabilities.py",
           "line": 114,
-          "label": "核准 profile"
+          "label": "能力層級"
         },
         {
           "path": "src/cmp180_evm/workflow/rf_routes.py",
@@ -339,7 +339,7 @@
     },
     {
       "kind": "security-group",
-      "label": "RF 授權區：僅核准 profile 可執行",
+      "label": "RF 授權區：需操作員確認",
       "wraps": [
         "safety",
         "workflow",
@@ -382,7 +382,7 @@
     {
       "from": "safety",
       "to": "workflow",
-      "label": "放行核准",
+      "label": "通過閘門",
       "variant": "security"
     },
     {
@@ -468,7 +468,8 @@
       "title": "RF 安全邊界",
       "items": [
         "validate_safety 檢查操作員確認、port 與功率上限",
-        "capabilities 只放行已 HIL 驗證的 band／bandwidth 區段",
+        "閘門只擋儀器做不到的：port 相異、400 MHz–8 GHz、已安裝頻寬",
+        "功率上限由呼叫端宣告，analyzer 輸入準位由操作員負責確認",
         "成功、錯誤、逾時與取消都會 STOP／ABORT 並 RF Off"
       ]
     },
@@ -478,8 +479,8 @@
       "items": [
         "SCPI 指令集中於 configs/scpi_command_map.yaml",
         "每次 Run 輸出 CSV、JSON、metadata 與 report.html",
-        "歷史分析只讀既有 artifacts，不送 RF"
-        ,"Constellation／MCS Mock 不進 RF 授權區，hardware adapter 維持 HIL_PENDING"
+        "歷史分析只讀既有 artifacts，不送 RF",
+        "Constellation／MCS Mock 不進 RF 授權區，hardware adapter 維持 HIL_PENDING"
       ]
     }
   ]
