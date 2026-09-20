@@ -39,6 +39,8 @@ jobs:
           cp docs/diagrams/system-architecture.png _site/diagrams/
           cp docs/diagrams/single-measurement-lifecycle.html _site/diagrams/
           cp docs/diagrams/single-measurement-lifecycle.png _site/diagrams/
+          cp docs/diagrams/rf-signal-chain.html _site/diagrams/
+          cp docs/diagrams/rf-signal-chain.png _site/diagrams/
           # Jekyll 會忽略底線開頭的檔案，靜態站台直接停用它。
           touch _site/.nojekyll
 

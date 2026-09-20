@@ -656,13 +656,14 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</pre></d
       <div class="viz-bar">
         <button class="vtab" type="button" aria-selected="true" data-src="diagrams/system-architecture.html" data-title="CMP180 系統架構互動圖">系統架構</button>
         <button class="vtab" type="button" aria-selected="false" data-src="diagrams/single-measurement-lifecycle.html" data-title="單次量測生命週期互動圖">單次量測生命週期</button>
+        <button class="vtab" type="button" aria-selected="false" data-src="diagrams/rf-signal-chain.html" data-title="RF 收發機訊號鏈互動圖">RF 訊號鏈</button>
         <a class="viz-full" id="vizFull" href="diagrams/system-architecture.html" target="_blank" rel="noopener">另開分頁 ↗</a>
       </div>
       <div class="viz-frame" id="vizFrame">
         <iframe id="viz" src="diagrams/system-architecture.html" title="CMP180 系統架構互動圖" loading="lazy"></iframe>
         <button class="viz-lock" type="button" aria-label="啟用圖表互動"><span>點一下啟用縮放與拖曳</span></button>
       </div>
-      <p class="viz-note">圖內可縮放、搜尋、追蹤關係與匯出；節點以原始碼行號標註。手機上整張圖會展開跟著頁面捲動，需要縮放或拖曳時再點一下啟用。</p>
+      <p class="viz-note">圖內可縮放、搜尋、追蹤關係與匯出。前兩張的節點以原始碼行號標註；「RF 訊號鏈」是通用射頻背景知識，不是本專案的程式結構，也不含實機量測證據。手機上整張圖會展開跟著頁面捲動，需要縮放或拖曳時再點一下啟用。</p>
     </div>
   </div>
 </section>

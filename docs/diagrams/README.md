@@ -8,15 +8,33 @@
 |---|---|---|
 | [系統架構](system-architecture.html) | 從操作員瀏覽器到 CMP180 實機的完整分層、RF 授權區，以及不進 RF 路徑的 Constellation／MCS Mock artifact 流向 | [`system-architecture.json`](system-architecture.json) |
 | [SingleShot 生命週期](single-measurement-lifecycle.html) | `MeasurementPhase` 七個階段、`finally` 收尾保證與不送 RF 的拒絕路徑 | [`single-measurement-lifecycle.json`](single-measurement-lifecycle.json) |
+| [RF 收發機訊號鏈](rf-signal-chain.html) | **通用射頻背景知識**：超外差收發鏈、本振與倍除頻、取樣時脈，以及雜訊、線性度與 EVM 的關係 | [`rf-signal-chain.json`](rf-signal-chain.json) |
 
 ![CMP180 系統架構圖](system-architecture.png)
 
 ![SingleShot 量測生命週期圖](single-measurement-lifecycle.png)
 
-> 上面兩張是靜態預覽。GitHub 不會直接執行 HTML，線上互動版在
+![RF 收發機訊號鏈](rf-signal-chain.png)
+
+> 上面三張是靜態預覽。GitHub 不會直接執行 HTML，線上互動版在
 > [系統架構](https://dreamerforjay.github.io/CMP180-Automation/diagrams/system-architecture.html) 與
 > [SingleShot 生命週期](https://dreamerforjay.github.io/CMP180-Automation/diagrams/single-measurement-lifecycle.html)；
 > 也可以 clone 後直接開啟本資料夾的 `.html`。
+
+### RF 收發機訊號鏈的定位
+
+這張圖**不是 CMP180 的內部架構，也不是本專案的程式結構**，而是給沒有射頻背景的讀者
+看的通用超外差收發機訊號鏈：天線、衰減、前選濾波、LNA、混頻、中頻、I/Q 解調、
+抗混疊與 ADC，以及對應的發射側與本振、倍除頻、取樣時脈。
+
+三張說明卡整理的是教科書關係式（Friis 串級雜訊、MDS、鏡像頻率、ADC 量化 SNR、
+串級 IIP3、PAE、OFDM backoff 與 PAPR、DAC 影像、相位雜訊的 20log₁₀(N)、
+jitter 對 SNR 的限制、EVM 定義），用來說明為什麼星座圖會旋轉、EVM 曲線尾端
+為什麼會上揚。
+
+因此這張圖的 `meta.repository` 是 `null`：它沒有對應的原始碼行號，也**不包含任何
+CMP180 實機量測證據**，不能拿來支撐能力宣稱。若要描述本專案的實際結構，請看上面
+兩張圖。
 
 ### 這兩張圖對應的程式碼
 
@@ -60,6 +78,6 @@ node bin/archify.mjs visual-check docs/diagrams/system-architecture.html
 
 ### 目前狀態
 
-兩張圖都通過 Archify 的 9 項 artifact 檢查（showcase profile，0 error、0 warning），
+三張圖都通過 Archify 的 9 項 artifact 檢查（showcase profile，0 error、0 warning），
 並以真實 Chrome 在 1440×900、1600×1000、1920×1080、2048×1320 四種桌面尺寸完成 containment
 與可讀性驗證。生命週期圖的第三條 band 是渲染器固定版面的一部分，本圖未使用。
