@@ -284,18 +284,41 @@ li code,p code,td code{background:color-mix(in srgb,var(--cyan) 10%,transparent)
 .safety ul{margin:20px 0 0;padding-left:20px;color:var(--ink-dim);display:grid;gap:11px;font-size:14px;font-weight:300;line-height:1.8}
 .safety strong{color:var(--ink);font-weight:500}
 
-/* ── 架構圖 ── */
-.diagram{border:1px solid var(--rule);background:var(--panel);padding:14px;margin:0;overflow:hidden}
-.diagram .shot{position:relative;overflow:hidden;border:1px solid var(--rule-soft)}
-.diagram img{display:block;width:100%;max-width:100%;height:auto}
-.diagram .shot::after{
-  content:"";position:absolute;left:0;right:0;top:0;height:40%;pointer-events:none;
-  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--cyan) 18%,transparent),transparent);
-  transform:translateY(-120%);
+/* ── 架構圖：頁內嵌入的互動版 ── */
+.viz{border:1px solid var(--rule);background:var(--panel);margin:0}
+.viz-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--rule)}
+.vtab{
+  font-family:var(--mono);font-size:11px;letter-spacing:.07em;padding:6px 13px;cursor:pointer;
+  border:1px solid var(--rule);background:transparent;color:var(--ink-dim);border-radius:2px;transition:.16s;
 }
-.diagram .shot:hover::after{animation:scan 1.5s ease-in-out}
-@keyframes scan{to{transform:translateY(320%)}}
-.diagram figcaption{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--ink-faint);margin-top:13px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between}
+.vtab:hover{color:var(--ink);border-color:var(--ink-faint)}
+.vtab[aria-selected=true]{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 52%,transparent);background:color-mix(in srgb,var(--cyan) 9%,transparent)}
+.viz-full{
+  margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.07em;
+  padding:6px 13px;border:1px solid var(--rule);border-radius:2px;color:var(--ink-dim);transition:.16s;
+}
+.viz-full:hover{color:var(--cyan);border-color:var(--cyan);text-decoration:none}
+.viz-frame{position:relative;height:clamp(430px,74vh,780px);background:var(--surface)}
+.viz-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+/* 觸控裝置上，圖表會把捲動吃掉；先擋住互動，點一下才交給圖表 */
+.viz-lock{
+  display:none;position:absolute;inset:0;z-index:2;cursor:pointer;background:transparent;
+  align-items:flex-start;justify-content:center;padding:0;
+  border:0;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--cyan);
+}
+/* sticky 讓提示在整張圖捲過畫面時都跟著出現，而不是只在框的某一端 */
+.viz-lock span{
+  position:sticky;top:calc(50vh - 16px);
+  padding:7px 15px;border:1px solid color-mix(in srgb,var(--cyan) 52%,transparent);border-radius:2px;
+  background:var(--panel);box-shadow:0 6px 22px -12px #000;
+}
+.viz-note{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-faint);padding:11px 13px;border-top:1px solid var(--rule-soft)}
+@media (pointer:coarse){
+  .viz-frame iframe{pointer-events:none}
+  .viz-lock{display:flex}
+  .viz-frame.on iframe{pointer-events:auto}
+  .viz-frame.on .viz-lock{display:none}
+}
 
 /* ── 文件 ── */
 .docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(236px,1fr));gap:12px}
@@ -313,8 +336,6 @@ li code,p code,td code{background:color-mix(in srgb,var(--cyan) 10%,transparent)
 .doc:hover .go i{transform:translate(3px,-3px)}
 .go.out i{font-size:11px}
 .doc:hover .go{text-decoration:none}
-/* 內文與圖說中的外部連結也標一個小箭頭 */
-.ext::after{content:" ↗";font-family:var(--mono);font-size:.9em;opacity:.8}
 
 #top{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:35;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--rule);background:var(--panel);color:var(--ink-dim);font-family:var(--mono);font-size:15px;cursor:pointer;border-radius:2px;backdrop-filter:blur(8px);opacity:0;transform:translateY(8px);pointer-events:none;transition:.28s}
 #top.show{opacity:1;transform:none;pointer-events:auto}
@@ -366,7 +387,10 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
   .cb-bar{padding:7px 10px}
   .feat,.meter,.doc{padding:17px 16px}
   .meter b{font-size:25px}
-  .diagram{padding:10px}
+  .viz-bar{padding:9px 10px;gap:6px}
+  .vtab,.viz-full{padding:6px 10px;font-size:10.5px}
+  .viz-full{margin-left:0}
+  .viz-note{padding:10px;font-size:10px;line-height:1.7}
   .scroll-hint{display:block}
   .legend{gap:8px 16px;font-size:12.5px}
   footer .wrap{gap:8px;font-size:10px}
@@ -380,7 +404,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .bg i,.btn-primary,.btn-primary::after,.caret,.diagram .shot:hover::after{animation:none!important}
+  .bg i,.btn-primary,.btn-primary::after,.caret{animation:none!important}
   .bar i{transition:none}
   #cursor{display:none}
   *{transition-duration:.01ms!important}
@@ -628,13 +652,18 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</pre></d
       <h2>分層與射頻授權區</h2>
       <p>從操作員瀏覽器到 CMP180 實機的完整分層，以及不進入射頻路徑的離線分析資料流。互動版支援縮放、搜尋與關係追蹤。</p>
     </div>
-    <figure class="diagram spot">
-      <div class="shot"><img src="diagrams/system-architecture.png" alt="CMP180 系統架構圖：瀏覽器、Web API、JobManager、射頻安全閘門、量測流程、InstrumentSession 與 CMP180 實機的分層關係" loading="lazy"></div>
-      <figcaption>
-        <span>靜態預覽 · 節點以原始碼行號標註</span>
-        <span><a class="ext" href="diagrams/system-architecture.html">開啟互動版</a> · <a class="ext" href="diagrams/single-measurement-lifecycle.html">單次量測生命週期</a></span>
-      </figcaption>
-    </figure>
+    <div class="viz">
+      <div class="viz-bar">
+        <button class="vtab" type="button" aria-selected="true" data-src="diagrams/system-architecture.html" data-title="CMP180 系統架構互動圖">系統架構</button>
+        <button class="vtab" type="button" aria-selected="false" data-src="diagrams/single-measurement-lifecycle.html" data-title="單次量測生命週期互動圖">單次量測生命週期</button>
+        <a class="viz-full" id="vizFull" href="diagrams/system-architecture.html" target="_blank" rel="noopener">另開分頁 ↗</a>
+      </div>
+      <div class="viz-frame" id="vizFrame">
+        <iframe id="viz" src="diagrams/system-architecture.html" title="CMP180 系統架構互動圖" loading="lazy"></iframe>
+        <button class="viz-lock" type="button" aria-label="啟用圖表互動"><span>點一下啟用縮放與拖曳</span></button>
+      </div>
+      <p class="viz-note">圖內可縮放、搜尋、追蹤關係與匯出；節點以原始碼行號標註。手機上整張圖會展開跟著頁面捲動，需要縮放或拖曳時再點一下啟用。</p>
+    </div>
   </div>
 </section>
 
@@ -814,6 +843,42 @@ python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</pre></d
       es.forEach(function (e) { if (e.isIntersecting) { run(); io.disconnect(); } });
     }, { threshold: 0.25 });
     io.observe(document.getElementById("meters"));
+  }
+
+  /* ── 架構圖嵌入：切換圖表與觸控啟用 ── */
+  var viz = document.getElementById("viz");
+  if (viz) {
+    var vizFull = document.getElementById("vizFull");
+    var vizFrame = document.getElementById("vizFrame");
+    var vtabs = [].slice.call(document.querySelectorAll(".vtab"));
+    vtabs.forEach(function (b) {
+      b.addEventListener("click", function () {
+        vtabs.forEach(function (o) { o.setAttribute("aria-selected", String(o === b)); });
+        viz.src = b.dataset.src;
+        viz.title = b.dataset.title;
+        vizFull.href = b.dataset.src;
+        // 換圖後重新上鎖，避免觸控使用者在不知情下又被圖表吃掉捲動
+        vizFrame.classList.remove("on");
+      });
+    });
+    vizFrame.querySelector(".viz-lock").addEventListener("click", function () {
+      vizFrame.classList.add("on");
+    });
+
+    // 觸控裝置上把框撐到內嵌文件的實際高度，整張圖跟著頁面捲動，
+    // 使用者就不必在一個只有半個螢幕高的框裡面找捲軸。
+    function fitViz() {
+      if (!matchMedia("(pointer:coarse)").matches) { vizFrame.style.height = ""; return; }
+      try {
+        var d = viz.contentDocument;
+        if (!d || !d.documentElement) return;
+        var h = Math.max(430, Math.min(2200, d.documentElement.scrollHeight));
+        vizFrame.style.height = h + "px";
+      } catch (e) { /* 跨來源時取不到高度，維持預設框高 */ }
+    }
+    viz.addEventListener("load", function () { fitViz(); setTimeout(fitViz, 400); });
+    addEventListener("resize", fitViz);
+    fitViz();
   }
 
   /* ── 能力矩陣篩選 ── */
