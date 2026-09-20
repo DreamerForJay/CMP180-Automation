@@ -34,9 +34,12 @@ deploy/google-apps-script/.clasp.json
 # Archify visual-check 證據可重新產生，不納入版本庫。
 docs/diagrams/*.visual-check.*
 
-# open-slide 簡報工作區的相依與建置產物。
-presentation/node_modules/
-presentation/dist/
+# 實習簡報工作區只在本機使用，對本專案的使用者沒有價值，不納入版本庫。
+presentation/
 
 # pytest 與本機檢查的暫存輸出可重建，不納入版本庫。
 .tmp/
+
+# Pages 站台的手冊與架構圖由發布流程組裝，本機預覽時才暫存於此。
+docs/site/manual/
+docs/site/diagrams/
