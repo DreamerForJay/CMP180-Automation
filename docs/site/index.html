@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMP180 量測工作站</title>
+<meta name="description" content="Rohde &amp; Schwarz CMP180 WLAN TX EVM 自動化量測工作站：下載、安裝、功能導覽與射頻安全規則。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+:root{
+  /* 儀器面板色票：帶青偏移的石墨灰底、磷光青量測跡線、琥珀色安全警示 */
+  --ground:#0A1013; --panel:#111A1F; --panel-2:#16222899; --rule:#22333B; --rule-soft:#18262C;
+  --ink:#D3E0E4; --ink-dim:#8199A2; --ink-faint:#5C737C;
+  --trace:#3FD9C0; --trace-dim:#1E8D7C; --amber:#F2A93B; --alert:#E5484D; --violet:#8C7BF0;
+  --display:"Chakra Petch",system-ui,sans-serif;
+  --body:"Noto Sans TC","Chakra Petch",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,monospace;
+  --gutter:clamp(18px,4vw,56px);
+  --glow:0 0 0 1px rgba(63,217,192,.22), 0 0 28px -6px rgba(63,217,192,.45);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+/* 背景：極淡量測網格 + 兩團緩慢漂移的輝光，營造儀器螢幕的餘暉 */
+.bg{position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--ground)}
+.bg::before{
+  content:"";position:absolute;inset:0;
+  background-image:linear-gradient(var(--rule-soft) 1px,transparent 1px),linear-gradient(90deg,var(--rule-soft) 1px,transparent 1px);
+  background-size:76px 76px;opacity:.55;
+  mask-image:radial-gradient(120% 90% at 50% 0%,#000 30%,transparent 100%);
+}
+.bg i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.30;will-change:transform}
+.bg i.a{width:52vw;height:52vw;left:-12vw;top:-18vw;background:radial-gradient(circle,#1E8D7C,transparent 66%);animation:drift1 34s ease-in-out infinite}
+.bg i.b{width:44vw;height:44vw;right:-14vw;top:8vw;background:radial-gradient(circle,#5B4BC4,transparent 66%);animation:drift2 41s ease-in-out infinite}
+@keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(7vw,5vw)}}
+@keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-6vw,7vw)}}
+
+.wrap{max-width:1160px;margin:0 auto;padding-inline:var(--gutter)}
+h1,h2,h3{text-wrap:balance;margin:0;font-weight:700;letter-spacing:-.01em}
+a{color:var(--trace);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--trace);outline-offset:3px;border-radius:2px}
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint);margin:0}
+
+/* ── 頂部列 ── */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;border-bottom:1px solid var(--rule);background:rgba(10,16,19,.86);backdrop-filter:blur(10px)}
+.topbar .wrap{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;padding-block:11px}
+.mark{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.06em}
+.mark b{color:var(--trace);font-weight:700}
+.topbar nav{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--mono);font-size:12px}
+.topbar nav a{color:var(--ink-dim);padding-block:2px;border-bottom:1px solid transparent}
+.topbar nav a:hover,.topbar nav a.on{color:var(--trace);border-bottom-color:var(--trace);text-decoration:none}
+/* 捲動進度：頂部一條跑動的量測跡線 */
+#progress{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:linear-gradient(90deg,var(--trace-dim),var(--trace));box-shadow:0 0 12px rgba(63,217,192,.8)}
+
+/* ── Hero ── */
+.hero{padding-block:clamp(40px,7vw,80px) clamp(30px,5vw,54px)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(24px,4vw,52px);align-items:center}
+.hero h1{font-size:clamp(29px,5vw,50px);line-height:1.2;margin-block:14px 0}
+.hero h1 em{font-style:normal;color:var(--trace);text-shadow:0 0 30px rgba(63,217,192,.45)}
+.lede{color:var(--ink-dim);font-size:clamp(15px,1.5vw,17px);max-width:52ch;margin-block:18px 0}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;padding:13px 20px;border:1px solid var(--trace);border-radius:2px;position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s}
+.btn-primary{background:var(--trace);color:#06100E;box-shadow:0 0 26px -8px rgba(63,217,192,.9)}
+.btn-primary:hover{text-decoration:none;transform:translateY(-1px);box-shadow:0 0 34px -4px rgba(63,217,192,1)}
+/* 主按鈕上掠過的一道光，只在滑入時觸發 */
+.btn-primary::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);transform:translateX(-120%)}
+.btn-primary:hover::after{animation:sheen .7s ease-out}
+@keyframes sheen{to{transform:translateX(120%)}}
+.btn-ghost{border-color:var(--rule);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--trace);color:var(--trace);text-decoration:none}
+.btn .sz{opacity:.6;font-weight:400}
+
+.readout{margin:22px 0 0;border:1px solid var(--rule);background:var(--panel-2);font-family:var(--mono);font-size:12px}
+.readout div{display:flex;justify-content:space-between;gap:16px;padding:9px 15px;border-bottom:1px solid var(--rule-soft)}
+.readout div:last-child{border-bottom:0}
+.readout dt{color:var(--ink-faint)}
+.readout dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right;word-break:break-all}
+
+/* ── 互動星座圖 ── */
+.scope{border:1px solid var(--rule);background:var(--panel);padding:16px;box-shadow:var(--glow);margin:0}
+.scope canvas{display:block;width:100%;max-width:100%;height:auto;aspect-ratio:1/1;cursor:crosshair}
+.scope-ctl{display:grid;gap:11px;margin-top:14px;padding-top:13px;border-top:1px solid var(--rule-soft)}
+.ctl{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;font-family:var(--mono);font-size:11.5px;color:var(--ink-faint)}
+.ctl output{color:var(--trace);font-variant-numeric:tabular-nums;min-width:62px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:18px;width:100%}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--rule)}
+input[type=range]::-moz-range-track{height:2px;background:var(--rule)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--trace);margin-top:-5px;box-shadow:0 0 10px rgba(63,217,192,.9);cursor:grab}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--trace);box-shadow:0 0 10px rgba(63,217,192,.9);cursor:grab}
+select{font-family:var(--mono);font-size:11.5px;background:var(--ground);color:var(--ink);border:1px solid var(--rule);padding:4px 7px;border-radius:2px}
+.scope-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:12px;padding-top:11px;border-top:1px solid var(--rule-soft)}
+.scope-foot b{color:var(--trace);font-weight:500;font-variant-numeric:tabular-nums}
+
+/* ── 區塊 ── */
+section{padding-block:clamp(38px,6vw,70px);border-top:1px solid var(--rule-soft);position:relative}
+.sec-head{margin-bottom:26px}
+.sec-head h2{font-size:clamp(21px,2.8vw,28px);margin-top:9px}
+.sec-head p{color:var(--ink-dim);max-width:62ch;margin-block:12px 0}
+
+/* ── 能力矩陣 ── */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.fbtn{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;padding:6px 13px;border:1px solid var(--rule);background:transparent;color:var(--ink-dim);border-radius:2px;cursor:pointer;transition:.16s}
+.fbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
+.fbtn[aria-pressed=true]{color:var(--trace);border-color:var(--trace);background:rgba(63,217,192,.09);box-shadow:0 0 18px -8px rgba(63,217,192,.9)}
+.matrix-scroll{overflow-x:auto;border:1px solid var(--rule);background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:14px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--rule-soft)}
+thead th{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);background:rgba(22,34,40,.7)}
+tbody tr{transition:background .16s}
+tbody tr:hover{background:rgba(63,217,192,.045)}
+tbody tr[hidden]{display:none}
+tbody tr:last-child td{border-bottom:0}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-dim);text-align:right}
+.name{font-weight:500}
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.07em;padding:3px 9px;border-radius:2px;white-space:nowrap}
+.chip.hil{background:rgba(63,217,192,.13);color:var(--trace);border:1px solid rgba(63,217,192,.35)}
+.chip.mock{background:rgba(242,169,59,.11);color:var(--amber);border:1px solid rgba(242,169,59,.33)}
+.chip.todo{background:rgba(92,115,124,.13);color:var(--ink-faint);border:1px solid var(--rule)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:15px;font-size:13px;color:var(--ink-dim)}
+.legend span{display:flex;align-items:center;gap:9px}
+
+.meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:26px}
+.meter{background:var(--panel);padding:16px 18px}
+.meter b{font-family:var(--mono);font-size:27px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.meter b i{font-style:normal;font-size:14px;color:var(--ink-faint)}
+.meter small{display:block;color:var(--ink-faint);font-size:12px;margin-top:2px}
+.bar{height:3px;background:var(--rule);margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--trace);box-shadow:0 0 10px rgba(63,217,192,.8);transition:width 1.1s cubic-bezier(.22,.8,.3,1)}
+.bar i.warn{background:var(--amber);box-shadow:0 0 10px rgba(242,169,59,.8)}
+
+/* ── 安裝雙軌（分頁） ── */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--rule);margin-bottom:0}
+.tab{font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;padding:11px 18px;background:transparent;border:1px solid transparent;border-bottom:0;color:var(--ink-dim);cursor:pointer;position:relative;transition:.16s}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--trace);background:var(--panel);border-color:var(--rule)}
+.tab[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--trace);box-shadow:0 0 12px rgba(63,217,192,.9)}
+.panel{border:1px solid var(--rule);border-top:0;background:var(--panel);padding:26px}
+.panel[hidden]{display:none}
+.panel > p{color:var(--ink-dim);font-size:13.5px;margin:0 0 20px}
+ol{margin:0;padding:0;list-style:none;counter-reset:step;display:grid;gap:16px}
+ol li{counter-increment:step;position:relative;padding-left:34px;font-size:14px}
+ol li::before{content:counter(step,decimal-leading-zero);position:absolute;left:0;top:2px;font-family:var(--mono);font-size:11px;color:var(--trace);letter-spacing:.04em}
+code,pre{font-family:var(--mono)}
+.codeblock{position:relative;margin-top:10px}
+pre{margin:0;padding:12px 46px 12px 13px;background:var(--ground);border:1px solid var(--rule-soft);font-size:12.5px;overflow-x:auto;line-height:1.65}
+pre .c{color:var(--ink-faint)}
+.copy{position:absolute;top:7px;right:7px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;padding:4px 8px;background:var(--panel);border:1px solid var(--rule);color:var(--ink-faint);cursor:pointer;border-radius:2px;transition:.16s}
+.copy:hover{color:var(--trace);border-color:var(--trace)}
+.copy.done{color:var(--trace);border-color:var(--trace)}
+li code{background:var(--ground);border:1px solid var(--rule-soft);padding:1px 5px;font-size:12.5px;border-radius:2px}
+
+/* ── 功能 ── */
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.feat{background:var(--panel);padding:20px;position:relative;transition:background .2s}
+.feat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--trace);opacity:0;transition:opacity .2s;box-shadow:0 0 14px rgba(63,217,192,.9)}
+.feat:hover{background:#14202600}
+.feat:hover::before{opacity:1}
+.feat h3{font-size:15px;margin-bottom:7px}
+.feat p{color:var(--ink-dim);font-size:13.5px;margin:0 0 12px}
+.feat .spec{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);border-top:1px solid var(--rule-soft);padding-top:10px}
+
+/* ── RF 安全 ── */
+.safety{border:1px solid rgba(229,72,77,.38);border-left:3px solid var(--alert);background:linear-gradient(100deg,rgba(229,72,77,.08),transparent 60%);padding:26px}
+.safety h2{font-size:21px;color:var(--alert);margin-top:9px}
+.safety ul{margin:18px 0 0;padding-left:20px;color:var(--ink-dim);display:grid;gap:9px;font-size:14px}
+.safety strong{color:var(--ink);font-weight:500}
+
+/* ── 架構圖 ── */
+.diagram{border:1px solid var(--rule);background:var(--panel);padding:14px;margin:0}
+.diagram img{display:block;width:100%;max-width:100%;height:auto;border:1px solid var(--rule-soft)}
+.diagram figcaption{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);margin-top:11px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between}
+
+/* ── 文件 ── */
+.docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.doc{border:1px solid var(--rule);background:var(--panel);padding:17px 18px;display:block;transition:.18s}
+.doc:hover{border-color:var(--trace);text-decoration:none;box-shadow:var(--glow);transform:translateY(-2px)}
+.doc .eyebrow{display:block;margin-bottom:7px}
+.doc h3{font-size:14.5px;color:var(--ink)}
+.doc p{color:var(--ink-dim);font-size:13px;margin:6px 0 0}
+
+footer{border-top:1px solid var(--rule);padding-block:30px calc(44px + env(safe-area-inset-bottom,0px));color:var(--ink-faint);font-size:13px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between}
+
+/* 進場：從可見的靜止狀態輕微上浮，不使用 opacity:0 等待觀察器 */
+.rise{animation:rise .7s cubic-bezier(.22,.8,.3,1) both}
+@keyframes rise{from{transform:translateY(10px);opacity:.55}to{transform:none;opacity:1}}
+
+@media (max-width:860px){
+  .hero-grid{grid-template-columns:1fr}
+  .topbar nav{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .bg i,.rise,.btn-primary::after{animation:none!important}
+  .bar i{transition:none}
+  *{transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><i class="a"></i><i class="b"></i></div>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="mark">CMP180<b>·</b>EVM</div>
+    <nav id="nav">
+      <a href="#capability">能力邊界</a>
+      <a href="#install">安裝</a>
+      <a href="#features">功能</a>
+      <a href="#safety">射頻安全</a>
+      <a href="#architecture">架構</a>
+      <a href="#docs">文件</a>
+    </nav>
+  </div>
+  <div id="progress"></div>
+</header>
+
+<main>
+<div class="wrap hero">
+  <div class="hero-grid">
+    <div class="rise">
+      <p class="eyebrow">Rohde &amp; Schwarz CMP180 · WLAN TX EVM</p>
+      <h1>把 CMsquares 的手動量測，<br>換成<em>可重現、可稽核</em>的流程</h1>
+      <p class="lede">
+        本機網頁工作站，涵蓋設定驗證、射頻安全閘門、單次量測與掃描、星座圖與 MCS 分析，
+        以及每一次執行都保留原始儀器回應的結果歸檔。可攜版不需要安裝 Python，
+        雙擊就能以模擬模式操作全部介面。
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/DreamerForJay/CMP180-Automation/releases/latest/download/CMP180-Windows-x64.zip">下載 Windows 可攜版 <span class="sz">ZIP · 54 MB</span></a>
+        <a class="btn btn-ghost" href="#install">從原始碼安裝</a>
+      </div>
+      <dl class="readout">
+        <div><dt>版本</dt><dd>v0.1.0</dd></div>
+        <div><dt>平台</dt><dd>Windows 10 / 11 · x64</dd></div>
+        <div><dt>啟動位址</dt><dd>http://127.0.0.1:8765</dd></div>
+        <div><dt>預設模式</dt><dd>模擬 · 不建立 CMP180 連線</dd></div>
+      </dl>
+    </div>
+
+    <figure class="scope rise">
+      <canvas id="iq" width="640" height="640" aria-label="可調整的星座圖模擬：拖動下方滑桿改變雜訊、相位誤差與增益不平衡"></canvas>
+      <div class="scope-ctl">
+        <label class="ctl" for="mod">調變
+          <select id="mod">
+            <option value="2">QPSK</option>
+            <option value="4">16-QAM</option>
+            <option value="8" selected>64-QAM</option>
+            <option value="16">256-QAM</option>
+          </select>
+          <output id="modOut">64-QAM</output>
+        </label>
+        <label class="ctl" for="noise">雜訊
+          <input type="range" id="noise" min="2" max="90" value="21">
+          <output id="noiseOut">2.10 %</output>
+        </label>
+        <label class="ctl" for="phase">相位誤差
+          <input type="range" id="phase" min="0" max="90" value="11">
+          <output id="phaseOut">0.63 °</output>
+        </label>
+        <label class="ctl" for="gain">增益不平衡
+          <input type="range" id="gain" min="0" max="80" value="8">
+          <output id="gainOut">0.08 dB</output>
+        </label>
+      </div>
+      <figcaption class="scope-foot">
+        <span>6105 MHz · 320 MHz</span>
+        <span>RMS EVM <b id="evmOut">2.14 %</b></span>
+        <span>source=mock</span>
+      </figcaption>
+    </figure>
+  </div>
+</div>
+
+<section id="capability">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Capability &amp; evidence</p>
+      <h2>軟體完成度不等於硬體已驗證</h2>
+      <p>每項功能分三層追蹤：程式是否實作、是否通過模擬驗證、是否有實機（HIL）證據。只有第三層齊備的功能才能支撐量測宣稱，其餘一律標示為待驗證。</p>
+    </div>
+
+    <div class="filters" role="group" aria-label="依證據狀態篩選">
+      <button class="fbtn" data-f="all" aria-pressed="true">全部</button>
+      <button class="fbtn" data-f="hil" aria-pressed="false">實機已驗證</button>
+      <button class="fbtn" data-f="mock" aria-pressed="false">模擬驗證</button>
+      <button class="fbtn" data-f="todo" aria-pressed="false">未開始</button>
+    </div>
+
+    <div class="matrix-scroll">
+      <table>
+        <thead><tr><th scope="col">功能</th><th scope="col">狀態</th><th scope="col">證據邊界</th><th scope="col">完成度</th></tr></thead>
+        <tbody id="matrix">
+          <tr data-s="hil"><td class="name">WLAN 單次量測</td><td><span class="chip hil">實機已驗證</span></td><td>RF1.1 → RF1.5 直連，6105 MHz / 320 MHz / −40 dBm</td><td class="num">100%</td></tr>
+          <tr data-s="hil"><td class="name">頻率掃描</td><td><span class="chip hil">實機已驗證</span></td><td>11 個核准 WLAN 區段已有證據</td><td class="num">100%</td></tr>
+          <tr data-s="hil"><td class="name">功率掃描</td><td><span class="chip hil">實機已驗證</span></td><td><code>INV</code> 立即停止與有效功率掃描已驗收</td><td class="num">100%</td></tr>
+          <tr data-s="hil"><td class="name">校正與回損補償</td><td><span class="chip hil">實機已驗證</span></td><td>限現行核准設定；新治具需另行驗證</td><td class="num">100%</td></tr>
+          <tr data-s="hil"><td class="name">射頻安全閘門</td><td><span class="chip hil">實機已驗證</span></td><td>成功、錯誤、逾時與取消都保證收尾</td><td class="num">100%</td></tr>
+          <tr data-s="mock"><td class="name">星座圖</td><td><span class="chip mock">模擬驗證</span></td><td>尚無驗證過的擷取命令，<code>acquire()</code> 明確拒絕執行</td><td class="num">70%</td></tr>
+          <tr data-s="mock"><td class="name">MCS 掃描 0–13</td><td><span class="chip mock">模擬驗證</span></td><td>波形與 MCS 對應尚未經實機證實</td><td class="num">70%</td></tr>
+          <tr data-s="mock"><td class="name">PA 離線分析</td><td><span class="chip mock">模擬驗證</span></td><td>進階指標為模擬／推導值，非 DUT 實測</td><td class="num">94%</td></tr>
+          <tr data-s="mock"><td class="name">UDBox 頻率轉換</td><td><span class="chip mock">部分完成</span></td><td>僅軟體骨架，無獨立模擬堆疊與核准 DUT</td><td class="num">60%</td></tr>
+          <tr data-s="todo"><td class="name">DUT 模型</td><td><span class="chip todo">未開始</span></td><td>架構尚未建立</td><td class="num">5%</td></tr>
+          <tr data-s="todo"><td class="name">5G NR FR1</td><td><span class="chip todo">未開始</span></td><td>不可從其他型號儀器猜測命令</td><td class="num">5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span><span class="chip hil">實機已驗證</span> 有日期化實機證據，可支撐量測宣稱</span>
+      <span><span class="chip mock">模擬驗證</span> 程式與模擬通過，不得作為合規結果</span>
+      <span><span class="chip todo">未開始</span> 架構尚未建立</span>
+    </div>
+
+    <div class="meters" id="meters">
+      <div class="meter"><b>86<i>%</i></b><small>軟體完成度</small><div class="bar"><i data-w="86"></i></div></div>
+      <div class="meter"><b>79<i>%</i></b><small>模擬驗證</small><div class="bar"><i data-w="79"></i></div></div>
+      <div class="meter"><b>55<i>%</i></b><small>實機完成度</small><div class="bar"><i class="warn" data-w="55"></i></div></div>
+      <div class="meter"><b>80<i>%</i></b><small>可發布程度</small><div class="bar"><i data-w="80"></i></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Installation</p>
+      <h2>兩種安裝方式</h2>
+      <p>只要看介面、做教學或產生示範資料，可攜版就夠了。要接實機或修改程式，才需要原始碼環境。</p>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="安裝方式">
+      <button class="tab" id="tab-p" role="tab" aria-selected="true" aria-controls="pan-p">可攜版 · 免安裝 Python</button>
+      <button class="tab" id="tab-s" role="tab" aria-selected="false" aria-controls="pan-s">原始碼 · Python 3.11+</button>
+    </div>
+
+    <div class="panel" id="pan-p" role="tabpanel" aria-labelledby="tab-p">
+      <p>給沒有開發環境的使用者。解壓縮後雙擊即可，預設不會送出任何射頻命令。</p>
+      <ol>
+        <li>下載 <code>CMP180-Windows-x64.zip</code>，完整解壓縮到可寫入的資料夾。</li>
+        <li>雙擊資料夾內的 <code>CMP180.exe</code>。請保留整個資料夾，不要只複製執行檔，也不要直接從壓縮檔內執行。</li>
+        <li>瀏覽器會自動開啟 <code>http://127.0.0.1:8765</code>；沒有開啟時手動輸入該網址。
+          <div class="codeblock"><pre><span class="c"># 埠號被占用時改用其他埠</span>
+CMP180.exe --port 8766</pre><button class="copy" type="button">複製</button></div>
+        </li>
+        <li>結束時回到主控台按 <code>Ctrl+C</code>。關閉瀏覽器分頁不會停止工作站。</li>
+        <li>要接實機時，先讀完射頻安全規則再加上參數啟動。
+          <div class="codeblock"><pre>CMP180.exe --hardware</pre><button class="copy" type="button">複製</button></div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="panel" id="pan-s" role="tabpanel" aria-labelledby="tab-s" hidden>
+      <p>開發、接實機、跑測試與重新打包都走這條路徑。</p>
+      <ol>
+        <li>取得原始碼並建立虛擬環境。
+          <div class="codeblock"><pre>git clone https://github.com/DreamerForJay/CMP180-Automation.git
+Set-Location CMP180-Automation
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1</pre><button class="copy" type="button">複製</button></div>
+        </li>
+        <li>安裝相依套件。<code>hardware</code> 只有要接實機時需要。
+          <div class="codeblock"><pre>python -m pip install -e ".[dev,hardware]"</pre><button class="copy" type="button">複製</button></div>
+        </li>
+        <li>驗證設定檔。兩個指令都顯示 <code>OK</code> 才代表格式與欄位通過。
+          <div class="codeblock"><pre>python -m cmp180_evm validate-config configs\instrument.example.yaml
+python -m cmp180_evm validate-config configs\wlan_baseline.example.yaml</pre><button class="copy" type="button">複製</button></div>
+        </li>
+        <li>以模擬模式啟動網頁工作站。
+          <div class="codeblock"><pre>python -m cmp180_evm.web --demo-only</pre><button class="copy" type="button">複製</button></div>
+        </li>
+        <li>實機模式只能綁定 loopback，且仍須通過頁面上的安全確認。
+          <div class="codeblock"><pre>python -m cmp180_evm.web --host 127.0.0.1 --enable-hardware</pre><button class="copy" type="button">複製</button></div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Workspaces</p>
+      <h2>網頁工作區</h2>
+      <p>每個工作區都會把結果、設定快照、原始儀器回應與有效性摘要寫進同一個執行資料夾。</p>
+    </div>
+    <div class="feats">
+      <div class="feat"><h3>單次量測</h3><p>七階段狀態機。任何例外、逾時或取消都保證先停止量測再關閉射頻。</p><div class="spec">28 欄 OFDM SISO · 五統計量</div></div>
+      <div class="feat"><h3>頻率掃描</h3><p>由多次完整單次量測組成，每點之間完成收尾；失敗時保留已成功的點。</p><div class="spec">400 MHz – 8 GHz · dwell 0.01–10 s</div></div>
+      <div class="feat"><h3>功率掃描</h3><p>掃描產生器功率並標出無效點，功率上限由呼叫端依實際接線宣告。</p><div class="spec">INV 立即停止 · 上限由呼叫端指定</div></div>
+      <div class="feat"><h3>星座圖</h3><p>BPSK 到 4096-QAM 的理想點與缺陷模型：雜訊、相位、正交、增益不平衡、直流偏移。</p><div class="spec">待實機驗證 · source=mock</div></div>
+      <div class="feat"><h3>MCS 掃描</h3><p>EHT MCS 0–13，支援非連續且保留順序的清單，例如 <code>0,3,5,7,9,11</code>。</p><div class="spec">待實機驗證 · 無正式合規限值</div></div>
+      <div class="feat"><h3>GPRF 功率與 P1dB</h3><p>沒有觀察到增益下降 1 dB 時，結果標記為找不到 P1dB，不會把最後一點誤稱為 P1dB。</p><div class="spec">RF1.5 +30 dBm Max · 門檻 25 dBm</div></div>
+      <div class="feat"><h3>歷史結果與圖表</h3><p>離線重看既有執行紀錄、比對曲線並重新匯出，不會再送出任何射頻命令。</p><div class="spec">CSV · JSON · SVG · PNG · metadata</div></div>
+      <div class="feat"><h3>設定與命令驗證</h3><p>兩份 YAML 的欄位與跨欄位規則檢查；命令只存在於集中式指令表。</p><div class="spec">未驗證命令一律保持空值</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="safety">
+  <div class="wrap">
+    <div class="safety">
+      <p class="eyebrow" style="color:var(--alert)">RF safety · 不可協商</p>
+      <h2>開啟射頻之前</h2>
+      <ul>
+        <li><strong>軟體不會替你確認硬體。</strong>接線、衰減量與分析儀最大輸入準位由操作員負責確認。</li>
+        <li><strong>預設唯讀查詢。</strong><code>FETCh</code> 只讀取已保存結果；<code>READ</code> 與 <code>INITiate</code> 會啟動量測。</li>
+        <li><strong>未經明確要求不得重設</strong>儀器或工作區。</li>
+        <li><strong>所有射頻流程都保證收尾。</strong>成功、錯誤、逾時、取消都會嘗試停止／中止並關閉射頻。</li>
+        <li><strong>實機模式只能綁定 loopback。</strong>目前沒有身分驗證與權限控管，不得暴露到內網。</li>
+        <li><strong>模擬結果不是實機證據。</strong>模擬、預覽與離線分析都不能作為合規宣稱。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Architecture</p>
+      <h2>分層與射頻授權區</h2>
+      <p>從操作員瀏覽器到 CMP180 實機的完整分層，以及不進入射頻路徑的離線分析資料流。互動版支援縮放、搜尋與關係追蹤。</p>
+    </div>
+    <figure class="diagram">
+      <img src="diagrams/system-architecture.png" alt="CMP180 系統架構圖：瀏覽器、Web API、JobManager、射頻安全閘門、量測流程、InstrumentSession 與 CMP180 實機的分層關係" loading="lazy">
+      <figcaption>
+        <span>靜態預覽 · 節點以原始碼行號標註</span>
+        <span><a href="diagrams/system-architecture.html">開啟互動版</a> · <a href="diagrams/single-measurement-lifecycle.html">單次量測生命週期</a></span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="docs">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Documentation</p>
+      <h2>文件</h2>
+      <p>權威順序：規格 → 硬體標準作業程序 → 完成度清單 → 使用手冊。手冊若與前三者衝突，以前三者為準。</p>
+    </div>
+    <div class="docs">
+      <a class="doc" href="manual/cmp180-user-manual.html"><span class="eyebrow">HTML · PDF · DOCX</span><h3>完整使用手冊</h3><p>假設讀者沒寫過程式、也沒操作過射頻儀器，從安裝到結果判讀逐步說明。</p></a>
+      <a class="doc" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/hardware-test-sop.md"><span class="eyebrow">SOP</span><h3>硬體量測標準作業程序</h3><p>接實機前必讀：接線、衰減、頻率、頻寬、功率與輸入上限確認。</p></a>
+      <a class="doc" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/FEATURE_COMPLETION_CHECKLIST.md"><span class="eyebrow">Dashboard</span><h3>功能完成度清單</h3><p>由資料檔自動產生，百分比不可手動修改。</p></a>
+      <a class="doc" href="https://github.com/DreamerForJay/CMP180-Automation/blob/main/docs/scpi-command-matrix.md"><span class="eyebrow">Reference</span><h3>命令矩陣</h3><p>每條命令的來源、韌體版本、驗證日期與副作用紀錄。</p></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>CMP180 WLAN TX EVM 自動化量測系統 · <a href="https://github.com/DreamerForJay/CMP180-Automation">GitHub</a></span>
+    <span style="font-family:var(--mono);font-size:12px">本頁不含新的實機射頻驗證</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── 捲動進度列與導覽高亮 ── */
+  var bar = document.getElementById("progress");
+  var links = [].slice.call(document.querySelectorAll("#nav a"));
+  var targets = links.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      var max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.width = (max > 0 ? (scrollY / max) * 100 : 0) + "%";
+      var active = -1;
+      for (var i = 0; i < targets.length; i++) {
+        if (targets[i] && targets[i].getBoundingClientRect().top <= innerHeight * 0.34) active = i;
+      }
+      links.forEach(function (a, i) { a.classList.toggle("on", i === active); });
+      ticking = false;
+    });
+  }
+  addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  /* ── 完成度長條：進入視野才跑到目標寬度 ── */
+  var bars = [].slice.call(document.querySelectorAll(".bar i"));
+  function fill() { bars.forEach(function (b) { b.style.width = b.dataset.w + "%"; }); }
+  if (reduced || !("IntersectionObserver" in window)) { fill(); }
+  else {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { fill(); io.disconnect(); } });
+    }, { threshold: 0.25 });
+    io.observe(document.getElementById("meters"));
+  }
+
+  /* ── 能力矩陣篩選 ── */
+  var fbtns = [].slice.call(document.querySelectorAll(".fbtn"));
+  var rows = [].slice.call(document.querySelectorAll("#matrix tr"));
+  fbtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      var f = b.dataset.f;
+      fbtns.forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      rows.forEach(function (r) { r.hidden = !(f === "all" || r.dataset.s === f); });
+    });
+  });
+
+  /* ── 安裝方式分頁（含左右鍵切換） ── */
+  var tabs = [].slice.call(document.querySelectorAll(".tab"));
+  function select(t) {
+    tabs.forEach(function (o) {
+      var on = o === t;
+      o.setAttribute("aria-selected", String(on));
+      document.getElementById(o.getAttribute("aria-controls")).hidden = !on;
+    });
+    t.focus();
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () { select(t); });
+    t.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") select(tabs[(i + 1) % tabs.length]);
+      if (e.key === "ArrowLeft") select(tabs[(i - 1 + tabs.length) % tabs.length]);
+    });
+  });
+
+  /* ── 指令複製 ── */
+  [].forEach.call(document.querySelectorAll(".copy"), function (btn) {
+    btn.addEventListener("click", function () {
+      var text = btn.previousElementSibling.innerText;
+      var done = function () {
+        btn.textContent = "已複製";
+        btn.classList.add("done");
+        setTimeout(function () { btn.textContent = "複製"; btn.classList.remove("done"); }, 1600);
+      };
+      if (navigator.clipboard) { navigator.clipboard.writeText(text).then(done, function () { btn.textContent = "複製失敗"; }); }
+      else { btn.textContent = "請手動選取"; }
+    });
+  });
+
+  /* ── 互動星座圖 ──
+     依調變階數畫出理想點，再疊加雜訊、殘留相位誤差與 I/Q 增益不平衡。
+     全部為模擬值，用來說明各項缺陷如何影響 EVM，不代表任何實機量測結果。 */
+  var cv = document.getElementById("iq");
+  if (cv && cv.getContext) {
+    var ctx = cv.getContext("2d");
+    var S = cv.width, C = S / 2, R = S * 0.40;
+    var css = getComputedStyle(document.documentElement);
+    var TRACE = css.getPropertyValue("--trace").trim() || "#3FD9C0";
+    var GRID = css.getPropertyValue("--rule-soft").trim() || "#18262C";
+    var AXIS = css.getPropertyValue("--rule").trim() || "#22333B";
+    var PANEL = "#0E171B";
+    var FAINT = css.getPropertyValue("--ink-faint").trim() || "#5C737C";
+
+    var el = {
+      mod: document.getElementById("mod"), modOut: document.getElementById("modOut"),
+      noise: document.getElementById("noise"), noiseOut: document.getElementById("noiseOut"),
+      phase: document.getElementById("phase"), phaseOut: document.getElementById("phaseOut"),
+      gain: document.getElementById("gain"), gainOut: document.getElementById("gainOut"),
+      evm: document.getElementById("evmOut")
+    };
+    var NAMES = { 2: "QPSK", 4: "16-QAM", 8: "64-QAM", 16: "256-QAM" };
+
+    function draw() {
+      var side = parseInt(el.mod.value, 10);        // 每軸的電平數
+      var sigma = parseInt(el.noise.value, 10) / 1000;      // 每軸雜訊標準差（正規化）
+      var phi = parseInt(el.phase.value, 10) / 1000;        // 殘留相位誤差 (rad)
+      var gdb = parseInt(el.gain.value, 10) / 100;          // I/Q 增益不平衡 (dB)
+      var g = Math.pow(10, gdb / 20);
+
+      // 固定種子的線性同餘產生器，避免每次重繪整張圖跳動
+      var seed = 20260920;
+      function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+      function gauss() { return Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd()); }
+
+      var levels = [], i;
+      for (i = 0; i < side; i++) levels.push(2 * i - (side - 1));
+      var norm = side - 1;
+
+      ctx.fillStyle = PANEL; ctx.fillRect(0, 0, S, S);
+      ctx.strokeStyle = GRID; ctx.lineWidth = 1;
+      for (var k = 1; k < 8; k++) {
+        var p = Math.round(S * k / 8) + 0.5;
+        ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, S); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(S, p); ctx.stroke();
+      }
+      ctx.strokeStyle = AXIS; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(C, 0); ctx.lineTo(C, S); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, C); ctx.lineTo(S, C); ctx.stroke();
+
+      var per = side <= 4 ? 90 : (side === 8 ? 26 : 8);   // 總點數大致固定，避免高階調變過密
+      var dot = side >= 16 ? 1.2 : 1.7;
+      var err2 = 0, n = 0, ref2 = 0;
+
+      ctx.shadowColor = "rgba(63,217,192,0.75)";
+      ctx.shadowBlur = side >= 16 ? 3 : 5;
+      for (var a = 0; a < side; a++) {
+        for (var b = 0; b < side; b++) {
+          var i0 = levels[a] / norm, q0 = levels[b] / norm;
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = "rgba(129,153,162,0.26)"; ctx.lineWidth = 1;
+          ctx.strokeRect(C + i0 * R - 2.5, C - q0 * R - 2.5, 5, 5);
+          ctx.shadowBlur = side >= 16 ? 3 : 5;
+          ref2 += i0 * i0 + q0 * q0;
+          for (var m = 0; m < per; m++) {
+            var ii = i0 * g + gauss() * sigma;
+            var qq = q0 / g + gauss() * sigma;
+            var ir = ii * Math.cos(phi) - qq * Math.sin(phi);
+            var qr = ii * Math.sin(phi) + qq * Math.cos(phi);
+            err2 += (ir - i0) * (ir - i0) + (qr - q0) * (qr - q0); n++;
+            ctx.fillStyle = TRACE; ctx.globalAlpha = 0.40;
+            ctx.beginPath(); ctx.arc(C + ir * R, C - qr * R, dot, 0, 6.2832); ctx.fill();
+          }
+        }
+      }
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+      ctx.fillStyle = FAINT;
+      ctx.font = '500 20px "IBM Plex Mono", monospace';
+      ctx.fillText("I", S - 28, C - 12);
+      ctx.fillText("Q", C + 12, 30);
+
+      // RMS EVM = sqrt(平均誤差功率 / 平均參考功率)
+      var evm = Math.sqrt((err2 / n) / (ref2 / (side * side))) * 100;
+      el.modOut.value = NAMES[side];
+      el.noiseOut.value = (sigma * 100).toFixed(2) + " %";
+      el.phaseOut.value = (phi * 180 / Math.PI).toFixed(2) + " °";
+      el.gainOut.value = gdb.toFixed(2) + " dB";
+      el.evm.textContent = evm.toFixed(2) + " %";
+    }
+
+    ["mod", "noise", "phase", "gain"].forEach(function (id) {
+      document.getElementById(id).addEventListener("input", draw);
+    });
+    draw();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/site/**"
+      - "docs/manual/**"
+      - "docs/diagrams/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+# 只發布靜態文件，不執行任何量測程式，也不會接觸 CMP180。
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r docs/site/. _site/
+          # 手冊與架構圖一併發布，網頁上的相對連結才不會失效。
+          mkdir -p _site/manual _site/diagrams
+          cp docs/manual/cmp180-user-manual.html _site/manual/
+          cp docs/manual/cmp180-user-manual.pdf _site/manual/
+          cp docs/manual/cmp180-user-manual.docx _site/manual/
+          cp docs/diagrams/system-architecture.html _site/diagrams/
+          cp docs/diagrams/system-architecture.png _site/diagrams/
+          cp docs/diagrams/single-measurement-lifecycle.html _site/diagrams/
+          cp docs/diagrams/single-measurement-lifecycle.png _site/diagrams/
+          # Jekyll 會忽略底線開頭的檔案，靜態站台直接停用它。
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
