@@ -197,7 +197,8 @@ section::before{content:"";position:absolute;left:var(--gutter);right:var(--gutt
 .fbtn{font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:6px 14px;border:1px solid var(--rule);background:var(--panel);color:var(--ink-dim);border-radius:2px;cursor:pointer;transition:.16s}
 .fbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
 .fbtn[aria-pressed=true]{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 52%,transparent);background:color-mix(in srgb,var(--cyan) 9%,transparent)}
-.matrix-scroll{overflow-x:auto;border:1px solid var(--rule);background:var(--panel)}
+.matrix-scroll{overflow-x:auto;overscroll-behavior-x:contain;border:1px solid var(--rule);background:var(--panel)}
+.scroll-hint{display:none;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint);margin-top:8px}
 table{border-collapse:collapse;width:100%;min-width:660px;font-size:14px}
 th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--rule-soft)}
 thead th{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
@@ -235,13 +236,13 @@ td.name{font-weight:500;color:var(--ink)}
 .panel[hidden]{display:none}
 .panel > p{color:var(--ink-dim);font-size:13.5px;font-weight:300;margin-bottom:22px}
 ol{margin:0;padding:0;list-style:none;counter-reset:step;display:grid;gap:18px}
-ol li{counter-increment:step;position:relative;padding-left:38px;font-size:14px;font-weight:300;color:var(--ink-dim);line-height:1.8}
+ol li{counter-increment:step;position:relative;min-width:0;padding-left:38px;font-size:14px;font-weight:300;color:var(--ink-dim);line-height:1.8}
 ol li strong{color:var(--ink);font-weight:500}
 ol li::before{content:counter(step,decimal-leading-zero);position:absolute;left:0;top:3px;font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--cyan);letter-spacing:.06em}
 
 /* ── 終端機程式碼區塊 ── */
 code,pre{font-family:var(--mono)}
-.codeblock{margin-top:12px;border:1px solid var(--term-rule);background:var(--term);border-radius:5px;overflow:hidden}
+.codeblock{margin-top:12px;max-width:100%;border:1px solid var(--term-rule);background:var(--term);border-radius:5px;overflow:hidden}
 .cb-bar{display:flex;align-items:center;gap:7px;padding:8px 12px;border-bottom:1px solid var(--term-rule);background:rgba(255,255,255,.025)}
 .cb-bar i{width:9px;height:9px;border-radius:50%;flex:none}
 .cb-bar i:nth-child(1){background:#FF5F57}
@@ -249,7 +250,7 @@ code,pre{font-family:var(--mono)}
 .cb-bar i:nth-child(3){background:#28C840}
 .cb-bar span{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:#61728C;margin-left:6px}
 .cb-bar .copy{margin-left:auto}
-pre{margin:0;padding:13px 15px;font-size:12.5px;line-height:1.75;overflow-x:auto;color:var(--t-cmd);letter-spacing:.01em;background:transparent}
+pre{margin:0;max-width:100%;padding:13px 15px;font-size:12.5px;line-height:1.75;overflow-x:auto;color:var(--t-cmd);letter-spacing:.01em;background:transparent}
 .t-cmt{color:var(--t-cmt)}
 .t-pr{color:var(--t-ok);font-weight:500}
 .t-key{color:var(--t-cmd);font-weight:500}
@@ -305,12 +306,62 @@ li code,p code,td code{background:color-mix(in srgb,var(--cyan) 10%,transparent)
 footer{border-top:1px solid var(--rule);padding-block:30px calc(60px + env(safe-area-inset-bottom,0px));color:var(--ink-faint);margin-top:44px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.12em}
 
+/* ── 平板 ── */
 @media (max-width:880px){
   .hero-grid{grid-template-columns:1fr}
-  .topbar nav{display:none}
   .sysbar .clock{display:none}
   #cursor{display:none}
   body{font-size:15px;line-height:1.8}
+  /* 導覽列改為可橫向捲動的一排，而不是在手機上整個消失 */
+  .topbar .wrap{flex-wrap:nowrap;gap:10px}
+  .topbar nav{overflow-x:auto;overscroll-behavior-x:contain;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-width:0}
+  .topbar nav::-webkit-scrollbar{display:none}
+  .topbar nav a{white-space:nowrap}
+}
+
+/* ── 手機 ── */
+@media (max-width:600px){
+  :root{--gutter:16px}
+  body{font-size:14.5px;line-height:1.78;letter-spacing:.01em}
+  .sysbar{font-size:9.5px;letter-spacing:.1em}
+  .sysbar .wrap{gap:4px 14px}
+  .mark{font-size:14px}
+  .hero{padding-block:26px 24px}
+  .hero h1{font-size:clamp(23px,7.2vw,30px)}
+  .hero h1 .l1{font-size:.78em}
+  .lede{max-width:none;font-size:14.5px;line-height:1.85;margin-top:18px}
+  .cta-row{gap:10px}
+  .cta-row .btn{width:100%;justify-content:center}
+  .readout{font-size:11px}
+  .readout div{padding:8px 12px}
+  .scope{padding:12px}
+  /* 滑桿列在窄螢幕改成上下兩段，數值靠右對齊仍看得到 */
+  .ctl{grid-template-columns:auto 1fr;row-gap:4px}
+  .ctl output{grid-column:2;justify-self:end}
+  .ctl select{grid-column:2}
+  section{padding-block:34px}
+  .sec-head{margin-bottom:20px}
+  .sec-head h2{font-size:clamp(19px,5.4vw,22px)}
+  .panel{padding:18px 16px}
+  .safety{padding:20px 17px}
+  ol{gap:15px}
+  ol li{padding-left:30px}
+  pre{font-size:11.5px;padding:11px 12px}
+  .cb-bar{padding:7px 10px}
+  .feat,.meter,.doc{padding:17px 16px}
+  .meter b{font-size:25px}
+  .diagram{padding:10px}
+  .scroll-hint{display:block}
+  .legend{gap:8px 16px;font-size:12.5px}
+  footer .wrap{gap:8px;font-size:10px}
+  footer{margin-top:30px;padding-block:24px calc(46px + env(safe-area-inset-bottom,0px))}
+  #top{right:14px;width:36px;height:36px}
+}
+
+/* ── 極窄機型 ── */
+@media (max-width:340px){
+  .topbar .mark{display:none}
+  .sysbar span:nth-child(4){display:none}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -448,6 +499,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
         </tbody>
       </table>
     </div>
+
+    <p class="scroll-hint">← 表格可左右滑動查看完整欄位 →</p>
 
     <div class="legend">
       <span><span class="chip hil">實機已驗證</span> 有日期化實機證據，可支撐量測宣稱</span>
